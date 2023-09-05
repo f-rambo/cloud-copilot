@@ -1,0 +1,16 @@
+- hosts: all
+  become: yes
+  become_method: sudo
+  tasks:
+    - name: Copy public key to server
+      authorized_key:
+        user: "{{ ansible_user }}"
+        state: present
+        key: "{{ lookup('file', '~/.ssh/id_rsa.pub') }}"
+
+    - name: Allow passwordless sudo for user
+      lineinfile:
+        dest: /etc/sudoers.d/{{ ansible_user }}
+        line: "{{ ansible_user }} ALL=(ALL) NOPASSWD: ALL"
+        create: yes
+        validate: 'visudo -cf %s'

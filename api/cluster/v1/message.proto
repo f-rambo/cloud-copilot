@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package cluster.v1;
+
+option go_package = "api/cluster/v1;v1";
+
+
+message GetClusterConfigRequest {
+  string module = 1;
+}
+
+message GetClusterConfigResponse {
+  string data = 1;
+}
+
+message SaveClusterConfigRequest {
+  string module = 1;
+  string data = 2;
+}
+
+message Servers {
+  string cluster_name = 1;
+  repeated Node nodes = 2;
+}
+
+message Node {
+  string host = 1;
+  string name = 2;
+  string user = 3;
+  string password = 4;
+  string sudo_password = 5;
+  repeated string role = 6;
+}

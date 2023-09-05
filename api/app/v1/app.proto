@@ -1,0 +1,39 @@
+syntax = "proto3";
+
+package app.v1;
+
+import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
+import "api/app/v1/error_reason.proto";
+import "api/app/v1/message.proto";
+
+option go_package = "api/app/v1;v1";
+
+service AppService {
+  rpc GetApps(google.protobuf.Empty) returns (app.v1.App) {
+    option (google.api.http) = {
+      get: "/app/v1/get"
+    };
+  }
+
+  rpc SaveApps(app.v1.App) returns (app.v1.Msg) {
+    option (google.api.http) = {
+      put: "/app/v1/save"
+      body: "*"
+    };
+  }
+
+  rpc GetAppConfig(app.v1.GetAppConfigRequest) returns (app.v1.GetAppConfigResponse) {
+    option (google.api.http) = {
+      get: "/app/v1/config/get"
+    };
+  }
+
+  rpc SaveAppConfig(app.v1.SaveAppConfigRequest) returns (app.v1.Msg) {
+    option (google.api.http) = {
+      put: "/app/v1/config/save"
+      body: "*"
+    };
+  }
+
+}

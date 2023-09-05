@@ -1,0 +1,52 @@
+syntax = "proto3";
+package conf;
+
+option go_package = "ocean/internal/conf;conf";
+
+import "google/protobuf/duration.proto";
+
+message Bootstrap {
+  Server server = 1;
+  Data data = 2;
+  Log log = 3;
+}
+
+message Server {
+  message HTTP {
+    string network = 1;
+    string addr = 2;
+    google.protobuf.Duration timeout = 3;
+  }
+  message GRPC {
+    string network = 1;
+    string addr = 2;
+    google.protobuf.Duration timeout = 3;
+  }
+  HTTP http = 1;
+  GRPC grpc = 2;
+}
+
+message Data {
+  message Database {
+    string username = 1;
+    string password = 2;
+    string addr = 3;
+    string database = 4;
+  }
+  message Redis {
+    string addr = 1;
+    string password = 2;
+  }
+  Database database = 1;
+  Redis redis = 2;
+}
+
+message Log {
+  string path = 1;
+  string filename = 2;
+  int32 max_size = 3;
+  int32 max_age = 4;
+  int32 max_backups = 5;
+  bool compress = 6;
+  bool local_time = 7;
+}

@@ -1,0 +1,366 @@
+# Generated with protoc-gen-openapi
+# https://github.com/google/gnostic/tree/master/cmd/protoc-gen-openapi
+
+openapi: 3.0.3
+info:
+    title: ""
+    version: 0.0.1
+paths:
+    /app/v1/config/get:
+        get:
+            tags:
+                - AppService
+            operationId: AppService_GetAppConfig
+            parameters:
+                - name: id
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/app.v1.GetAppConfigResponse'
+    /app/v1/config/save:
+        put:
+            tags:
+                - AppService
+            operationId: AppService_SaveAppConfig
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/app.v1.SaveAppConfigRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/app.v1.Msg'
+    /app/v1/get:
+        get:
+            tags:
+                - AppService
+            operationId: AppService_GetApps
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/app.v1.App'
+    /app/v1/save:
+        put:
+            tags:
+                - AppService
+            operationId: AppService_SaveApps
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/app.v1.App'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/app.v1.Msg'
+    /cluster/v1/cluster/config:
+        get:
+            tags:
+                - Cluster
+            operationId: Cluster_GetClusterConfig
+            parameters:
+                - name: module
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/cluster.v1.GetClusterConfigResponse'
+    /cluster/v1/deploy:
+        post:
+            tags:
+                - Cluster
+            operationId: Cluster_DeployCluster
+            requestBody:
+                content:
+                    application/json: {}
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/cluster.v1.Msg'
+    /cluster/v1/destroy:
+        post:
+            tags:
+                - Cluster
+            operationId: Cluster_DestroyCluster
+            requestBody:
+                content:
+                    application/json: {}
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/cluster.v1.Msg'
+    /cluster/v1/get:
+        get:
+            tags:
+                - Cluster
+            operationId: Cluster_GetCluster
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/cluster.v1.Servers'
+    /cluster/v1/save:
+        put:
+            tags:
+                - Cluster
+            operationId: Cluster_SaveCluster
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/cluster.v1.Servers'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/cluster.v1.Msg'
+    /cluster/v1/save/cluster/config:
+        put:
+            tags:
+                - Cluster
+            operationId: Cluster_SaveClusterConfig
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/cluster.v1.SaveClusterConfigRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/cluster.v1.Msg'
+    /cluster/v1/set/auth:
+        post:
+            tags:
+                - Cluster
+            operationId: Cluster_SetClusterAuth
+            requestBody:
+                content:
+                    application/json: {}
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/cluster.v1.Msg'
+    /cluster/v1/setup/tool:
+        post:
+            tags:
+                - Cluster
+            operationId: Cluster_SetUpClusterTool
+            requestBody:
+                content:
+                    application/json: {}
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/cluster.v1.Msg'
+    /cluster/v1/sync/config:
+        put:
+            tags:
+                - Cluster
+            operationId: Cluster_SyncConfigCluster
+            requestBody:
+                content:
+                    application/json: {}
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/cluster.v1.Msg'
+    /helloworld/{name}:
+        get:
+            tags:
+                - Greeter
+            description: Sends a greeting
+            operationId: Greeter_SayHello
+            parameters:
+                - name: name
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/helloworld.v1.HelloReply'
+    /infra/v1/config:
+        get:
+            tags:
+                - Infra
+            operationId: Infra_GetConfig
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/infra.v1.InfraRes'
+components:
+    schemas:
+        app.v1.App:
+            type: object
+            properties:
+                entries:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/app.v1.AppEntry'
+        app.v1.AppEntry:
+            type: object
+            properties:
+                name:
+                    type: string
+                chart:
+                    type: string
+                repo:
+                    type: string
+                config:
+                    type: string
+                enable:
+                    type: boolean
+                releases:
+                    type: string
+                namespace:
+                    type: string
+                id:
+                    type: string
+        app.v1.GetAppConfigResponse:
+            type: object
+            properties:
+                config:
+                    type: string
+        app.v1.Msg:
+            type: object
+            properties:
+                Reason:
+                    type: integer
+                    format: enum
+                Message:
+                    type: string
+        app.v1.SaveAppConfigRequest:
+            type: object
+            properties:
+                id:
+                    type: string
+                config:
+                    type: string
+        cluster.v1.GetClusterConfigResponse:
+            type: object
+            properties:
+                data:
+                    type: string
+        cluster.v1.Msg:
+            type: object
+            properties:
+                Reason:
+                    type: integer
+                    format: enum
+                Message:
+                    type: string
+        cluster.v1.Node:
+            type: object
+            properties:
+                host:
+                    type: string
+                name:
+                    type: string
+                user:
+                    type: string
+                password:
+                    type: string
+                sudoPassword:
+                    type: string
+                role:
+                    type: array
+                    items:
+                        type: string
+        cluster.v1.SaveClusterConfigRequest:
+            type: object
+            properties:
+                module:
+                    type: string
+                data:
+                    type: string
+        cluster.v1.Servers:
+            type: object
+            properties:
+                clusterName:
+                    type: string
+                nodes:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/cluster.v1.Node'
+        helloworld.v1.HelloReply:
+            type: object
+            properties:
+                message:
+                    type: string
+            description: The response message containing the greetings
+        infra.v1.InfraRes:
+            type: object
+            properties:
+                kubesprayVersion:
+                    type: string
+                kubesprayPath:
+                    type: string
+                kubesparyPackageTag:
+                    type: string
+                scriptPath:
+                    type: string
+tags:
+    - name: AppService
+    - name: Cluster
+    - name: Greeter
+      description: The greeting service definition.
+    - name: Infra

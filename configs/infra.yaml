@@ -1,0 +1,4 @@
+script_path: cmd/infra
+kubespray_version: v2.22.1
+kubespray_path: https://github.com/kubernetes-sigs/kubespray/archive/refs/tags/
+kubespary_package_tag: .tar.gz
