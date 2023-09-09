@@ -1,27 +1,31 @@
 server:
   http:
+    network: tcp
     addr: 0.0.0.0:8000
-    timeout: 1s
   grpc:
+    network: tcp
     addr: 0.0.0.0:9000
-    timeout: 1s
 data:
   database:
     driver: mysql
-    source: root:root@tcp(127.0.0.1:3306)/test
+    host: localhost
+    port: 3306
+    username: root
+    password: '123456'
+    database: ocean
   redis:
-    addr: 127.0.0.1:6379
-    read_timeout: 0.2s
-    write_timeout: 0.2s
-  etcd:
-    ca_cert: /app/etcd/ssl/ca.pem 
-    cert: /app/etcd/ssl/member.pem
-    key: /app/etcd/ssl/member-key.pem
-    dial_timeout: 10
-    prefix: /ocean
-  k8s_client:
-    kube_config: /root/.kube/config
-
+    host: localhost
+    port: 6379
+    password:
+    db: 0
+  semaphore:
+    admin: admin
+    admin_password: 'changeme'
+    host: localhost
+    port: 3000
+  kubernetes:
+    master_url: 
+    kube_config: 
 log:
   path: logs
   filename: log.log

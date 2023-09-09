@@ -20,179 +20,54 @@ var _ = binding.EncodeURL
 
 const _ = http.SupportPackageIsVersion1
 
-const OperationClusterDeployCluster = "/cluster.v1.Cluster/DeployCluster"
-const OperationClusterDestroyCluster = "/cluster.v1.Cluster/DestroyCluster"
-const OperationClusterGetCluster = "/cluster.v1.Cluster/GetCluster"
-const OperationClusterGetClusterConfig = "/cluster.v1.Cluster/GetClusterConfig"
-const OperationClusterSaveCluster = "/cluster.v1.Cluster/SaveCluster"
-const OperationClusterSaveClusterConfig = "/cluster.v1.Cluster/SaveClusterConfig"
-const OperationClusterSetClusterAuth = "/cluster.v1.Cluster/SetClusterAuth"
-const OperationClusterSetUpClusterTool = "/cluster.v1.Cluster/SetUpClusterTool"
-const OperationClusterSyncConfigCluster = "/cluster.v1.Cluster/SyncConfigCluster"
+const OperationClusterServiceDelete = "/cluster.v1.ClusterService/Delete"
+const OperationClusterServiceGet = "/cluster.v1.ClusterService/Get"
+const OperationClusterServiceSave = "/cluster.v1.ClusterService/Save"
 
-type ClusterHTTPServer interface {
-	DeployCluster(context.Context, *emptypb.Empty) (*Msg, error)
-	DestroyCluster(context.Context, *emptypb.Empty) (*Msg, error)
-	GetCluster(context.Context, *emptypb.Empty) (*Servers, error)
-	GetClusterConfig(context.Context, *GetClusterConfigRequest) (*GetClusterConfigResponse, error)
-	SaveCluster(context.Context, *Servers) (*Msg, error)
-	SaveClusterConfig(context.Context, *SaveClusterConfigRequest) (*Msg, error)
-	SetClusterAuth(context.Context, *emptypb.Empty) (*Msg, error)
-	SetUpClusterTool(context.Context, *emptypb.Empty) (*Msg, error)
-	SyncConfigCluster(context.Context, *emptypb.Empty) (*Msg, error)
+type ClusterServiceHTTPServer interface {
+	Delete(context.Context, *ClusterID) (*Msg, error)
+	Get(context.Context, *emptypb.Empty) (*Clusters, error)
+	Save(context.Context, *Cluster) (*Msg, error)
 }
 
-func RegisterClusterHTTPServer(s *http.Server, srv ClusterHTTPServer) {
+func RegisterClusterServiceHTTPServer(s *http.Server, srv ClusterServiceHTTPServer) {
 	r := s.Route("/")
-	r.POST("/cluster/v1/deploy", _Cluster_DeployCluster0_HTTP_Handler(srv))
-	r.POST("/cluster/v1/destroy", _Cluster_DestroyCluster0_HTTP_Handler(srv))
-	r.PUT("/cluster/v1/sync/config", _Cluster_SyncConfigCluster0_HTTP_Handler(srv))
-	r.PUT("/cluster/v1/save/cluster/config", _Cluster_SaveClusterConfig0_HTTP_Handler(srv))
-	r.GET("/cluster/v1/cluster/config", _Cluster_GetClusterConfig0_HTTP_Handler(srv))
-	r.GET("/cluster/v1/get", _Cluster_GetCluster0_HTTP_Handler(srv))
-	r.PUT("/cluster/v1/save", _Cluster_SaveCluster0_HTTP_Handler(srv))
-	r.POST("/cluster/v1/set/auth", _Cluster_SetClusterAuth0_HTTP_Handler(srv))
-	r.POST("/cluster/v1/setup/tool", _Cluster_SetUpClusterTool0_HTTP_Handler(srv))
+	r.GET("/cluster/v1/get", _ClusterService_Get0_HTTP_Handler(srv))
+	r.POST("/cluster/v1/save", _ClusterService_Save0_HTTP_Handler(srv))
+	r.DELETE("/cluster/v1/delete/{id}", _ClusterService_Delete0_HTTP_Handler(srv))
 }
 
-func _Cluster_DeployCluster0_HTTP_Handler(srv ClusterHTTPServer) func(ctx http.Context) error {
-	return func(ctx http.Context) error {
-		var in emptypb.Empty
-		if err := ctx.Bind(&in); err != nil {
-			return err
-		}
-		if err := ctx.BindQuery(&in); err != nil {
-			return err
-		}
-		http.SetOperation(ctx, OperationClusterDeployCluster)
-		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.DeployCluster(ctx, req.(*emptypb.Empty))
-		})
-		out, err := h(ctx, &in)
-		if err != nil {
-			return err
-		}
-		reply := out.(*Msg)
-		return ctx.Result(200, reply)
-	}
-}
-
-func _Cluster_DestroyCluster0_HTTP_Handler(srv ClusterHTTPServer) func(ctx http.Context) error {
-	return func(ctx http.Context) error {
-		var in emptypb.Empty
-		if err := ctx.Bind(&in); err != nil {
-			return err
-		}
-		if err := ctx.BindQuery(&in); err != nil {
-			return err
-		}
-		http.SetOperation(ctx, OperationClusterDestroyCluster)
-		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.DestroyCluster(ctx, req.(*emptypb.Empty))
-		})
-		out, err := h(ctx, &in)
-		if err != nil {
-			return err
-		}
-		reply := out.(*Msg)
-		return ctx.Result(200, reply)
-	}
-}
-
-func _Cluster_SyncConfigCluster0_HTTP_Handler(srv ClusterHTTPServer) func(ctx http.Context) error {
-	return func(ctx http.Context) error {
-		var in emptypb.Empty
-		if err := ctx.Bind(&in); err != nil {
-			return err
-		}
-		if err := ctx.BindQuery(&in); err != nil {
-			return err
-		}
-		http.SetOperation(ctx, OperationClusterSyncConfigCluster)
-		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.SyncConfigCluster(ctx, req.(*emptypb.Empty))
-		})
-		out, err := h(ctx, &in)
-		if err != nil {
-			return err
-		}
-		reply := out.(*Msg)
-		return ctx.Result(200, reply)
-	}
-}
-
-func _Cluster_SaveClusterConfig0_HTTP_Handler(srv ClusterHTTPServer) func(ctx http.Context) error {
-	return func(ctx http.Context) error {
-		var in SaveClusterConfigRequest
-		if err := ctx.Bind(&in); err != nil {
-			return err
-		}
-		if err := ctx.BindQuery(&in); err != nil {
-			return err
-		}
-		http.SetOperation(ctx, OperationClusterSaveClusterConfig)
-		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.SaveClusterConfig(ctx, req.(*SaveClusterConfigRequest))
-		})
-		out, err := h(ctx, &in)
-		if err != nil {
-			return err
-		}
-		reply := out.(*Msg)
-		return ctx.Result(200, reply)
-	}
-}
-
-func _Cluster_GetClusterConfig0_HTTP_Handler(srv ClusterHTTPServer) func(ctx http.Context) error {
-	return func(ctx http.Context) error {
-		var in GetClusterConfigRequest
-		if err := ctx.BindQuery(&in); err != nil {
-			return err
-		}
-		http.SetOperation(ctx, OperationClusterGetClusterConfig)
-		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.GetClusterConfig(ctx, req.(*GetClusterConfigRequest))
-		})
-		out, err := h(ctx, &in)
-		if err != nil {
-			return err
-		}
-		reply := out.(*GetClusterConfigResponse)
-		return ctx.Result(200, reply)
-	}
-}
-
-func _Cluster_GetCluster0_HTTP_Handler(srv ClusterHTTPServer) func(ctx http.Context) error {
+func _ClusterService_Get0_HTTP_Handler(srv ClusterServiceHTTPServer) func(ctx http.Context) error {
 	return func(ctx http.Context) error {
 		var in emptypb.Empty
 		if err := ctx.BindQuery(&in); err != nil {
 			return err
 		}
-		http.SetOperation(ctx, OperationClusterGetCluster)
+		http.SetOperation(ctx, OperationClusterServiceGet)
 		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.GetCluster(ctx, req.(*emptypb.Empty))
+			return srv.Get(ctx, req.(*emptypb.Empty))
 		})
 		out, err := h(ctx, &in)
 		if err != nil {
 			return err
 		}
-		reply := out.(*Servers)
+		reply := out.(*Clusters)
 		return ctx.Result(200, reply)
 	}
 }
 
-func _Cluster_SaveCluster0_HTTP_Handler(srv ClusterHTTPServer) func(ctx http.Context) error {
+func _ClusterService_Save0_HTTP_Handler(srv ClusterServiceHTTPServer) func(ctx http.Context) error {
 	return func(ctx http.Context) error {
-		var in Servers
+		var in Cluster
 		if err := ctx.Bind(&in); err != nil {
 			return err
 		}
 		if err := ctx.BindQuery(&in); err != nil {
 			return err
 		}
-		http.SetOperation(ctx, OperationClusterSaveCluster)
+		http.SetOperation(ctx, OperationClusterServiceSave)
 		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.SaveCluster(ctx, req.(*Servers))
+			return srv.Save(ctx, req.(*Cluster))
 		})
 		out, err := h(ctx, &in)
 		if err != nil {
@@ -203,18 +78,18 @@ func _Cluster_SaveCluster0_HTTP_Handler(srv ClusterHTTPServer) func(ctx http.Con
 	}
 }
 
-func _Cluster_SetClusterAuth0_HTTP_Handler(srv ClusterHTTPServer) func(ctx http.Context) error {
+func _ClusterService_Delete0_HTTP_Handler(srv ClusterServiceHTTPServer) func(ctx http.Context) error {
 	return func(ctx http.Context) error {
-		var in emptypb.Empty
-		if err := ctx.Bind(&in); err != nil {
-			return err
-		}
+		var in ClusterID
 		if err := ctx.BindQuery(&in); err != nil {
 			return err
 		}
-		http.SetOperation(ctx, OperationClusterSetClusterAuth)
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationClusterServiceDelete)
 		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.SetClusterAuth(ctx, req.(*emptypb.Empty))
+			return srv.Delete(ctx, req.(*ClusterID))
 		})
 		out, err := h(ctx, &in)
 		if err != nil {
@@ -225,79 +100,38 @@ func _Cluster_SetClusterAuth0_HTTP_Handler(srv ClusterHTTPServer) func(ctx http.
 	}
 }
 
-func _Cluster_SetUpClusterTool0_HTTP_Handler(srv ClusterHTTPServer) func(ctx http.Context) error {
-	return func(ctx http.Context) error {
-		var in emptypb.Empty
-		if err := ctx.Bind(&in); err != nil {
-			return err
-		}
-		if err := ctx.BindQuery(&in); err != nil {
-			return err
-		}
-		http.SetOperation(ctx, OperationClusterSetUpClusterTool)
-		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.SetUpClusterTool(ctx, req.(*emptypb.Empty))
-		})
-		out, err := h(ctx, &in)
-		if err != nil {
-			return err
-		}
-		reply := out.(*Msg)
-		return ctx.Result(200, reply)
-	}
+type ClusterServiceHTTPClient interface {
+	Delete(ctx context.Context, req *ClusterID, opts ...http.CallOption) (rsp *Msg, err error)
+	Get(ctx context.Context, req *emptypb.Empty, opts ...http.CallOption) (rsp *Clusters, err error)
+	Save(ctx context.Context, req *Cluster, opts ...http.CallOption) (rsp *Msg, err error)
 }
 
-type ClusterHTTPClient interface {
-	DeployCluster(ctx context.Context, req *emptypb.Empty, opts ...http.CallOption) (rsp *Msg, err error)
-	DestroyCluster(ctx context.Context, req *emptypb.Empty, opts ...http.CallOption) (rsp *Msg, err error)
-	GetCluster(ctx context.Context, req *emptypb.Empty, opts ...http.CallOption) (rsp *Servers, err error)
-	GetClusterConfig(ctx context.Context, req *GetClusterConfigRequest, opts ...http.CallOption) (rsp *GetClusterConfigResponse, err error)
-	SaveCluster(ctx context.Context, req *Servers, opts ...http.CallOption) (rsp *Msg, err error)
-	SaveClusterConfig(ctx context.Context, req *SaveClusterConfigRequest, opts ...http.CallOption) (rsp *Msg, err error)
-	SetClusterAuth(ctx context.Context, req *emptypb.Empty, opts ...http.CallOption) (rsp *Msg, err error)
-	SetUpClusterTool(ctx context.Context, req *emptypb.Empty, opts ...http.CallOption) (rsp *Msg, err error)
-	SyncConfigCluster(ctx context.Context, req *emptypb.Empty, opts ...http.CallOption) (rsp *Msg, err error)
-}
-
-type ClusterHTTPClientImpl struct {
+type ClusterServiceHTTPClientImpl struct {
 	cc *http.Client
 }
 
-func NewClusterHTTPClient(client *http.Client) ClusterHTTPClient {
-	return &ClusterHTTPClientImpl{client}
+func NewClusterServiceHTTPClient(client *http.Client) ClusterServiceHTTPClient {
+	return &ClusterServiceHTTPClientImpl{client}
 }
 
-func (c *ClusterHTTPClientImpl) DeployCluster(ctx context.Context, in *emptypb.Empty, opts ...http.CallOption) (*Msg, error) {
+func (c *ClusterServiceHTTPClientImpl) Delete(ctx context.Context, in *ClusterID, opts ...http.CallOption) (*Msg, error) {
 	var out Msg
-	pattern := "/cluster/v1/deploy"
-	path := binding.EncodeURL(pattern, in, false)
-	opts = append(opts, http.Operation(OperationClusterDeployCluster))
+	pattern := "/cluster/v1/delete/{id}"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationClusterServiceDelete))
 	opts = append(opts, http.PathTemplate(pattern))
-	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	err := c.cc.Invoke(ctx, "DELETE", path, nil, &out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return &out, err
 }
 
-func (c *ClusterHTTPClientImpl) DestroyCluster(ctx context.Context, in *emptypb.Empty, opts ...http.CallOption) (*Msg, error) {
-	var out Msg
-	pattern := "/cluster/v1/destroy"
-	path := binding.EncodeURL(pattern, in, false)
-	opts = append(opts, http.Operation(OperationClusterDestroyCluster))
-	opts = append(opts, http.PathTemplate(pattern))
-	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return &out, err
-}
-
-func (c *ClusterHTTPClientImpl) GetCluster(ctx context.Context, in *emptypb.Empty, opts ...http.CallOption) (*Servers, error) {
-	var out Servers
+func (c *ClusterServiceHTTPClientImpl) Get(ctx context.Context, in *emptypb.Empty, opts ...http.CallOption) (*Clusters, error) {
+	var out Clusters
 	pattern := "/cluster/v1/get"
 	path := binding.EncodeURL(pattern, in, true)
-	opts = append(opts, http.Operation(OperationClusterGetCluster))
+	opts = append(opts, http.Operation(OperationClusterServiceGet))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
 	if err != nil {
@@ -306,78 +140,13 @@ func (c *ClusterHTTPClientImpl) GetCluster(ctx context.Context, in *emptypb.Empt
 	return &out, err
 }
 
-func (c *ClusterHTTPClientImpl) GetClusterConfig(ctx context.Context, in *GetClusterConfigRequest, opts ...http.CallOption) (*GetClusterConfigResponse, error) {
-	var out GetClusterConfigResponse
-	pattern := "/cluster/v1/cluster/config"
-	path := binding.EncodeURL(pattern, in, true)
-	opts = append(opts, http.Operation(OperationClusterGetClusterConfig))
-	opts = append(opts, http.PathTemplate(pattern))
-	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return &out, err
-}
-
-func (c *ClusterHTTPClientImpl) SaveCluster(ctx context.Context, in *Servers, opts ...http.CallOption) (*Msg, error) {
+func (c *ClusterServiceHTTPClientImpl) Save(ctx context.Context, in *Cluster, opts ...http.CallOption) (*Msg, error) {
 	var out Msg
 	pattern := "/cluster/v1/save"
 	path := binding.EncodeURL(pattern, in, false)
-	opts = append(opts, http.Operation(OperationClusterSaveCluster))
-	opts = append(opts, http.PathTemplate(pattern))
-	err := c.cc.Invoke(ctx, "PUT", path, in, &out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return &out, err
-}
-
-func (c *ClusterHTTPClientImpl) SaveClusterConfig(ctx context.Context, in *SaveClusterConfigRequest, opts ...http.CallOption) (*Msg, error) {
-	var out Msg
-	pattern := "/cluster/v1/save/cluster/config"
-	path := binding.EncodeURL(pattern, in, false)
-	opts = append(opts, http.Operation(OperationClusterSaveClusterConfig))
-	opts = append(opts, http.PathTemplate(pattern))
-	err := c.cc.Invoke(ctx, "PUT", path, in, &out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return &out, err
-}
-
-func (c *ClusterHTTPClientImpl) SetClusterAuth(ctx context.Context, in *emptypb.Empty, opts ...http.CallOption) (*Msg, error) {
-	var out Msg
-	pattern := "/cluster/v1/set/auth"
-	path := binding.EncodeURL(pattern, in, false)
-	opts = append(opts, http.Operation(OperationClusterSetClusterAuth))
+	opts = append(opts, http.Operation(OperationClusterServiceSave))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return &out, err
-}
-
-func (c *ClusterHTTPClientImpl) SetUpClusterTool(ctx context.Context, in *emptypb.Empty, opts ...http.CallOption) (*Msg, error) {
-	var out Msg
-	pattern := "/cluster/v1/setup/tool"
-	path := binding.EncodeURL(pattern, in, false)
-	opts = append(opts, http.Operation(OperationClusterSetUpClusterTool))
-	opts = append(opts, http.PathTemplate(pattern))
-	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return &out, err
-}
-
-func (c *ClusterHTTPClientImpl) SyncConfigCluster(ctx context.Context, in *emptypb.Empty, opts ...http.CallOption) (*Msg, error) {
-	var out Msg
-	pattern := "/cluster/v1/sync/config"
-	path := binding.EncodeURL(pattern, in, false)
-	opts = append(opts, http.Operation(OperationClusterSyncConfigCluster))
-	opts = append(opts, http.PathTemplate(pattern))
-	err := c.cc.Invoke(ctx, "PUT", path, in, &out, opts...)
 	if err != nil {
 		return nil, err
 	}

@@ -21,23 +21,17 @@ import (
 // go build -ldflags "-X main.Version=x.y.z"
 var (
 	// Name is the name of the compiled software.
-	Name string
+	Name string = "ocean"
 	// Version is the version of the compiled software.
-	Version string
+	Version string = "0.1.0"
 	// flagconf is the config flag.
 	flagconf string
-	// infraPath is the path of the infra.
-	infraPath string
-	// kubeconfig is the path of the kubeconfig.
-	kubeconfig string
 
 	id, _ = os.Hostname()
 )
 
 func init() {
 	flag.StringVar(&flagconf, "conf", "configs", "config path, eg: -conf config.yaml")
-	flag.StringVar(&infraPath, "infra", "cmd/infra", "infra path eg: -infra cmd/infra")
-	flag.StringVar(&kubeconfig, "kubeconfig", "~/.kube/config", "infra path eg: -kubeconfig ~/.kube/config")
 }
 
 func newApp(logger log.Logger, gs *grpc.Server, hs *http.Server) *kratos.App {
@@ -56,9 +50,6 @@ func newApp(logger log.Logger, gs *grpc.Server, hs *http.Server) *kratos.App {
 
 func main() {
 	flag.Parse()
-	os.Setenv("CONFIG_PATH", flagconf)
-	os.Setenv("INFRA_PATH", infraPath)
-	os.Setenv("KUBE_CONFIG", kubeconfig)
 	c := config.New(
 		config.WithSource(
 			file.NewSource(flagconf),
@@ -87,7 +78,7 @@ func main() {
 		"caller", log.DefaultCaller,
 	)
 
-	app, cleanup, err := wireApp(bc.Server, bc.Data, logger)
+	app, cleanup, err := wireApp(&bc.Server, &bc.Data, logger)
 	if err != nil {
 		panic(err)
 	}

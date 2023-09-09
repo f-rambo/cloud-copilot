@@ -4,30 +4,30 @@ package cluster.v1;
 
 option go_package = "api/cluster/v1;v1";
 
-
-message GetClusterConfigRequest {
-  string module = 1;
+message ClusterID {
+  int32 id = 1;
 }
 
-message GetClusterConfigResponse {
-  string data = 1;
+message Clusters {
+  repeated Cluster clusters = 1;
 }
 
-message SaveClusterConfigRequest {
-  string module = 1;
-  string data = 2;
-}
-
-message Servers {
-  string cluster_name = 1;
-  repeated Node nodes = 2;
+message Cluster {
+  int32 id = 1;
+  string cluster_name = 2;
+  string config = 3;
+  string addons = 4;
+  string user = 5;
+  string password = 6;
+  string sudo_password = 7;
+  repeated Node nodes = 8;
+  int32 semaphore_id = 9;
 }
 
 message Node {
-  string host = 1;
-  string name = 2;
-  string user = 3;
-  string password = 4;
-  string sudo_password = 5;
-  repeated string role = 6;
+  int32 id = 1;
+  string host = 2;
+  string name = 3;
+  repeated string role = 4;
+  int32 cluster_id = 5;
 }

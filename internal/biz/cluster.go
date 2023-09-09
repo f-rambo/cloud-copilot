@@ -2,38 +2,95 @@ package biz
 
 import (
 	"context"
-	"time"
 
 	"github.com/go-kratos/kratos/v2/log"
+	"gorm.io/datatypes"
+	"gorm.io/gorm"
 )
 
 type Cluster struct {
-	ClusterName string `yaml:"cluster_name"`
-	Nodes       []Node `yaml:"nodes"`
+	ID              int               `json:"id" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
+	ClusterName     string            `json:"cluster_name" gorm:"column:cluster_name; default:''; NOT NULL"`
+	Nodes           []Node            `json:"nodes" gorm:"-"`
+	Config          datatypes.JSON    `json:"config" gorm:"column:config; type:json"`
+	Addons          datatypes.JSON    `json:"addons" gorm:"column:addons; type:json"`
+	User            string            `json:"user" gorm:"column:user; default:''; NOT NULL"`
+	Password        string            `json:"password" gorm:"column:password; default:''; NOT NULL"`
+	SudoPassword    string            `json:"sudo_password" gorm:"column:sudo_password; default:''; NOT NULL"`
+	SemaphoreID     int               `json:"semaphore_id" gorm:"column:semaphore_id; default:0; NOT NULL"`
+	RootUserKeyID   int               `json:"root_user_key_id" gorm:"column:root_user_key_id; default:0; NOT NULL"`
+	NormalUserKeyID int               `json:"normal_user_key_id" gorm:"column:normal_user_key_id; default:0; NOT NULL"`
+	RepoID          int               `json:"repo_id" gorm:"column:repo_id; default:0; NOT NULL"`
+	EnvID           int               `json:"env_id" gorm:"column:env_id; default:0; NOT NULL"`
+	InventoryID     int               `json:"inventory_id" gorm:"column:inventory_id; default:0; NOT NULL"`
+	TemplateIDs     datatypes.JSONMap `json:"template_ids" gorm:"column:template_ids; type:json"`
+	gorm.Model
 }
 
 type Node struct {
-	Name         string   `yaml:"name"`
-	Host         string   `yaml:"host"`
-	User         string   `yaml:"user"`
-	Password     string   `yaml:"password"`
-	SudoPassword string   `yaml:"sudo_password"`
-	Role         []string `yaml:"role"`
+	ID        int      `json:"id" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
+	Name      string   `json:"name" gorm:"column:name; default:''; NOT NULL"`
+	Host      string   `json:"host" gorm:"column:host; default:''; NOT NULL"`
+	Role      []string `json:"role" gorm:"-"`                                            // master worker edge
+	RoleJson  string   `json:"role_json" gorm:"column:role; default:''; NOT NULL"`       // gorm redundancy
+	ClusterID int      `json:"cluster_id" gorm:"column:cluster_id; default:0; NOT NULL"` // gorm redundancy
+	gorm.Model
+}
+
+func (c *Cluster) SetSemaphoreID(id int) {
+	c.SemaphoreID = id
+}
+
+func (c *Cluster) SetRootUserKeyID(id int) {
+	c.RootUserKeyID = id
+}
+
+func (c *Cluster) SetNormalUserKeyID(id int) {
+	c.NormalUserKeyID = id
+}
+
+func (c *Cluster) SetRepoID(id int) {
+	c.RepoID = id
+}
+
+func (c *Cluster) SetEnvID(id int) {
+	c.EnvID = id
+}
+
+func (c *Cluster) SetInventoryID(id int) {
+	c.InventoryID = id
+}
+
+func (c *Cluster) SetTemplateIDs(key string, val interface{}) {
+	if c.TemplateIDs == nil {
+		c.TemplateIDs = make(datatypes.JSONMap)
+	}
+	c.TemplateIDs[key] = val
+}
+
+func (c *Cluster) Merge(cluster *Cluster) {
+	c.ClusterName = cluster.ClusterName
+	c.SemaphoreID = cluster.SemaphoreID
+	c.RootUserKeyID = cluster.RootUserKeyID
+	c.NormalUserKeyID = cluster.NormalUserKeyID
+	c.RepoID = cluster.RepoID
+	c.EnvID = cluster.EnvID
+	c.InventoryID = cluster.InventoryID
+	c.TemplateIDs = cluster.TemplateIDs
+	c.CreatedAt = cluster.CreatedAt
 }
 
 type ClusterRepo interface {
-	SaveCluster(context.Context, *Cluster) error
-	GetCluster(context.Context) (*Cluster, error)
-	SetUpClusterTool(context.Context, *Cluster) error
-	DeployCluster(context.Context, *Cluster) error
-	SetClusterAuth(context.Context, *Cluster) error
-	SyncConfigCluster(context.Context) error
-	DestroyCluster(context.Context, *Cluster) error
-	AddNodes(context.Context, *Cluster) error
-	RemoveNodes(context.Context, []string) error
-	ClusterDataWatch(func(*Cluster, *Cluster) error) error
-	GetClusterConfig(context.Context, *Cluster, string) ([]byte, error)
-	SaveClusterConfig(context.Context, *Cluster, string, []byte) error
+	SaveCluster(ctx context.Context, cluster *Cluster) error
+	GetClusters(ctx context.Context) ([]*Cluster, error)
+	GetCluster(ctx context.Context, id int) (*Cluster, error)
+	DeleteCluster(ctx context.Context, cluster *Cluster) error
+	ClusterInit(ctx context.Context, cluster *Cluster) error
+	DeployCluster(ctx context.Context, cluster *Cluster) error
+	UndeployCluster(ctx context.Context, cluster *Cluster) error
+	AddNode(ctx context.Context, cluster *Cluster) error
+	RemoveNode(ctx context.Context, cluster *Cluster, nodes []*Node) error
+	GetDefaultCluster(ctx context.Context) (*Cluster, error)
 }
 
 type ClusterUsecase struct {
@@ -42,145 +99,107 @@ type ClusterUsecase struct {
 }
 
 func NewClusterUseCase(repo ClusterRepo, logger log.Logger) *ClusterUsecase {
-	cluster := &ClusterUsecase{repo: repo, log: log.NewHelper(logger)}
-	go func() {
-		for {
-			err := cluster.repo.ClusterDataWatch(cluster.SupervisoryControl)
-			if err != nil {
-				cluster.log.Errorf("supervisory control failed: %v", err)
-			}
-			time.Sleep(time.Duration(10) * time.Second)
-		}
-	}()
-	return cluster
+	return &ClusterUsecase{repo: repo, log: log.NewHelper(logger)}
 }
 
-func (c *ClusterUsecase) SupervisoryControl(old, new *Cluster) error {
-	ctx := context.Background()
-	if old == nil || new == nil {
-		return nil
-	}
-	addNodes := make([]string, 0)
-	rmNodes := make([]string, 0)
-	for _, newnode := range new.Nodes {
-		isExist := false
-		for _, oldnode := range old.Nodes {
-			if newnode.Name == oldnode.Name {
-				isExist = true
-				break
-			}
-		}
-		if !isExist {
-			addNodes = append(addNodes, newnode.Name)
-		}
-	}
-	for _, oldnode := range old.Nodes {
-		isExist := false
-		for _, newnode := range new.Nodes {
-			if oldnode.Name == newnode.Name {
-				isExist = true
-				break
-			}
-		}
-		if !isExist {
-			rmNodes = append(rmNodes, oldnode.Name)
-		}
-	}
-	if len(rmNodes) > 0 {
-		err := c.removeNodes(ctx, rmNodes)
-		if err != nil {
-			c.log.Errorf("remove nodes failed: %v", err)
-		}
-	}
-	if len(addNodes) > 0 {
-		err := c.addNodes(ctx)
-		if err != nil {
-			c.log.Errorf("add nodes failed: %v", err)
-		}
-	}
-	return nil
-}
-
-func (c *ClusterUsecase) addNodes(ctx context.Context) error {
-	clusterData, err := c.repo.GetCluster(ctx)
-	if err != nil {
-		return nil
-	}
-	return c.repo.AddNodes(ctx, clusterData)
-}
-
-func (c *ClusterUsecase) removeNodes(ctx context.Context, nodes []string) error {
-	return c.repo.RemoveNodes(ctx, nodes)
-}
-
-func (c *ClusterUsecase) SaveCluster(ctx context.Context, cluster *Cluster) error {
-	return c.repo.SaveCluster(ctx, cluster)
-}
-
-func (c *ClusterUsecase) GetCluster(ctx context.Context) (*Cluster, error) {
-	return c.repo.GetCluster(ctx)
-}
-
-func (c *ClusterUsecase) SyncConfigCluster(ctx context.Context) error {
-	return c.repo.SyncConfigCluster(ctx)
-}
-
-func (c *ClusterUsecase) SetClusterAuth(ctx context.Context) error {
-	clusterData, err := c.repo.GetCluster(ctx)
-	if err != nil {
-		return nil
-	}
-	return c.repo.SetClusterAuth(ctx, clusterData)
-}
-
-func (c *ClusterUsecase) SetUpClusterTool(ctx context.Context) error {
-	clusterData, err := c.repo.GetCluster(ctx)
-	if err != nil {
-		return nil
-	}
-	return c.repo.SetUpClusterTool(ctx, clusterData)
-}
-
-func (c *ClusterUsecase) DeployCluster(ctx context.Context) error {
-	clusterData, err := c.repo.GetCluster(ctx)
-	if err != nil {
-		return nil
-	}
-	go func() {
-		err = c.repo.DeployCluster(ctx, clusterData)
-		if err != nil {
-			c.log.Errorf("deploy cluster failed: %v", err)
-		}
-	}()
-	return nil
-}
-
-func (c *ClusterUsecase) DestroyCluster(ctx context.Context) error {
-	clusterData, err := c.repo.GetCluster(ctx)
-	if err != nil {
-		return nil
-	}
-	go func() {
-		err = c.repo.DestroyCluster(ctx, clusterData)
-		if err != nil {
-			c.log.Errorf("destroy cluster failed: %v", err)
-		}
-	}()
-	return nil
-}
-
-func (c *ClusterUsecase) GetClusterConfig(ctx context.Context, module string) ([]byte, error) {
-	cluster, err := c.GetCluster(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return c.repo.GetClusterConfig(ctx, cluster, module)
-}
-
-func (c *ClusterUsecase) SaveClusterConfig(ctx context.Context, module string, data []byte) error {
-	cluster, err := c.GetCluster(ctx)
+func (c *ClusterUsecase) Save(ctx context.Context, cluster *Cluster) error {
+	historyCluster, err := c.repo.GetCluster(ctx, cluster.ID)
 	if err != nil {
 		return err
 	}
-	return c.repo.SaveClusterConfig(ctx, cluster, module, data)
+	if historyCluster == nil {
+		err := c.repo.SaveCluster(ctx, cluster)
+		if err != nil {
+			return err
+		}
+		return nil
+		err = c.repo.ClusterInit(ctx, cluster)
+		if err != nil {
+			return err
+		}
+		return c.repo.DeployCluster(ctx, cluster)
+	}
+	cluster.Merge(historyCluster)
+	addNode, removeNode := c.getAddRemoveNode(historyCluster.Nodes, cluster.Nodes)
+	if len(removeNode) != 0 {
+		err = c.repo.RemoveNode(ctx, cluster, removeNode)
+		if err != nil {
+			return err
+		}
+	}
+	err = c.repo.SaveCluster(ctx, cluster)
+	if err != nil {
+		return err
+	}
+	return nil
+	if len(addNode) != 0 {
+		// 新节点初始化
+		err = c.repo.ClusterInit(ctx, cluster)
+		if err != nil {
+			return err
+		}
+		err = c.repo.AddNode(ctx, cluster)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (c *ClusterUsecase) Get(ctx context.Context) ([]*Cluster, error) {
+	clusters, err := c.repo.GetClusters(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if len(clusters) != 0 {
+		return clusters, nil
+	}
+	// 默认数据
+	clsuter, err := c.repo.GetDefaultCluster(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return []*Cluster{clsuter}, nil
+}
+
+func (c *ClusterUsecase) Delete(ctx context.Context, clusterID int) error {
+	cluster, err := c.repo.GetCluster(ctx, clusterID)
+	if err != nil {
+		return err
+	}
+	err = c.repo.UndeployCluster(ctx, cluster)
+	if err != nil {
+		return err
+	}
+	return c.repo.DeleteCluster(ctx, cluster)
+}
+
+func (c *ClusterUsecase) getAddRemoveNode(historyNode, nowNode []Node) ([]*Node, []*Node) {
+	addNode := make([]*Node, 0)
+	removeNode := make([]*Node, 0)
+	for _, node := range nowNode {
+		nodeExist := false
+		for _, historyNode := range historyNode {
+			if node.ID == historyNode.ID {
+				nodeExist = true
+				break
+			}
+		}
+		if !nodeExist {
+			addNode = append(addNode, &node)
+		}
+	}
+	for _, historyNode := range historyNode {
+		nodeExist := false
+		for _, node := range nowNode {
+			if node.ID == historyNode.ID {
+				nodeExist = true
+				break
+			}
+		}
+		if !nodeExist {
+			removeNode = append(removeNode, &historyNode)
+		}
+	}
+	return addNode, removeNode
 }

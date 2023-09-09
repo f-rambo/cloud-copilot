@@ -3,7 +3,9 @@ package data
 import (
 	"context"
 	"fmt"
+	"ocean/internal/biz"
 	"ocean/internal/conf"
+	"ocean/internal/data/restapi"
 	"time"
 
 	bigcache "github.com/allegro/bigcache/v3"
@@ -11,6 +13,7 @@ import (
 	"github.com/go-redis/redis"
 	"github.com/google/wire"
 	"gorm.io/driver/mysql"
+	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -18,7 +21,7 @@ import (
 )
 
 // ProviderSet is data providers.
-var ProviderSet = wire.NewSet(NewData, NewGreeterRepo, NewInfraRepo, NewClusterRepo, NewAppRepo)
+var ProviderSet = wire.NewSet(NewData, NewGreeterRepo, NewClusterRepo, NewAppRepo)
 
 type Data struct {
 	c           *conf.Data
@@ -27,9 +30,11 @@ type Data struct {
 	db          *gorm.DB
 	redisClient *redis.Client
 	localCache  *bigcache.BigCache
+	semaphore   *restapi.Semaphore
 }
 
 func NewData(c *conf.Data, logger log.Logger) (*Data, func(), error) {
+	var err error
 	data := &Data{
 		c:      c,
 		logger: logger,
@@ -38,44 +43,91 @@ func NewData(c *conf.Data, logger log.Logger) (*Data, func(), error) {
 		data.redisClient.Close()
 		log.NewHelper(logger).Info("closing the data resources")
 	}
-	data.getK8sClient()
-	data.getTiDBClient()
-	data.getLocalCache()
+	data.k8sClient, err = NewKubernetes(c.Kubernetes)
+	if err != nil {
+		log.NewHelper(logger).Info("kubernetes client error, check whether the cluster has been deployed. If the cluster is not deployed, ignore this error")
+	}
+	data.db, err = NewDB(c.Database)
+	if err != nil {
+		return nil, cleanup, err
+	}
+	data.redisClient, err = NewRedis(c.Redis)
+	if err != nil {
+		return nil, cleanup, err
+	}
+	data.localCache, err = NewCache()
+	if err != nil {
+		return nil, cleanup, err
+	}
+	data.semaphore, err = restapi.NewSemaphore(c.Semaphore)
+	if err != nil {
+		return nil, cleanup, err
+	}
 	return data, cleanup, nil
 }
 
 // 获取数据库连接客户端
-func (d *Data) getTiDBClient() {
-	// 配置数据库客户端
-	dns := fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=utf8mb4&parseTime=True&loc=Local",
-		d.c.Database.Username, d.c.Database.Password, d.c.Database.Addr, d.c.Database.Database)
-	// 创建 GORM 实例
-	d.db, _ = gorm.Open(mysql.Open(dns), &gorm.Config{})
+func NewDB(c conf.Database) (*gorm.DB, error) {
+	var client *gorm.DB
+	var err error
+	if c.GetDriver() == "mysql" {
+		dns := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8&parseTime=True&loc=Local",
+			c.GetUsername(), c.GetPassword(), c.GetHost(), c.GetPort(), c.GetDatabase())
+		client, err = gorm.Open(mysql.Open(dns), &gorm.Config{})
+		if err != nil {
+			return client, err
+		}
+	}
+	if c.GetDriver() == "postgres" {
+		dns := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%d sslmode=disable TimeZone=Asia/Shanghai",
+			c.GetHost(), c.GetUsername(), c.GetPassword(), c.GetDatabase(), c.GetPort())
+		client, err = gorm.Open(postgres.Open(dns), &gorm.Config{})
+		if err != nil {
+			return client, err
+		}
+	}
+	// AutoMigrate
+	err = client.Set("gorm:table_options", "ENGINE=InnoDB DEFAULT CHARSET=utf8").
+		AutoMigrate(&biz.Cluster{}, &biz.Node{}, &biz.App{})
+	if err != nil {
+		return client, err
+	}
+	return client, nil
 }
 
-// 获取k8s客户端
-func (d *Data) getK8sClient() {
-	cfg, err := clientcmd.BuildConfigFromFlags("", clientcmd.RecommendedHomeFile)
+// 获取k8s客户端 todo kubeconfig path masterurl
+func NewKubernetes(c conf.Kubernetes) (*kubernetes.Clientset, error) {
+	kubeconfig := c.GetKubeConfig()
+	if kubeconfig == "" {
+		kubeconfig = clientcmd.RecommendedHomeFile
+	}
+	cfg, err := clientcmd.BuildConfigFromFlags(c.GetMasterUrl(), kubeconfig)
 	if err != nil {
 		// 集群内连接
 		cfg, err = rest.InClusterConfig()
 		if err != nil {
-			return
+			return nil, err
 		}
 	}
-	// 连接k8s
-	d.k8sClient, _ = kubernetes.NewForConfig(cfg)
+	// 连接kubernetes
+	return kubernetes.NewForConfig(cfg)
 }
 
 // 获取Redis客户端
-func (d *Data) getRedisClient() {
-	d.redisClient = redis.NewClient(&redis.Options{
-		Addr:     d.c.Redis.Addr,
-		Password: d.c.Redis.Password,
+func NewRedis(c conf.Redis) (*redis.Client, error) {
+	client := redis.NewClient(&redis.Options{
+		Addr:     fmt.Sprintf("%s:%d", c.Host, c.Port),
+		Password: c.Password,
+		DB:       int(c.Db),
 	})
+	_, err := client.Ping().Result()
+	if err != nil {
+		return nil, err
+	}
+	return client, nil
 }
 
 // 获取本地缓存
-func (d *Data) getLocalCache() {
-	d.localCache, _ = bigcache.New(context.TODO(), bigcache.DefaultConfig(10*time.Hour))
+func NewCache() (*bigcache.BigCache, error) {
+	return bigcache.New(context.TODO(), bigcache.DefaultConfig(time.Hour))
 }

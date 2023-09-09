@@ -9,65 +9,23 @@ import "api/cluster/v1/message.proto";
 
 option go_package = "api/cluster/v1;v1";
 
-service Cluster {
-  rpc DeployCluster(google.protobuf.Empty) returns (cluster.v1.Msg) {
-    option (google.api.http) = {
-      post: "/cluster/v1/deploy"
-      body: "*"
-    };
-  }
-
-  rpc DestroyCluster(google.protobuf.Empty) returns (cluster.v1.Msg) {
-    option (google.api.http) = {
-      post: "/cluster/v1/destroy"
-      body: "*"
-    };
-  }
-
-  rpc SyncConfigCluster(google.protobuf.Empty) returns (cluster.v1.Msg) {
-    option (google.api.http) = {
-      put: "/cluster/v1/sync/config"
-      body: "*"
-    };
-  }
-  
-  rpc SaveClusterConfig(cluster.v1.SaveClusterConfigRequest) returns (cluster.v1.Msg) {
-    option (google.api.http) = {
-      put: "/cluster/v1/save/cluster/config"
-      body: "*"
-    };
-  }
-
-  rpc GetClusterConfig(cluster.v1.GetClusterConfigRequest) returns (cluster.v1.GetClusterConfigResponse) {
-    option (google.api.http) = {
-      get: "/cluster/v1/cluster/config"
-    };
-  }
-
-  rpc GetCluster(google.protobuf.Empty) returns (cluster.v1.Servers) {
+service ClusterService {
+  rpc Get(google.protobuf.Empty) returns (cluster.v1.Clusters) {
     option (google.api.http) = {
       get: "/cluster/v1/get"
     };
   }
 
-  rpc SaveCluster(cluster.v1.Servers) returns (cluster.v1.Msg) {
+  rpc Save(cluster.v1.Cluster) returns (cluster.v1.Msg) {
     option (google.api.http) = {
-      put: "/cluster/v1/save"
+      post: "/cluster/v1/save"
       body: "*"
     };
   }
 
-  rpc SetClusterAuth(google.protobuf.Empty) returns (cluster.v1.Msg) {
-      option (google.api.http) = {
-        post: "/cluster/v1/set/auth"
-        body: "*"
-      };
-  }
-
-  rpc SetUpClusterTool(google.protobuf.Empty) returns (cluster.v1.Msg) {
+  rpc Delete(cluster.v1.ClusterID) returns (cluster.v1.Msg) {
     option (google.api.http) = {
-      post: "/cluster/v1/setup/tool"
-      body: "*"
+      delete: "/cluster/v1/delete/{id}"
     };
   }
 

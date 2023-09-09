@@ -39,9 +39,6 @@ func (a *appRepo) GetApps(ctx context.Context) ([]*biz.App, error) {
 
 func (a *appRepo) SaveApp(ctx context.Context, app *biz.App) error {
 	// 设置ID
-	if app.ID == "" {
-		app.ID = getUUID()
-	}
 	if a.data.db == nil {
 		return a.saveAppToYamlFile(ctx, app)
 	}
@@ -83,7 +80,7 @@ func (a *appRepo) saveAppToDB(ctx context.Context, app *biz.App) error {
 	return nil
 }
 
-func (a *appRepo) GetAppById(ctx context.Context, appId string) (*biz.App, error) {
+func (a *appRepo) GetAppById(ctx context.Context, appId int) (*biz.App, error) {
 	apps, err := a.GetApps(ctx)
 	if err != nil {
 		return nil, err

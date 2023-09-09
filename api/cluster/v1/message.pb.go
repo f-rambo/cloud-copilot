@@ -20,16 +20,16 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type GetClusterConfigRequest struct {
+type ClusterID struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Module string `protobuf:"bytes,1,opt,name=module,proto3" json:"module,omitempty"`
+	Id int32 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
 }
 
-func (x *GetClusterConfigRequest) Reset() {
-	*x = GetClusterConfigRequest{}
+func (x *ClusterID) Reset() {
+	*x = ClusterID{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_api_cluster_v1_message_proto_msgTypes[0]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -37,13 +37,13 @@ func (x *GetClusterConfigRequest) Reset() {
 	}
 }
 
-func (x *GetClusterConfigRequest) String() string {
+func (x *ClusterID) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*GetClusterConfigRequest) ProtoMessage() {}
+func (*ClusterID) ProtoMessage() {}
 
-func (x *GetClusterConfigRequest) ProtoReflect() protoreflect.Message {
+func (x *ClusterID) ProtoReflect() protoreflect.Message {
 	mi := &file_api_cluster_v1_message_proto_msgTypes[0]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -55,28 +55,28 @@ func (x *GetClusterConfigRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use GetClusterConfigRequest.ProtoReflect.Descriptor instead.
-func (*GetClusterConfigRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use ClusterID.ProtoReflect.Descriptor instead.
+func (*ClusterID) Descriptor() ([]byte, []int) {
 	return file_api_cluster_v1_message_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *GetClusterConfigRequest) GetModule() string {
+func (x *ClusterID) GetId() int32 {
 	if x != nil {
-		return x.Module
+		return x.Id
 	}
-	return ""
+	return 0
 }
 
-type GetClusterConfigResponse struct {
+type Clusters struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Data string `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"`
+	Clusters []*Cluster `protobuf:"bytes,1,rep,name=clusters,proto3" json:"clusters,omitempty"`
 }
 
-func (x *GetClusterConfigResponse) Reset() {
-	*x = GetClusterConfigResponse{}
+func (x *Clusters) Reset() {
+	*x = Clusters{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_api_cluster_v1_message_proto_msgTypes[1]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -84,13 +84,13 @@ func (x *GetClusterConfigResponse) Reset() {
 	}
 }
 
-func (x *GetClusterConfigResponse) String() string {
+func (x *Clusters) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*GetClusterConfigResponse) ProtoMessage() {}
+func (*Clusters) ProtoMessage() {}
 
-func (x *GetClusterConfigResponse) ProtoReflect() protoreflect.Message {
+func (x *Clusters) ProtoReflect() protoreflect.Message {
 	mi := &file_api_cluster_v1_message_proto_msgTypes[1]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -102,29 +102,36 @@ func (x *GetClusterConfigResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use GetClusterConfigResponse.ProtoReflect.Descriptor instead.
-func (*GetClusterConfigResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use Clusters.ProtoReflect.Descriptor instead.
+func (*Clusters) Descriptor() ([]byte, []int) {
 	return file_api_cluster_v1_message_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *GetClusterConfigResponse) GetData() string {
+func (x *Clusters) GetClusters() []*Cluster {
 	if x != nil {
-		return x.Data
+		return x.Clusters
 	}
-	return ""
+	return nil
 }
 
-type SaveClusterConfigRequest struct {
+type Cluster struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Module string `protobuf:"bytes,1,opt,name=module,proto3" json:"module,omitempty"`
-	Data   string `protobuf:"bytes,2,opt,name=data,proto3" json:"data,omitempty"`
+	Id           int32   `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	ClusterName  string  `protobuf:"bytes,2,opt,name=cluster_name,json=clusterName,proto3" json:"cluster_name,omitempty"`
+	Config       string  `protobuf:"bytes,3,opt,name=config,proto3" json:"config,omitempty"`
+	Addons       string  `protobuf:"bytes,4,opt,name=addons,proto3" json:"addons,omitempty"`
+	User         string  `protobuf:"bytes,5,opt,name=user,proto3" json:"user,omitempty"`
+	Password     string  `protobuf:"bytes,6,opt,name=password,proto3" json:"password,omitempty"`
+	SudoPassword string  `protobuf:"bytes,7,opt,name=sudo_password,json=sudoPassword,proto3" json:"sudo_password,omitempty"`
+	Nodes        []*Node `protobuf:"bytes,8,rep,name=nodes,proto3" json:"nodes,omitempty"`
+	SemaphoreId  int32   `protobuf:"varint,9,opt,name=semaphore_id,json=semaphoreId,proto3" json:"semaphore_id,omitempty"`
 }
 
-func (x *SaveClusterConfigRequest) Reset() {
-	*x = SaveClusterConfigRequest{}
+func (x *Cluster) Reset() {
+	*x = Cluster{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_api_cluster_v1_message_proto_msgTypes[2]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -132,13 +139,13 @@ func (x *SaveClusterConfigRequest) Reset() {
 	}
 }
 
-func (x *SaveClusterConfigRequest) String() string {
+func (x *Cluster) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*SaveClusterConfigRequest) ProtoMessage() {}
+func (*Cluster) ProtoMessage() {}
 
-func (x *SaveClusterConfigRequest) ProtoReflect() protoreflect.Message {
+func (x *Cluster) ProtoReflect() protoreflect.Message {
 	mi := &file_api_cluster_v1_message_proto_msgTypes[2]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -150,78 +157,72 @@ func (x *SaveClusterConfigRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use SaveClusterConfigRequest.ProtoReflect.Descriptor instead.
-func (*SaveClusterConfigRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use Cluster.ProtoReflect.Descriptor instead.
+func (*Cluster) Descriptor() ([]byte, []int) {
 	return file_api_cluster_v1_message_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *SaveClusterConfigRequest) GetModule() string {
+func (x *Cluster) GetId() int32 {
 	if x != nil {
-		return x.Module
+		return x.Id
 	}
-	return ""
+	return 0
 }
 
-func (x *SaveClusterConfigRequest) GetData() string {
-	if x != nil {
-		return x.Data
-	}
-	return ""
-}
-
-type Servers struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	ClusterName string  `protobuf:"bytes,1,opt,name=cluster_name,json=clusterName,proto3" json:"cluster_name,omitempty"`
-	Nodes       []*Node `protobuf:"bytes,2,rep,name=nodes,proto3" json:"nodes,omitempty"`
-}
-
-func (x *Servers) Reset() {
-	*x = Servers{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_api_cluster_v1_message_proto_msgTypes[3]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *Servers) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*Servers) ProtoMessage() {}
-
-func (x *Servers) ProtoReflect() protoreflect.Message {
-	mi := &file_api_cluster_v1_message_proto_msgTypes[3]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use Servers.ProtoReflect.Descriptor instead.
-func (*Servers) Descriptor() ([]byte, []int) {
-	return file_api_cluster_v1_message_proto_rawDescGZIP(), []int{3}
-}
-
-func (x *Servers) GetClusterName() string {
+func (x *Cluster) GetClusterName() string {
 	if x != nil {
 		return x.ClusterName
 	}
 	return ""
 }
 
-func (x *Servers) GetNodes() []*Node {
+func (x *Cluster) GetConfig() string {
+	if x != nil {
+		return x.Config
+	}
+	return ""
+}
+
+func (x *Cluster) GetAddons() string {
+	if x != nil {
+		return x.Addons
+	}
+	return ""
+}
+
+func (x *Cluster) GetUser() string {
+	if x != nil {
+		return x.User
+	}
+	return ""
+}
+
+func (x *Cluster) GetPassword() string {
+	if x != nil {
+		return x.Password
+	}
+	return ""
+}
+
+func (x *Cluster) GetSudoPassword() string {
+	if x != nil {
+		return x.SudoPassword
+	}
+	return ""
+}
+
+func (x *Cluster) GetNodes() []*Node {
 	if x != nil {
 		return x.Nodes
 	}
 	return nil
+}
+
+func (x *Cluster) GetSemaphoreId() int32 {
+	if x != nil {
+		return x.SemaphoreId
+	}
+	return 0
 }
 
 type Node struct {
@@ -229,18 +230,17 @@ type Node struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Host         string   `protobuf:"bytes,1,opt,name=host,proto3" json:"host,omitempty"`
-	Name         string   `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	User         string   `protobuf:"bytes,3,opt,name=user,proto3" json:"user,omitempty"`
-	Password     string   `protobuf:"bytes,4,opt,name=password,proto3" json:"password,omitempty"`
-	SudoPassword string   `protobuf:"bytes,5,opt,name=sudo_password,json=sudoPassword,proto3" json:"sudo_password,omitempty"`
-	Role         []string `protobuf:"bytes,6,rep,name=role,proto3" json:"role,omitempty"`
+	Id        int32    `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	Host      string   `protobuf:"bytes,2,opt,name=host,proto3" json:"host,omitempty"`
+	Name      string   `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
+	Role      []string `protobuf:"bytes,4,rep,name=role,proto3" json:"role,omitempty"`
+	ClusterId int32    `protobuf:"varint,5,opt,name=cluster_id,json=clusterId,proto3" json:"cluster_id,omitempty"`
 }
 
 func (x *Node) Reset() {
 	*x = Node{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_api_cluster_v1_message_proto_msgTypes[4]
+		mi := &file_api_cluster_v1_message_proto_msgTypes[3]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -253,7 +253,7 @@ func (x *Node) String() string {
 func (*Node) ProtoMessage() {}
 
 func (x *Node) ProtoReflect() protoreflect.Message {
-	mi := &file_api_cluster_v1_message_proto_msgTypes[4]
+	mi := &file_api_cluster_v1_message_proto_msgTypes[3]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -266,7 +266,14 @@ func (x *Node) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Node.ProtoReflect.Descriptor instead.
 func (*Node) Descriptor() ([]byte, []int) {
-	return file_api_cluster_v1_message_proto_rawDescGZIP(), []int{4}
+	return file_api_cluster_v1_message_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *Node) GetId() int32 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
 }
 
 func (x *Node) GetHost() string {
@@ -283,27 +290,6 @@ func (x *Node) GetName() string {
 	return ""
 }
 
-func (x *Node) GetUser() string {
-	if x != nil {
-		return x.User
-	}
-	return ""
-}
-
-func (x *Node) GetPassword() string {
-	if x != nil {
-		return x.Password
-	}
-	return ""
-}
-
-func (x *Node) GetSudoPassword() string {
-	if x != nil {
-		return x.SudoPassword
-	}
-	return ""
-}
-
 func (x *Node) GetRole() []string {
 	if x != nil {
 		return x.Role
@@ -311,40 +297,51 @@ func (x *Node) GetRole() []string {
 	return nil
 }
 
+func (x *Node) GetClusterId() int32 {
+	if x != nil {
+		return x.ClusterId
+	}
+	return 0
+}
+
 var File_api_cluster_v1_message_proto protoreflect.FileDescriptor
 
 var file_api_cluster_v1_message_proto_rawDesc = []byte{
 	0x0a, 0x1c, 0x61, 0x70, 0x69, 0x2f, 0x63, 0x6c, 0x75, 0x73, 0x74, 0x65, 0x72, 0x2f, 0x76, 0x31,
 	0x2f, 0x6d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x12, 0x0a,
-	0x63, 0x6c, 0x75, 0x73, 0x74, 0x65, 0x72, 0x2e, 0x76, 0x31, 0x22, 0x31, 0x0a, 0x17, 0x47, 0x65,
-	0x74, 0x43, 0x6c, 0x75, 0x73, 0x74, 0x65, 0x72, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x52, 0x65,
-	0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x16, 0x0a, 0x06, 0x6d, 0x6f, 0x64, 0x75, 0x6c, 0x65, 0x18,
-	0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x06, 0x6d, 0x6f, 0x64, 0x75, 0x6c, 0x65, 0x22, 0x2e, 0x0a,
-	0x18, 0x47, 0x65, 0x74, 0x43, 0x6c, 0x75, 0x73, 0x74, 0x65, 0x72, 0x43, 0x6f, 0x6e, 0x66, 0x69,
-	0x67, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x12, 0x0a, 0x04, 0x64, 0x61, 0x74,
-	0x61, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x64, 0x61, 0x74, 0x61, 0x22, 0x46, 0x0a,
-	0x18, 0x53, 0x61, 0x76, 0x65, 0x43, 0x6c, 0x75, 0x73, 0x74, 0x65, 0x72, 0x43, 0x6f, 0x6e, 0x66,
-	0x69, 0x67, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x16, 0x0a, 0x06, 0x6d, 0x6f, 0x64,
-	0x75, 0x6c, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x06, 0x6d, 0x6f, 0x64, 0x75, 0x6c,
-	0x65, 0x12, 0x12, 0x0a, 0x04, 0x64, 0x61, 0x74, 0x61, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52,
-	0x04, 0x64, 0x61, 0x74, 0x61, 0x22, 0x54, 0x0a, 0x07, 0x53, 0x65, 0x72, 0x76, 0x65, 0x72, 0x73,
+	0x63, 0x6c, 0x75, 0x73, 0x74, 0x65, 0x72, 0x2e, 0x76, 0x31, 0x22, 0x1b, 0x0a, 0x09, 0x43, 0x6c,
+	0x75, 0x73, 0x74, 0x65, 0x72, 0x49, 0x44, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18, 0x01, 0x20,
+	0x01, 0x28, 0x05, 0x52, 0x02, 0x69, 0x64, 0x22, 0x3b, 0x0a, 0x08, 0x43, 0x6c, 0x75, 0x73, 0x74,
+	0x65, 0x72, 0x73, 0x12, 0x2f, 0x0a, 0x08, 0x63, 0x6c, 0x75, 0x73, 0x74, 0x65, 0x72, 0x73, 0x18,
+	0x01, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x13, 0x2e, 0x63, 0x6c, 0x75, 0x73, 0x74, 0x65, 0x72, 0x2e,
+	0x76, 0x31, 0x2e, 0x43, 0x6c, 0x75, 0x73, 0x74, 0x65, 0x72, 0x52, 0x08, 0x63, 0x6c, 0x75, 0x73,
+	0x74, 0x65, 0x72, 0x73, 0x22, 0x8c, 0x02, 0x0a, 0x07, 0x43, 0x6c, 0x75, 0x73, 0x74, 0x65, 0x72,
+	0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x05, 0x52, 0x02, 0x69, 0x64,
 	0x12, 0x21, 0x0a, 0x0c, 0x63, 0x6c, 0x75, 0x73, 0x74, 0x65, 0x72, 0x5f, 0x6e, 0x61, 0x6d, 0x65,
-	0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0b, 0x63, 0x6c, 0x75, 0x73, 0x74, 0x65, 0x72, 0x4e,
-	0x61, 0x6d, 0x65, 0x12, 0x26, 0x0a, 0x05, 0x6e, 0x6f, 0x64, 0x65, 0x73, 0x18, 0x02, 0x20, 0x03,
-	0x28, 0x0b, 0x32, 0x10, 0x2e, 0x63, 0x6c, 0x75, 0x73, 0x74, 0x65, 0x72, 0x2e, 0x76, 0x31, 0x2e,
-	0x4e, 0x6f, 0x64, 0x65, 0x52, 0x05, 0x6e, 0x6f, 0x64, 0x65, 0x73, 0x22, 0x97, 0x01, 0x0a, 0x04,
-	0x4e, 0x6f, 0x64, 0x65, 0x12, 0x12, 0x0a, 0x04, 0x68, 0x6f, 0x73, 0x74, 0x18, 0x01, 0x20, 0x01,
-	0x28, 0x09, 0x52, 0x04, 0x68, 0x6f, 0x73, 0x74, 0x12, 0x12, 0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65,
-	0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x12, 0x12, 0x0a, 0x04,
-	0x75, 0x73, 0x65, 0x72, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x75, 0x73, 0x65, 0x72,
-	0x12, 0x1a, 0x0a, 0x08, 0x70, 0x61, 0x73, 0x73, 0x77, 0x6f, 0x72, 0x64, 0x18, 0x04, 0x20, 0x01,
-	0x28, 0x09, 0x52, 0x08, 0x70, 0x61, 0x73, 0x73, 0x77, 0x6f, 0x72, 0x64, 0x12, 0x23, 0x0a, 0x0d,
-	0x73, 0x75, 0x64, 0x6f, 0x5f, 0x70, 0x61, 0x73, 0x73, 0x77, 0x6f, 0x72, 0x64, 0x18, 0x05, 0x20,
-	0x01, 0x28, 0x09, 0x52, 0x0c, 0x73, 0x75, 0x64, 0x6f, 0x50, 0x61, 0x73, 0x73, 0x77, 0x6f, 0x72,
-	0x64, 0x12, 0x12, 0x0a, 0x04, 0x72, 0x6f, 0x6c, 0x65, 0x18, 0x06, 0x20, 0x03, 0x28, 0x09, 0x52,
-	0x04, 0x72, 0x6f, 0x6c, 0x65, 0x42, 0x13, 0x5a, 0x11, 0x61, 0x70, 0x69, 0x2f, 0x63, 0x6c, 0x75,
-	0x73, 0x74, 0x65, 0x72, 0x2f, 0x76, 0x31, 0x3b, 0x76, 0x31, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74,
-	0x6f, 0x33,
+	0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0b, 0x63, 0x6c, 0x75, 0x73, 0x74, 0x65, 0x72, 0x4e,
+	0x61, 0x6d, 0x65, 0x12, 0x16, 0x0a, 0x06, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x18, 0x03, 0x20,
+	0x01, 0x28, 0x09, 0x52, 0x06, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x12, 0x16, 0x0a, 0x06, 0x61,
+	0x64, 0x64, 0x6f, 0x6e, 0x73, 0x18, 0x04, 0x20, 0x01, 0x28, 0x09, 0x52, 0x06, 0x61, 0x64, 0x64,
+	0x6f, 0x6e, 0x73, 0x12, 0x12, 0x0a, 0x04, 0x75, 0x73, 0x65, 0x72, 0x18, 0x05, 0x20, 0x01, 0x28,
+	0x09, 0x52, 0x04, 0x75, 0x73, 0x65, 0x72, 0x12, 0x1a, 0x0a, 0x08, 0x70, 0x61, 0x73, 0x73, 0x77,
+	0x6f, 0x72, 0x64, 0x18, 0x06, 0x20, 0x01, 0x28, 0x09, 0x52, 0x08, 0x70, 0x61, 0x73, 0x73, 0x77,
+	0x6f, 0x72, 0x64, 0x12, 0x23, 0x0a, 0x0d, 0x73, 0x75, 0x64, 0x6f, 0x5f, 0x70, 0x61, 0x73, 0x73,
+	0x77, 0x6f, 0x72, 0x64, 0x18, 0x07, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0c, 0x73, 0x75, 0x64, 0x6f,
+	0x50, 0x61, 0x73, 0x73, 0x77, 0x6f, 0x72, 0x64, 0x12, 0x26, 0x0a, 0x05, 0x6e, 0x6f, 0x64, 0x65,
+	0x73, 0x18, 0x08, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x10, 0x2e, 0x63, 0x6c, 0x75, 0x73, 0x74, 0x65,
+	0x72, 0x2e, 0x76, 0x31, 0x2e, 0x4e, 0x6f, 0x64, 0x65, 0x52, 0x05, 0x6e, 0x6f, 0x64, 0x65, 0x73,
+	0x12, 0x21, 0x0a, 0x0c, 0x73, 0x65, 0x6d, 0x61, 0x70, 0x68, 0x6f, 0x72, 0x65, 0x5f, 0x69, 0x64,
+	0x18, 0x09, 0x20, 0x01, 0x28, 0x05, 0x52, 0x0b, 0x73, 0x65, 0x6d, 0x61, 0x70, 0x68, 0x6f, 0x72,
+	0x65, 0x49, 0x64, 0x22, 0x71, 0x0a, 0x04, 0x4e, 0x6f, 0x64, 0x65, 0x12, 0x0e, 0x0a, 0x02, 0x69,
+	0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x05, 0x52, 0x02, 0x69, 0x64, 0x12, 0x12, 0x0a, 0x04, 0x68,
+	0x6f, 0x73, 0x74, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x68, 0x6f, 0x73, 0x74, 0x12,
+	0x12, 0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x6e,
+	0x61, 0x6d, 0x65, 0x12, 0x12, 0x0a, 0x04, 0x72, 0x6f, 0x6c, 0x65, 0x18, 0x04, 0x20, 0x03, 0x28,
+	0x09, 0x52, 0x04, 0x72, 0x6f, 0x6c, 0x65, 0x12, 0x1d, 0x0a, 0x0a, 0x63, 0x6c, 0x75, 0x73, 0x74,
+	0x65, 0x72, 0x5f, 0x69, 0x64, 0x18, 0x05, 0x20, 0x01, 0x28, 0x05, 0x52, 0x09, 0x63, 0x6c, 0x75,
+	0x73, 0x74, 0x65, 0x72, 0x49, 0x64, 0x42, 0x13, 0x5a, 0x11, 0x61, 0x70, 0x69, 0x2f, 0x63, 0x6c,
+	0x75, 0x73, 0x74, 0x65, 0x72, 0x2f, 0x76, 0x31, 0x3b, 0x76, 0x31, 0x62, 0x06, 0x70, 0x72, 0x6f,
+	0x74, 0x6f, 0x33,
 }
 
 var (
@@ -359,21 +356,21 @@ func file_api_cluster_v1_message_proto_rawDescGZIP() []byte {
 	return file_api_cluster_v1_message_proto_rawDescData
 }
 
-var file_api_cluster_v1_message_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
+var file_api_cluster_v1_message_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_api_cluster_v1_message_proto_goTypes = []interface{}{
-	(*GetClusterConfigRequest)(nil),  // 0: cluster.v1.GetClusterConfigRequest
-	(*GetClusterConfigResponse)(nil), // 1: cluster.v1.GetClusterConfigResponse
-	(*SaveClusterConfigRequest)(nil), // 2: cluster.v1.SaveClusterConfigRequest
-	(*Servers)(nil),                  // 3: cluster.v1.Servers
-	(*Node)(nil),                     // 4: cluster.v1.Node
+	(*ClusterID)(nil), // 0: cluster.v1.ClusterID
+	(*Clusters)(nil),  // 1: cluster.v1.Clusters
+	(*Cluster)(nil),   // 2: cluster.v1.Cluster
+	(*Node)(nil),      // 3: cluster.v1.Node
 }
 var file_api_cluster_v1_message_proto_depIdxs = []int32{
-	4, // 0: cluster.v1.Servers.nodes:type_name -> cluster.v1.Node
-	1, // [1:1] is the sub-list for method output_type
-	1, // [1:1] is the sub-list for method input_type
-	1, // [1:1] is the sub-list for extension type_name
-	1, // [1:1] is the sub-list for extension extendee
-	0, // [0:1] is the sub-list for field type_name
+	2, // 0: cluster.v1.Clusters.clusters:type_name -> cluster.v1.Cluster
+	3, // 1: cluster.v1.Cluster.nodes:type_name -> cluster.v1.Node
+	2, // [2:2] is the sub-list for method output_type
+	2, // [2:2] is the sub-list for method input_type
+	2, // [2:2] is the sub-list for extension type_name
+	2, // [2:2] is the sub-list for extension extendee
+	0, // [0:2] is the sub-list for field type_name
 }
 
 func init() { file_api_cluster_v1_message_proto_init() }
@@ -383,7 +380,7 @@ func file_api_cluster_v1_message_proto_init() {
 	}
 	if !protoimpl.UnsafeEnabled {
 		file_api_cluster_v1_message_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*GetClusterConfigRequest); i {
+			switch v := v.(*ClusterID); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -395,7 +392,7 @@ func file_api_cluster_v1_message_proto_init() {
 			}
 		}
 		file_api_cluster_v1_message_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*GetClusterConfigResponse); i {
+			switch v := v.(*Clusters); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -407,7 +404,7 @@ func file_api_cluster_v1_message_proto_init() {
 			}
 		}
 		file_api_cluster_v1_message_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*SaveClusterConfigRequest); i {
+			switch v := v.(*Cluster); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -419,18 +416,6 @@ func file_api_cluster_v1_message_proto_init() {
 			}
 		}
 		file_api_cluster_v1_message_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Servers); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_api_cluster_v1_message_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*Node); i {
 			case 0:
 				return &v.state
@@ -449,7 +434,7 @@ func file_api_cluster_v1_message_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_api_cluster_v1_message_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   5,
+			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
