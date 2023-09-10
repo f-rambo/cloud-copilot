@@ -69,6 +69,9 @@ func (c *Cluster) SetTemplateIDs(key string, val interface{}) {
 }
 
 func (c *Cluster) Merge(cluster *Cluster) {
+	if cluster == nil {
+		return
+	}
 	c.ClusterName = cluster.ClusterName
 	c.SemaphoreID = cluster.SemaphoreID
 	c.RootUserKeyID = cluster.RootUserKeyID
@@ -107,43 +110,8 @@ func (c *ClusterUsecase) Save(ctx context.Context, cluster *Cluster) error {
 	if err != nil {
 		return err
 	}
-	if historyCluster == nil {
-		err := c.repo.SaveCluster(ctx, cluster)
-		if err != nil {
-			return err
-		}
-		return nil
-		err = c.repo.ClusterInit(ctx, cluster)
-		if err != nil {
-			return err
-		}
-		return c.repo.DeployCluster(ctx, cluster)
-	}
 	cluster.Merge(historyCluster)
-	addNode, removeNode := c.getAddRemoveNode(historyCluster.Nodes, cluster.Nodes)
-	if len(removeNode) != 0 {
-		err = c.repo.RemoveNode(ctx, cluster, removeNode)
-		if err != nil {
-			return err
-		}
-	}
-	err = c.repo.SaveCluster(ctx, cluster)
-	if err != nil {
-		return err
-	}
-	return nil
-	if len(addNode) != 0 {
-		// 新节点初始化
-		err = c.repo.ClusterInit(ctx, cluster)
-		if err != nil {
-			return err
-		}
-		err = c.repo.AddNode(ctx, cluster)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
+	return c.repo.SaveCluster(ctx, cluster)
 }
 
 func (c *ClusterUsecase) Get(ctx context.Context) ([]*Cluster, error) {
@@ -167,39 +135,5 @@ func (c *ClusterUsecase) Delete(ctx context.Context, clusterID int) error {
 	if err != nil {
 		return err
 	}
-	err = c.repo.UndeployCluster(ctx, cluster)
-	if err != nil {
-		return err
-	}
 	return c.repo.DeleteCluster(ctx, cluster)
-}
-
-func (c *ClusterUsecase) getAddRemoveNode(historyNode, nowNode []Node) ([]*Node, []*Node) {
-	addNode := make([]*Node, 0)
-	removeNode := make([]*Node, 0)
-	for _, node := range nowNode {
-		nodeExist := false
-		for _, historyNode := range historyNode {
-			if node.ID == historyNode.ID {
-				nodeExist = true
-				break
-			}
-		}
-		if !nodeExist {
-			addNode = append(addNode, &node)
-		}
-	}
-	for _, historyNode := range historyNode {
-		nodeExist := false
-		for _, node := range nowNode {
-			if node.ID == historyNode.ID {
-				nodeExist = true
-				break
-			}
-		}
-		if !nodeExist {
-			removeNode = append(removeNode, &historyNode)
-		}
-	}
-	return addNode, removeNode
 }
