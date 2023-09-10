@@ -225,7 +225,7 @@ func (s *Semaphore) CreateKey(key *Key) error {
 	}
 	for _, v := range keys {
 		if v.Name == key.Name {
-			v.ID = key.ID
+			key.ID = v.ID
 			return nil
 		}
 	}
@@ -315,7 +315,7 @@ func (s *Semaphore) CreateRepositories(repo *Repository) error {
 		return err
 	}
 	if res.StatusCode() != http.StatusNoContent {
-		return fmt.Errorf("create project failed, %s", res.String())
+		return fmt.Errorf("create repositories failed, %s", res.String())
 	}
 	// 获取repoID
 	repos, err := s.GetRepositories(repo.ProjectID)
@@ -736,10 +736,10 @@ func (s *Semaphore) GetTasks(projectID int) ([]Task, error) {
 }
 
 // start task
-func (s *Semaphore) StartTask(projectID int, task Task) (int, error) {
+func (s *Semaphore) StartTask(projectID int, task *Task) error {
 	bodyByte, err := json.Marshal(task)
 	if err != nil {
-		return 0, err
+		return err
 	}
 	resTask := Task{}
 	res, err := s.client.R().
@@ -749,12 +749,12 @@ func (s *Semaphore) StartTask(projectID int, task Task) (int, error) {
 		SetBody(string(bodyByte)).SetResult(&resTask).
 		Post(fmt.Sprintf("%sproject/%d/tasks", s.baseurl, projectID))
 	if err != nil {
-		return 0, err
+		return err
 	}
 	if res.StatusCode() != http.StatusCreated {
-		return 0, fmt.Errorf("StartTask fail %s", res.String())
+		return fmt.Errorf("StartTask fail %s", res.String())
 	}
-	return resTask.ID, nil
+	return nil
 }
 
 // stop task

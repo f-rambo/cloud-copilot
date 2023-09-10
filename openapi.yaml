@@ -71,6 +71,24 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/app.v1.Msg'
+    /cluster/v1/apply:
+        post:
+            tags:
+                - ClusterService
+            operationId: ClusterService_Apply
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/cluster.v1.ClusterName'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/cluster.v1.Msg'
     /cluster/v1/delete/{id}:
         delete:
             tags:
@@ -199,19 +217,17 @@ components:
                     type: string
                 addons:
                     type: string
-                user:
-                    type: string
-                password:
-                    type: string
-                sudoPassword:
-                    type: string
                 nodes:
                     type: array
                     items:
                         $ref: '#/components/schemas/cluster.v1.Node'
-                semaphoreId:
-                    type: integer
-                    format: int32
+                applyed:
+                    type: boolean
+        cluster.v1.ClusterName:
+            type: object
+            properties:
+                name:
+                    type: string
         cluster.v1.Clusters:
             type: object
             properties:
@@ -237,13 +253,16 @@ components:
                     type: string
                 name:
                     type: string
+                user:
+                    type: string
+                password:
+                    type: string
+                sudoPassword:
+                    type: string
                 role:
                     type: array
                     items:
                         type: string
-                clusterId:
-                    type: integer
-                    format: int32
         helloworld.v1.HelloReply:
             type: object
             properties:

@@ -11,6 +11,7 @@ import (
 	"ocean/utils"
 
 	"github.com/go-kratos/kratos/v2/log"
+	"github.com/go-redis/redis"
 	"github.com/spf13/cast"
 	"gorm.io/gorm"
 )
@@ -51,7 +52,7 @@ func init() {
 		"kubeedge-edged.yml",
 		"kubeedge-cloudcore.yml",
 		"kubeedge-reset.yml",
-		"login_password",
+		"none",
 		"normal_user_key",
 		"root_user_key",
 	}
@@ -69,24 +70,21 @@ func NewClusterRepo(data *Data, logger log.Logger) biz.ClusterRepo {
 	}
 }
 
-/*
-	1. 项目，根据cluster
-	2. 秘钥对，使用密码登录 (可选)；
-	3. git仓库；
-	4. 环境，配置环境变量和参数变量
-	5. 主机，配置主机信息
-	6. 模版：集群初始化、部署集群、卸载集群、添加节点、移除节点、部署kubeedge；
-	7. 使用其中模版，创建执行任务；
-*/
-
 func (c *clusterRepo) SaveCluster(ctx context.Context, cluster *biz.Cluster) error {
+	if cluster.Applyed {
+		err := c.deleteCacheCluster(ctx, cluster.Name)
+		if err != nil {
+			return err
+		}
+		return c.saveToDB(ctx, cluster)
+	}
 	// 创建项目
 	err := c.saveProject(ctx, cluster)
 	if err != nil {
 		return err
 	}
 	// 创建秘钥对
-	err = c.saveUserRootKey(ctx, cluster)
+	err = c.saveKey(ctx, cluster)
 	if err != nil {
 		return err
 	}
@@ -141,8 +139,8 @@ func (c *clusterRepo) SaveCluster(ctx context.Context, cluster *biz.Cluster) err
 	if err != nil {
 		return err
 	}
-	// todo 部署kubeedge
-	return c.saveToDB(ctx, cluster)
+	// todo kubeedge
+	return c.saveToCache(ctx, cluster)
 }
 
 func (c *clusterRepo) saveToDB(ctx context.Context, cluster *biz.Cluster) (err error) {
@@ -204,6 +202,90 @@ func (c *clusterRepo) saveToDB(ctx context.Context, cluster *biz.Cluster) (err e
 	})
 }
 
+func (c *clusterRepo) saveToCache(ctx context.Context, cluster *biz.Cluster) error {
+	cluster.ConfigStr = string(cluster.Config)
+	cluster.AddonsStr = string(cluster.Addons)
+	clusterJson, err := json.Marshal(cluster)
+	if err != nil {
+		return err
+	}
+	err = c.data.redisClient.Set(cluster.Name, clusterJson, 0).Err()
+	if err != nil && err != redis.Nil {
+		return err
+	}
+	err = c.addClusterPool(ctx, cluster.Name)
+	if err != nil && err != redis.Nil {
+		return err
+	}
+	return nil
+}
+
+func (c *clusterRepo) getCacheCluster(ctx context.Context, clusterName string) (*biz.Cluster, error) {
+	clusterJson, err := c.data.redisClient.Get(clusterName).Result()
+	if err != nil && err != redis.Nil {
+		return nil, err
+	}
+	if err == redis.Nil {
+		return nil, nil
+	}
+	cluster := &biz.Cluster{}
+	err = json.Unmarshal([]byte(clusterJson), cluster)
+	if err != nil {
+		return nil, err
+	}
+	cluster.Addons = []byte(cluster.AddonsStr)
+	cluster.Config = []byte(cluster.ConfigStr)
+	return cluster, nil
+}
+
+func (c *clusterRepo) deleteCacheCluster(ctx context.Context, clusterName string) error {
+	err := c.data.redisClient.Del(clusterName).Err()
+	if err != nil && err != redis.Nil {
+		return err
+	}
+	err = c.deleteClusterPool(ctx, clusterName)
+	if err != nil && err != redis.Nil {
+		return err
+	}
+	return nil
+}
+
+func (c *clusterRepo) addClusterPool(ctx context.Context, clusterName string) error {
+	return c.data.redisClient.SAdd("cluster_pool", clusterName).Err()
+}
+
+func (c *clusterRepo) deleteClusterPool(ctx context.Context, clusterName string) error {
+	err := c.data.redisClient.SRem("cluster_pool", clusterName).Err()
+	if err != nil && err != redis.Nil {
+		return err
+	}
+	return nil
+}
+
+func (c *clusterRepo) getClusterPool(ctx context.Context) ([]string, error) {
+	clusternames, err := c.data.redisClient.SMembers("cluster_pool").Result()
+	if err != nil && err != redis.Nil {
+		return nil, err
+	}
+	return clusternames, nil
+}
+
+func (c *clusterRepo) GetClusterByName(ctx context.Context, clusterName string) (*biz.Cluster, error) {
+	clusterCache, err := c.getCacheCluster(ctx, clusterName)
+	if err != nil {
+		return nil, err
+	}
+	if clusterCache != nil {
+		return clusterCache, nil
+	}
+	cluster := &biz.Cluster{}
+	err = c.data.db.Where("cluster_name = ?", clusterName).First(cluster).Error
+	if err != nil && err != gorm.ErrRecordNotFound {
+		return nil, err
+	}
+	return cluster, nil
+}
+
 func (c *clusterRepo) GetCluster(ctx context.Context, id int) (*biz.Cluster, error) {
 	if id == 0 {
 		return nil, nil
@@ -250,6 +332,23 @@ func (c *clusterRepo) GetClusters(ctx context.Context) ([]*biz.Cluster, error) {
 				break
 			}
 		}
+	}
+	// cache
+	clusterNames, err := c.getClusterPool(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for _, name := range clusterNames {
+		v, err := c.getCacheCluster(ctx, name)
+		if err != nil {
+			return nil, err
+		}
+		if v == nil {
+			continue
+		}
+		v.Addons = []byte(v.AddonsStr)
+		v.Config = []byte(v.ConfigStr)
+		clusters = append(clusters, v)
 	}
 	return clusters, nil
 }
@@ -317,7 +416,7 @@ func (c *clusterRepo) DeleteCluster(ctx context.Context, cluster *biz.Cluster) e
 		return err
 	}
 	// 写入数据库
-	c.data.db.Transaction(func(tx *gorm.DB) error {
+	return c.data.db.Transaction(func(tx *gorm.DB) error {
 		err = tx.Delete(cluster).Error
 		if err != nil {
 			return err
@@ -328,7 +427,6 @@ func (c *clusterRepo) DeleteCluster(ctx context.Context, cluster *biz.Cluster) e
 		}
 		return nil
 	})
-	return nil
 }
 
 func (c *clusterRepo) ClusterInit(ctx context.Context, cluster *biz.Cluster) error {
@@ -337,15 +435,17 @@ func (c *clusterRepo) ClusterInit(ctx context.Context, cluster *biz.Cluster) err
 	if !ok {
 		return fmt.Errorf("ClusterInit template not found")
 	}
-	_, err := c.data.semaphore.StartTask(cluster.SemaphoreID, restapi.Task{
-		TemplateID: templateID.(int),
+	task := &restapi.Task{
+		TemplateID: cast.ToInt(templateID),
 		ProjectId:  cluster.SemaphoreID,
 		Debug:      true,
 		Diff:       true,
-	})
+	}
+	err := c.data.semaphore.StartTask(cluster.SemaphoreID, task)
 	if err != nil {
 		return err
 	}
+	cluster.SetTaskID(repo.ClusterInit, task.ID)
 	return nil
 }
 
@@ -355,15 +455,17 @@ func (c *clusterRepo) DeployCluster(ctx context.Context, cluster *biz.Cluster) e
 	if !ok {
 		return fmt.Errorf("DeployCluster template not found")
 	}
-	_, err := c.data.semaphore.StartTask(cluster.SemaphoreID, restapi.Task{
-		TemplateID: templateID.(int),
+	task := &restapi.Task{
+		TemplateID: cast.ToInt(templateID),
 		ProjectId:  cluster.SemaphoreID,
 		Debug:      true,
 		Diff:       true,
-	})
+	}
+	err := c.data.semaphore.StartTask(cluster.SemaphoreID, task)
 	if err != nil {
 		return err
 	}
+	cluster.SetTaskID(repo.DeployCluster, task.ID)
 	return nil
 }
 
@@ -373,15 +475,17 @@ func (c *clusterRepo) UndeployCluster(ctx context.Context, cluster *biz.Cluster)
 	if !ok {
 		return fmt.Errorf("UndeployCluster template not found")
 	}
-	_, err := c.data.semaphore.StartTask(cluster.SemaphoreID, restapi.Task{
-		TemplateID: templateID.(int),
+	task := &restapi.Task{
+		TemplateID: cast.ToInt(templateID),
 		ProjectId:  cluster.SemaphoreID,
 		Debug:      true,
 		Diff:       true,
-	})
+	}
+	err := c.data.semaphore.StartTask(cluster.SemaphoreID, task)
 	if err != nil {
 		return err
 	}
+	cluster.SetTaskID(repo.Reset, task.ID)
 	return nil
 }
 
@@ -391,19 +495,21 @@ func (c *clusterRepo) AddNode(ctx context.Context, cluster *biz.Cluster) error {
 	if !ok {
 		return fmt.Errorf("AddNode template not found")
 	}
-	_, err := c.data.semaphore.StartTask(cluster.SemaphoreID, restapi.Task{
-		TemplateID: templateID.(int),
+	task := &restapi.Task{
+		TemplateID: cast.ToInt(templateID),
 		ProjectId:  cluster.SemaphoreID,
 		Debug:      true,
 		Diff:       true,
-	})
+	}
+	err := c.data.semaphore.StartTask(cluster.SemaphoreID, task)
 	if err != nil {
 		return err
 	}
+	cluster.SetTaskID(repo.AddNode, task.ID)
 	return nil
 }
 
-func (c *clusterRepo) RemoveNode(ctx context.Context, cluster *biz.Cluster, nodes []*biz.Node) error {
+func (c *clusterRepo) RemoveNode(ctx context.Context, cluster *biz.Cluster, nodes []biz.Node) error {
 	// 获取模版
 	templateID, ok := cluster.TemplateIDs[repo.RemoveNode]
 	if !ok {
@@ -413,16 +519,18 @@ func (c *clusterRepo) RemoveNode(ctx context.Context, cluster *biz.Cluster, node
 	for _, v := range nodes {
 		nodeNames = append(nodeNames, v.Name)
 	}
-	_, err := c.data.semaphore.StartTask(cluster.SemaphoreID, restapi.Task{
-		TemplateID: templateID.(int),
+	task := &restapi.Task{
+		TemplateID: cast.ToInt(templateID),
 		ProjectId:  cluster.SemaphoreID,
 		Debug:      true,
 		Diff:       true,
 		Arguments:  fmt.Sprintf(`["--extra-vars", "node=%s"]`, strings.Join(nodeNames, ",")),
-	})
+	}
+	err := c.data.semaphore.StartTask(cluster.SemaphoreID, task)
 	if err != nil {
 		return err
 	}
+	cluster.SetTaskID(repo.RemoveNode, task.ID)
 	return nil
 }
 
@@ -440,7 +548,7 @@ func (c *clusterRepo) saveProject(ctx context.Context, cluster *biz.Cluster) err
 	if cluster.SemaphoreID != 0 {
 		return nil
 	}
-	project := restapi.Project{Name: cluster.ClusterName, Alert: true}
+	project := restapi.Project{Name: cluster.Name, Alert: true}
 	err := c.data.semaphore.CreateProject(&project)
 	if err != nil {
 		return err
@@ -449,51 +557,21 @@ func (c *clusterRepo) saveProject(ctx context.Context, cluster *biz.Cluster) err
 	return nil
 }
 
-func (c *clusterRepo) saveUserRootKey(ctx context.Context, cluster *biz.Cluster) error {
-	normalUser := restapi.Key{
-		ID:        cluster.NormalUserKeyID,
-		Name:      fmt.Sprintf("%s-%s", cluster.ClusterName, repo.NormalUserKey),
+func (c *clusterRepo) saveKey(ctx context.Context, cluster *biz.Cluster) error {
+	key := restapi.Key{
+		ID:        cluster.KeyID,
+		Name:      cluster.Name,
 		Type:      repo.KeyType,
 		ProjectID: cluster.SemaphoreID,
-		LoginPassword: restapi.Password{
-			Login:    cluster.User,
-			Password: cluster.Password,
-		},
 	}
-	rootUser := restapi.Key{
-		ID:        cluster.RootUserKeyID,
-		Name:      fmt.Sprintf("%s-%s", cluster.ClusterName, repo.RootUserKey),
-		Type:      repo.KeyType,
-		ProjectID: cluster.SemaphoreID,
-		LoginPassword: restapi.Password{
-			Login:    cluster.User,
-			Password: cluster.Password,
-		},
+	if cluster.KeyID != 0 {
+		return c.data.semaphore.UpdateKey(key)
 	}
-	if cluster.NormalUserKeyID == 0 {
-		err := c.data.semaphore.CreateKey(&normalUser)
-		if err != nil {
-			return err
-		}
-		cluster.SetNormalUserKeyID(normalUser.ID)
-	} else {
-		err := c.data.semaphore.UpdateKey(normalUser)
-		if err != nil {
-			return err
-		}
+	err := c.data.semaphore.CreateKey(&key)
+	if err != nil {
+		return err
 	}
-	if cluster.RootUserKeyID == 0 {
-		err := c.data.semaphore.CreateKey(&rootUser)
-		if err != nil {
-			return err
-		}
-		cluster.SetRootUserKeyID(rootUser.ID)
-	} else {
-		err := c.data.semaphore.UpdateKey(rootUser)
-		if err != nil {
-			return err
-		}
-	}
+	cluster.SetKeyID(key.ID)
 	return nil
 }
 
@@ -504,7 +582,7 @@ func (c *clusterRepo) saveRepositories(ctx context.Context, cluster *biz.Cluster
 		ProjectID: cluster.SemaphoreID,
 		GitURL:    repo.Repository,
 		GitBranch: repo.Branch,
-		SSHKeyID:  cluster.NormalUserKeyID,
+		SSHKeyID:  cluster.KeyID,
 	}
 	if cluster.RepoID != 0 {
 		return c.data.semaphore.UpdateRepositories(&repoData)
@@ -549,19 +627,19 @@ func (c *clusterRepo) GetDefaultCluster(ctx context.Context) (*biz.Cluster, erro
 		return nil, err
 	}
 	node := biz.Node{
-		Name: "node1",
-		Host: "x.x.x.x",
-		Role: []string{"master", "worker"},
-	}
-	cluster := &biz.Cluster{
-		ClusterName:  "k8s-cluster",
-		Nodes:        []biz.Node{node},
-		Config:       []byte(config),
-		Addons:       []byte(addons),
+		Name:         "node1",
+		Host:         "x.x.x.x",
 		User:         "root",
 		Password:     "root",
 		SudoPassword: "root",
+		Role:         []string{"master", "worker"},
 	}
+	cluster := &biz.Cluster{
+		Name:  "k8s-cluster",
+		Nodes: []biz.Node{node},
+	}
+	cluster.Config = []byte(config)
+	cluster.Addons = []byte(addons)
 	return cluster, nil
 }
 
@@ -569,11 +647,11 @@ func (c *clusterRepo) saveInventory(ctx context.Context, cluster *biz.Cluster) e
 	inventoryType, inventoryFile := c.getInventoryFile(cluster)
 	inventory := restapi.Inventory{
 		ID:        cluster.InventoryID,
-		Name:      cluster.ClusterName,
+		Name:      cluster.Name,
 		ProjectID: cluster.SemaphoreID,
 		Type:      inventoryType,
-		SSHKeyID:  cluster.NormalUserKeyID,
-		BecomeKey: cluster.RootUserKeyID,
+		SSHKeyID:  cluster.KeyID,
+		BecomeKey: cluster.KeyID,
 		Inventory: inventoryFile,
 	}
 	if cluster.InventoryID != 0 {
@@ -587,16 +665,10 @@ func (c *clusterRepo) saveInventory(ctx context.Context, cluster *biz.Cluster) e
 	return nil
 }
 
-// 模版： 集群初始化、部署集群、卸载集群、添加节点、移除节点、部署kubeedge；
-
-func (c *clusterRepo) getTemplateName(playBook string) string {
-	return repo.Name + playBook
-}
-
 func (c *clusterRepo) saveTemplate(ctx context.Context, cluster *biz.Cluster, playBook, arguments, description string, surveyVars []restapi.SurveyVar) error {
 	template := restapi.Template{
 		ProjectID:             cluster.SemaphoreID,
-		Name:                  c.getTemplateName(playBook),
+		Name:                  repo.Name + "-" + playBook,
 		Playbook:              playBook,
 		Arguments:             arguments,
 		Description:           description,
@@ -625,9 +697,9 @@ func (c *clusterRepo) getInventoryFile(cluster *biz.Cluster) (string, string) {
 	for _, node := range cluster.Nodes {
 		name := node.Name
 		host := node.Host
-		user := cluster.User
-		password := cluster.Password
-		sudoPassword := cluster.SudoPassword
+		user := node.User
+		password := node.Password
+		sudoPassword := node.SudoPassword
 		role := node.Role
 
 		line := fmt.Sprintf("%s ansible_host=%s ip=%s access_ip=%s ansible_user=%s ansible_password=%s ansible_become_password=%s", name, host, host, host, user, password, sudoPassword)

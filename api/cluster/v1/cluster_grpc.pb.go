@@ -23,6 +23,7 @@ const (
 	ClusterService_Get_FullMethodName    = "/cluster.v1.ClusterService/Get"
 	ClusterService_Save_FullMethodName   = "/cluster.v1.ClusterService/Save"
 	ClusterService_Delete_FullMethodName = "/cluster.v1.ClusterService/Delete"
+	ClusterService_Apply_FullMethodName  = "/cluster.v1.ClusterService/Apply"
 )
 
 // ClusterServiceClient is the client API for ClusterService service.
@@ -32,6 +33,7 @@ type ClusterServiceClient interface {
 	Get(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*Clusters, error)
 	Save(ctx context.Context, in *Cluster, opts ...grpc.CallOption) (*Msg, error)
 	Delete(ctx context.Context, in *ClusterID, opts ...grpc.CallOption) (*Msg, error)
+	Apply(ctx context.Context, in *ClusterName, opts ...grpc.CallOption) (*Msg, error)
 }
 
 type clusterServiceClient struct {
@@ -69,6 +71,15 @@ func (c *clusterServiceClient) Delete(ctx context.Context, in *ClusterID, opts .
 	return out, nil
 }
 
+func (c *clusterServiceClient) Apply(ctx context.Context, in *ClusterName, opts ...grpc.CallOption) (*Msg, error) {
+	out := new(Msg)
+	err := c.cc.Invoke(ctx, ClusterService_Apply_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ClusterServiceServer is the server API for ClusterService service.
 // All implementations must embed UnimplementedClusterServiceServer
 // for forward compatibility
@@ -76,6 +87,7 @@ type ClusterServiceServer interface {
 	Get(context.Context, *emptypb.Empty) (*Clusters, error)
 	Save(context.Context, *Cluster) (*Msg, error)
 	Delete(context.Context, *ClusterID) (*Msg, error)
+	Apply(context.Context, *ClusterName) (*Msg, error)
 	mustEmbedUnimplementedClusterServiceServer()
 }
 
@@ -91,6 +103,9 @@ func (UnimplementedClusterServiceServer) Save(context.Context, *Cluster) (*Msg, 
 }
 func (UnimplementedClusterServiceServer) Delete(context.Context, *ClusterID) (*Msg, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Delete not implemented")
+}
+func (UnimplementedClusterServiceServer) Apply(context.Context, *ClusterName) (*Msg, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Apply not implemented")
 }
 func (UnimplementedClusterServiceServer) mustEmbedUnimplementedClusterServiceServer() {}
 
@@ -159,6 +174,24 @@ func _ClusterService_Delete_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ClusterService_Apply_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ClusterName)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ClusterServiceServer).Apply(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ClusterService_Apply_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ClusterServiceServer).Apply(ctx, req.(*ClusterName))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ClusterService_ServiceDesc is the grpc.ServiceDesc for ClusterService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -177,6 +210,10 @@ var ClusterService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Delete",
 			Handler:    _ClusterService_Delete_Handler,
+		},
+		{
+			MethodName: "Apply",
+			Handler:    _ClusterService_Apply_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -28,22 +28,21 @@ func (c *ClusterService) Get(ctx context.Context, _ *emptypb.Empty) (*v1.Cluster
 	data := &v1.Clusters{}
 	for _, cluster := range clusters {
 		v := &v1.Cluster{
-			Id:           int32(cluster.ID),
-			ClusterName:  cluster.ClusterName,
-			Config:       string(cluster.Config),
-			Addons:       string(cluster.Addons),
-			User:         cluster.User,
-			Password:     cluster.Password,
-			SudoPassword: cluster.SudoPassword,
-			SemaphoreId:  int32(cluster.SemaphoreID),
+			Id:          int32(cluster.ID),
+			ClusterName: cluster.Name,
+			Config:      string(cluster.Config),
+			Addons:      string(cluster.Addons),
+			Applyed:     cluster.Applyed,
 		}
 		for _, node := range cluster.Nodes {
 			v.Nodes = append(v.Nodes, &v1.Node{
-				Id:        int32(node.ID),
-				Name:      node.Name,
-				Host:      node.Host,
-				Role:      node.Role,
-				ClusterId: int32(node.ClusterID),
+				Id:           int32(node.ID),
+				Name:         node.Name,
+				Host:         node.Host,
+				Role:         node.Role,
+				User:         node.User,
+				Password:     node.Password,
+				SudoPassword: node.SudoPassword,
 			})
 		}
 		data.Clusters = append(data.Clusters, v)
@@ -53,22 +52,19 @@ func (c *ClusterService) Get(ctx context.Context, _ *emptypb.Empty) (*v1.Cluster
 
 func (c *ClusterService) Save(ctx context.Context, cluster *v1.Cluster) (*v1.Msg, error) {
 	bizCluster := &biz.Cluster{
-		ID:           int(cluster.Id),
-		ClusterName:  cluster.ClusterName,
-		Config:       []byte(cluster.Config),
-		Addons:       []byte(cluster.Addons),
-		User:         cluster.User,
-		Password:     cluster.Password,
-		SudoPassword: cluster.SudoPassword,
-		SemaphoreID:  int(cluster.SemaphoreId),
+		ID:   int(cluster.Id),
+		Name: cluster.ClusterName,
 	}
+	bizCluster.Config = []byte(cluster.Config)
+	bizCluster.Addons = []byte(cluster.Addons)
 	for _, node := range cluster.Nodes {
 		bizCluster.Nodes = append(bizCluster.Nodes, biz.Node{
-			ID:        int(node.Id),
-			Name:      node.Name,
-			Host:      node.Host,
-			Role:      node.Role,
-			ClusterID: int(node.ClusterId),
+			ID:       int(node.Id),
+			Name:     node.Name,
+			Host:     node.Host,
+			Role:     node.Role,
+			User:     node.User,
+			Password: node.SudoPassword,
 		})
 	}
 	err := c.uc.Save(ctx, bizCluster)
@@ -103,4 +99,13 @@ func (c *ClusterService) Delete(ctx context.Context, clusterID *v1.ClusterID) (*
 		Reason:  v1.ErrorReason_SUCCEED,
 	}
 	return msg, nil
+}
+
+// apply
+func (c *ClusterService) Apply(ctx context.Context, clusterName *v1.ClusterName) (*v1.Msg, error) {
+	err := c.uc.Apply(ctx, clusterName.Name)
+	if err != nil {
+		return nil, err
+	}
+	return &v1.Msg{Message: "apply success"}, nil
 }

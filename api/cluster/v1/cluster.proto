@@ -29,4 +29,11 @@ service ClusterService {
     };
   }
 
+  rpc Apply(cluster.v1.ClusterName) returns (cluster.v1.Msg) {
+    option (google.api.http) = {
+      post: "/cluster/v1/apply"
+      body: "*"
+    };
+  }
+
 }

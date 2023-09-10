@@ -8,6 +8,10 @@ message ClusterID {
   int32 id = 1;
 }
 
+message ClusterName {
+  string name = 1;
+}
+
 message Clusters {
   repeated Cluster clusters = 1;
 }
@@ -17,17 +21,16 @@ message Cluster {
   string cluster_name = 2;
   string config = 3;
   string addons = 4;
-  string user = 5;
-  string password = 6;
-  string sudo_password = 7;
-  repeated Node nodes = 8;
-  int32 semaphore_id = 9;
+  repeated Node nodes = 5;
+  bool applyed = 6;
 }
 
 message Node {
   int32 id = 1;
   string host = 2;
   string name = 3;
-  repeated string role = 4;
-  int32 cluster_id = 5;
+  string user = 4;
+  string password = 5;
+  string sudo_password = 6;
+  repeated string role = 7;
 }
