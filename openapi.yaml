@@ -6,58 +6,11 @@ info:
     title: ""
     version: 0.0.1
 paths:
-    /app/v1/config/get:
-        get:
-            tags:
-                - AppService
-            operationId: AppService_GetAppConfig
-            parameters:
-                - name: id
-                  in: query
-                  schema:
-                    type: string
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/app.v1.GetAppConfigResponse'
-    /app/v1/config/save:
-        put:
-            tags:
-                - AppService
-            operationId: AppService_SaveAppConfig
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/app.v1.SaveAppConfigRequest'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/app.v1.Msg'
-    /app/v1/get:
-        get:
-            tags:
-                - AppService
-            operationId: AppService_GetApps
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/app.v1.App'
     /app/v1/save:
         put:
             tags:
                 - AppService
-            operationId: AppService_SaveApps
+            operationId: AppService_Save
             requestBody:
                 content:
                     application/json:
@@ -71,6 +24,105 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/app.v1.Msg'
+    /app/v1/{clusterID}/apply/{appID}:
+        put:
+            tags:
+                - AppService
+            operationId: AppService_Apply
+            parameters:
+                - name: clusterID
+                  in: path
+                  required: true
+                  schema:
+                    type: integer
+                    format: int32
+                - name: appID
+                  in: path
+                  required: true
+                  schema:
+                    type: integer
+                    format: int32
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/app.v1.AppID'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/app.v1.Msg'
+        delete:
+            tags:
+                - AppService
+            operationId: AppService_Delete
+            parameters:
+                - name: clusterID
+                  in: path
+                  required: true
+                  schema:
+                    type: integer
+                    format: int32
+                - name: appID
+                  in: path
+                  required: true
+                  schema:
+                    type: integer
+                    format: int32
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/app.v1.Msg'
+    /app/v1/{clusterID}/get:
+        get:
+            tags:
+                - AppService
+            operationId: AppService_GetApps
+            parameters:
+                - name: clusterID
+                  in: path
+                  required: true
+                  schema:
+                    type: integer
+                    format: int32
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/app.v1.Apps'
+    /app/v1/{clusterID}/get/{appID}:
+        get:
+            tags:
+                - AppService
+            operationId: AppService_GetApp
+            parameters:
+                - name: clusterID
+                  in: path
+                  required: true
+                  schema:
+                    type: integer
+                    format: int32
+                - name: appID
+                  in: path
+                  required: true
+                  schema:
+                    type: integer
+                    format: int32
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/app.v1.App'
     /cluster/v1/apply:
         post:
             tags:
@@ -162,34 +214,44 @@ components:
         app.v1.App:
             type: object
             properties:
-                entries:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/app.v1.AppEntry'
-        app.v1.AppEntry:
-            type: object
-            properties:
+                id:
+                    type: integer
+                    format: int32
                 name:
                     type: string
-                chart:
+                repoName:
                     type: string
-                repo:
+                repoUrl:
+                    type: string
+                chartName:
+                    type: string
+                version:
                     type: string
                 config:
                     type: string
-                enable:
-                    type: boolean
-                releases:
+                secret:
                     type: string
                 namespace:
                     type: string
-                id:
-                    type: string
-        app.v1.GetAppConfigResponse:
+                clusterID:
+                    type: integer
+                    format: int32
+        app.v1.AppID:
             type: object
             properties:
-                config:
-                    type: string
+                clusterID:
+                    type: integer
+                    format: int32
+                appID:
+                    type: integer
+                    format: int32
+        app.v1.Apps:
+            type: object
+            properties:
+                apps:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/app.v1.App'
         app.v1.Msg:
             type: object
             properties:
@@ -197,13 +259,6 @@ components:
                     type: integer
                     format: enum
                 Message:
-                    type: string
-        app.v1.SaveAppConfigRequest:
-            type: object
-            properties:
-                id:
-                    type: string
-                config:
                     type: string
         cluster.v1.Cluster:
             type: object

@@ -11,7 +11,6 @@ import (
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -20,20 +19,22 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	AppService_GetApps_FullMethodName       = "/app.v1.AppService/GetApps"
-	AppService_SaveApps_FullMethodName      = "/app.v1.AppService/SaveApps"
-	AppService_GetAppConfig_FullMethodName  = "/app.v1.AppService/GetAppConfig"
-	AppService_SaveAppConfig_FullMethodName = "/app.v1.AppService/SaveAppConfig"
+	AppService_GetApps_FullMethodName = "/app.v1.AppService/GetApps"
+	AppService_GetApp_FullMethodName  = "/app.v1.AppService/GetApp"
+	AppService_Save_FullMethodName    = "/app.v1.AppService/Save"
+	AppService_Apply_FullMethodName   = "/app.v1.AppService/Apply"
+	AppService_Delete_FullMethodName  = "/app.v1.AppService/Delete"
 )
 
 // AppServiceClient is the client API for AppService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type AppServiceClient interface {
-	GetApps(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*App, error)
-	SaveApps(ctx context.Context, in *App, opts ...grpc.CallOption) (*Msg, error)
-	GetAppConfig(ctx context.Context, in *GetAppConfigRequest, opts ...grpc.CallOption) (*GetAppConfigResponse, error)
-	SaveAppConfig(ctx context.Context, in *SaveAppConfigRequest, opts ...grpc.CallOption) (*Msg, error)
+	GetApps(ctx context.Context, in *ClusterID, opts ...grpc.CallOption) (*Apps, error)
+	GetApp(ctx context.Context, in *AppID, opts ...grpc.CallOption) (*App, error)
+	Save(ctx context.Context, in *App, opts ...grpc.CallOption) (*Msg, error)
+	Apply(ctx context.Context, in *AppID, opts ...grpc.CallOption) (*Msg, error)
+	Delete(ctx context.Context, in *AppID, opts ...grpc.CallOption) (*Msg, error)
 }
 
 type appServiceClient struct {
@@ -44,8 +45,8 @@ func NewAppServiceClient(cc grpc.ClientConnInterface) AppServiceClient {
 	return &appServiceClient{cc}
 }
 
-func (c *appServiceClient) GetApps(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*App, error) {
-	out := new(App)
+func (c *appServiceClient) GetApps(ctx context.Context, in *ClusterID, opts ...grpc.CallOption) (*Apps, error) {
+	out := new(Apps)
 	err := c.cc.Invoke(ctx, AppService_GetApps_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -53,27 +54,36 @@ func (c *appServiceClient) GetApps(ctx context.Context, in *emptypb.Empty, opts 
 	return out, nil
 }
 
-func (c *appServiceClient) SaveApps(ctx context.Context, in *App, opts ...grpc.CallOption) (*Msg, error) {
-	out := new(Msg)
-	err := c.cc.Invoke(ctx, AppService_SaveApps_FullMethodName, in, out, opts...)
+func (c *appServiceClient) GetApp(ctx context.Context, in *AppID, opts ...grpc.CallOption) (*App, error) {
+	out := new(App)
+	err := c.cc.Invoke(ctx, AppService_GetApp_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *appServiceClient) GetAppConfig(ctx context.Context, in *GetAppConfigRequest, opts ...grpc.CallOption) (*GetAppConfigResponse, error) {
-	out := new(GetAppConfigResponse)
-	err := c.cc.Invoke(ctx, AppService_GetAppConfig_FullMethodName, in, out, opts...)
+func (c *appServiceClient) Save(ctx context.Context, in *App, opts ...grpc.CallOption) (*Msg, error) {
+	out := new(Msg)
+	err := c.cc.Invoke(ctx, AppService_Save_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *appServiceClient) SaveAppConfig(ctx context.Context, in *SaveAppConfigRequest, opts ...grpc.CallOption) (*Msg, error) {
+func (c *appServiceClient) Apply(ctx context.Context, in *AppID, opts ...grpc.CallOption) (*Msg, error) {
 	out := new(Msg)
-	err := c.cc.Invoke(ctx, AppService_SaveAppConfig_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, AppService_Apply_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *appServiceClient) Delete(ctx context.Context, in *AppID, opts ...grpc.CallOption) (*Msg, error) {
+	out := new(Msg)
+	err := c.cc.Invoke(ctx, AppService_Delete_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -84,10 +94,11 @@ func (c *appServiceClient) SaveAppConfig(ctx context.Context, in *SaveAppConfigR
 // All implementations must embed UnimplementedAppServiceServer
 // for forward compatibility
 type AppServiceServer interface {
-	GetApps(context.Context, *emptypb.Empty) (*App, error)
-	SaveApps(context.Context, *App) (*Msg, error)
-	GetAppConfig(context.Context, *GetAppConfigRequest) (*GetAppConfigResponse, error)
-	SaveAppConfig(context.Context, *SaveAppConfigRequest) (*Msg, error)
+	GetApps(context.Context, *ClusterID) (*Apps, error)
+	GetApp(context.Context, *AppID) (*App, error)
+	Save(context.Context, *App) (*Msg, error)
+	Apply(context.Context, *AppID) (*Msg, error)
+	Delete(context.Context, *AppID) (*Msg, error)
 	mustEmbedUnimplementedAppServiceServer()
 }
 
@@ -95,17 +106,20 @@ type AppServiceServer interface {
 type UnimplementedAppServiceServer struct {
 }
 
-func (UnimplementedAppServiceServer) GetApps(context.Context, *emptypb.Empty) (*App, error) {
+func (UnimplementedAppServiceServer) GetApps(context.Context, *ClusterID) (*Apps, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetApps not implemented")
 }
-func (UnimplementedAppServiceServer) SaveApps(context.Context, *App) (*Msg, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method SaveApps not implemented")
+func (UnimplementedAppServiceServer) GetApp(context.Context, *AppID) (*App, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetApp not implemented")
 }
-func (UnimplementedAppServiceServer) GetAppConfig(context.Context, *GetAppConfigRequest) (*GetAppConfigResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetAppConfig not implemented")
+func (UnimplementedAppServiceServer) Save(context.Context, *App) (*Msg, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Save not implemented")
 }
-func (UnimplementedAppServiceServer) SaveAppConfig(context.Context, *SaveAppConfigRequest) (*Msg, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method SaveAppConfig not implemented")
+func (UnimplementedAppServiceServer) Apply(context.Context, *AppID) (*Msg, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Apply not implemented")
+}
+func (UnimplementedAppServiceServer) Delete(context.Context, *AppID) (*Msg, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Delete not implemented")
 }
 func (UnimplementedAppServiceServer) mustEmbedUnimplementedAppServiceServer() {}
 
@@ -121,7 +135,7 @@ func RegisterAppServiceServer(s grpc.ServiceRegistrar, srv AppServiceServer) {
 }
 
 func _AppService_GetApps_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(emptypb.Empty)
+	in := new(ClusterID)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -133,61 +147,79 @@ func _AppService_GetApps_Handler(srv interface{}, ctx context.Context, dec func(
 		FullMethod: AppService_GetApps_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AppServiceServer).GetApps(ctx, req.(*emptypb.Empty))
+		return srv.(AppServiceServer).GetApps(ctx, req.(*ClusterID))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AppService_SaveApps_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _AppService_GetApp_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AppID)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AppServiceServer).GetApp(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AppService_GetApp_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AppServiceServer).GetApp(ctx, req.(*AppID))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AppService_Save_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(App)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AppServiceServer).SaveApps(ctx, in)
+		return srv.(AppServiceServer).Save(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: AppService_SaveApps_FullMethodName,
+		FullMethod: AppService_Save_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AppServiceServer).SaveApps(ctx, req.(*App))
+		return srv.(AppServiceServer).Save(ctx, req.(*App))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AppService_GetAppConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetAppConfigRequest)
+func _AppService_Apply_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AppID)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AppServiceServer).GetAppConfig(ctx, in)
+		return srv.(AppServiceServer).Apply(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: AppService_GetAppConfig_FullMethodName,
+		FullMethod: AppService_Apply_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AppServiceServer).GetAppConfig(ctx, req.(*GetAppConfigRequest))
+		return srv.(AppServiceServer).Apply(ctx, req.(*AppID))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AppService_SaveAppConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SaveAppConfigRequest)
+func _AppService_Delete_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AppID)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AppServiceServer).SaveAppConfig(ctx, in)
+		return srv.(AppServiceServer).Delete(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: AppService_SaveAppConfig_FullMethodName,
+		FullMethod: AppService_Delete_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AppServiceServer).SaveAppConfig(ctx, req.(*SaveAppConfigRequest))
+		return srv.(AppServiceServer).Delete(ctx, req.(*AppID))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -204,16 +236,20 @@ var AppService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AppService_GetApps_Handler,
 		},
 		{
-			MethodName: "SaveApps",
-			Handler:    _AppService_SaveApps_Handler,
+			MethodName: "GetApp",
+			Handler:    _AppService_GetApp_Handler,
 		},
 		{
-			MethodName: "GetAppConfig",
-			Handler:    _AppService_GetAppConfig_Handler,
+			MethodName: "Save",
+			Handler:    _AppService_Save_Handler,
 		},
 		{
-			MethodName: "SaveAppConfig",
-			Handler:    _AppService_SaveAppConfig_Handler,
+			MethodName: "Apply",
+			Handler:    _AppService_Apply_Handler,
+		},
+		{
+			MethodName: "Delete",
+			Handler:    _AppService_Delete_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

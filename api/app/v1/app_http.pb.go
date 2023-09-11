@@ -10,7 +10,6 @@ import (
 	context "context"
 	http "github.com/go-kratos/kratos/v2/transport/http"
 	binding "github.com/go-kratos/kratos/v2/transport/http/binding"
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -20,35 +19,63 @@ var _ = binding.EncodeURL
 
 const _ = http.SupportPackageIsVersion1
 
-const OperationAppServiceGetAppConfig = "/app.v1.AppService/GetAppConfig"
+const OperationAppServiceApply = "/app.v1.AppService/Apply"
+const OperationAppServiceDelete = "/app.v1.AppService/Delete"
+const OperationAppServiceGetApp = "/app.v1.AppService/GetApp"
 const OperationAppServiceGetApps = "/app.v1.AppService/GetApps"
-const OperationAppServiceSaveAppConfig = "/app.v1.AppService/SaveAppConfig"
-const OperationAppServiceSaveApps = "/app.v1.AppService/SaveApps"
+const OperationAppServiceSave = "/app.v1.AppService/Save"
 
 type AppServiceHTTPServer interface {
-	GetAppConfig(context.Context, *GetAppConfigRequest) (*GetAppConfigResponse, error)
-	GetApps(context.Context, *emptypb.Empty) (*App, error)
-	SaveAppConfig(context.Context, *SaveAppConfigRequest) (*Msg, error)
-	SaveApps(context.Context, *App) (*Msg, error)
+	Apply(context.Context, *AppID) (*Msg, error)
+	Delete(context.Context, *AppID) (*Msg, error)
+	GetApp(context.Context, *AppID) (*App, error)
+	GetApps(context.Context, *ClusterID) (*Apps, error)
+	Save(context.Context, *App) (*Msg, error)
 }
 
 func RegisterAppServiceHTTPServer(s *http.Server, srv AppServiceHTTPServer) {
 	r := s.Route("/")
-	r.GET("/app/v1/get", _AppService_GetApps0_HTTP_Handler(srv))
-	r.PUT("/app/v1/save", _AppService_SaveApps0_HTTP_Handler(srv))
-	r.GET("/app/v1/config/get", _AppService_GetAppConfig0_HTTP_Handler(srv))
-	r.PUT("/app/v1/config/save", _AppService_SaveAppConfig0_HTTP_Handler(srv))
+	r.GET("/app/v1/{clusterID}/get", _AppService_GetApps0_HTTP_Handler(srv))
+	r.GET("/app/v1/{clusterID}/get/{appID}", _AppService_GetApp0_HTTP_Handler(srv))
+	r.PUT("/app/v1/save", _AppService_Save1_HTTP_Handler(srv))
+	r.PUT("/app/v1/{clusterID}/apply/{appID}", _AppService_Apply1_HTTP_Handler(srv))
+	r.DELETE("/app/v1/{clusterID}/apply/{appID}", _AppService_Delete1_HTTP_Handler(srv))
 }
 
 func _AppService_GetApps0_HTTP_Handler(srv AppServiceHTTPServer) func(ctx http.Context) error {
 	return func(ctx http.Context) error {
-		var in emptypb.Empty
+		var in ClusterID
 		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
 			return err
 		}
 		http.SetOperation(ctx, OperationAppServiceGetApps)
 		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.GetApps(ctx, req.(*emptypb.Empty))
+			return srv.GetApps(ctx, req.(*ClusterID))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*Apps)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _AppService_GetApp0_HTTP_Handler(srv AppServiceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in AppID
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationAppServiceGetApp)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.GetApp(ctx, req.(*AppID))
 		})
 		out, err := h(ctx, &in)
 		if err != nil {
@@ -59,7 +86,7 @@ func _AppService_GetApps0_HTTP_Handler(srv AppServiceHTTPServer) func(ctx http.C
 	}
 }
 
-func _AppService_SaveApps0_HTTP_Handler(srv AppServiceHTTPServer) func(ctx http.Context) error {
+func _AppService_Save1_HTTP_Handler(srv AppServiceHTTPServer) func(ctx http.Context) error {
 	return func(ctx http.Context) error {
 		var in App
 		if err := ctx.Bind(&in); err != nil {
@@ -68,9 +95,9 @@ func _AppService_SaveApps0_HTTP_Handler(srv AppServiceHTTPServer) func(ctx http.
 		if err := ctx.BindQuery(&in); err != nil {
 			return err
 		}
-		http.SetOperation(ctx, OperationAppServiceSaveApps)
+		http.SetOperation(ctx, OperationAppServiceSave)
 		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.SaveApps(ctx, req.(*App))
+			return srv.Save(ctx, req.(*App))
 		})
 		out, err := h(ctx, &in)
 		if err != nil {
@@ -81,37 +108,43 @@ func _AppService_SaveApps0_HTTP_Handler(srv AppServiceHTTPServer) func(ctx http.
 	}
 }
 
-func _AppService_GetAppConfig0_HTTP_Handler(srv AppServiceHTTPServer) func(ctx http.Context) error {
+func _AppService_Apply1_HTTP_Handler(srv AppServiceHTTPServer) func(ctx http.Context) error {
 	return func(ctx http.Context) error {
-		var in GetAppConfigRequest
-		if err := ctx.BindQuery(&in); err != nil {
-			return err
-		}
-		http.SetOperation(ctx, OperationAppServiceGetAppConfig)
-		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.GetAppConfig(ctx, req.(*GetAppConfigRequest))
-		})
-		out, err := h(ctx, &in)
-		if err != nil {
-			return err
-		}
-		reply := out.(*GetAppConfigResponse)
-		return ctx.Result(200, reply)
-	}
-}
-
-func _AppService_SaveAppConfig0_HTTP_Handler(srv AppServiceHTTPServer) func(ctx http.Context) error {
-	return func(ctx http.Context) error {
-		var in SaveAppConfigRequest
+		var in AppID
 		if err := ctx.Bind(&in); err != nil {
 			return err
 		}
 		if err := ctx.BindQuery(&in); err != nil {
 			return err
 		}
-		http.SetOperation(ctx, OperationAppServiceSaveAppConfig)
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationAppServiceApply)
 		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.SaveAppConfig(ctx, req.(*SaveAppConfigRequest))
+			return srv.Apply(ctx, req.(*AppID))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*Msg)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _AppService_Delete1_HTTP_Handler(srv AppServiceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in AppID
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationAppServiceDelete)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.Delete(ctx, req.(*AppID))
 		})
 		out, err := h(ctx, &in)
 		if err != nil {
@@ -123,10 +156,11 @@ func _AppService_SaveAppConfig0_HTTP_Handler(srv AppServiceHTTPServer) func(ctx 
 }
 
 type AppServiceHTTPClient interface {
-	GetAppConfig(ctx context.Context, req *GetAppConfigRequest, opts ...http.CallOption) (rsp *GetAppConfigResponse, err error)
-	GetApps(ctx context.Context, req *emptypb.Empty, opts ...http.CallOption) (rsp *App, err error)
-	SaveAppConfig(ctx context.Context, req *SaveAppConfigRequest, opts ...http.CallOption) (rsp *Msg, err error)
-	SaveApps(ctx context.Context, req *App, opts ...http.CallOption) (rsp *Msg, err error)
+	Apply(ctx context.Context, req *AppID, opts ...http.CallOption) (rsp *Msg, err error)
+	Delete(ctx context.Context, req *AppID, opts ...http.CallOption) (rsp *Msg, err error)
+	GetApp(ctx context.Context, req *AppID, opts ...http.CallOption) (rsp *App, err error)
+	GetApps(ctx context.Context, req *ClusterID, opts ...http.CallOption) (rsp *Apps, err error)
+	Save(ctx context.Context, req *App, opts ...http.CallOption) (rsp *Msg, err error)
 }
 
 type AppServiceHTTPClientImpl struct {
@@ -137,11 +171,37 @@ func NewAppServiceHTTPClient(client *http.Client) AppServiceHTTPClient {
 	return &AppServiceHTTPClientImpl{client}
 }
 
-func (c *AppServiceHTTPClientImpl) GetAppConfig(ctx context.Context, in *GetAppConfigRequest, opts ...http.CallOption) (*GetAppConfigResponse, error) {
-	var out GetAppConfigResponse
-	pattern := "/app/v1/config/get"
+func (c *AppServiceHTTPClientImpl) Apply(ctx context.Context, in *AppID, opts ...http.CallOption) (*Msg, error) {
+	var out Msg
+	pattern := "/app/v1/{clusterID}/apply/{appID}"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationAppServiceApply))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "PUT", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, err
+}
+
+func (c *AppServiceHTTPClientImpl) Delete(ctx context.Context, in *AppID, opts ...http.CallOption) (*Msg, error) {
+	var out Msg
+	pattern := "/app/v1/{clusterID}/apply/{appID}"
 	path := binding.EncodeURL(pattern, in, true)
-	opts = append(opts, http.Operation(OperationAppServiceGetAppConfig))
+	opts = append(opts, http.Operation(OperationAppServiceDelete))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "DELETE", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, err
+}
+
+func (c *AppServiceHTTPClientImpl) GetApp(ctx context.Context, in *AppID, opts ...http.CallOption) (*App, error) {
+	var out App
+	pattern := "/app/v1/{clusterID}/get/{appID}"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationAppServiceGetApp))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
 	if err != nil {
@@ -150,9 +210,9 @@ func (c *AppServiceHTTPClientImpl) GetAppConfig(ctx context.Context, in *GetAppC
 	return &out, err
 }
 
-func (c *AppServiceHTTPClientImpl) GetApps(ctx context.Context, in *emptypb.Empty, opts ...http.CallOption) (*App, error) {
-	var out App
-	pattern := "/app/v1/get"
+func (c *AppServiceHTTPClientImpl) GetApps(ctx context.Context, in *ClusterID, opts ...http.CallOption) (*Apps, error) {
+	var out Apps
+	pattern := "/app/v1/{clusterID}/get"
 	path := binding.EncodeURL(pattern, in, true)
 	opts = append(opts, http.Operation(OperationAppServiceGetApps))
 	opts = append(opts, http.PathTemplate(pattern))
@@ -163,24 +223,11 @@ func (c *AppServiceHTTPClientImpl) GetApps(ctx context.Context, in *emptypb.Empt
 	return &out, err
 }
 
-func (c *AppServiceHTTPClientImpl) SaveAppConfig(ctx context.Context, in *SaveAppConfigRequest, opts ...http.CallOption) (*Msg, error) {
-	var out Msg
-	pattern := "/app/v1/config/save"
-	path := binding.EncodeURL(pattern, in, false)
-	opts = append(opts, http.Operation(OperationAppServiceSaveAppConfig))
-	opts = append(opts, http.PathTemplate(pattern))
-	err := c.cc.Invoke(ctx, "PUT", path, in, &out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return &out, err
-}
-
-func (c *AppServiceHTTPClientImpl) SaveApps(ctx context.Context, in *App, opts ...http.CallOption) (*Msg, error) {
+func (c *AppServiceHTTPClientImpl) Save(ctx context.Context, in *App, opts ...http.CallOption) (*Msg, error) {
 	var out Msg
 	pattern := "/app/v1/save"
 	path := binding.EncodeURL(pattern, in, false)
-	opts = append(opts, http.Operation(OperationAppServiceSaveApps))
+	opts = append(opts, http.Operation(OperationAppServiceSave))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "PUT", path, in, &out, opts...)
 	if err != nil {

@@ -10,29 +10,35 @@ import "api/app/v1/message.proto";
 option go_package = "api/app/v1;v1";
 
 service AppService {
-  rpc GetApps(google.protobuf.Empty) returns (app.v1.App) {
+  rpc GetApps(app.v1.ClusterID) returns (app.v1.Apps) {
     option (google.api.http) = {
-      get: "/app/v1/get"
+      get: "/app/v1/{clusterID}/get"
     };
   }
 
-  rpc SaveApps(app.v1.App) returns (app.v1.Msg) {
+  rpc GetApp(app.v1.AppID) returns (app.v1.App) {
+    option (google.api.http) = {
+      get: "/app/v1/{clusterID}/get/{appID}"
+    };
+  }
+
+  rpc Save(app.v1.App) returns (app.v1.Msg) {
     option (google.api.http) = {
       put: "/app/v1/save"
       body: "*"
     };
   }
 
-  rpc GetAppConfig(app.v1.GetAppConfigRequest) returns (app.v1.GetAppConfigResponse) {
+  rpc Apply(app.v1.AppID) returns (app.v1.Msg) {
     option (google.api.http) = {
-      get: "/app/v1/config/get"
+      put: "/app/v1/{clusterID}/apply/{appID}"
+      body: "*"
     };
   }
 
-  rpc SaveAppConfig(app.v1.SaveAppConfigRequest) returns (app.v1.Msg) {
+  rpc Delete(app.v1.AppID) returns (app.v1.Msg) {
     option (google.api.http) = {
-      put: "/app/v1/config/save"
-      body: "*"
+      delete: "/app/v1/{clusterID}/apply/{appID}"
     };
   }
 

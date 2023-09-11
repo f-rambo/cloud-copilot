@@ -4,30 +4,28 @@ package app.v1;
 
 option go_package = "api/app/v1;v1";
 
+message Apps {
+      repeated App apps = 1;
+}
+
+message ClusterID {
+      int32 clusterID = 1;
+}
+
+message AppID {
+      int32 clusterID = 1;
+      int32 appID = 2;
+}
+
 message App {
-      repeated AppEntry entries = 1;
-}
-
-message AppEntry {
-      string name = 1;
-      string chart = 2;
-      string repo = 3;
-      string config = 4;
-      bool enable = 5;
-      string releases = 6;
-      string namespace = 7;
-      string id = 8;
-}
-
-message GetAppConfigRequest {
-      string id = 1;
-}
-
-message GetAppConfigResponse {
-      string config = 1;
-}
-
-message SaveAppConfigRequest {
-      string id = 1;
-      string config = 2;
+      int32 id = 1;
+      string name = 2;
+      string repoName = 3;
+      string repoUrl = 4;
+      string chartName = 5;
+      string version = 6;
+      string config = 7;
+      string secret = 8;
+      string namespace = 9;
+      int32 clusterID = 10;
 }
