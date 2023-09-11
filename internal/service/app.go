@@ -2,8 +2,9 @@ package service
 
 import (
 	"context"
-	v1 "ocean/api/app/v1"
-	"ocean/internal/biz"
+
+	v1 "github.com/f-rambo/ocean/api/app/v1"
+	"github.com/f-rambo/ocean/internal/biz"
 
 	"github.com/golang/protobuf/ptypes/empty"
 )
@@ -31,10 +32,6 @@ func (a *AppService) SaveApps(ctx context.Context, apps *v1.App) (*v1.Msg, error
 }
 
 func (a *AppService) GetAppConfig(ctx context.Context, req *v1.GetAppConfigRequest) (*v1.GetAppConfigResponse, error) {
-	_, err := a.uc.GetAppConfig(ctx, req.Id)
-	if err != nil {
-		return nil, err
-	}
 	return &v1.GetAppConfigResponse{}, nil
 }
 

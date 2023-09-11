@@ -4,11 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"ocean/internal/biz"
-	"ocean/internal/data/restapi"
 	"strings"
 
-	"ocean/utils"
+	"github.com/f-rambo/ocean/internal/biz"
+	"github.com/f-rambo/ocean/internal/data/restapi"
+
+	utils "github.com/f-rambo/ocean/utils"
 
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-redis/redis"
@@ -71,7 +72,7 @@ func NewClusterRepo(data *Data, logger log.Logger) biz.ClusterRepo {
 }
 
 func (c *clusterRepo) SaveCluster(ctx context.Context, cluster *biz.Cluster) error {
-	if cluster.Applyed {
+	if cluster.Deployed {
 		err := c.deleteCacheCluster(ctx, cluster.Name)
 		if err != nil {
 			return err

@@ -1,11 +1,11 @@
 package server
 
 import (
-	appv1 "ocean/api/app/v1"
-	clusterv1 "ocean/api/cluster/v1"
-	helloworldv1 "ocean/api/helloworld/v1"
-	"ocean/internal/conf"
-	"ocean/internal/service"
+	appv1 "github.com/f-rambo/ocean/api/app/v1"
+	clusterv1 "github.com/f-rambo/ocean/api/cluster/v1"
+	helloworldv1 "github.com/f-rambo/ocean/api/helloworld/v1"
+	"github.com/f-rambo/ocean/internal/conf"
+	"github.com/f-rambo/ocean/internal/service"
 
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-kratos/kratos/v2/middleware/recovery"

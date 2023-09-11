@@ -3,8 +3,8 @@ package service
 import (
 	"context"
 
-	v1 "ocean/api/helloworld/v1"
-	"ocean/internal/biz"
+	v1 "github.com/f-rambo/ocean/api/helloworld/v1"
+	"github.com/f-rambo/ocean/internal/biz"
 )
 
 // GreeterService is a greeter service.

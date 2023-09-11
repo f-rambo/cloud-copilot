@@ -10,10 +10,10 @@ import (
 )
 
 type Cluster struct {
-	ID      int    `json:"id" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
-	Name    string `json:"cluster_name" gorm:"column:cluster_name; default:''; NOT NULL"`
-	Nodes   []Node `json:"nodes" gorm:"-"`
-	Applyed bool   `json:"applyed" gorm:"column:applyed;"`
+	ID       int    `json:"id" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
+	Name     string `json:"cluster_name" gorm:"column:cluster_name; default:''; NOT NULL"`
+	Nodes    []Node `json:"nodes" gorm:"-"`
+	Deployed bool   `json:"deployed" gorm:"column:deployed;"`
 	ClusterConfig
 	ClusterSemaphore
 	gorm.Model
@@ -95,7 +95,7 @@ func (c *Cluster) Merge(cluster *Cluster) {
 	c.InventoryID = cluster.InventoryID
 	c.TemplateIDs = cluster.TemplateIDs
 	c.CreatedAt = cluster.CreatedAt
-	c.Applyed = false
+	c.Deployed = false
 }
 
 type ClusterRepo interface {
@@ -172,14 +172,14 @@ func (c *ClusterUsecase) Apply(ctx context.Context, clusterName string) error {
 	if err != nil {
 		return err
 	}
-	if cluster.Applyed {
+	if cluster.Deployed {
 		return errors.New("cluster is applyed")
 	}
 	currentCluster, err := c.repo.GetCluster(ctx, cluster.ID)
 	if err != nil {
 		return err
 	}
-	if currentCluster == nil || !currentCluster.Applyed {
+	if currentCluster == nil || !currentCluster.Deployed {
 		err = c.repo.ClusterInit(ctx, cluster)
 		if err != nil {
 			return err
@@ -206,7 +206,7 @@ func (c *ClusterUsecase) Apply(ctx context.Context, clusterName string) error {
 			return err
 		}
 	}
-	cluster.Applyed = true
+	cluster.Deployed = true
 	return c.repo.SaveCluster(ctx, cluster)
 }
 

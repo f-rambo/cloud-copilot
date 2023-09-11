@@ -6,11 +6,11 @@
 package main
 
 import (
-	"ocean/internal/biz"
-	"ocean/internal/conf"
-	"ocean/internal/data"
-	"ocean/internal/server"
-	"ocean/internal/service"
+	"github.com/f-rambo/ocean/internal/biz"
+	"github.com/f-rambo/ocean/internal/conf"
+	"github.com/f-rambo/ocean/internal/data"
+	"github.com/f-rambo/ocean/internal/server"
+	"github.com/f-rambo/ocean/internal/service"
 
 	"github.com/go-kratos/kratos/v2"
 	"github.com/go-kratos/kratos/v2/log"

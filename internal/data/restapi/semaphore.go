@@ -4,7 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"ocean/internal/conf"
+
+	"github.com/f-rambo/ocean/internal/conf"
 
 	"github.com/go-resty/resty/v2"
 )

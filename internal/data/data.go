@@ -3,10 +3,11 @@ package data
 import (
 	"context"
 	"fmt"
-	"ocean/internal/biz"
-	"ocean/internal/conf"
-	"ocean/internal/data/restapi"
 	"time"
+
+	"github.com/f-rambo/ocean/internal/biz"
+	"github.com/f-rambo/ocean/internal/conf"
+	"github.com/f-rambo/ocean/internal/data/restapi"
 
 	bigcache "github.com/allegro/bigcache/v3"
 	"github.com/go-kratos/kratos/v2/log"
@@ -43,19 +44,19 @@ func NewData(c *conf.Data, logger log.Logger) (*Data, func(), error) {
 		data.redisClient.Close()
 		log.NewHelper(logger).Info("closing the data resources")
 	}
-	data.k8sClient, err = NewKubernetes(c.Kubernetes)
+	err = data.newKubernetes()
 	if err != nil {
 		log.NewHelper(logger).Info("kubernetes client error, check whether the cluster has been deployed. If the cluster is not deployed, ignore this error")
 	}
-	data.db, err = NewDB(c.Database)
+	data.db, err = newDB(c.Database)
 	if err != nil {
 		return nil, cleanup, err
 	}
-	data.redisClient, err = NewRedis(c.Redis)
+	data.redisClient, err = newRedis(c.Redis)
 	if err != nil {
 		return nil, cleanup, err
 	}
-	data.localCache, err = NewCache()
+	data.localCache, err = newCache()
 	if err != nil {
 		return nil, cleanup, err
 	}
@@ -67,7 +68,7 @@ func NewData(c *conf.Data, logger log.Logger) (*Data, func(), error) {
 }
 
 // 获取数据库连接客户端
-func NewDB(c conf.Database) (*gorm.DB, error) {
+func newDB(c conf.Database) (*gorm.DB, error) {
 	var client *gorm.DB
 	var err error
 	if c.GetDriver() == "mysql" {
@@ -96,7 +97,8 @@ func NewDB(c conf.Database) (*gorm.DB, error) {
 }
 
 // 获取k8s客户端 todo kubeconfig path masterurl
-func NewKubernetes(c conf.Kubernetes) (*kubernetes.Clientset, error) {
+func (d *Data) newKubernetes() error {
+	c := d.c.Kubernetes
 	kubeconfig := c.GetKubeConfig()
 	if kubeconfig == "" {
 		kubeconfig = clientcmd.RecommendedHomeFile
@@ -106,15 +108,20 @@ func NewKubernetes(c conf.Kubernetes) (*kubernetes.Clientset, error) {
 		// 集群内连接
 		cfg, err = rest.InClusterConfig()
 		if err != nil {
-			return nil, err
+			return err
 		}
 	}
 	// 连接kubernetes
-	return kubernetes.NewForConfig(cfg)
+	k8sClient, err := kubernetes.NewForConfig(cfg)
+	if err != nil {
+		return err
+	}
+	d.k8sClient = k8sClient
+	return nil
 }
 
 // 获取Redis客户端
-func NewRedis(c conf.Redis) (*redis.Client, error) {
+func newRedis(c conf.Redis) (*redis.Client, error) {
 	client := redis.NewClient(&redis.Options{
 		Addr:     fmt.Sprintf("%s:%d", c.Host, c.Port),
 		Password: c.Password,
@@ -128,6 +135,6 @@ func NewRedis(c conf.Redis) (*redis.Client, error) {
 }
 
 // 获取本地缓存
-func NewCache() (*bigcache.BigCache, error) {
+func newCache() (*bigcache.BigCache, error) {
 	return bigcache.New(context.TODO(), bigcache.DefaultConfig(time.Hour))
 }

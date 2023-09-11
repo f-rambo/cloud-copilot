@@ -2,13 +2,13 @@ package data
 
 import (
 	"context"
-	"ocean/internal/biz"
+
+	"github.com/f-rambo/ocean/internal/biz"
 
 	"github.com/go-kratos/kratos/v2/log"
-	"gopkg.in/yaml.v3"
+	"gorm.io/gorm"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
-
-var appKey = "app/config"
 
 type appRepo struct {
 	data *Data
@@ -22,81 +22,70 @@ func NewAppRepo(data *Data, logger log.Logger) biz.AppRepo {
 	}
 }
 
-func (a *appRepo) GetApps(ctx context.Context) ([]*biz.App, error) {
-	// get app config file content
-	appData, err := readFile(getAPPConfigPath())
-	if err != nil {
-		return nil, err
+func (a *appRepo) Save(ctx context.Context, app *biz.App) error {
+	err := a.data.db.Save(&app).Error
+	if err != nil && err != gorm.ErrRecordNotFound {
+		return err
 	}
+	return nil
+}
+
+func (a *appRepo) GetApps(ctx context.Context, clusterID int) ([]*biz.App, error) {
 	apps := make([]*biz.App, 0)
-	// yaml unmarshal
-	err = yaml.Unmarshal(appData, &apps)
-	if err != nil {
+	err := a.data.db.Where("cluster_id = ?", clusterID).Find(&apps).Error
+	if err != nil && err != gorm.ErrRecordNotFound {
 		return nil, err
 	}
 	return apps, nil
 }
 
-func (a *appRepo) SaveApp(ctx context.Context, app *biz.App) error {
-	// 设置ID
-	if a.data.db == nil {
-		return a.saveAppToYamlFile(ctx, app)
-	}
-	return a.saveAppToDB(ctx, app)
-}
-
-func (a *appRepo) saveAppToYamlFile(ctx context.Context, app *biz.App) error {
-	apps, err := a.GetApps(ctx)
-	if err != nil {
-		return err
-	}
-	appIsExist := false
-	index := 0
-	for i, v := range apps {
-		if v.ID == app.ID {
-			appIsExist = true
-			index = i
-		}
-	}
-	if appIsExist {
-		apps[index] = app
-	} else {
-		apps = append(apps, app)
-	}
-	// yaml marshal
-	appData, err := yaml.Marshal(apps)
-	if err != nil {
-		return err
-	}
-	// write to file
-	err = writeFile(getAPPConfigPath(), appData)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (a *appRepo) saveAppToDB(ctx context.Context, app *biz.App) error {
-	return nil
-}
-
-func (a *appRepo) GetAppById(ctx context.Context, appId int) (*biz.App, error) {
-	apps, err := a.GetApps(ctx)
-	if err != nil {
+func (a *appRepo) GetApp(ctx context.Context, appId int) (*biz.App, error) {
+	app := &biz.App{}
+	err := a.data.db.Where("id = ?", appId).First(&app).Error
+	if err != nil && err != gorm.ErrRecordNotFound {
 		return nil, err
 	}
-	for _, app := range apps {
-		if app.ID == appId {
-			return app, nil
-		}
+	return app, nil
+}
+
+func (a *appRepo) DeleteApp(ctx context.Context, appId int) error {
+	// 删除app
+	err := a.k8s()
+	if err != nil {
+		return err
 	}
-	return nil, nil
-}
-
-func (a *appRepo) DeployApp(ctx context.Context, appId string) error {
+	err = a.data.db.Where("id = ?", appId).Delete(&biz.App{}).Error
+	if err != nil && err != gorm.ErrRecordNotFound {
+		return err
+	}
 	return nil
 }
 
-func (a *appRepo) DestroyApp(ctx context.Context, appId string) error {
+func (a *appRepo) Apply(ctx context.Context, app *biz.App) error {
+	err := a.k8s()
+	if err != nil {
+		return err
+	}
+	k8sClient := a.data.k8sClient
+	// 创建configmap
+	app.ConfigMap, err = k8sClient.CoreV1().ConfigMaps(app.Namespace).Create(ctx, app.ConfigMap, metav1.CreateOptions{})
+	if err != nil {
+		return err
+	}
+	// 创建secret
+	app.Secret, err = k8sClient.CoreV1().Secrets(app.Namespace).Create(ctx, app.Secret, metav1.CreateOptions{})
+	if err != nil {
+		return err
+	}
+	// 创建app
+	// appObj := &operatoroceaniov1alpha1.App{}
+	// k8sClient.RESTClient().Post().Namespace(app.Namespace).Resource("app").Body(app).Do(ctx).Into(appObj)
 	return nil
+}
+
+func (a *appRepo) k8s() error {
+	if a.data.k8sClient != nil {
+		return nil
+	}
+	return a.data.newKubernetes()
 }

@@ -3,7 +3,7 @@ package data
 import (
 	"context"
 
-	"ocean/internal/biz"
+	"github.com/f-rambo/ocean/internal/biz"
 
 	"github.com/go-kratos/kratos/v2/log"
 )

@@ -3,9 +3,10 @@ package service
 import (
 	"context"
 	"fmt"
-	v1 "ocean/api/cluster/v1"
-	"ocean/internal/biz"
-	"ocean/internal/conf"
+
+	v1 "github.com/f-rambo/ocean/api/cluster/v1"
+	"github.com/f-rambo/ocean/internal/biz"
+	"github.com/f-rambo/ocean/internal/conf"
 
 	"google.golang.org/protobuf/types/known/emptypb"
 )
@@ -32,7 +33,7 @@ func (c *ClusterService) Get(ctx context.Context, _ *emptypb.Empty) (*v1.Cluster
 			ClusterName: cluster.Name,
 			Config:      string(cluster.Config),
 			Addons:      string(cluster.Addons),
-			Applyed:     cluster.Applyed,
+			Applyed:     cluster.Deployed,
 		}
 		for _, node := range cluster.Nodes {
 			v.Nodes = append(v.Nodes, &v1.Node{

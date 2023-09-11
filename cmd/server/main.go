@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"ocean/internal/conf"
+	"github.com/f-rambo/ocean/internal/conf"
 
 	"github.com/go-kratos/kratos/v2"
 	"github.com/go-kratos/kratos/v2/config"
