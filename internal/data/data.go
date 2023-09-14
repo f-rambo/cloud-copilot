@@ -32,6 +32,7 @@ type Data struct {
 	redisClient *redis.Client
 	localCache  *bigcache.BigCache
 	semaphore   *restapi.Semaphore
+	argoWf      *restapi.ArgoWorkflows
 }
 
 func NewData(c *conf.Data, logger log.Logger) (*Data, func(), error) {
@@ -63,6 +64,10 @@ func NewData(c *conf.Data, logger log.Logger) (*Data, func(), error) {
 	data.semaphore, err = restapi.NewSemaphore(c.Semaphore)
 	if err != nil {
 		return nil, cleanup, err
+	}
+	data.argoWf, err = restapi.NewArgoWorkflows(c.ArgoWorkflows)
+	if err != nil {
+		log.NewHelper(logger).Info("argo-workflows client error, check whether the argo-workflows has been deployed. If the argo-workflows is not deployed, ignore this error")
 	}
 	return data, cleanup, nil
 }
