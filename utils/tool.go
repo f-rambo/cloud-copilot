@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"bufio"
 	"encoding/json"
 	"os"
 
@@ -52,4 +53,39 @@ func CreateDir(path string) error {
 		return err
 	}
 	return nil
+}
+
+// ReadFile 读取文件内容
+func ReadFile(filename string) (string, error) {
+	file, err := os.Open(filename)
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
+
+	var content string
+	scanner := bufio.NewScanner(file)
+	buf := make([]byte, 0, 64*1024)
+	scanner.Buffer(buf, 10*1024*1024)
+
+	for scanner.Scan() {
+		content += scanner.Text()
+		content += "\n"
+	}
+
+	if err := scanner.Err(); err != nil {
+		return "", err
+	}
+
+	return content, nil
+}
+
+// 判断切片中是否包含查所要的元素
+func Contains(slice []string, item string) bool {
+	for _, s := range slice {
+		if s == item {
+			return true
+		}
+	}
+	return false
 }

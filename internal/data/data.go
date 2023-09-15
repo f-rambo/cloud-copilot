@@ -22,7 +22,7 @@ import (
 )
 
 // ProviderSet is data providers.
-var ProviderSet = wire.NewSet(NewData, NewGreeterRepo, NewClusterRepo, NewAppRepo)
+var ProviderSet = wire.NewSet(NewData, NewClusterRepo, NewAppRepo, NewServicesRepo)
 
 type Data struct {
 	c           *conf.Data
@@ -32,7 +32,6 @@ type Data struct {
 	redisClient *redis.Client
 	localCache  *bigcache.BigCache
 	semaphore   *restapi.Semaphore
-	argoWf      *restapi.ArgoWorkflows
 }
 
 func NewData(c *conf.Data, logger log.Logger) (*Data, func(), error) {
@@ -65,10 +64,6 @@ func NewData(c *conf.Data, logger log.Logger) (*Data, func(), error) {
 	if err != nil {
 		return nil, cleanup, err
 	}
-	data.argoWf, err = restapi.NewArgoWorkflows(c.ArgoWorkflows)
-	if err != nil {
-		log.NewHelper(logger).Info("argo-workflows client error, check whether the argo-workflows has been deployed. If the argo-workflows is not deployed, ignore this error")
-	}
 	return data, cleanup, nil
 }
 
@@ -94,7 +89,7 @@ func newDB(c conf.Database) (*gorm.DB, error) {
 	}
 	// AutoMigrate
 	err = client.Set("gorm:table_options", "ENGINE=InnoDB DEFAULT CHARSET=utf8").
-		AutoMigrate(&biz.Cluster{}, &biz.Node{}, &biz.App{})
+		AutoMigrate(&biz.Cluster{}, &biz.Node{}, &biz.App{}, &biz.Service{}, &biz.CI{})
 	if err != nil {
 		return client, err
 	}

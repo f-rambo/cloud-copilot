@@ -190,25 +190,18 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/cluster.v1.Msg'
-    /helloworld/{name}:
+    /service/v1/get/ocean:
         get:
             tags:
-                - Greeter
-            description: Sends a greeting
-            operationId: Greeter_SayHello
-            parameters:
-                - name: name
-                  in: path
-                  required: true
-                  schema:
-                    type: string
+                - ServiceService
+            operationId: ServiceService_GetOceanService
             responses:
                 "200":
                     description: OK
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/helloworld.v1.HelloReply'
+                                $ref: '#/components/schemas/service.v1.Service'
 components:
     schemas:
         app.v1.App:
@@ -318,14 +311,54 @@ components:
                     type: array
                     items:
                         type: string
-        helloworld.v1.HelloReply:
+        service.v1.CI:
             type: object
             properties:
-                message:
+                id:
+                    type: integer
+                    format: int32
+                version:
                     type: string
-            description: The response message containing the greetings
+                branch:
+                    type: string
+                tag:
+                    type: string
+                args:
+                    type: object
+                    additionalProperties:
+                        type: string
+                description:
+                    type: string
+                serviceId:
+                    type: integer
+                    format: int32
+                workflowName:
+                    type: string
+                workflowLog:
+                    type: string
+        service.v1.Service:
+            type: object
+            properties:
+                id:
+                    type: integer
+                    format: int32
+                name:
+                    type: string
+                repo:
+                    type: string
+                registry:
+                    type: string
+                registryUser:
+                    type: string
+                registryPwd:
+                    type: string
+                workflow:
+                    type: string
+                cis:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/service.v1.CI'
 tags:
     - name: AppService
     - name: ClusterService
-    - name: Greeter
-      description: The greeting service definition.
+    - name: ServiceService

@@ -3,7 +3,6 @@ syntax = "proto3";
 package app.v1;
 
 import "google/api/annotations.proto";
-import "google/protobuf/empty.proto";
 import "api/app/v1/error_reason.proto";
 import "api/app/v1/message.proto";
 

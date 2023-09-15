@@ -26,11 +26,6 @@ data:
   kubernetes:
     master_url: 
     kube_config: 
-  argoWorkflows:
-    host: "localhost"
-    port: 2746
-    instance_id: ""
-    token: ""
 log:
   path: logs
   filename: log.log

@@ -1,6 +1,7 @@
 GOHOSTOS:=$(shell go env GOHOSTOS)
 GOPATH:=$(shell go env GOPATH)
-VERSION=0.1.0
+VERSION=0.0.1
+IMG=frambos/ocean:$(VERSION)
 
 ifeq ($(GOHOSTOS), windows)
 	#the `find.exe` is different from `find` in bash/shell.
@@ -41,10 +42,20 @@ api:
 build:
 	mkdir -p bin/ && go build -ldflags "-X main.Version=$(VERSION)" -o ./bin/ ./...
 
-dev-run:
-	make build;
-	./bin/server
+.PHONY: docker-build
+# docker-build
+docker-build:
+	docker build -t $(IMG) -f Dockerfile .
 
+.PHONY: docker-push
+# docker-push
+docker-push:
+	docker push $(IMG)
+
+.PHONY: dev-run
+# dev-run
+dev-run:
+	go run ./cmd/server
 
 .PHONY: generate
 # generate

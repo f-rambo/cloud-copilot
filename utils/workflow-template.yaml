@@ -1,14 +1,19 @@
 apiVersion: argoproj.io/v1alpha1
-kind: WorkflowTemplate
+kind: Workflow
 metadata:
-  name: ci-template
+  generateName: golang-ci-ocean-
 spec:
   arguments:
     parameters:
+      - name: name
       - name: repo
-        value:
+      - name: registry
+      - name: registry_user
+      - name: registry_pwd
+      - name: version
       - name: branch
-        value: master
+      - name: tag
+      - name: custom
 
   entrypoint: main
   onExit: image
@@ -45,10 +50,15 @@ spec:
         image: moby/buildkit:latest
         workingDir: /app
         command: [ sh, -xuce ]
-        # buildctl --creds username:password --registry myregistry.example.com:5000 build --frontend dockerfile.v0 --local context=. --local dockerfile=. --output type=image,name=myimage,push=true .
         args: 
           - |
-            buildctl --creds username:password --registry myregistry.example.com:5000 build --frontend dockerfile.v0 --local context=. --local dockerfile=. --output type=image,name={{workflow.parameters.image}},push=true
+            buildctl --creds {{workflow.parameters.registry_user}}:{{workflow.parameters.registry_pwd}} \
+            --registry {{workflow.parameters.registry}} \
+            build \
+            --frontend dockerfile.v0 \
+            --local context=. \
+            --local dockerfile=. \
+            --output type=image,name={{workflow.parameters.name}}:{{workflow.parameters.version}},push=true
 
     - name: clone
       container:
@@ -60,7 +70,12 @@ spec:
         command: [ sh, -xuce ]
         args:
           - |
-            git clone -v -b "{{workflow.parameters.branch}}" --single-branch --depth 1 "{{workflow.parameters.repo}}" .
+            if [ -z "{{workflow.parameters.tag}}" ]
+            then
+                git clone -v -b "{{workflow.parameters.branch}}" --single-branch --depth 1 "{{workflow.parameters.repo}}" .
+            else
+                git clone -v -b "{{workflow.parameters.tag}}" --single-branch --depth 1 "{{workflow.parameters.repo}}" .
+            fi
 
     - name: deps
       container:

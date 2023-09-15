@@ -59,11 +59,10 @@ func (g GRPC) GetAddr() string {
 }
 
 type Data struct {
-	Database      Database      `json:"database,omitempty"`
-	Redis         Redis         `json:"redis,omitempty"`
-	Semaphore     Semaphore     `json:"semaphore,omitempty"`
-	Kubernetes    Kubernetes    `json:"kubernetes,omitempty"`
-	ArgoWorkflows ArgoWorkflows `json:"argoWorkflows,omitempty"`
+	Database   Database   `json:"database,omitempty"`
+	Redis      Redis      `json:"redis,omitempty"`
+	Semaphore  Semaphore  `json:"semaphore,omitempty"`
+	Kubernetes Kubernetes `json:"kubernetes,omitempty"`
 }
 
 type Database struct {
@@ -224,46 +223,6 @@ func (k Kubernetes) GetKubeConfig() string {
 		return kubeConfig
 	}
 	return k.KubeConfig
-}
-
-type ArgoWorkflows struct {
-	Host       string `json:"host,omitempty"`
-	Port       int32  `json:"port,omitempty"`
-	InstanceID string `json:"instance_id,omitempty"`
-	Token      string `json:"token,omitempty"`
-}
-
-func (a ArgoWorkflows) GetHost() string {
-	host := os.Getenv("ARGO_WORKFLOWS_HOST")
-	if host != "" {
-		return host
-	}
-	return a.Host
-}
-
-func (a ArgoWorkflows) GetPort() int32 {
-	port := os.Getenv("ARGO_WORKFLOWS_PORT")
-	if port != "" {
-		portInt, _ := strconv.Atoi(port)
-		return int32(portInt)
-	}
-	return a.Port
-}
-
-func (a ArgoWorkflows) GetInstanceId() string {
-	instanceID := os.Getenv("ARGO_WORKFLOWS_INSTANCE_ID")
-	if instanceID != "" {
-		return instanceID
-	}
-	return a.InstanceID
-}
-
-func (a ArgoWorkflows) GetToken() string {
-	token := os.Getenv("ARGO_WORKFLOWS_TOKEN")
-	if token != "" {
-		return token
-	}
-	return a.Token
 }
 
 type Log struct {

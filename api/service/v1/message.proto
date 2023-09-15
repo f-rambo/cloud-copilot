@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+package service.v1;
+
+option go_package = "api/service/v1;v1";
+
+message ServiceID {
+      int32 id = 1;
+}
+
+message Services {
+      repeated Service services = 1;
+}
+
+message Service {
+      int32 id = 1;
+      string name = 2;
+      string repo = 3;
+      string registry = 4;
+      string registry_user = 5;
+      string registry_pwd = 6;
+      string workflow = 7;
+      repeated CI cis = 8;
+}
+
+message CI {
+      int32 id = 1;
+      string version = 2;
+      string branch = 3;
+      string tag = 4;
+      map<string,string> args = 5;
+      string description = 6;
+      int32 service_id = 7;
+      string workflow_name = 8;
+      string workflow_log = 9;
+}
