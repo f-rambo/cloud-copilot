@@ -190,6 +190,113 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/cluster.v1.Msg'
+    /service/v1:
+        get:
+            tags:
+                - ServiceService
+            operationId: ServiceService_GetServices
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/service.v1.Services'
+        post:
+            tags:
+                - ServiceService
+            operationId: ServiceService_SaveService
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/service.v1.Service'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/service.v1.ServiceID'
+    /service/v1/ci:
+        get:
+            tags:
+                - ServiceService
+            operationId: ServiceService_GetCIs
+            parameters:
+                - name: id
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/service.v1.CIs'
+        post:
+            tags:
+                - ServiceService
+            operationId: ServiceService_SaveCI
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/service.v1.CI'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/service.v1.CIID'
+    /service/v1/ci/{id}:
+        get:
+            tags:
+                - ServiceService
+            operationId: ServiceService_DeleteCI
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: integer
+                    format: int32
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/service.v1.Msg'
+        put:
+            tags:
+                - ServiceService
+            operationId: ServiceService_Deploy
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: integer
+                    format: int32
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/service.v1.CIID'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/service.v1.Msg'
     /service/v1/get/ocean:
         get:
             tags:
@@ -202,6 +309,43 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/service.v1.Service'
+    /service/v1/{id}:
+        get:
+            tags:
+                - ServiceService
+            operationId: ServiceService_GetService
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: integer
+                    format: int32
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/service.v1.Service'
+        delete:
+            tags:
+                - ServiceService
+            operationId: ServiceService_DeleteService
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: integer
+                    format: int32
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/service.v1.Msg'
 components:
     schemas:
         app.v1.App:
@@ -334,7 +478,26 @@ components:
                     format: int32
                 workflowName:
                     type: string
-                workflowLog:
+        service.v1.CIID:
+            type: object
+            properties:
+                id:
+                    type: integer
+                    format: int32
+        service.v1.CIs:
+            type: object
+            properties:
+                CIs:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/service.v1.CI'
+        service.v1.Msg:
+            type: object
+            properties:
+                Reason:
+                    type: integer
+                    format: enum
+                Message:
                     type: string
         service.v1.Service:
             type: object
@@ -358,6 +521,19 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/service.v1.CI'
+        service.v1.ServiceID:
+            type: object
+            properties:
+                id:
+                    type: integer
+                    format: int32
+        service.v1.Services:
+            type: object
+            properties:
+                services:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/service.v1.Service'
 tags:
     - name: AppService
     - name: ClusterService

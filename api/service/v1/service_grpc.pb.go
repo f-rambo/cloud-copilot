@@ -20,6 +20,15 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
+	ServiceService_SaveService_FullMethodName     = "/service.v1.ServiceService/SaveService"
+	ServiceService_GetService_FullMethodName      = "/service.v1.ServiceService/GetService"
+	ServiceService_GetServices_FullMethodName     = "/service.v1.ServiceService/GetServices"
+	ServiceService_DeleteService_FullMethodName   = "/service.v1.ServiceService/DeleteService"
+	ServiceService_SaveCI_FullMethodName          = "/service.v1.ServiceService/SaveCI"
+	ServiceService_GetCI_FullMethodName           = "/service.v1.ServiceService/GetCI"
+	ServiceService_GetCIs_FullMethodName          = "/service.v1.ServiceService/GetCIs"
+	ServiceService_DeleteCI_FullMethodName        = "/service.v1.ServiceService/DeleteCI"
+	ServiceService_Deploy_FullMethodName          = "/service.v1.ServiceService/Deploy"
 	ServiceService_GetOceanService_FullMethodName = "/service.v1.ServiceService/GetOceanService"
 )
 
@@ -27,6 +36,15 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ServiceServiceClient interface {
+	SaveService(ctx context.Context, in *Service, opts ...grpc.CallOption) (*ServiceID, error)
+	GetService(ctx context.Context, in *ServiceID, opts ...grpc.CallOption) (*Service, error)
+	GetServices(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*Services, error)
+	DeleteService(ctx context.Context, in *ServiceID, opts ...grpc.CallOption) (*Msg, error)
+	SaveCI(ctx context.Context, in *CI, opts ...grpc.CallOption) (*CIID, error)
+	GetCI(ctx context.Context, in *CIID, opts ...grpc.CallOption) (*CI, error)
+	GetCIs(ctx context.Context, in *ServiceID, opts ...grpc.CallOption) (*CIs, error)
+	DeleteCI(ctx context.Context, in *CIID, opts ...grpc.CallOption) (*Msg, error)
+	Deploy(ctx context.Context, in *CIID, opts ...grpc.CallOption) (*Msg, error)
 	GetOceanService(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*Service, error)
 }
 
@@ -36,6 +54,87 @@ type serviceServiceClient struct {
 
 func NewServiceServiceClient(cc grpc.ClientConnInterface) ServiceServiceClient {
 	return &serviceServiceClient{cc}
+}
+
+func (c *serviceServiceClient) SaveService(ctx context.Context, in *Service, opts ...grpc.CallOption) (*ServiceID, error) {
+	out := new(ServiceID)
+	err := c.cc.Invoke(ctx, ServiceService_SaveService_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *serviceServiceClient) GetService(ctx context.Context, in *ServiceID, opts ...grpc.CallOption) (*Service, error) {
+	out := new(Service)
+	err := c.cc.Invoke(ctx, ServiceService_GetService_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *serviceServiceClient) GetServices(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*Services, error) {
+	out := new(Services)
+	err := c.cc.Invoke(ctx, ServiceService_GetServices_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *serviceServiceClient) DeleteService(ctx context.Context, in *ServiceID, opts ...grpc.CallOption) (*Msg, error) {
+	out := new(Msg)
+	err := c.cc.Invoke(ctx, ServiceService_DeleteService_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *serviceServiceClient) SaveCI(ctx context.Context, in *CI, opts ...grpc.CallOption) (*CIID, error) {
+	out := new(CIID)
+	err := c.cc.Invoke(ctx, ServiceService_SaveCI_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *serviceServiceClient) GetCI(ctx context.Context, in *CIID, opts ...grpc.CallOption) (*CI, error) {
+	out := new(CI)
+	err := c.cc.Invoke(ctx, ServiceService_GetCI_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *serviceServiceClient) GetCIs(ctx context.Context, in *ServiceID, opts ...grpc.CallOption) (*CIs, error) {
+	out := new(CIs)
+	err := c.cc.Invoke(ctx, ServiceService_GetCIs_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *serviceServiceClient) DeleteCI(ctx context.Context, in *CIID, opts ...grpc.CallOption) (*Msg, error) {
+	out := new(Msg)
+	err := c.cc.Invoke(ctx, ServiceService_DeleteCI_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *serviceServiceClient) Deploy(ctx context.Context, in *CIID, opts ...grpc.CallOption) (*Msg, error) {
+	out := new(Msg)
+	err := c.cc.Invoke(ctx, ServiceService_Deploy_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *serviceServiceClient) GetOceanService(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*Service, error) {
@@ -51,6 +150,15 @@ func (c *serviceServiceClient) GetOceanService(ctx context.Context, in *emptypb.
 // All implementations must embed UnimplementedServiceServiceServer
 // for forward compatibility
 type ServiceServiceServer interface {
+	SaveService(context.Context, *Service) (*ServiceID, error)
+	GetService(context.Context, *ServiceID) (*Service, error)
+	GetServices(context.Context, *emptypb.Empty) (*Services, error)
+	DeleteService(context.Context, *ServiceID) (*Msg, error)
+	SaveCI(context.Context, *CI) (*CIID, error)
+	GetCI(context.Context, *CIID) (*CI, error)
+	GetCIs(context.Context, *ServiceID) (*CIs, error)
+	DeleteCI(context.Context, *CIID) (*Msg, error)
+	Deploy(context.Context, *CIID) (*Msg, error)
 	GetOceanService(context.Context, *emptypb.Empty) (*Service, error)
 	mustEmbedUnimplementedServiceServiceServer()
 }
@@ -59,6 +167,33 @@ type ServiceServiceServer interface {
 type UnimplementedServiceServiceServer struct {
 }
 
+func (UnimplementedServiceServiceServer) SaveService(context.Context, *Service) (*ServiceID, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SaveService not implemented")
+}
+func (UnimplementedServiceServiceServer) GetService(context.Context, *ServiceID) (*Service, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetService not implemented")
+}
+func (UnimplementedServiceServiceServer) GetServices(context.Context, *emptypb.Empty) (*Services, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetServices not implemented")
+}
+func (UnimplementedServiceServiceServer) DeleteService(context.Context, *ServiceID) (*Msg, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteService not implemented")
+}
+func (UnimplementedServiceServiceServer) SaveCI(context.Context, *CI) (*CIID, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SaveCI not implemented")
+}
+func (UnimplementedServiceServiceServer) GetCI(context.Context, *CIID) (*CI, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetCI not implemented")
+}
+func (UnimplementedServiceServiceServer) GetCIs(context.Context, *ServiceID) (*CIs, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetCIs not implemented")
+}
+func (UnimplementedServiceServiceServer) DeleteCI(context.Context, *CIID) (*Msg, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteCI not implemented")
+}
+func (UnimplementedServiceServiceServer) Deploy(context.Context, *CIID) (*Msg, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Deploy not implemented")
+}
 func (UnimplementedServiceServiceServer) GetOceanService(context.Context, *emptypb.Empty) (*Service, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetOceanService not implemented")
 }
@@ -73,6 +208,168 @@ type UnsafeServiceServiceServer interface {
 
 func RegisterServiceServiceServer(s grpc.ServiceRegistrar, srv ServiceServiceServer) {
 	s.RegisterService(&ServiceService_ServiceDesc, srv)
+}
+
+func _ServiceService_SaveService_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Service)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ServiceServiceServer).SaveService(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ServiceService_SaveService_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ServiceServiceServer).SaveService(ctx, req.(*Service))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ServiceService_GetService_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ServiceID)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ServiceServiceServer).GetService(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ServiceService_GetService_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ServiceServiceServer).GetService(ctx, req.(*ServiceID))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ServiceService_GetServices_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(emptypb.Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ServiceServiceServer).GetServices(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ServiceService_GetServices_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ServiceServiceServer).GetServices(ctx, req.(*emptypb.Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ServiceService_DeleteService_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ServiceID)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ServiceServiceServer).DeleteService(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ServiceService_DeleteService_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ServiceServiceServer).DeleteService(ctx, req.(*ServiceID))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ServiceService_SaveCI_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CI)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ServiceServiceServer).SaveCI(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ServiceService_SaveCI_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ServiceServiceServer).SaveCI(ctx, req.(*CI))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ServiceService_GetCI_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CIID)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ServiceServiceServer).GetCI(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ServiceService_GetCI_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ServiceServiceServer).GetCI(ctx, req.(*CIID))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ServiceService_GetCIs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ServiceID)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ServiceServiceServer).GetCIs(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ServiceService_GetCIs_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ServiceServiceServer).GetCIs(ctx, req.(*ServiceID))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ServiceService_DeleteCI_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CIID)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ServiceServiceServer).DeleteCI(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ServiceService_DeleteCI_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ServiceServiceServer).DeleteCI(ctx, req.(*CIID))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ServiceService_Deploy_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CIID)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ServiceServiceServer).Deploy(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ServiceService_Deploy_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ServiceServiceServer).Deploy(ctx, req.(*CIID))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _ServiceService_GetOceanService_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -100,6 +397,42 @@ var ServiceService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "service.v1.ServiceService",
 	HandlerType: (*ServiceServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "SaveService",
+			Handler:    _ServiceService_SaveService_Handler,
+		},
+		{
+			MethodName: "GetService",
+			Handler:    _ServiceService_GetService_Handler,
+		},
+		{
+			MethodName: "GetServices",
+			Handler:    _ServiceService_GetServices_Handler,
+		},
+		{
+			MethodName: "DeleteService",
+			Handler:    _ServiceService_DeleteService_Handler,
+		},
+		{
+			MethodName: "SaveCI",
+			Handler:    _ServiceService_SaveCI_Handler,
+		},
+		{
+			MethodName: "GetCI",
+			Handler:    _ServiceService_GetCI_Handler,
+		},
+		{
+			MethodName: "GetCIs",
+			Handler:    _ServiceService_GetCIs_Handler,
+		},
+		{
+			MethodName: "DeleteCI",
+			Handler:    _ServiceService_DeleteCI_Handler,
+		},
+		{
+			MethodName: "Deploy",
+			Handler:    _ServiceService_Deploy_Handler,
+		},
 		{
 			MethodName: "GetOceanService",
 			Handler:    _ServiceService_GetOceanService_Handler,

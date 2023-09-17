@@ -10,9 +10,67 @@ import "api/service/v1/message.proto";
 option go_package = "api/service/v1;v1";
 
 service ServiceService {
+
+      rpc SaveService(service.v1.Service) returns (service.v1.ServiceID) {
+            option (google.api.http) = {
+              post: "/service/v1"
+              body: "*"
+            };
+      }
+
+      rpc GetService(service.v1.ServiceID) returns (service.v1.Service) {
+            option (google.api.http) = {
+              get: "/service/v1/{id}"
+            };
+      }
+      
+      rpc GetServices(google.protobuf.Empty) returns (service.v1.Services) {
+            option (google.api.http) = {
+              get: "/service/v1"
+            };
+      }
+
+      rpc DeleteService(service.v1.ServiceID) returns (service.v1.Msg) {
+            option (google.api.http) = {
+              delete: "/service/v1/{id}"
+            };
+      }
+
+      rpc SaveCI(service.v1.CI) returns (service.v1.CIID) {
+            option (google.api.http) = {
+              post: "/service/v1/ci"
+              body: "*"
+            };
+      }
+
+      rpc GetCI(service.v1.CIID) returns (service.v1.CI) {
+            option (google.api.http) = {
+              get: "/service/v1/ci/{id}"
+            };
+      }
+
+      rpc GetCIs(service.v1.ServiceID) returns (service.v1.CIs) {
+            option (google.api.http) = {
+              get: "/service/v1/ci"
+            };
+      }
+
+      rpc DeleteCI(service.v1.CIID) returns (service.v1.Msg) {
+            option (google.api.http) = {
+              get: "/service/v1/ci/{id}"
+            };
+      }
+
+      rpc Deploy(service.v1.CIID) returns (service.v1.Msg) {
+            option (google.api.http) = {
+              put: "/service/v1/ci/{id}"
+              body: "*"
+            };
+      }
+
       rpc GetOceanService(google.protobuf.Empty) returns (service.v1.Service) {
             option (google.api.http) = {
               get: "/service/v1/get/ocean"
             };
-      }
+      }      
 }

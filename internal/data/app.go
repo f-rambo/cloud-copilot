@@ -103,7 +103,8 @@ func (a *appRepo) Apply(ctx context.Context, app *biz.App) error {
 		ConfigMapName: app.ConfigMap.Name,
 		SecretName:    app.Secret.Name,
 	}
-	return k8sClient.RESTClient().Post().Namespace(app.Namespace).Resource("apps").Body(appObj).Do(ctx).Into(appObj)
+	resApp := &operatoroceaniov1alpha1.App{}
+	return k8sClient.RESTClient().Post().Namespace(app.Namespace).Resource("apps").Body(appObj).Do(ctx).Into(resApp)
 }
 
 func (a *appRepo) k8s() error {

@@ -20,15 +20,237 @@ var _ = binding.EncodeURL
 
 const _ = http.SupportPackageIsVersion1
 
+const OperationServiceServiceDeleteCI = "/service.v1.ServiceService/DeleteCI"
+const OperationServiceServiceDeleteService = "/service.v1.ServiceService/DeleteService"
+const OperationServiceServiceDeploy = "/service.v1.ServiceService/Deploy"
+const OperationServiceServiceGetCI = "/service.v1.ServiceService/GetCI"
+const OperationServiceServiceGetCIs = "/service.v1.ServiceService/GetCIs"
 const OperationServiceServiceGetOceanService = "/service.v1.ServiceService/GetOceanService"
+const OperationServiceServiceGetService = "/service.v1.ServiceService/GetService"
+const OperationServiceServiceGetServices = "/service.v1.ServiceService/GetServices"
+const OperationServiceServiceSaveCI = "/service.v1.ServiceService/SaveCI"
+const OperationServiceServiceSaveService = "/service.v1.ServiceService/SaveService"
 
 type ServiceServiceHTTPServer interface {
+	DeleteCI(context.Context, *CIID) (*Msg, error)
+	DeleteService(context.Context, *ServiceID) (*Msg, error)
+	Deploy(context.Context, *CIID) (*Msg, error)
+	GetCI(context.Context, *CIID) (*CI, error)
+	GetCIs(context.Context, *ServiceID) (*CIs, error)
 	GetOceanService(context.Context, *emptypb.Empty) (*Service, error)
+	GetService(context.Context, *ServiceID) (*Service, error)
+	GetServices(context.Context, *emptypb.Empty) (*Services, error)
+	SaveCI(context.Context, *CI) (*CIID, error)
+	SaveService(context.Context, *Service) (*ServiceID, error)
 }
 
 func RegisterServiceServiceHTTPServer(s *http.Server, srv ServiceServiceHTTPServer) {
 	r := s.Route("/")
+	r.POST("/service/v1", _ServiceService_SaveService0_HTTP_Handler(srv))
+	r.GET("/service/v1/{id}", _ServiceService_GetService0_HTTP_Handler(srv))
+	r.GET("/service/v1", _ServiceService_GetServices0_HTTP_Handler(srv))
+	r.DELETE("/service/v1/{id}", _ServiceService_DeleteService0_HTTP_Handler(srv))
+	r.POST("/service/v1/ci", _ServiceService_SaveCI0_HTTP_Handler(srv))
+	r.GET("/service/v1/ci/{id}", _ServiceService_GetCI0_HTTP_Handler(srv))
+	r.GET("/service/v1/ci", _ServiceService_GetCIs0_HTTP_Handler(srv))
+	r.GET("/service/v1/ci/{id}", _ServiceService_DeleteCI0_HTTP_Handler(srv))
+	r.PUT("/service/v1/ci/{id}", _ServiceService_Deploy0_HTTP_Handler(srv))
 	r.GET("/service/v1/get/ocean", _ServiceService_GetOceanService0_HTTP_Handler(srv))
+}
+
+func _ServiceService_SaveService0_HTTP_Handler(srv ServiceServiceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in Service
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationServiceServiceSaveService)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.SaveService(ctx, req.(*Service))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*ServiceID)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _ServiceService_GetService0_HTTP_Handler(srv ServiceServiceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in ServiceID
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationServiceServiceGetService)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.GetService(ctx, req.(*ServiceID))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*Service)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _ServiceService_GetServices0_HTTP_Handler(srv ServiceServiceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in emptypb.Empty
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationServiceServiceGetServices)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.GetServices(ctx, req.(*emptypb.Empty))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*Services)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _ServiceService_DeleteService0_HTTP_Handler(srv ServiceServiceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in ServiceID
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationServiceServiceDeleteService)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.DeleteService(ctx, req.(*ServiceID))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*Msg)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _ServiceService_SaveCI0_HTTP_Handler(srv ServiceServiceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in CI
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationServiceServiceSaveCI)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.SaveCI(ctx, req.(*CI))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*CIID)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _ServiceService_GetCI0_HTTP_Handler(srv ServiceServiceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in CIID
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationServiceServiceGetCI)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.GetCI(ctx, req.(*CIID))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*CI)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _ServiceService_GetCIs0_HTTP_Handler(srv ServiceServiceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in ServiceID
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationServiceServiceGetCIs)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.GetCIs(ctx, req.(*ServiceID))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*CIs)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _ServiceService_DeleteCI0_HTTP_Handler(srv ServiceServiceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in CIID
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationServiceServiceDeleteCI)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.DeleteCI(ctx, req.(*CIID))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*Msg)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _ServiceService_Deploy0_HTTP_Handler(srv ServiceServiceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in CIID
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationServiceServiceDeploy)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.Deploy(ctx, req.(*CIID))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*Msg)
+		return ctx.Result(200, reply)
+	}
 }
 
 func _ServiceService_GetOceanService0_HTTP_Handler(srv ServiceServiceHTTPServer) func(ctx http.Context) error {
@@ -51,7 +273,16 @@ func _ServiceService_GetOceanService0_HTTP_Handler(srv ServiceServiceHTTPServer)
 }
 
 type ServiceServiceHTTPClient interface {
+	DeleteCI(ctx context.Context, req *CIID, opts ...http.CallOption) (rsp *Msg, err error)
+	DeleteService(ctx context.Context, req *ServiceID, opts ...http.CallOption) (rsp *Msg, err error)
+	Deploy(ctx context.Context, req *CIID, opts ...http.CallOption) (rsp *Msg, err error)
+	GetCI(ctx context.Context, req *CIID, opts ...http.CallOption) (rsp *CI, err error)
+	GetCIs(ctx context.Context, req *ServiceID, opts ...http.CallOption) (rsp *CIs, err error)
 	GetOceanService(ctx context.Context, req *emptypb.Empty, opts ...http.CallOption) (rsp *Service, err error)
+	GetService(ctx context.Context, req *ServiceID, opts ...http.CallOption) (rsp *Service, err error)
+	GetServices(ctx context.Context, req *emptypb.Empty, opts ...http.CallOption) (rsp *Services, err error)
+	SaveCI(ctx context.Context, req *CI, opts ...http.CallOption) (rsp *CIID, err error)
+	SaveService(ctx context.Context, req *Service, opts ...http.CallOption) (rsp *ServiceID, err error)
 }
 
 type ServiceServiceHTTPClientImpl struct {
@@ -62,6 +293,71 @@ func NewServiceServiceHTTPClient(client *http.Client) ServiceServiceHTTPClient {
 	return &ServiceServiceHTTPClientImpl{client}
 }
 
+func (c *ServiceServiceHTTPClientImpl) DeleteCI(ctx context.Context, in *CIID, opts ...http.CallOption) (*Msg, error) {
+	var out Msg
+	pattern := "/service/v1/ci/{id}"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationServiceServiceDeleteCI))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, err
+}
+
+func (c *ServiceServiceHTTPClientImpl) DeleteService(ctx context.Context, in *ServiceID, opts ...http.CallOption) (*Msg, error) {
+	var out Msg
+	pattern := "/service/v1/{id}"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationServiceServiceDeleteService))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "DELETE", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, err
+}
+
+func (c *ServiceServiceHTTPClientImpl) Deploy(ctx context.Context, in *CIID, opts ...http.CallOption) (*Msg, error) {
+	var out Msg
+	pattern := "/service/v1/ci/{id}"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationServiceServiceDeploy))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "PUT", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, err
+}
+
+func (c *ServiceServiceHTTPClientImpl) GetCI(ctx context.Context, in *CIID, opts ...http.CallOption) (*CI, error) {
+	var out CI
+	pattern := "/service/v1/ci/{id}"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationServiceServiceGetCI))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, err
+}
+
+func (c *ServiceServiceHTTPClientImpl) GetCIs(ctx context.Context, in *ServiceID, opts ...http.CallOption) (*CIs, error) {
+	var out CIs
+	pattern := "/service/v1/ci"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationServiceServiceGetCIs))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, err
+}
+
 func (c *ServiceServiceHTTPClientImpl) GetOceanService(ctx context.Context, in *emptypb.Empty, opts ...http.CallOption) (*Service, error) {
 	var out Service
 	pattern := "/service/v1/get/ocean"
@@ -69,6 +365,58 @@ func (c *ServiceServiceHTTPClientImpl) GetOceanService(ctx context.Context, in *
 	opts = append(opts, http.Operation(OperationServiceServiceGetOceanService))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, err
+}
+
+func (c *ServiceServiceHTTPClientImpl) GetService(ctx context.Context, in *ServiceID, opts ...http.CallOption) (*Service, error) {
+	var out Service
+	pattern := "/service/v1/{id}"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationServiceServiceGetService))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, err
+}
+
+func (c *ServiceServiceHTTPClientImpl) GetServices(ctx context.Context, in *emptypb.Empty, opts ...http.CallOption) (*Services, error) {
+	var out Services
+	pattern := "/service/v1"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationServiceServiceGetServices))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, err
+}
+
+func (c *ServiceServiceHTTPClientImpl) SaveCI(ctx context.Context, in *CI, opts ...http.CallOption) (*CIID, error) {
+	var out CIID
+	pattern := "/service/v1/ci"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationServiceServiceSaveCI))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, err
+}
+
+func (c *ServiceServiceHTTPClientImpl) SaveService(ctx context.Context, in *Service, opts ...http.CallOption) (*ServiceID, error) {
+	var out ServiceID
+	pattern := "/service/v1"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationServiceServiceSaveService))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
 	if err != nil {
 		return nil, err
 	}
