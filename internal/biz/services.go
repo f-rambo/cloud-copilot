@@ -11,18 +11,32 @@ import (
 type Service struct {
 	ID           int    `json:"id" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
 	Name         string `json:"name,omitempty" gorm:"column:name; default:''; NOT NULL"`
+	NameSpace    string `json:"namespace,omitempty" gorm:"column:namespace; default:''; NOT NULL"`
 	Repo         string `json:"repo,omitempty" gorm:"column:repo; default:''; NOT NULL"`
 	Registry     string `json:"registry" gorm:"column:registry; default:''; NOT NULL"`
 	RegistryUser string `json:"registry_user" gorm:"column:registry_user; default:''; NOT NULL"`
 	RegistryPwd  string `json:"registry_pwd" gorm:"column:registry_pwd; default:''; NOT NULL"`
 	Workflow     string `json:"workflow" gorm:"column:workflow; default:''; NOT NULL"`
 	CIItems      []*CI  `json:"ci_items,omitempty" gorm:"-"`
+	Replicas     int32  `json:"replicas" gorm:"column:replicas; default:0; NOT NULL"`
+	CPU          string `json:"cpu" gorm:"column:cpu; default:''; NOT NULL"`
+	LimitCpu     string `json:"limit_cpu" gorm:"column:limit_cpu; default:''; NOT NULL"`
+	Memory       string `json:"memory" gorm:"column:memory; default:''; NOT NULL"`
+	LimitMemory  string `json:"limit_memory" gorm:"column:limit_memory; default:''; NOT NULL"`
+	Config       string `json:"config" gorm:"column:config; default:''; NOT NULL"`
+	Secret       string `json:"secret" gorm:"column:secret; default:''; NOT NULL"`
+	Ports        []Port `json:"ports" gorm:"-"`
 	gorm.Model
+}
+
+type Port struct {
+	ID            int    `json:"id" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
+	IngressPath   string `json:"ingress_path" gorm:"column:ingress_path; default:''; NOT NULL"`
+	ContainerPort int32  `json:"container_port" gorm:"column:container_port; default:0; NOT NULL"`
 }
 
 type CI struct {
 	ID           int               `json:"id" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
-	NameSpace    string            `json:"namespace,omitempty" gorm:"column:namespace; default:''; NOT NULL"`
 	Version      string            `json:"version,omitempty" gorm:"column:version; default:''; NOT NULL"`
 	Branch       string            `json:"branch,omitempty" gorm:"column:branch; default:''; NOT NULL"`
 	Tag          string            `json:"tag,omitempty" gorm:"column:tag; default:''; NOT NULL"`
@@ -51,6 +65,7 @@ type ServicesRepo interface {
 	GetCIs(context.Context, int) ([]*CI, error)
 	DeleteCI(ctx context.Context, ci *CI) error
 	Deploy(context.Context, *Service, *CI) error
+	UnDeploy(context.Context, *Service) error
 	GetOceanService(context.Context) (*Service, error)
 }
 
@@ -127,6 +142,14 @@ func (s *ServicesUseCase) Deploy(ctx context.Context, CIID int) error {
 		return err
 	}
 	return s.repo.Deploy(ctx, service, ci)
+}
+
+func (s *ServicesUseCase) UnDeploy(ctx context.Context, serviceID int) error {
+	service, err := s.GetService(ctx, serviceID)
+	if err != nil {
+		return err
+	}
+	return s.repo.UnDeploy(ctx, service)
 }
 
 func (s *ServicesUseCase) GetOceanService(ctx context.Context) (*Service, error) {

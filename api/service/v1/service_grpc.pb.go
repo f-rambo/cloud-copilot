@@ -29,6 +29,7 @@ const (
 	ServiceService_GetCIs_FullMethodName          = "/service.v1.ServiceService/GetCIs"
 	ServiceService_DeleteCI_FullMethodName        = "/service.v1.ServiceService/DeleteCI"
 	ServiceService_Deploy_FullMethodName          = "/service.v1.ServiceService/Deploy"
+	ServiceService_UnDeploy_FullMethodName        = "/service.v1.ServiceService/UnDeploy"
 	ServiceService_GetOceanService_FullMethodName = "/service.v1.ServiceService/GetOceanService"
 )
 
@@ -45,6 +46,7 @@ type ServiceServiceClient interface {
 	GetCIs(ctx context.Context, in *ServiceID, opts ...grpc.CallOption) (*CIs, error)
 	DeleteCI(ctx context.Context, in *CIID, opts ...grpc.CallOption) (*Msg, error)
 	Deploy(ctx context.Context, in *CIID, opts ...grpc.CallOption) (*Msg, error)
+	UnDeploy(ctx context.Context, in *ServiceID, opts ...grpc.CallOption) (*Msg, error)
 	GetOceanService(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*Service, error)
 }
 
@@ -137,6 +139,15 @@ func (c *serviceServiceClient) Deploy(ctx context.Context, in *CIID, opts ...grp
 	return out, nil
 }
 
+func (c *serviceServiceClient) UnDeploy(ctx context.Context, in *ServiceID, opts ...grpc.CallOption) (*Msg, error) {
+	out := new(Msg)
+	err := c.cc.Invoke(ctx, ServiceService_UnDeploy_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *serviceServiceClient) GetOceanService(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*Service, error) {
 	out := new(Service)
 	err := c.cc.Invoke(ctx, ServiceService_GetOceanService_FullMethodName, in, out, opts...)
@@ -159,6 +170,7 @@ type ServiceServiceServer interface {
 	GetCIs(context.Context, *ServiceID) (*CIs, error)
 	DeleteCI(context.Context, *CIID) (*Msg, error)
 	Deploy(context.Context, *CIID) (*Msg, error)
+	UnDeploy(context.Context, *ServiceID) (*Msg, error)
 	GetOceanService(context.Context, *emptypb.Empty) (*Service, error)
 	mustEmbedUnimplementedServiceServiceServer()
 }
@@ -193,6 +205,9 @@ func (UnimplementedServiceServiceServer) DeleteCI(context.Context, *CIID) (*Msg,
 }
 func (UnimplementedServiceServiceServer) Deploy(context.Context, *CIID) (*Msg, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Deploy not implemented")
+}
+func (UnimplementedServiceServiceServer) UnDeploy(context.Context, *ServiceID) (*Msg, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UnDeploy not implemented")
 }
 func (UnimplementedServiceServiceServer) GetOceanService(context.Context, *emptypb.Empty) (*Service, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetOceanService not implemented")
@@ -372,6 +387,24 @@ func _ServiceService_Deploy_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ServiceService_UnDeploy_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ServiceID)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ServiceServiceServer).UnDeploy(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ServiceService_UnDeploy_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ServiceServiceServer).UnDeploy(ctx, req.(*ServiceID))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _ServiceService_GetOceanService_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(emptypb.Empty)
 	if err := dec(in); err != nil {
@@ -432,6 +465,10 @@ var ServiceService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Deploy",
 			Handler:    _ServiceService_Deploy_Handler,
+		},
+		{
+			MethodName: "UnDeploy",
+			Handler:    _ServiceService_UnDeploy_Handler,
 		},
 		{
 			MethodName: "GetOceanService",

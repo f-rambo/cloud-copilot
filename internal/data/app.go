@@ -2,8 +2,6 @@ package data
 
 import (
 	"context"
-	"fmt"
-	"time"
 
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 
@@ -76,19 +74,6 @@ func (a *appRepo) Apply(ctx context.Context, app *biz.App) error {
 	if err != nil {
 		return err
 	}
-	k8sClient := a.data.k8sClient
-	// 创建configmap
-	app.ConfigMap.Name = fmt.Sprintf("%s-%s", app.ConfigMap.Name, time.Now().Format("20060102150405"))
-	app.ConfigMap, err = k8sClient.CoreV1().ConfigMaps(app.Namespace).Create(ctx, app.ConfigMap, metav1.CreateOptions{})
-	if err != nil {
-		return err
-	}
-	// 创建secret
-	app.Secret.Name = fmt.Sprintf("%s-%s", app.Secret.Name, time.Now().Format("20060102150405"))
-	app.Secret, err = k8sClient.CoreV1().Secrets(app.Namespace).Create(ctx, app.Secret, metav1.CreateOptions{})
-	if err != nil {
-		return err
-	}
 	// 创建app
 	appObj := &operatoroceaniov1alpha1.App{}
 	appObj.ObjectMeta = metav1.ObjectMeta{
@@ -96,15 +81,18 @@ func (a *appRepo) Apply(ctx context.Context, app *biz.App) error {
 		Namespace: app.Namespace,
 	}
 	appObj.Spec = operatoroceaniov1alpha1.AppSpec{
-		RepoName:      app.RepoName,
-		RepoURL:       app.RepoURL,
-		ChartName:     app.ChartName,
-		Version:       app.Version,
-		ConfigMapName: app.ConfigMap.Name,
-		SecretName:    app.Secret.Name,
+		AppChart: operatoroceaniov1alpha1.AppChart{
+			Enable:    true,
+			RepoName:  app.RepoName,
+			RepoURL:   app.RepoURL,
+			ChartName: app.ChartName,
+			Version:   app.Version,
+			Config:    app.Config,
+			Secret:    app.Secret,
+		},
 	}
 	resApp := &operatoroceaniov1alpha1.App{}
-	return k8sClient.RESTClient().Post().Namespace(app.Namespace).Resource("apps").Body(appObj).Do(ctx).Into(resApp)
+	return a.data.k8sClient.RESTClient().Post().Namespace(app.Namespace).Resource("apps").Body(appObj).Do(ctx).Into(resApp)
 }
 
 func (a *appRepo) k8s() error {

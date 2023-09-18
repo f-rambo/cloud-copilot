@@ -143,7 +143,18 @@ func (s *ServicesService) Deploy(ctx context.Context, req *v1.CIID) (*v1.Msg, er
 	if err != nil {
 		return nil, err
 	}
-	return &v1.Msg{}, nil
+	return &v1.Msg{Message: "success"}, nil
+}
+
+func (s *ServicesService) UnDeploy(ctx context.Context, req *v1.ServiceID) (*v1.Msg, error) {
+	if req == nil || req.Id == 0 {
+		return nil, errors.New("request is nil")
+	}
+	err := s.uc.UnDeploy(ctx, int(req.Id))
+	if err != nil {
+		return nil, err
+	}
+	return &v1.Msg{Message: "success"}, nil
 }
 
 func (s *ServicesService) GetOceanService(ctx context.Context, _ *emptypb.Empty) (*v1.Service, error) {
@@ -159,20 +170,35 @@ func (s *ServicesService) GetOceanService(ctx context.Context, _ *emptypb.Empty)
 }
 
 func (s *ServicesService) serviceTransformationBiz(service *v1.Service) *biz.Service {
-	return &biz.Service{
+	data := &biz.Service{
 		ID:           int(service.Id),
 		Name:         service.Name,
+		NameSpace:    service.Namespace,
 		Repo:         service.Repo,
 		Registry:     service.Registry,
 		RegistryUser: service.RegistryUser,
 		RegistryPwd:  service.RegistryPwd,
 		CIItems:      make([]*biz.CI, 0),
 		Workflow:     service.Workflow,
+		Replicas:     service.Replicas,
+		CPU:          service.Cpu,
+		LimitCpu:     service.LimitCpu,
+		Memory:       service.Memory,
+		LimitMemory:  service.LimitMemory,
+		Config:       service.Config,
+		Secret:       service.Secret,
 	}
+	for _, port := range service.Ports {
+		data.Ports = append(data.Ports, biz.Port{
+			IngressPath:   port.IngressPath,
+			ContainerPort: port.ContainerPort,
+		})
+	}
+	return data
 }
 
 func (s *ServicesService) serviceTransformationApi(service *biz.Service) *v1.Service {
-	return &v1.Service{
+	data := &v1.Service{
 		Id:           int32(service.ID),
 		Name:         service.Name,
 		Repo:         service.Repo,
@@ -180,7 +206,21 @@ func (s *ServicesService) serviceTransformationApi(service *biz.Service) *v1.Ser
 		RegistryUser: service.RegistryUser,
 		RegistryPwd:  service.RegistryPwd,
 		Workflow:     service.Workflow,
+		Replicas:     service.Replicas,
+		Cpu:          service.CPU,
+		LimitCpu:     service.LimitCpu,
+		Memory:       service.Memory,
+		LimitMemory:  service.LimitMemory,
+		Config:       service.Config,
+		Secret:       service.Secret,
 	}
+	for _, port := range service.Ports {
+		data.Ports = append(data.Ports, &v1.Port{
+			IngressPath:   port.IngressPath,
+			ContainerPort: port.ContainerPort,
+		})
+	}
+	return data
 }
 
 func (s *ServicesService) ciTransformationBiz(ci *v1.CI) *biz.CI {

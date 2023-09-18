@@ -3,12 +3,15 @@ package data
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/f-rambo/ocean/internal/biz"
 	"github.com/f-rambo/ocean/utils"
+	operatoroceaniov1alpha1 "github.com/f-rambo/operatorapp/api/v1alpha1"
 	"github.com/go-kratos/kratos/v2/log"
 	"gorm.io/gorm"
+	k8serr "k8s.io/apimachinery/pkg/api/errors"
 )
 
 type servicesRepo struct {
@@ -108,7 +111,7 @@ func (s *servicesRepo) SaveCI(ctx context.Context, ci *biz.CI) error {
 		"ci_id":      string(rune(ci.ID)),
 	}
 	resWf := &wfv1.Workflow{}
-	err = s.data.k8sClient.RESTClient().Post().Namespace(ci.NameSpace).Resource("workflows").
+	err = s.data.k8sClient.RESTClient().Post().Namespace(svc.NameSpace).Resource("workflows").
 		Body(svc.Workflow).Do(ctx).Into(resWf)
 	if err != nil {
 		return err
@@ -151,7 +154,50 @@ func (s *servicesRepo) DeleteCI(ctx context.Context, ci *biz.CI) error {
 }
 
 func (s *servicesRepo) Deploy(ctx context.Context, svc *biz.Service, ci *biz.CI) error {
-	// 部署到Operatorapp
+	app := &operatoroceaniov1alpha1.App{}
+	app.Name = svc.Name
+	app.Namespace = svc.NameSpace
+	app.Labels = map[string]string{"app": app.Name}
+	app.Spec.Service = operatoroceaniov1alpha1.Service{
+		Enable:        true,
+		EnableIngress: true,
+		EnableService: true,
+		Replicas:      svc.Replicas,
+		Image:         fmt.Sprintf("%s/%s:%s", svc.Registry, svc.Name, ci.Version),
+		CPU:           svc.CPU,
+		LimitCPU:      svc.LimitCpu,
+		Memory:        svc.Memory,
+		LimitMemory:   svc.LimitMemory,
+		Config:        svc.Config,
+		Secret:        svc.Secret,
+	}
+	for _, port := range svc.Ports {
+		app.Spec.Service.Ports = append(app.Spec.Service.Ports, operatoroceaniov1alpha1.Port{
+			IngressPath:   port.IngressPath,
+			ContainerPort: port.ContainerPort,
+		})
+	}
+	err := s.k8s()
+	if err != nil {
+		return err
+	}
+	resApp := &operatoroceaniov1alpha1.App{}
+	err = s.data.k8sClient.RESTClient().Post().Namespace(app.Namespace).Resource("apps").Body(app).Do(ctx).Into(resApp)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *servicesRepo) UnDeploy(ctx context.Context, svc *biz.Service) error {
+	err := s.k8s()
+	if err != nil {
+		return err
+	}
+	err = s.data.k8sClient.RESTClient().Delete().Namespace(svc.NameSpace).Resource("apps").Name(svc.Name).Do(ctx).Error()
+	if err != nil && !k8serr.IsNotFound(err) {
+		return err
+	}
 	return nil
 }
 

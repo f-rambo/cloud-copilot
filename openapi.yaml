@@ -309,6 +309,31 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/service.v1.Service'
+    /service/v1/undeploy/{id}:
+        put:
+            tags:
+                - ServiceService
+            operationId: ServiceService_UnDeploy
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: integer
+                    format: int32
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/service.v1.ServiceID'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/service.v1.Msg'
     /service/v1/{id}:
         get:
             tags:
@@ -499,6 +524,17 @@ components:
                     format: enum
                 Message:
                     type: string
+        service.v1.Port:
+            type: object
+            properties:
+                ID:
+                    type: integer
+                    format: int32
+                ingressPath:
+                    type: string
+                containerPort:
+                    type: integer
+                    format: int32
         service.v1.Service:
             type: object
             properties:
@@ -521,6 +557,27 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/service.v1.CI'
+                namespace:
+                    type: string
+                Replicas:
+                    type: integer
+                    format: int32
+                cpu:
+                    type: string
+                limitCpu:
+                    type: string
+                memory:
+                    type: string
+                limitMemory:
+                    type: string
+                config:
+                    type: string
+                secret:
+                    type: string
+                ports:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/service.v1.Port'
         service.v1.ServiceID:
             type: object
             properties:

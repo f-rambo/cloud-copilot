@@ -68,6 +68,13 @@ service ServiceService {
             };
       }
 
+      rpc UnDeploy(service.v1.ServiceID) returns (service.v1.Msg) {
+            option (google.api.http) = {
+              put: "/service/v1/undeploy/{id}"
+              body: "*"
+            };
+      }
+
       rpc GetOceanService(google.protobuf.Empty) returns (service.v1.Service) {
             option (google.api.http) = {
               get: "/service/v1/get/ocean"

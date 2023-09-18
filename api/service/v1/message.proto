@@ -21,6 +21,21 @@ message Service {
       string registry_pwd = 6;
       string workflow = 7;
       repeated CI cis = 8;
+      string namespace = 9;
+      int32 Replicas = 10;
+      string cpu = 11;
+      string limit_cpu = 12;
+      string memory = 13;
+      string limit_memory = 14;
+      string config = 15;
+      string secret = 18;
+      repeated Port ports = 19;
+}
+
+message Port {
+      int32 ID = 1;
+      string ingress_path = 2;
+      int32 container_port = 3;
 }
 
 message CIID {
