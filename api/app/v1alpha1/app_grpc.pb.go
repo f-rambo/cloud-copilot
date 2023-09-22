@@ -2,9 +2,9 @@
 // versions:
 // - protoc-gen-go-grpc v1.3.0
 // - protoc             v3.19.4
-// source: api/app/v1/app.proto
+// source: api/app/v1alpha1/app.proto
 
-package v1
+package v1alpha1
 
 import (
 	context "context"
@@ -19,11 +19,11 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	AppService_GetApps_FullMethodName = "/app.v1.AppService/GetApps"
-	AppService_GetApp_FullMethodName  = "/app.v1.AppService/GetApp"
-	AppService_Save_FullMethodName    = "/app.v1.AppService/Save"
-	AppService_Apply_FullMethodName   = "/app.v1.AppService/Apply"
-	AppService_Delete_FullMethodName  = "/app.v1.AppService/Delete"
+	AppService_GetApps_FullMethodName = "/app.v1alpha1.AppService/GetApps"
+	AppService_GetApp_FullMethodName  = "/app.v1alpha1.AppService/GetApp"
+	AppService_Save_FullMethodName    = "/app.v1alpha1.AppService/Save"
+	AppService_Apply_FullMethodName   = "/app.v1alpha1.AppService/Apply"
+	AppService_Delete_FullMethodName  = "/app.v1alpha1.AppService/Delete"
 )
 
 // AppServiceClient is the client API for AppService service.
@@ -228,7 +228,7 @@ func _AppService_Delete_Handler(srv interface{}, ctx context.Context, dec func(i
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var AppService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "app.v1.AppService",
+	ServiceName: "app.v1alpha1.AppService",
 	HandlerType: (*AppServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
@@ -253,5 +253,5 @@ var AppService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "api/app/v1/app.proto",
+	Metadata: "api/app/v1alpha1/app.proto",
 }

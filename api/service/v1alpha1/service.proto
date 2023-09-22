@@ -1,0 +1,83 @@
+syntax = "proto3";
+
+package service.v1alpha1;
+
+import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
+import "api/service/v1alpha1/error_reason.proto";
+import "api/service/v1alpha1/message.proto";
+
+option go_package = "api/service/v1alpha1;v1alpha1";
+
+service ServiceService {
+
+      rpc SaveService(service.v1alpha1.Service) returns (service.v1alpha1.ServiceID) {
+            option (google.api.http) = {
+              post: "/service/v1alpha1"
+              body: "*"
+            };
+      }
+
+      rpc GetService(service.v1alpha1.ServiceID) returns (service.v1alpha1.Service) {
+            option (google.api.http) = {
+              get: "/service/v1alpha1/{id}"
+            };
+      }
+      
+      rpc GetServices(google.protobuf.Empty) returns (service.v1alpha1.Services) {
+            option (google.api.http) = {
+              get: "/service/v1alpha1"
+            };
+      }
+
+      rpc DeleteService(service.v1alpha1.ServiceID) returns (service.v1alpha1.Msg) {
+            option (google.api.http) = {
+              delete: "/service/v1alpha1/{id}"
+            };
+      }
+
+      rpc SaveCI(service.v1alpha1.CI) returns (service.v1alpha1.CIID) {
+            option (google.api.http) = {
+              post: "/service/v1alpha1/ci"
+              body: "*"
+            };
+      }
+
+      rpc GetCI(service.v1alpha1.CIID) returns (service.v1alpha1.CI) {
+            option (google.api.http) = {
+              get: "/service/v1alpha1/ci/{id}"
+            };
+      }
+
+      rpc GetCIs(service.v1alpha1.ServiceID) returns (service.v1alpha1.CIs) {
+            option (google.api.http) = {
+              get: "/service/v1alpha1/ci"
+            };
+      }
+
+      rpc DeleteCI(service.v1alpha1.CIID) returns (service.v1alpha1.Msg) {
+            option (google.api.http) = {
+              get: "/service/v1alpha1/ci/{id}"
+            };
+      }
+
+      rpc Deploy(service.v1alpha1.CIID) returns (service.v1alpha1.Msg) {
+            option (google.api.http) = {
+              put: "/service/v1alpha1/ci/{id}"
+              body: "*"
+            };
+      }
+
+      rpc UnDeploy(service.v1alpha1.ServiceID) returns (service.v1alpha1.Msg) {
+            option (google.api.http) = {
+              put: "/service/v1alpha1/undeploy/{id}"
+              body: "*"
+            };
+      }
+
+      rpc GetOceanService(google.protobuf.Empty) returns (service.v1alpha1.Service) {
+            option (google.api.http) = {
+              get: "/service/v1alpha1/get/ocean"
+            };
+      }      
+}

@@ -1,0 +1,44 @@
+syntax = "proto3";
+
+package app.v1alpha1;
+
+import "google/api/annotations.proto";
+import "api/app/v1alpha1/error_reason.proto";
+import "api/app/v1alpha1/message.proto";
+
+option go_package = "api/app/v1alpha1;v1alpha1";
+
+service AppService {
+  rpc GetApps(app.v1alpha1.ClusterID) returns (app.v1alpha1.Apps) {
+    option (google.api.http) = {
+      get: "/app/v1alpha1/{clusterID}/get"
+    };
+  }
+
+  rpc GetApp(app.v1alpha1.AppID) returns (app.v1alpha1.App) {
+    option (google.api.http) = {
+      get: "/app/v1alpha1/{clusterID}/get/{appID}"
+    };
+  }
+
+  rpc Save(app.v1alpha1.App) returns (app.v1alpha1.Msg) {
+    option (google.api.http) = {
+      put: "/app/v1alpha1/save"
+      body: "*"
+    };
+  }
+
+  rpc Apply(app.v1alpha1.AppID) returns (app.v1alpha1.Msg) {
+    option (google.api.http) = {
+      put: "/app/v1alpha1/{clusterID}/apply/{appID}"
+      body: "*"
+    };
+  }
+
+  rpc Delete(app.v1alpha1.AppID) returns (app.v1alpha1.Msg) {
+    option (google.api.http) = {
+      delete: "/app/v1alpha1/{clusterID}/apply/{appID}"
+    };
+  }
+
+}

@@ -1,8 +1,29 @@
 syntax = "proto3";
 
-package service.v1;
+package service.v1alpha1;
 
-option go_package = "api/service/v1;v1";
+option go_package = "api/service/v1alpha1;v1alpha1";
+
+
+message MetaData {
+      string name = 1;
+      string namespace = 2;
+      map<string,string> labels = 3;
+}
+
+message ServiceV1alpha1 {
+      string apiVersion = 1;
+      string kind = 2;
+      MetaData metaData = 3;
+      Service spec = 4;
+}
+
+message CIV1alpha1 {
+      string apiVersion = 1;
+      string kind = 2;
+      MetaData metaData = 3;
+      CI spec = 4;
+}
 
 message ServiceID {
       int32 id = 1;

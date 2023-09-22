@@ -2,9 +2,9 @@
 // versions:
 // - protoc-gen-go-http v2.6.3
 // - protoc             v3.19.4
-// source: api/cluster/v1/cluster.proto
+// source: api/cluster/v1alpha1/cluster.proto
 
-package v1
+package v1alpha1
 
 import (
 	context "context"
@@ -20,10 +20,10 @@ var _ = binding.EncodeURL
 
 const _ = http.SupportPackageIsVersion1
 
-const OperationClusterServiceApply = "/cluster.v1.ClusterService/Apply"
-const OperationClusterServiceDelete = "/cluster.v1.ClusterService/Delete"
-const OperationClusterServiceGet = "/cluster.v1.ClusterService/Get"
-const OperationClusterServiceSave = "/cluster.v1.ClusterService/Save"
+const OperationClusterServiceApply = "/cluster.v1alpha1.ClusterService/Apply"
+const OperationClusterServiceDelete = "/cluster.v1alpha1.ClusterService/Delete"
+const OperationClusterServiceGet = "/cluster.v1alpha1.ClusterService/Get"
+const OperationClusterServiceSave = "/cluster.v1alpha1.ClusterService/Save"
 
 type ClusterServiceHTTPServer interface {
 	Apply(context.Context, *ClusterName) (*Msg, error)
@@ -34,10 +34,10 @@ type ClusterServiceHTTPServer interface {
 
 func RegisterClusterServiceHTTPServer(s *http.Server, srv ClusterServiceHTTPServer) {
 	r := s.Route("/")
-	r.GET("/cluster/v1/get", _ClusterService_Get0_HTTP_Handler(srv))
-	r.POST("/cluster/v1/save", _ClusterService_Save0_HTTP_Handler(srv))
-	r.DELETE("/cluster/v1/delete/{id}", _ClusterService_Delete0_HTTP_Handler(srv))
-	r.POST("/cluster/v1/apply", _ClusterService_Apply0_HTTP_Handler(srv))
+	r.GET("/cluster/v1alpha1/get", _ClusterService_Get0_HTTP_Handler(srv))
+	r.POST("/cluster/v1alpha1/save", _ClusterService_Save0_HTTP_Handler(srv))
+	r.DELETE("/cluster/v1alpha1/delete/{id}", _ClusterService_Delete0_HTTP_Handler(srv))
+	r.POST("/cluster/v1alpha1/apply", _ClusterService_Apply0_HTTP_Handler(srv))
 }
 
 func _ClusterService_Get0_HTTP_Handler(srv ClusterServiceHTTPServer) func(ctx http.Context) error {
@@ -142,7 +142,7 @@ func NewClusterServiceHTTPClient(client *http.Client) ClusterServiceHTTPClient {
 
 func (c *ClusterServiceHTTPClientImpl) Apply(ctx context.Context, in *ClusterName, opts ...http.CallOption) (*Msg, error) {
 	var out Msg
-	pattern := "/cluster/v1/apply"
+	pattern := "/cluster/v1alpha1/apply"
 	path := binding.EncodeURL(pattern, in, false)
 	opts = append(opts, http.Operation(OperationClusterServiceApply))
 	opts = append(opts, http.PathTemplate(pattern))
@@ -155,7 +155,7 @@ func (c *ClusterServiceHTTPClientImpl) Apply(ctx context.Context, in *ClusterNam
 
 func (c *ClusterServiceHTTPClientImpl) Delete(ctx context.Context, in *ClusterID, opts ...http.CallOption) (*Msg, error) {
 	var out Msg
-	pattern := "/cluster/v1/delete/{id}"
+	pattern := "/cluster/v1alpha1/delete/{id}"
 	path := binding.EncodeURL(pattern, in, true)
 	opts = append(opts, http.Operation(OperationClusterServiceDelete))
 	opts = append(opts, http.PathTemplate(pattern))
@@ -168,7 +168,7 @@ func (c *ClusterServiceHTTPClientImpl) Delete(ctx context.Context, in *ClusterID
 
 func (c *ClusterServiceHTTPClientImpl) Get(ctx context.Context, in *emptypb.Empty, opts ...http.CallOption) (*Clusters, error) {
 	var out Clusters
-	pattern := "/cluster/v1/get"
+	pattern := "/cluster/v1alpha1/get"
 	path := binding.EncodeURL(pattern, in, true)
 	opts = append(opts, http.Operation(OperationClusterServiceGet))
 	opts = append(opts, http.PathTemplate(pattern))
@@ -181,7 +181,7 @@ func (c *ClusterServiceHTTPClientImpl) Get(ctx context.Context, in *emptypb.Empt
 
 func (c *ClusterServiceHTTPClientImpl) Save(ctx context.Context, in *Cluster, opts ...http.CallOption) (*Msg, error) {
 	var out Msg
-	pattern := "/cluster/v1/save"
+	pattern := "/cluster/v1alpha1/save"
 	path := binding.EncodeURL(pattern, in, false)
 	opts = append(opts, http.Operation(OperationClusterServiceSave))
 	opts = append(opts, http.PathTemplate(pattern))

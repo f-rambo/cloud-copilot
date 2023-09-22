@@ -2,9 +2,9 @@
 // versions:
 // - protoc-gen-go-grpc v1.3.0
 // - protoc             v3.19.4
-// source: api/cluster/v1/cluster.proto
+// source: api/cluster/v1alpha1/cluster.proto
 
-package v1
+package v1alpha1
 
 import (
 	context "context"
@@ -20,10 +20,10 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	ClusterService_Get_FullMethodName    = "/cluster.v1.ClusterService/Get"
-	ClusterService_Save_FullMethodName   = "/cluster.v1.ClusterService/Save"
-	ClusterService_Delete_FullMethodName = "/cluster.v1.ClusterService/Delete"
-	ClusterService_Apply_FullMethodName  = "/cluster.v1.ClusterService/Apply"
+	ClusterService_Get_FullMethodName    = "/cluster.v1alpha1.ClusterService/Get"
+	ClusterService_Save_FullMethodName   = "/cluster.v1alpha1.ClusterService/Save"
+	ClusterService_Delete_FullMethodName = "/cluster.v1alpha1.ClusterService/Delete"
+	ClusterService_Apply_FullMethodName  = "/cluster.v1alpha1.ClusterService/Apply"
 )
 
 // ClusterServiceClient is the client API for ClusterService service.
@@ -196,7 +196,7 @@ func _ClusterService_Apply_Handler(srv interface{}, ctx context.Context, dec fun
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var ClusterService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "cluster.v1.ClusterService",
+	ServiceName: "cluster.v1alpha1.ClusterService",
 	HandlerType: (*ClusterServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
@@ -217,5 +217,5 @@ var ClusterService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "api/cluster/v1/cluster.proto",
+	Metadata: "api/cluster/v1alpha1/cluster.proto",
 }

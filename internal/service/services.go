@@ -4,14 +4,14 @@ import (
 	"context"
 	"errors"
 
-	v1 "github.com/f-rambo/ocean/api/service/v1"
+	v1alpha1 "github.com/f-rambo/ocean/api/service/v1alpha1"
 	"github.com/f-rambo/ocean/internal/biz"
 	"github.com/f-rambo/ocean/internal/conf"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 type ServicesService struct {
-	v1.UnimplementedServiceServiceServer
+	v1alpha1.UnimplementedServiceServiceServer
 	uc *biz.ServicesUseCase
 	c  *conf.Data
 }
@@ -20,7 +20,7 @@ func NewServicesService(uc *biz.ServicesUseCase, c *conf.Data) *ServicesService 
 	return &ServicesService{uc: uc, c: c}
 }
 
-func (s *ServicesService) SaveService(ctx context.Context, req *v1.Service) (*v1.ServiceID, error) {
+func (s *ServicesService) SaveService(ctx context.Context, req *v1alpha1.Service) (*v1alpha1.ServiceID, error) {
 	if req == nil {
 		return nil, errors.New("request is nil")
 	}
@@ -35,10 +35,10 @@ func (s *ServicesService) SaveService(ctx context.Context, req *v1.Service) (*v1
 	if err != nil {
 		return nil, err
 	}
-	return &v1.ServiceID{Id: int32(service.ID)}, nil
+	return &v1alpha1.ServiceID{Id: int32(service.ID)}, nil
 }
 
-func (s *ServicesService) GetService(ctx context.Context, req *v1.ServiceID) (*v1.Service, error) {
+func (s *ServicesService) GetService(ctx context.Context, req *v1alpha1.ServiceID) (*v1alpha1.Service, error) {
 	if req == nil {
 		return nil, errors.New("request is nil")
 	}
@@ -50,15 +50,15 @@ func (s *ServicesService) GetService(ctx context.Context, req *v1.ServiceID) (*v
 		return nil, err
 	}
 	data := s.serviceTransformationApi(service)
-	data.Cis = make([]*v1.CI, 0)
+	data.Cis = make([]*v1alpha1.CI, 0)
 	for _, v := range service.CIItems {
 		data.Cis = append(data.Cis, s.ciTransformationApi(v))
 	}
 	return data, nil
 }
 
-func (s *ServicesService) GetServices(ctx context.Context, _ *emptypb.Empty) (*v1.Services, error) {
-	data := make([]*v1.Service, 0)
+func (s *ServicesService) GetServices(ctx context.Context, _ *emptypb.Empty) (*v1alpha1.Services, error) {
+	data := make([]*v1alpha1.Service, 0)
 	services, err := s.uc.GetServices(ctx)
 	if err != nil {
 		return nil, err
@@ -66,10 +66,10 @@ func (s *ServicesService) GetServices(ctx context.Context, _ *emptypb.Empty) (*v
 	for _, v := range services {
 		data = append(data, s.serviceTransformationApi(v))
 	}
-	return &v1.Services{Services: data}, nil
+	return &v1alpha1.Services{Services: data}, nil
 }
 
-func (s *ServicesService) DeleteService(ctx context.Context, req *v1.ServiceID) (*v1.Msg, error) {
+func (s *ServicesService) DeleteService(ctx context.Context, req *v1alpha1.ServiceID) (*v1alpha1.Msg, error) {
 	if req == nil {
 		return nil, errors.New("request is nil")
 	}
@@ -80,10 +80,10 @@ func (s *ServicesService) DeleteService(ctx context.Context, req *v1.ServiceID) 
 	if err != nil {
 		return nil, err
 	}
-	return &v1.Msg{Message: "success"}, nil
+	return &v1alpha1.Msg{Message: "success"}, nil
 }
 
-func (s *ServicesService) SaveCI(ctx context.Context, req *v1.CI) (*v1.CIID, error) {
+func (s *ServicesService) SaveCI(ctx context.Context, req *v1alpha1.CI) (*v1alpha1.CIID, error) {
 	if req == nil {
 		return nil, errors.New("request is nil")
 	}
@@ -95,10 +95,10 @@ func (s *ServicesService) SaveCI(ctx context.Context, req *v1.CI) (*v1.CIID, err
 	if err != nil {
 		return nil, err
 	}
-	return &v1.CIID{Id: int32(ci.ID)}, nil
+	return &v1alpha1.CIID{Id: int32(ci.ID)}, nil
 }
 
-func (s *ServicesService) GetCI(ctx context.Context, req *v1.CIID) (*v1.CI, error) {
+func (s *ServicesService) GetCI(ctx context.Context, req *v1alpha1.CIID) (*v1alpha1.CI, error) {
 	if req == nil || req.Id == 0 {
 		return nil, errors.New("request is nil")
 	}
@@ -109,7 +109,7 @@ func (s *ServicesService) GetCI(ctx context.Context, req *v1.CIID) (*v1.CI, erro
 	return s.ciTransformationApi(ci), nil
 }
 
-func (s *ServicesService) GetCIs(ctx context.Context, req *v1.ServiceID) (*v1.CIs, error) {
+func (s *ServicesService) GetCIs(ctx context.Context, req *v1alpha1.ServiceID) (*v1alpha1.CIs, error) {
 	if req == nil || req.Id == 0 {
 		return nil, errors.New("request is nil")
 	}
@@ -117,14 +117,14 @@ func (s *ServicesService) GetCIs(ctx context.Context, req *v1.ServiceID) (*v1.CI
 	if err != nil {
 		return nil, err
 	}
-	data := make([]*v1.CI, 0)
+	data := make([]*v1alpha1.CI, 0)
 	for _, v := range cis {
 		data = append(data, s.ciTransformationApi(v))
 	}
-	return &v1.CIs{CIs: data}, nil
+	return &v1alpha1.CIs{CIs: data}, nil
 }
 
-func (s *ServicesService) DeleteCI(ctx context.Context, req *v1.CIID) (*v1.Msg, error) {
+func (s *ServicesService) DeleteCI(ctx context.Context, req *v1alpha1.CIID) (*v1alpha1.Msg, error) {
 	if req == nil || req.Id == 0 {
 		return nil, errors.New("request is nil")
 	}
@@ -132,10 +132,10 @@ func (s *ServicesService) DeleteCI(ctx context.Context, req *v1.CIID) (*v1.Msg, 
 	if err != nil {
 		return nil, err
 	}
-	return &v1.Msg{Message: "success"}, nil
+	return &v1alpha1.Msg{Message: "success"}, nil
 }
 
-func (s *ServicesService) Deploy(ctx context.Context, req *v1.CIID) (*v1.Msg, error) {
+func (s *ServicesService) Deploy(ctx context.Context, req *v1alpha1.CIID) (*v1alpha1.Msg, error) {
 	if req == nil || req.Id == 0 {
 		return nil, errors.New("request is nil")
 	}
@@ -143,10 +143,10 @@ func (s *ServicesService) Deploy(ctx context.Context, req *v1.CIID) (*v1.Msg, er
 	if err != nil {
 		return nil, err
 	}
-	return &v1.Msg{Message: "success"}, nil
+	return &v1alpha1.Msg{Message: "success"}, nil
 }
 
-func (s *ServicesService) UnDeploy(ctx context.Context, req *v1.ServiceID) (*v1.Msg, error) {
+func (s *ServicesService) UnDeploy(ctx context.Context, req *v1alpha1.ServiceID) (*v1alpha1.Msg, error) {
 	if req == nil || req.Id == 0 {
 		return nil, errors.New("request is nil")
 	}
@@ -154,10 +154,10 @@ func (s *ServicesService) UnDeploy(ctx context.Context, req *v1.ServiceID) (*v1.
 	if err != nil {
 		return nil, err
 	}
-	return &v1.Msg{Message: "success"}, nil
+	return &v1alpha1.Msg{Message: "success"}, nil
 }
 
-func (s *ServicesService) GetOceanService(ctx context.Context, _ *emptypb.Empty) (*v1.Service, error) {
+func (s *ServicesService) GetOceanService(ctx context.Context, _ *emptypb.Empty) (*v1alpha1.Service, error) {
 	service, err := s.uc.GetOceanService(ctx)
 	if err != nil {
 		return nil, err
@@ -169,7 +169,7 @@ func (s *ServicesService) GetOceanService(ctx context.Context, _ *emptypb.Empty)
 	return data, nil
 }
 
-func (s *ServicesService) serviceTransformationBiz(service *v1.Service) *biz.Service {
+func (s *ServicesService) serviceTransformationBiz(service *v1alpha1.Service) *biz.Service {
 	data := &biz.Service{
 		ID:           int(service.Id),
 		Name:         service.Name,
@@ -197,8 +197,8 @@ func (s *ServicesService) serviceTransformationBiz(service *v1.Service) *biz.Ser
 	return data
 }
 
-func (s *ServicesService) serviceTransformationApi(service *biz.Service) *v1.Service {
-	data := &v1.Service{
+func (s *ServicesService) serviceTransformationApi(service *biz.Service) *v1alpha1.Service {
+	data := &v1alpha1.Service{
 		Id:           int32(service.ID),
 		Name:         service.Name,
 		Repo:         service.Repo,
@@ -215,7 +215,7 @@ func (s *ServicesService) serviceTransformationApi(service *biz.Service) *v1.Ser
 		Secret:       service.Secret,
 	}
 	for _, port := range service.Ports {
-		data.Ports = append(data.Ports, &v1.Port{
+		data.Ports = append(data.Ports, &v1alpha1.Port{
 			IngressPath:   port.IngressPath,
 			ContainerPort: port.ContainerPort,
 		})
@@ -223,7 +223,7 @@ func (s *ServicesService) serviceTransformationApi(service *biz.Service) *v1.Ser
 	return data
 }
 
-func (s *ServicesService) ciTransformationBiz(ci *v1.CI) *biz.CI {
+func (s *ServicesService) ciTransformationBiz(ci *v1alpha1.CI) *biz.CI {
 	return &biz.CI{
 		ID:          int(ci.Id),
 		Version:     ci.Version,
@@ -235,8 +235,8 @@ func (s *ServicesService) ciTransformationBiz(ci *v1.CI) *biz.CI {
 	}
 }
 
-func (s *ServicesService) ciTransformationApi(ci *biz.CI) *v1.CI {
-	return &v1.CI{
+func (s *ServicesService) ciTransformationApi(ci *biz.CI) *v1alpha1.CI {
+	return &v1alpha1.CI{
 		Id:           int32(ci.ID),
 		Version:      ci.Version,
 		Branch:       ci.Branch,

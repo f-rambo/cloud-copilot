@@ -77,7 +77,6 @@ func main() {
 		"ts", log.DefaultTimestamp,
 		"caller", log.DefaultCaller,
 	)
-
 	app, cleanup, err := wireApp(&bc.Server, &bc.Data, logger)
 	if err != nil {
 		panic(err)

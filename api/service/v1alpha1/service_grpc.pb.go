@@ -2,9 +2,9 @@
 // versions:
 // - protoc-gen-go-grpc v1.3.0
 // - protoc             v3.19.4
-// source: api/service/v1/service.proto
+// source: api/service/v1alpha1/service.proto
 
-package v1
+package v1alpha1
 
 import (
 	context "context"
@@ -20,17 +20,17 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	ServiceService_SaveService_FullMethodName     = "/service.v1.ServiceService/SaveService"
-	ServiceService_GetService_FullMethodName      = "/service.v1.ServiceService/GetService"
-	ServiceService_GetServices_FullMethodName     = "/service.v1.ServiceService/GetServices"
-	ServiceService_DeleteService_FullMethodName   = "/service.v1.ServiceService/DeleteService"
-	ServiceService_SaveCI_FullMethodName          = "/service.v1.ServiceService/SaveCI"
-	ServiceService_GetCI_FullMethodName           = "/service.v1.ServiceService/GetCI"
-	ServiceService_GetCIs_FullMethodName          = "/service.v1.ServiceService/GetCIs"
-	ServiceService_DeleteCI_FullMethodName        = "/service.v1.ServiceService/DeleteCI"
-	ServiceService_Deploy_FullMethodName          = "/service.v1.ServiceService/Deploy"
-	ServiceService_UnDeploy_FullMethodName        = "/service.v1.ServiceService/UnDeploy"
-	ServiceService_GetOceanService_FullMethodName = "/service.v1.ServiceService/GetOceanService"
+	ServiceService_SaveService_FullMethodName     = "/service.v1alpha1.ServiceService/SaveService"
+	ServiceService_GetService_FullMethodName      = "/service.v1alpha1.ServiceService/GetService"
+	ServiceService_GetServices_FullMethodName     = "/service.v1alpha1.ServiceService/GetServices"
+	ServiceService_DeleteService_FullMethodName   = "/service.v1alpha1.ServiceService/DeleteService"
+	ServiceService_SaveCI_FullMethodName          = "/service.v1alpha1.ServiceService/SaveCI"
+	ServiceService_GetCI_FullMethodName           = "/service.v1alpha1.ServiceService/GetCI"
+	ServiceService_GetCIs_FullMethodName          = "/service.v1alpha1.ServiceService/GetCIs"
+	ServiceService_DeleteCI_FullMethodName        = "/service.v1alpha1.ServiceService/DeleteCI"
+	ServiceService_Deploy_FullMethodName          = "/service.v1alpha1.ServiceService/Deploy"
+	ServiceService_UnDeploy_FullMethodName        = "/service.v1alpha1.ServiceService/UnDeploy"
+	ServiceService_GetOceanService_FullMethodName = "/service.v1alpha1.ServiceService/GetOceanService"
 )
 
 // ServiceServiceClient is the client API for ServiceService service.
@@ -427,7 +427,7 @@ func _ServiceService_GetOceanService_Handler(srv interface{}, ctx context.Contex
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var ServiceService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "service.v1.ServiceService",
+	ServiceName: "service.v1alpha1.ServiceService",
 	HandlerType: (*ServiceServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
@@ -476,5 +476,5 @@ var ServiceService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "api/service/v1/service.proto",
+	Metadata: "api/service/v1alpha1/service.proto",
 }

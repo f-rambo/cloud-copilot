@@ -1,9 +1,9 @@
 package server
 
 import (
-	appv1 "github.com/f-rambo/ocean/api/app/v1"
-	clusterv1 "github.com/f-rambo/ocean/api/cluster/v1"
-	servicev1 "github.com/f-rambo/ocean/api/service/v1"
+	appv1alpha1 "github.com/f-rambo/ocean/api/app/v1alpha1"
+	clusterv1alpha1 "github.com/f-rambo/ocean/api/cluster/v1alpha1"
+	servicev1alpha1 "github.com/f-rambo/ocean/api/service/v1alpha1"
 	"github.com/f-rambo/ocean/internal/conf"
 	"github.com/f-rambo/ocean/internal/service"
 
@@ -28,8 +28,8 @@ func NewGRPCServer(c *conf.Server, cluster *service.ClusterService, app *service
 		opts = append(opts, grpc.Address(addr))
 	}
 	srv := grpc.NewServer(opts...)
-	clusterv1.RegisterClusterServiceServer(srv, cluster)
-	appv1.RegisterAppServiceServer(srv, app)
-	servicev1.RegisterServiceServiceServer(srv, services)
+	clusterv1alpha1.RegisterClusterServiceServer(srv, cluster)
+	appv1alpha1.RegisterAppServiceServer(srv, app)
+	servicev1alpha1.RegisterServiceServiceServer(srv, services)
 	return srv
 }

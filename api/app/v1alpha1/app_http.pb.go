@@ -2,9 +2,9 @@
 // versions:
 // - protoc-gen-go-http v2.6.3
 // - protoc             v3.19.4
-// source: api/app/v1/app.proto
+// source: api/app/v1alpha1/app.proto
 
-package v1
+package v1alpha1
 
 import (
 	context "context"
@@ -19,11 +19,11 @@ var _ = binding.EncodeURL
 
 const _ = http.SupportPackageIsVersion1
 
-const OperationAppServiceApply = "/app.v1.AppService/Apply"
-const OperationAppServiceDelete = "/app.v1.AppService/Delete"
-const OperationAppServiceGetApp = "/app.v1.AppService/GetApp"
-const OperationAppServiceGetApps = "/app.v1.AppService/GetApps"
-const OperationAppServiceSave = "/app.v1.AppService/Save"
+const OperationAppServiceApply = "/app.v1alpha1.AppService/Apply"
+const OperationAppServiceDelete = "/app.v1alpha1.AppService/Delete"
+const OperationAppServiceGetApp = "/app.v1alpha1.AppService/GetApp"
+const OperationAppServiceGetApps = "/app.v1alpha1.AppService/GetApps"
+const OperationAppServiceSave = "/app.v1alpha1.AppService/Save"
 
 type AppServiceHTTPServer interface {
 	Apply(context.Context, *AppID) (*Msg, error)
@@ -35,11 +35,11 @@ type AppServiceHTTPServer interface {
 
 func RegisterAppServiceHTTPServer(s *http.Server, srv AppServiceHTTPServer) {
 	r := s.Route("/")
-	r.GET("/app/v1/{clusterID}/get", _AppService_GetApps0_HTTP_Handler(srv))
-	r.GET("/app/v1/{clusterID}/get/{appID}", _AppService_GetApp0_HTTP_Handler(srv))
-	r.PUT("/app/v1/save", _AppService_Save1_HTTP_Handler(srv))
-	r.PUT("/app/v1/{clusterID}/apply/{appID}", _AppService_Apply1_HTTP_Handler(srv))
-	r.DELETE("/app/v1/{clusterID}/apply/{appID}", _AppService_Delete1_HTTP_Handler(srv))
+	r.GET("/app/v1alpha1/{clusterID}/get", _AppService_GetApps0_HTTP_Handler(srv))
+	r.GET("/app/v1alpha1/{clusterID}/get/{appID}", _AppService_GetApp0_HTTP_Handler(srv))
+	r.PUT("/app/v1alpha1/save", _AppService_Save1_HTTP_Handler(srv))
+	r.PUT("/app/v1alpha1/{clusterID}/apply/{appID}", _AppService_Apply1_HTTP_Handler(srv))
+	r.DELETE("/app/v1alpha1/{clusterID}/apply/{appID}", _AppService_Delete1_HTTP_Handler(srv))
 }
 
 func _AppService_GetApps0_HTTP_Handler(srv AppServiceHTTPServer) func(ctx http.Context) error {
@@ -173,7 +173,7 @@ func NewAppServiceHTTPClient(client *http.Client) AppServiceHTTPClient {
 
 func (c *AppServiceHTTPClientImpl) Apply(ctx context.Context, in *AppID, opts ...http.CallOption) (*Msg, error) {
 	var out Msg
-	pattern := "/app/v1/{clusterID}/apply/{appID}"
+	pattern := "/app/v1alpha1/{clusterID}/apply/{appID}"
 	path := binding.EncodeURL(pattern, in, false)
 	opts = append(opts, http.Operation(OperationAppServiceApply))
 	opts = append(opts, http.PathTemplate(pattern))
@@ -186,7 +186,7 @@ func (c *AppServiceHTTPClientImpl) Apply(ctx context.Context, in *AppID, opts ..
 
 func (c *AppServiceHTTPClientImpl) Delete(ctx context.Context, in *AppID, opts ...http.CallOption) (*Msg, error) {
 	var out Msg
-	pattern := "/app/v1/{clusterID}/apply/{appID}"
+	pattern := "/app/v1alpha1/{clusterID}/apply/{appID}"
 	path := binding.EncodeURL(pattern, in, true)
 	opts = append(opts, http.Operation(OperationAppServiceDelete))
 	opts = append(opts, http.PathTemplate(pattern))
@@ -199,7 +199,7 @@ func (c *AppServiceHTTPClientImpl) Delete(ctx context.Context, in *AppID, opts .
 
 func (c *AppServiceHTTPClientImpl) GetApp(ctx context.Context, in *AppID, opts ...http.CallOption) (*App, error) {
 	var out App
-	pattern := "/app/v1/{clusterID}/get/{appID}"
+	pattern := "/app/v1alpha1/{clusterID}/get/{appID}"
 	path := binding.EncodeURL(pattern, in, true)
 	opts = append(opts, http.Operation(OperationAppServiceGetApp))
 	opts = append(opts, http.PathTemplate(pattern))
@@ -212,7 +212,7 @@ func (c *AppServiceHTTPClientImpl) GetApp(ctx context.Context, in *AppID, opts .
 
 func (c *AppServiceHTTPClientImpl) GetApps(ctx context.Context, in *ClusterID, opts ...http.CallOption) (*Apps, error) {
 	var out Apps
-	pattern := "/app/v1/{clusterID}/get"
+	pattern := "/app/v1alpha1/{clusterID}/get"
 	path := binding.EncodeURL(pattern, in, true)
 	opts = append(opts, http.Operation(OperationAppServiceGetApps))
 	opts = append(opts, http.PathTemplate(pattern))
@@ -225,7 +225,7 @@ func (c *AppServiceHTTPClientImpl) GetApps(ctx context.Context, in *ClusterID, o
 
 func (c *AppServiceHTTPClientImpl) Save(ctx context.Context, in *App, opts ...http.CallOption) (*Msg, error) {
 	var out Msg
-	pattern := "/app/v1/save"
+	pattern := "/app/v1alpha1/save"
 	path := binding.EncodeURL(pattern, in, false)
 	opts = append(opts, http.Operation(OperationAppServiceSave))
 	opts = append(opts, http.PathTemplate(pattern))

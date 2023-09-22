@@ -34,6 +34,16 @@ func (s *servicesRepo) k8s() error {
 }
 
 func (s *servicesRepo) Save(ctx context.Context, svc *biz.Service) error {
+	if svc.ID == 0 {
+		var Count int64
+		err := s.data.db.Model(&biz.Service{}).Where("name = ?", svc.Name).Count(&Count).Error
+		if err != nil && err != gorm.ErrRecordNotFound {
+			return err
+		}
+		if Count > 0 {
+			return errors.New("service name already exists")
+		}
+	}
 	return s.data.db.Save(svc).Error
 }
 

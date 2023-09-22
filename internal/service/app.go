@@ -4,12 +4,12 @@ import (
 	"context"
 	"errors"
 
-	v1 "github.com/f-rambo/ocean/api/app/v1"
+	v1alpha1 "github.com/f-rambo/ocean/api/app/v1alpha1"
 	"github.com/f-rambo/ocean/internal/biz"
 )
 
 type AppService struct {
-	v1.UnimplementedAppServiceServer
+	v1alpha1.UnimplementedAppServiceServer
 	uc *biz.AppUsecase
 }
 
@@ -17,7 +17,7 @@ func NewAppService(uc *biz.AppUsecase) *AppService {
 	return &AppService{uc: uc}
 }
 
-func (a *AppService) GetApps(ctx context.Context, clusterID *v1.ClusterID) (*v1.Apps, error) {
+func (a *AppService) GetApps(ctx context.Context, clusterID *v1alpha1.ClusterID) (*v1alpha1.Apps, error) {
 	if clusterID == nil || clusterID.ClusterID == 0 {
 		return nil, errors.New("cluster id is require")
 	}
@@ -25,9 +25,9 @@ func (a *AppService) GetApps(ctx context.Context, clusterID *v1.ClusterID) (*v1.
 	if err != nil {
 		return nil, err
 	}
-	data := make([]*v1.App, 0)
+	data := make([]*v1alpha1.App, 0)
 	for _, app := range apps {
-		data = append(data, &v1.App{
+		data = append(data, &v1alpha1.App{
 			Id:        int32(app.ID),
 			Name:      app.Name,
 			RepoName:  app.RepoName,
@@ -38,10 +38,10 @@ func (a *AppService) GetApps(ctx context.Context, clusterID *v1.ClusterID) (*v1.
 			ClusterID: int32(app.ClusterID),
 		})
 	}
-	return &v1.Apps{Apps: data}, nil
+	return &v1alpha1.Apps{Apps: data}, nil
 }
 
-func (a *AppService) GetApp(ctx context.Context, appID *v1.AppID) (*v1.App, error) {
+func (a *AppService) GetApp(ctx context.Context, appID *v1alpha1.AppID) (*v1alpha1.App, error) {
 	if appID == nil || appID.AppID == 0 {
 		return nil, errors.New("app id is require")
 	}
@@ -49,7 +49,7 @@ func (a *AppService) GetApp(ctx context.Context, appID *v1.AppID) (*v1.App, erro
 	if err != nil {
 		return nil, err
 	}
-	return &v1.App{
+	return &v1alpha1.App{
 		Id:        int32(app.ID),
 		Name:      app.Name,
 		RepoName:  app.RepoName,
@@ -63,7 +63,7 @@ func (a *AppService) GetApp(ctx context.Context, appID *v1.AppID) (*v1.App, erro
 	}, nil
 }
 
-func (a *AppService) Save(ctx context.Context, app *v1.App) (*v1.Msg, error) {
+func (a *AppService) Save(ctx context.Context, app *v1alpha1.App) (*v1alpha1.Msg, error) {
 	if app == nil {
 		return nil, errors.New("app is require")
 	}
@@ -84,10 +84,10 @@ func (a *AppService) Save(ctx context.Context, app *v1.App) (*v1.Msg, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &v1.Msg{Message: "ok"}, nil
+	return &v1alpha1.Msg{Message: "ok"}, nil
 }
 
-func (a *AppService) Apply(ctx context.Context, appID *v1.AppID) (*v1.Msg, error) {
+func (a *AppService) Apply(ctx context.Context, appID *v1alpha1.AppID) (*v1alpha1.Msg, error) {
 	if appID == nil || appID.AppID == 0 {
 		return nil, errors.New("app id is require")
 	}
@@ -95,10 +95,10 @@ func (a *AppService) Apply(ctx context.Context, appID *v1.AppID) (*v1.Msg, error
 	if err != nil {
 		return nil, err
 	}
-	return &v1.Msg{Message: "ok"}, nil
+	return &v1alpha1.Msg{Message: "ok"}, nil
 }
 
-func (a *AppService) Delete(ctx context.Context, appID *v1.AppID) (*v1.Msg, error) {
+func (a *AppService) Delete(ctx context.Context, appID *v1alpha1.AppID) (*v1alpha1.Msg, error) {
 	if appID == nil || appID.AppID == 0 {
 		return nil, errors.New("app id is require")
 	}
@@ -106,5 +106,5 @@ func (a *AppService) Delete(ctx context.Context, appID *v1.AppID) (*v1.Msg, erro
 	if err != nil {
 		return nil, err
 	}
-	return &v1.Msg{Message: "ok"}, nil
+	return &v1alpha1.Msg{Message: "ok"}, nil
 }

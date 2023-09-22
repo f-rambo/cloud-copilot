@@ -2,9 +2,9 @@
 // versions:
 // - protoc-gen-go-http v2.6.3
 // - protoc             v3.19.4
-// source: api/service/v1/service.proto
+// source: api/service/v1alpha1/service.proto
 
-package v1
+package v1alpha1
 
 import (
 	context "context"
@@ -20,17 +20,17 @@ var _ = binding.EncodeURL
 
 const _ = http.SupportPackageIsVersion1
 
-const OperationServiceServiceDeleteCI = "/service.v1.ServiceService/DeleteCI"
-const OperationServiceServiceDeleteService = "/service.v1.ServiceService/DeleteService"
-const OperationServiceServiceDeploy = "/service.v1.ServiceService/Deploy"
-const OperationServiceServiceGetCI = "/service.v1.ServiceService/GetCI"
-const OperationServiceServiceGetCIs = "/service.v1.ServiceService/GetCIs"
-const OperationServiceServiceGetOceanService = "/service.v1.ServiceService/GetOceanService"
-const OperationServiceServiceGetService = "/service.v1.ServiceService/GetService"
-const OperationServiceServiceGetServices = "/service.v1.ServiceService/GetServices"
-const OperationServiceServiceSaveCI = "/service.v1.ServiceService/SaveCI"
-const OperationServiceServiceSaveService = "/service.v1.ServiceService/SaveService"
-const OperationServiceServiceUnDeploy = "/service.v1.ServiceService/UnDeploy"
+const OperationServiceServiceDeleteCI = "/service.v1alpha1.ServiceService/DeleteCI"
+const OperationServiceServiceDeleteService = "/service.v1alpha1.ServiceService/DeleteService"
+const OperationServiceServiceDeploy = "/service.v1alpha1.ServiceService/Deploy"
+const OperationServiceServiceGetCI = "/service.v1alpha1.ServiceService/GetCI"
+const OperationServiceServiceGetCIs = "/service.v1alpha1.ServiceService/GetCIs"
+const OperationServiceServiceGetOceanService = "/service.v1alpha1.ServiceService/GetOceanService"
+const OperationServiceServiceGetService = "/service.v1alpha1.ServiceService/GetService"
+const OperationServiceServiceGetServices = "/service.v1alpha1.ServiceService/GetServices"
+const OperationServiceServiceSaveCI = "/service.v1alpha1.ServiceService/SaveCI"
+const OperationServiceServiceSaveService = "/service.v1alpha1.ServiceService/SaveService"
+const OperationServiceServiceUnDeploy = "/service.v1alpha1.ServiceService/UnDeploy"
 
 type ServiceServiceHTTPServer interface {
 	DeleteCI(context.Context, *CIID) (*Msg, error)
@@ -48,17 +48,17 @@ type ServiceServiceHTTPServer interface {
 
 func RegisterServiceServiceHTTPServer(s *http.Server, srv ServiceServiceHTTPServer) {
 	r := s.Route("/")
-	r.POST("/service/v1", _ServiceService_SaveService0_HTTP_Handler(srv))
-	r.GET("/service/v1/{id}", _ServiceService_GetService0_HTTP_Handler(srv))
-	r.GET("/service/v1", _ServiceService_GetServices0_HTTP_Handler(srv))
-	r.DELETE("/service/v1/{id}", _ServiceService_DeleteService0_HTTP_Handler(srv))
-	r.POST("/service/v1/ci", _ServiceService_SaveCI0_HTTP_Handler(srv))
-	r.GET("/service/v1/ci/{id}", _ServiceService_GetCI0_HTTP_Handler(srv))
-	r.GET("/service/v1/ci", _ServiceService_GetCIs0_HTTP_Handler(srv))
-	r.GET("/service/v1/ci/{id}", _ServiceService_DeleteCI0_HTTP_Handler(srv))
-	r.PUT("/service/v1/ci/{id}", _ServiceService_Deploy0_HTTP_Handler(srv))
-	r.PUT("/service/v1/undeploy/{id}", _ServiceService_UnDeploy0_HTTP_Handler(srv))
-	r.GET("/service/v1/get/ocean", _ServiceService_GetOceanService0_HTTP_Handler(srv))
+	r.POST("/service/v1alpha1", _ServiceService_SaveService0_HTTP_Handler(srv))
+	r.GET("/service/v1alpha1/{id}", _ServiceService_GetService0_HTTP_Handler(srv))
+	r.GET("/service/v1alpha1", _ServiceService_GetServices0_HTTP_Handler(srv))
+	r.DELETE("/service/v1alpha1/{id}", _ServiceService_DeleteService0_HTTP_Handler(srv))
+	r.POST("/service/v1alpha1/ci", _ServiceService_SaveCI0_HTTP_Handler(srv))
+	r.GET("/service/v1alpha1/ci/{id}", _ServiceService_GetCI0_HTTP_Handler(srv))
+	r.GET("/service/v1alpha1/ci", _ServiceService_GetCIs0_HTTP_Handler(srv))
+	r.GET("/service/v1alpha1/ci/{id}", _ServiceService_DeleteCI0_HTTP_Handler(srv))
+	r.PUT("/service/v1alpha1/ci/{id}", _ServiceService_Deploy0_HTTP_Handler(srv))
+	r.PUT("/service/v1alpha1/undeploy/{id}", _ServiceService_UnDeploy0_HTTP_Handler(srv))
+	r.GET("/service/v1alpha1/get/ocean", _ServiceService_GetOceanService0_HTTP_Handler(srv))
 }
 
 func _ServiceService_SaveService0_HTTP_Handler(srv ServiceServiceHTTPServer) func(ctx http.Context) error {
@@ -324,7 +324,7 @@ func NewServiceServiceHTTPClient(client *http.Client) ServiceServiceHTTPClient {
 
 func (c *ServiceServiceHTTPClientImpl) DeleteCI(ctx context.Context, in *CIID, opts ...http.CallOption) (*Msg, error) {
 	var out Msg
-	pattern := "/service/v1/ci/{id}"
+	pattern := "/service/v1alpha1/ci/{id}"
 	path := binding.EncodeURL(pattern, in, true)
 	opts = append(opts, http.Operation(OperationServiceServiceDeleteCI))
 	opts = append(opts, http.PathTemplate(pattern))
@@ -337,7 +337,7 @@ func (c *ServiceServiceHTTPClientImpl) DeleteCI(ctx context.Context, in *CIID, o
 
 func (c *ServiceServiceHTTPClientImpl) DeleteService(ctx context.Context, in *ServiceID, opts ...http.CallOption) (*Msg, error) {
 	var out Msg
-	pattern := "/service/v1/{id}"
+	pattern := "/service/v1alpha1/{id}"
 	path := binding.EncodeURL(pattern, in, true)
 	opts = append(opts, http.Operation(OperationServiceServiceDeleteService))
 	opts = append(opts, http.PathTemplate(pattern))
@@ -350,7 +350,7 @@ func (c *ServiceServiceHTTPClientImpl) DeleteService(ctx context.Context, in *Se
 
 func (c *ServiceServiceHTTPClientImpl) Deploy(ctx context.Context, in *CIID, opts ...http.CallOption) (*Msg, error) {
 	var out Msg
-	pattern := "/service/v1/ci/{id}"
+	pattern := "/service/v1alpha1/ci/{id}"
 	path := binding.EncodeURL(pattern, in, false)
 	opts = append(opts, http.Operation(OperationServiceServiceDeploy))
 	opts = append(opts, http.PathTemplate(pattern))
@@ -363,7 +363,7 @@ func (c *ServiceServiceHTTPClientImpl) Deploy(ctx context.Context, in *CIID, opt
 
 func (c *ServiceServiceHTTPClientImpl) GetCI(ctx context.Context, in *CIID, opts ...http.CallOption) (*CI, error) {
 	var out CI
-	pattern := "/service/v1/ci/{id}"
+	pattern := "/service/v1alpha1/ci/{id}"
 	path := binding.EncodeURL(pattern, in, true)
 	opts = append(opts, http.Operation(OperationServiceServiceGetCI))
 	opts = append(opts, http.PathTemplate(pattern))
@@ -376,7 +376,7 @@ func (c *ServiceServiceHTTPClientImpl) GetCI(ctx context.Context, in *CIID, opts
 
 func (c *ServiceServiceHTTPClientImpl) GetCIs(ctx context.Context, in *ServiceID, opts ...http.CallOption) (*CIs, error) {
 	var out CIs
-	pattern := "/service/v1/ci"
+	pattern := "/service/v1alpha1/ci"
 	path := binding.EncodeURL(pattern, in, true)
 	opts = append(opts, http.Operation(OperationServiceServiceGetCIs))
 	opts = append(opts, http.PathTemplate(pattern))
@@ -389,7 +389,7 @@ func (c *ServiceServiceHTTPClientImpl) GetCIs(ctx context.Context, in *ServiceID
 
 func (c *ServiceServiceHTTPClientImpl) GetOceanService(ctx context.Context, in *emptypb.Empty, opts ...http.CallOption) (*Service, error) {
 	var out Service
-	pattern := "/service/v1/get/ocean"
+	pattern := "/service/v1alpha1/get/ocean"
 	path := binding.EncodeURL(pattern, in, true)
 	opts = append(opts, http.Operation(OperationServiceServiceGetOceanService))
 	opts = append(opts, http.PathTemplate(pattern))
@@ -402,7 +402,7 @@ func (c *ServiceServiceHTTPClientImpl) GetOceanService(ctx context.Context, in *
 
 func (c *ServiceServiceHTTPClientImpl) GetService(ctx context.Context, in *ServiceID, opts ...http.CallOption) (*Service, error) {
 	var out Service
-	pattern := "/service/v1/{id}"
+	pattern := "/service/v1alpha1/{id}"
 	path := binding.EncodeURL(pattern, in, true)
 	opts = append(opts, http.Operation(OperationServiceServiceGetService))
 	opts = append(opts, http.PathTemplate(pattern))
@@ -415,7 +415,7 @@ func (c *ServiceServiceHTTPClientImpl) GetService(ctx context.Context, in *Servi
 
 func (c *ServiceServiceHTTPClientImpl) GetServices(ctx context.Context, in *emptypb.Empty, opts ...http.CallOption) (*Services, error) {
 	var out Services
-	pattern := "/service/v1"
+	pattern := "/service/v1alpha1"
 	path := binding.EncodeURL(pattern, in, true)
 	opts = append(opts, http.Operation(OperationServiceServiceGetServices))
 	opts = append(opts, http.PathTemplate(pattern))
@@ -428,7 +428,7 @@ func (c *ServiceServiceHTTPClientImpl) GetServices(ctx context.Context, in *empt
 
 func (c *ServiceServiceHTTPClientImpl) SaveCI(ctx context.Context, in *CI, opts ...http.CallOption) (*CIID, error) {
 	var out CIID
-	pattern := "/service/v1/ci"
+	pattern := "/service/v1alpha1/ci"
 	path := binding.EncodeURL(pattern, in, false)
 	opts = append(opts, http.Operation(OperationServiceServiceSaveCI))
 	opts = append(opts, http.PathTemplate(pattern))
@@ -441,7 +441,7 @@ func (c *ServiceServiceHTTPClientImpl) SaveCI(ctx context.Context, in *CI, opts 
 
 func (c *ServiceServiceHTTPClientImpl) SaveService(ctx context.Context, in *Service, opts ...http.CallOption) (*ServiceID, error) {
 	var out ServiceID
-	pattern := "/service/v1"
+	pattern := "/service/v1alpha1"
 	path := binding.EncodeURL(pattern, in, false)
 	opts = append(opts, http.Operation(OperationServiceServiceSaveService))
 	opts = append(opts, http.PathTemplate(pattern))
@@ -454,7 +454,7 @@ func (c *ServiceServiceHTTPClientImpl) SaveService(ctx context.Context, in *Serv
 
 func (c *ServiceServiceHTTPClientImpl) UnDeploy(ctx context.Context, in *ServiceID, opts ...http.CallOption) (*Msg, error) {
 	var out Msg
-	pattern := "/service/v1/undeploy/{id}"
+	pattern := "/service/v1alpha1/undeploy/{id}"
 	path := binding.EncodeURL(pattern, in, false)
 	opts = append(opts, http.Operation(OperationServiceServiceUnDeploy))
 	opts = append(opts, http.PathTemplate(pattern))

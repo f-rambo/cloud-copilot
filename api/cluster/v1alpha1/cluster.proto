@@ -1,0 +1,39 @@
+syntax = "proto3";
+
+package cluster.v1alpha1;
+
+import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
+import "api/cluster/v1alpha1/error_reason.proto";
+import "api/cluster/v1alpha1/message.proto";
+
+option go_package = "api/cluster/v1alpha1;v1alpha1";
+
+service ClusterService {
+  rpc Get(google.protobuf.Empty) returns (cluster.v1alpha1.Clusters) {
+    option (google.api.http) = {
+      get: "/cluster/v1alpha1/get"
+    };
+  }
+
+  rpc Save(cluster.v1alpha1.Cluster) returns (cluster.v1alpha1.Msg) {
+    option (google.api.http) = {
+      post: "/cluster/v1alpha1/save"
+      body: "*"
+    };
+  }
+
+  rpc Delete(cluster.v1alpha1.ClusterID) returns (cluster.v1alpha1.Msg) {
+    option (google.api.http) = {
+      delete: "/cluster/v1alpha1/delete/{id}"
+    };
+  }
+
+  rpc Apply(cluster.v1alpha1.ClusterName) returns (cluster.v1alpha1.Msg) {
+    option (google.api.http) = {
+      post: "/cluster/v1alpha1/apply"
+      body: "*"
+    };
+  }
+
+}

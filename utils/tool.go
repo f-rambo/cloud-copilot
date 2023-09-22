@@ -80,6 +80,22 @@ func ReadFile(filename string) (string, error) {
 	return content, nil
 }
 
+func WriteFile(filename string, content string) error {
+	if !CheckFileIsExist(filename) {
+		err := CreateFile(filename)
+		if err != nil {
+			return err
+		}
+	}
+	file, err := os.OpenFile(filename, os.O_WRONLY|os.O_CREATE, 0644)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	_, err = file.WriteString(content)
+	return err
+}
+
 // 判断切片中是否包含查所要的元素
 func Contains(slice []string, item string) bool {
 	for _, s := range slice {
