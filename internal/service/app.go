@@ -63,14 +63,14 @@ func (a *AppService) GetApp(ctx context.Context, appID *v1alpha1.AppID) (*v1alph
 	}, nil
 }
 
-func (a *AppService) Save(ctx context.Context, app *v1alpha1.App) (*v1alpha1.Msg, error) {
+func (a *AppService) Save(ctx context.Context, app *v1alpha1.App) (*v1alpha1.AppID, error) {
 	if app == nil {
 		return nil, errors.New("app is require")
 	}
 	if app.ClusterID == 0 {
 		return nil, errors.New("cluster id is require")
 	}
-	err := a.uc.Save(ctx, &biz.App{
+	bizApp := &biz.App{
 		Name:      app.Name,
 		RepoName:  app.RepoName,
 		RepoURL:   app.RepoUrl,
@@ -80,11 +80,12 @@ func (a *AppService) Save(ctx context.Context, app *v1alpha1.App) (*v1alpha1.Msg
 		ClusterID: int(app.ClusterID),
 		Config:    app.Config,
 		Secret:    app.Secret,
-	})
+	}
+	err := a.uc.Save(ctx, bizApp)
 	if err != nil {
 		return nil, err
 	}
-	return &v1alpha1.Msg{Message: "ok"}, nil
+	return &v1alpha1.AppID{AppID: int32(bizApp.ID), ClusterID: int32(bizApp.ClusterID)}, nil
 }
 
 func (a *AppService) Apply(ctx context.Context, appID *v1alpha1.AppID) (*v1alpha1.Msg, error) {

@@ -7,7 +7,8 @@ import (
 	"strings"
 
 	"github.com/f-rambo/ocean/internal/biz"
-	"github.com/f-rambo/ocean/internal/data/restapi"
+	pkgHttp "github.com/f-rambo/ocean/pkg/http"
+	"github.com/f-rambo/ocean/pkg/semaphore"
 
 	utils "github.com/f-rambo/ocean/utils"
 
@@ -436,7 +437,7 @@ func (c *clusterRepo) ClusterInit(ctx context.Context, cluster *biz.Cluster) err
 	if !ok {
 		return fmt.Errorf("ClusterInit template not found")
 	}
-	task := &restapi.Task{
+	task := &semaphore.Task{
 		TemplateID: cast.ToInt(templateID),
 		ProjectId:  cluster.SemaphoreID,
 		Debug:      true,
@@ -456,7 +457,7 @@ func (c *clusterRepo) DeployCluster(ctx context.Context, cluster *biz.Cluster) e
 	if !ok {
 		return fmt.Errorf("DeployCluster template not found")
 	}
-	task := &restapi.Task{
+	task := &semaphore.Task{
 		TemplateID: cast.ToInt(templateID),
 		ProjectId:  cluster.SemaphoreID,
 		Debug:      true,
@@ -476,7 +477,7 @@ func (c *clusterRepo) UndeployCluster(ctx context.Context, cluster *biz.Cluster)
 	if !ok {
 		return fmt.Errorf("UndeployCluster template not found")
 	}
-	task := &restapi.Task{
+	task := &semaphore.Task{
 		TemplateID: cast.ToInt(templateID),
 		ProjectId:  cluster.SemaphoreID,
 		Debug:      true,
@@ -496,7 +497,7 @@ func (c *clusterRepo) AddNode(ctx context.Context, cluster *biz.Cluster) error {
 	if !ok {
 		return fmt.Errorf("AddNode template not found")
 	}
-	task := &restapi.Task{
+	task := &semaphore.Task{
 		TemplateID: cast.ToInt(templateID),
 		ProjectId:  cluster.SemaphoreID,
 		Debug:      true,
@@ -520,7 +521,7 @@ func (c *clusterRepo) RemoveNode(ctx context.Context, cluster *biz.Cluster, node
 	for _, v := range nodes {
 		nodeNames = append(nodeNames, v.Name)
 	}
-	task := &restapi.Task{
+	task := &semaphore.Task{
 		TemplateID: cast.ToInt(templateID),
 		ProjectId:  cluster.SemaphoreID,
 		Debug:      true,
@@ -549,7 +550,7 @@ func (c *clusterRepo) saveProject(ctx context.Context, cluster *biz.Cluster) err
 	if cluster.SemaphoreID != 0 {
 		return nil
 	}
-	project := restapi.Project{Name: cluster.Name, Alert: true}
+	project := semaphore.Project{Name: cluster.Name, Alert: true}
 	err := c.data.semaphore.CreateProject(&project)
 	if err != nil {
 		return err
@@ -559,7 +560,7 @@ func (c *clusterRepo) saveProject(ctx context.Context, cluster *biz.Cluster) err
 }
 
 func (c *clusterRepo) saveKey(ctx context.Context, cluster *biz.Cluster) error {
-	key := restapi.Key{
+	key := semaphore.Key{
 		ID:        cluster.KeyID,
 		Name:      cluster.Name,
 		Type:      repo.KeyType,
@@ -577,7 +578,7 @@ func (c *clusterRepo) saveKey(ctx context.Context, cluster *biz.Cluster) error {
 }
 
 func (c *clusterRepo) saveRepositories(ctx context.Context, cluster *biz.Cluster) error {
-	repoData := restapi.Repository{
+	repoData := semaphore.Repository{
 		ID:        cluster.RepoID,
 		Name:      repo.Name,
 		ProjectID: cluster.SemaphoreID,
@@ -601,7 +602,7 @@ func (c *clusterRepo) saveEnvironment(ctx context.Context, cluster *biz.Cluster)
 	if err != nil {
 		return err
 	}
-	env := restapi.Environment{
+	env := semaphore.Environment{
 		ID:        cluster.EnvID,
 		Name:      repo.Name,
 		ProjectID: cluster.SemaphoreID,
@@ -619,11 +620,11 @@ func (c *clusterRepo) saveEnvironment(ctx context.Context, cluster *biz.Cluster)
 }
 
 func (c *clusterRepo) GetDefaultCluster(ctx context.Context) (*biz.Cluster, error) {
-	config, err := restapi.GetContentByUrl(repo.ClusterConfig)
+	config, err := pkgHttp.GetContentByUrl(repo.ClusterConfig)
 	if err != nil {
 		return nil, err
 	}
-	addons, err := restapi.GetContentByUrl(repo.AddonsConfig)
+	addons, err := pkgHttp.GetContentByUrl(repo.AddonsConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -646,7 +647,7 @@ func (c *clusterRepo) GetDefaultCluster(ctx context.Context) (*biz.Cluster, erro
 
 func (c *clusterRepo) saveInventory(ctx context.Context, cluster *biz.Cluster) error {
 	inventoryType, inventoryFile := c.getInventoryFile(cluster)
-	inventory := restapi.Inventory{
+	inventory := semaphore.Inventory{
 		ID:        cluster.InventoryID,
 		Name:      cluster.Name,
 		ProjectID: cluster.SemaphoreID,
@@ -666,8 +667,8 @@ func (c *clusterRepo) saveInventory(ctx context.Context, cluster *biz.Cluster) e
 	return nil
 }
 
-func (c *clusterRepo) saveTemplate(ctx context.Context, cluster *biz.Cluster, playBook, arguments, description string, surveyVars []restapi.SurveyVar) error {
-	template := restapi.Template{
+func (c *clusterRepo) saveTemplate(ctx context.Context, cluster *biz.Cluster, playBook, arguments, description string, surveyVars []semaphore.SurveyVar) error {
+	template := semaphore.Template{
 		ProjectID:             cluster.SemaphoreID,
 		Name:                  repo.Name + "-" + playBook,
 		Playbook:              playBook,

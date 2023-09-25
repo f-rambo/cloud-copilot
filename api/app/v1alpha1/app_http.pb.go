@@ -30,7 +30,7 @@ type AppServiceHTTPServer interface {
 	Delete(context.Context, *AppID) (*Msg, error)
 	GetApp(context.Context, *AppID) (*App, error)
 	GetApps(context.Context, *ClusterID) (*Apps, error)
-	Save(context.Context, *App) (*Msg, error)
+	Save(context.Context, *App) (*AppID, error)
 }
 
 func RegisterAppServiceHTTPServer(s *http.Server, srv AppServiceHTTPServer) {
@@ -103,7 +103,7 @@ func _AppService_Save1_HTTP_Handler(srv AppServiceHTTPServer) func(ctx http.Cont
 		if err != nil {
 			return err
 		}
-		reply := out.(*Msg)
+		reply := out.(*AppID)
 		return ctx.Result(200, reply)
 	}
 }
@@ -160,7 +160,7 @@ type AppServiceHTTPClient interface {
 	Delete(ctx context.Context, req *AppID, opts ...http.CallOption) (rsp *Msg, err error)
 	GetApp(ctx context.Context, req *AppID, opts ...http.CallOption) (rsp *App, err error)
 	GetApps(ctx context.Context, req *ClusterID, opts ...http.CallOption) (rsp *Apps, err error)
-	Save(ctx context.Context, req *App, opts ...http.CallOption) (rsp *Msg, err error)
+	Save(ctx context.Context, req *App, opts ...http.CallOption) (rsp *AppID, err error)
 }
 
 type AppServiceHTTPClientImpl struct {
@@ -223,8 +223,8 @@ func (c *AppServiceHTTPClientImpl) GetApps(ctx context.Context, in *ClusterID, o
 	return &out, err
 }
 
-func (c *AppServiceHTTPClientImpl) Save(ctx context.Context, in *App, opts ...http.CallOption) (*Msg, error) {
-	var out Msg
+func (c *AppServiceHTTPClientImpl) Save(ctx context.Context, in *App, opts ...http.CallOption) (*AppID, error) {
+	var out AppID
 	pattern := "/app/v1alpha1/save"
 	path := binding.EncodeURL(pattern, in, false)
 	opts = append(opts, http.Operation(OperationAppServiceSave))

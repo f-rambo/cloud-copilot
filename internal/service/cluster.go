@@ -96,7 +96,7 @@ func (c *ClusterService) Delete(ctx context.Context, clusterID *v1alpha1.Cluster
 		return nil, err
 	}
 	msg := &v1alpha1.Msg{
-		Message: "删除成功",
+		Message: "delete successed",
 		Reason:  v1alpha1.ErrorReason_SUCCEED,
 	}
 	return msg, nil
@@ -108,5 +108,5 @@ func (c *ClusterService) Apply(ctx context.Context, clusterName *v1alpha1.Cluste
 	if err != nil {
 		return nil, err
 	}
-	return &v1alpha1.Msg{Message: "apply success"}, nil
+	return &v1alpha1.Msg{Message: "apply successed"}, nil
 }

@@ -80,14 +80,26 @@ func apply() *cobra.Command {
 			app.Spec.Config = configContent
 			app.Spec.Secret = secretContent
 			// todo 返回appID
-			_, err = client.Save(c.Context(), app.Spec)
+			appRes, err := client.Save(c.Context(), app.Spec)
 			if err != nil {
 				return err
 			}
+			l.Info("save app success", "appID", appRes.AppID)
+			app.Spec.Id = appRes.AppID
+			appYaml, err := yaml.Marshal(app)
+			if err != nil {
+				return err
+			}
+			err = utils.WriteFile(appYamlFile, string(appYaml))
+			if err != nil {
+				return err
+			}
+			l.Info("write app yaml success")
 			_, err = client.Apply(c.Context(), &v1alpha1.AppID{AppID: app.Spec.Id})
 			if err != nil {
 				return err
 			}
+			l.Info("apply app success")
 			return nil
 		},
 	}

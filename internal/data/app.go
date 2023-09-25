@@ -3,13 +3,12 @@ package data
 import (
 	"context"
 
-	k8serr "k8s.io/apimachinery/pkg/api/errors"
-
 	"github.com/f-rambo/ocean/internal/biz"
-
+	"github.com/f-rambo/ocean/pkg/operatorapp"
 	operatoroceaniov1alpha1 "github.com/f-rambo/operatorapp/api/v1alpha1"
 	"github.com/go-kratos/kratos/v2/log"
 	"gorm.io/gorm"
+	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -80,6 +79,10 @@ func (a *appRepo) Apply(ctx context.Context, app *biz.App) error {
 		Name:      app.Name,
 		Namespace: app.Namespace,
 	}
+	appObj.TypeMeta = metav1.TypeMeta{
+		APIVersion: operatorapp.GetApiVersion(),
+		Kind:       operatorapp.GetKind(),
+	}
 	appObj.Spec = operatoroceaniov1alpha1.AppSpec{
 		AppChart: operatoroceaniov1alpha1.AppChart{
 			Enable:    true,
@@ -91,8 +94,11 @@ func (a *appRepo) Apply(ctx context.Context, app *biz.App) error {
 			Secret:    app.Secret,
 		},
 	}
-	resApp := &operatoroceaniov1alpha1.App{}
-	return a.data.k8sClient.RESTClient().Post().Namespace(app.Namespace).Resource("apps").Body(appObj).Do(ctx).Into(resApp)
+	_, err = a.data.operatorappClient.Apps(appObj.Namespace).Create(ctx, appObj)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (a *appRepo) k8s() error {

@@ -32,7 +32,7 @@ const (
 type AppServiceClient interface {
 	GetApps(ctx context.Context, in *ClusterID, opts ...grpc.CallOption) (*Apps, error)
 	GetApp(ctx context.Context, in *AppID, opts ...grpc.CallOption) (*App, error)
-	Save(ctx context.Context, in *App, opts ...grpc.CallOption) (*Msg, error)
+	Save(ctx context.Context, in *App, opts ...grpc.CallOption) (*AppID, error)
 	Apply(ctx context.Context, in *AppID, opts ...grpc.CallOption) (*Msg, error)
 	Delete(ctx context.Context, in *AppID, opts ...grpc.CallOption) (*Msg, error)
 }
@@ -63,8 +63,8 @@ func (c *appServiceClient) GetApp(ctx context.Context, in *AppID, opts ...grpc.C
 	return out, nil
 }
 
-func (c *appServiceClient) Save(ctx context.Context, in *App, opts ...grpc.CallOption) (*Msg, error) {
-	out := new(Msg)
+func (c *appServiceClient) Save(ctx context.Context, in *App, opts ...grpc.CallOption) (*AppID, error) {
+	out := new(AppID)
 	err := c.cc.Invoke(ctx, AppService_Save_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -96,7 +96,7 @@ func (c *appServiceClient) Delete(ctx context.Context, in *AppID, opts ...grpc.C
 type AppServiceServer interface {
 	GetApps(context.Context, *ClusterID) (*Apps, error)
 	GetApp(context.Context, *AppID) (*App, error)
-	Save(context.Context, *App) (*Msg, error)
+	Save(context.Context, *App) (*AppID, error)
 	Apply(context.Context, *AppID) (*Msg, error)
 	Delete(context.Context, *AppID) (*Msg, error)
 	mustEmbedUnimplementedAppServiceServer()
@@ -112,7 +112,7 @@ func (UnimplementedAppServiceServer) GetApps(context.Context, *ClusterID) (*Apps
 func (UnimplementedAppServiceServer) GetApp(context.Context, *AppID) (*App, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetApp not implemented")
 }
-func (UnimplementedAppServiceServer) Save(context.Context, *App) (*Msg, error) {
+func (UnimplementedAppServiceServer) Save(context.Context, *App) (*AppID, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Save not implemented")
 }
 func (UnimplementedAppServiceServer) Apply(context.Context, *AppID) (*Msg, error) {

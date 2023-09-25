@@ -7,7 +7,7 @@ import (
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/f-rambo/ocean/internal/biz"
-	"github.com/f-rambo/ocean/utils"
+	"github.com/f-rambo/ocean/pkg/argoworkflows"
 	operatoroceaniov1alpha1 "github.com/f-rambo/operatorapp/api/v1alpha1"
 	"github.com/go-kratos/kratos/v2/log"
 	"gorm.io/gorm"
@@ -110,7 +110,7 @@ func (s *servicesRepo) SaveCI(ctx context.Context, ci *biz.CI) error {
 	if err != nil {
 		return err
 	}
-	wf, err := utils.UnmarshalWorkflow(svc.Workflow, true)
+	wf, err := argoworkflows.UnmarshalWorkflow(svc.Workflow, true)
 	if err != nil {
 		return err
 	}
@@ -120,9 +120,7 @@ func (s *servicesRepo) SaveCI(ctx context.Context, ci *biz.CI) error {
 		"service_id": string(rune(svc.ID)),
 		"ci_id":      string(rune(ci.ID)),
 	}
-	resWf := &wfv1.Workflow{}
-	err = s.data.k8sClient.RESTClient().Post().Namespace(svc.NameSpace).Resource("workflows").
-		Body(svc.Workflow).Do(ctx).Into(resWf)
+	resWf, err := s.data.workflowClient.Workflows(wf.Namespace).Create(ctx, &wf)
 	if err != nil {
 		return err
 	}
@@ -191,8 +189,7 @@ func (s *servicesRepo) Deploy(ctx context.Context, svc *biz.Service, ci *biz.CI)
 	if err != nil {
 		return err
 	}
-	resApp := &operatoroceaniov1alpha1.App{}
-	err = s.data.k8sClient.RESTClient().Post().Namespace(app.Namespace).Resource("apps").Body(app).Do(ctx).Into(resApp)
+	_, err = s.data.operatorappClient.Apps(app.Namespace).Create(ctx, app)
 	if err != nil {
 		return err
 	}
@@ -204,7 +201,7 @@ func (s *servicesRepo) UnDeploy(ctx context.Context, svc *biz.Service) error {
 	if err != nil {
 		return err
 	}
-	err = s.data.k8sClient.RESTClient().Delete().Namespace(svc.NameSpace).Resource("apps").Name(svc.Name).Do(ctx).Error()
+	err = s.data.operatorappClient.Apps(svc.NameSpace).Delete(ctx, svc.Name)
 	if err != nil && !k8serr.IsNotFound(err) {
 		return err
 	}
@@ -212,7 +209,7 @@ func (s *servicesRepo) UnDeploy(ctx context.Context, svc *biz.Service) error {
 }
 
 func (s *servicesRepo) GetOceanService(ctx context.Context) (*biz.Service, error) {
-	wf, err := utils.GetDefaultWorkflowStr()
+	wf, err := argoworkflows.GetDefaultWorkflowStr()
 	if err != nil {
 		return nil, err
 	}

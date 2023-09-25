@@ -15,8 +15,8 @@ type App struct {
 	RepoURL   string `json:"repoURL,omitempty" gorm:"column:repo_url; default:''; NOT NULL"`
 	ChartName string `json:"chartName,omitempty" gorm:"column:chart_name; default:''; NOT NULL"`
 	Version   string `json:"version,omitempty" gorm:"column:version; default:''; NOT NULL"`
-	Config    string `json:"config,omitempty" gorm:"column:config; default:''; NOT NULL"`
-	Secret    string `json:"secret,omitempty" gorm:"column:secret; default:''; NOT NULL"`
+	Config    string `json:"config,omitempty" gorm:"column:config; type:text"`
+	Secret    string `json:"secret,omitempty" gorm:"column:secret; type:text"`
 	Namespace string `json:"namespace,omitempty" gorm:"column:namespace; default:''; NOT NULL"`
 	Deployed  bool   `json:"deployed,omitempty" gorm:"column:deployed; default:false; NOT NULL"`
 	ClusterID int    `json:"cluster_id,omitempty" gorm:"column:cluster_id; default:0; NOT NULL"`

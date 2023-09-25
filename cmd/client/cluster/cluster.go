@@ -14,12 +14,6 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-/*
-Get(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*Clusters, error)
-Save(ctx context.Context, in *Cluster, opts ...grpc.CallOption) (*Msg, error)
-Delete(ctx context.Context, in *ClusterID, opts ...grpc.CallOption) (*Msg, error)
-Apply(ctx context.Context, in *ClusterName, opts ...grpc.CallOption) (*Msg, error)
-*/
 var (
 	client            v1alpha1.ClusterServiceClient
 	l                 *log.Helper
@@ -61,7 +55,6 @@ func apply() *cobra.Command {
 		default cluster addons yaml file is ./cluster/addons.yaml
 		`,
 		RunE: func(c *cobra.Command, args []string) error {
-			// savev / apply
 			if !utils.CheckFileIsExist(clusterPath) {
 				return fmt.Errorf("cluster yaml file not exist")
 			}
@@ -90,14 +83,50 @@ func apply() *cobra.Command {
 			}
 			clusterData.Spec.Config = configContent
 			clusterData.Spec.Addons = addonsContent
-			_, err = client.Save(context.TODO(), clusterData.Spec)
+			msg, err := client.Save(c.Context(), clusterData.Spec)
 			if err != nil {
 				return err
 			}
-			_, err = client.Apply(context.TODO(), &v1alpha1.ClusterName{Name: clusterData.Spec.ClusterName})
+			l.Infof("cluster save successed \n %s", msg.Message)
+			_, err = client.Apply(c.Context(), &v1alpha1.ClusterName{Name: clusterData.Spec.ClusterName})
 			if err != nil {
 				return err
 			}
+			l.Info("cluster task started")
+			clusters, err := client.Get(c.Context(), &emptypb.Empty{})
+			if err != nil {
+				return err
+			}
+			var cluster *v1alpha1.Cluster
+			for _, v := range clusters.Clusters {
+				if v.ClusterName == clusterData.Spec.ClusterName {
+					cluster = v
+					cluster.Addons = ""
+					cluster.Config = ""
+					break
+				}
+			}
+			if cluster == nil || cluster.Id == 0 {
+				return fmt.Errorf("cluster not found %s", clusterData.Spec.ClusterName)
+			}
+			clusterData.Spec.Id = cluster.Id
+			for _, node := range clusterData.Spec.Nodes {
+				for _, v := range cluster.Nodes {
+					if node.Host == v.Host && v.Name == node.Name {
+						node.Id = v.Id
+						break
+					}
+				}
+			}
+			clusterDataYaml, err := yaml.Marshal(clusterData)
+			if err != nil {
+				return err
+			}
+			err = utils.WriteFile(clusterYamlPath, string(clusterDataYaml))
+			if err != nil {
+				return err
+			}
+			l.Info("update cluster and node id successed")
 			return nil
 		},
 	}
@@ -117,9 +146,11 @@ func list() *cobra.Command {
 				return err
 			}
 			for _, cluster := range clusters.Clusters {
+				if cluster.Id == 0 {
+					continue
+				}
 				fmt.Printf("id:%d, cluster name: %s, applyed %v\n", cluster.Id, cluster.ClusterName, cluster.Applyed)
 			}
-			l.Info("list cluster success")
 			return nil
 		},
 	}
@@ -155,6 +186,7 @@ func delete() *cobra.Command {
 			if err != nil {
 				return err
 			}
+			l.Info("delete cluster successed")
 			return nil
 		},
 	}
@@ -204,18 +236,25 @@ func example() *cobra.Command {
 					return err
 				}
 			}
-			err = utils.WriteFile(clusterConfigPath, config)
-			if err != nil {
-				return err
+			if !utils.CheckFileIsExist(clusterConfigPath) {
+				err = utils.WriteFile(clusterConfigPath, config)
+				if err != nil {
+					return err
+				}
 			}
-			err = utils.WriteFile(clusterAddonsPath, addons)
-			if err != nil {
-				return err
+			if !utils.CheckFileIsExist(clusterAddonsPath) {
+				err = utils.WriteFile(clusterAddonsPath, addons)
+				if err != nil {
+					return err
+				}
 			}
-			err = utils.WriteFile(clusterYamlPath, string(yamlStr))
-			if err != nil {
-				return err
+			if !utils.CheckFileIsExist(clusterYamlPath) {
+				err = utils.WriteFile(clusterYamlPath, string(yamlStr))
+				if err != nil {
+					return err
+				}
 			}
+			l.Info("generate successed : ./cluster...")
 			return nil
 		},
 	}

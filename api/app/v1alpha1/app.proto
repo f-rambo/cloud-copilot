@@ -21,7 +21,7 @@ service AppService {
     };
   }
 
-  rpc Save(app.v1alpha1.App) returns (app.v1alpha1.Msg) {
+  rpc Save(app.v1alpha1.App) returns (app.v1alpha1.AppID) {
     option (google.api.http) = {
       put: "/app/v1alpha1/save"
       body: "*"

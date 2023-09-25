@@ -7,7 +7,9 @@ import (
 
 	"github.com/f-rambo/ocean/internal/biz"
 	"github.com/f-rambo/ocean/internal/conf"
-	"github.com/f-rambo/ocean/internal/data/restapi"
+	"github.com/f-rambo/ocean/pkg/argoworkflows"
+	"github.com/f-rambo/ocean/pkg/operatorapp"
+	"github.com/f-rambo/ocean/pkg/semaphore"
 
 	bigcache "github.com/allegro/bigcache/v3"
 	"github.com/go-kratos/kratos/v2/log"
@@ -25,13 +27,15 @@ import (
 var ProviderSet = wire.NewSet(NewData, NewClusterRepo, NewAppRepo, NewServicesRepo)
 
 type Data struct {
-	c           *conf.Data
-	logger      log.Logger
-	k8sClient   *kubernetes.Clientset
-	db          *gorm.DB
-	redisClient *redis.Client
-	localCache  *bigcache.BigCache
-	semaphore   *restapi.Semaphore
+	c                 *conf.Data
+	logger            log.Logger
+	k8sClient         *kubernetes.Clientset
+	db                *gorm.DB
+	redisClient       *redis.Client
+	localCache        *bigcache.BigCache
+	semaphore         *semaphore.Semaphore
+	operatorappClient *operatorapp.AppV1Alpha1Client
+	workflowClient    *argoworkflows.WorkflowV1Alpha1Client
 }
 
 func NewData(c *conf.Data, logger log.Logger) (*Data, func(), error) {
@@ -60,7 +64,7 @@ func NewData(c *conf.Data, logger log.Logger) (*Data, func(), error) {
 	if err != nil {
 		return nil, cleanup, err
 	}
-	data.semaphore, err = restapi.NewSemaphore(c.Semaphore)
+	data.semaphore, err = semaphore.NewSemaphore(c.Semaphore)
 	if err != nil {
 		return nil, cleanup, err
 	}
@@ -111,10 +115,19 @@ func (d *Data) newKubernetes() error {
 			return err
 		}
 	}
-	// 连接kubernetes
 	k8sClient, err := kubernetes.NewForConfig(cfg)
 	if err != nil {
 		return err
+	}
+	if k8sClient != nil {
+		d.operatorappClient, err = operatorapp.NewForConfig(cfg)
+		if err != nil {
+			return err
+		}
+		d.workflowClient, err = argoworkflows.NewForConfig(cfg)
+		if err != nil {
+			return err
+		}
 	}
 	d.k8sClient = k8sClient
 	return nil

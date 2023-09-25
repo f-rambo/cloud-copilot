@@ -23,7 +23,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/app.v1alpha1.Msg'
+                                $ref: '#/components/schemas/app.v1alpha1.AppID'
     /app/v1alpha1/{clusterID}/apply/{appID}:
         put:
             tags:

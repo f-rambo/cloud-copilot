@@ -36,7 +36,6 @@ func NewServiceCommand(conn *grpc.ClientConn, logger log.Logger) *cobra.Command 
 		},
 	}
 	command.AddCommand(example(), apply(), get(), del())
-	l.Info("add command success")
 	return command
 }
 
