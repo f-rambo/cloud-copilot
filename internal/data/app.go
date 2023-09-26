@@ -25,7 +25,7 @@ func NewAppRepo(data *Data, logger log.Logger) biz.AppRepo {
 }
 
 func (a *appRepo) Save(ctx context.Context, app *biz.App) error {
-	err := a.data.db.Save(&app).Error
+	err := a.data.db.Omit("created_at").Save(&app).Error
 	if err != nil && err != gorm.ErrRecordNotFound {
 		return err
 	}
@@ -56,8 +56,7 @@ func (a *appRepo) DeleteApp(ctx context.Context, app *biz.App) error {
 	if err != nil {
 		return err
 	}
-	k8sClient := a.data.k8sClient
-	err = k8sClient.RESTClient().Delete().Namespace(app.Namespace).Resource("apps").Name(app.Name).Do(ctx).Error()
+	err = a.data.operatorappClient.Apps(app.Namespace).Delete(ctx, app.Name)
 	if err != nil && !k8serr.IsNotFound(err) {
 		return err
 	}
@@ -94,7 +93,19 @@ func (a *appRepo) Apply(ctx context.Context, app *biz.App) error {
 			Secret:    app.Secret,
 		},
 	}
-	_, err = a.data.operatorappClient.Apps(appObj.Namespace).Create(ctx, appObj)
+	resAppData, err := a.data.operatorappClient.Apps(appObj.Namespace).Get(ctx, appObj.Name, metav1.GetOptions{})
+	if err != nil && !k8serr.IsNotFound(err) {
+		return err
+	}
+	if resAppData == nil || k8serr.IsNotFound(err) {
+		_, err = a.data.operatorappClient.Apps(appObj.Namespace).Create(ctx, appObj)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+	appObj.ResourceVersion = resAppData.ResourceVersion
+	_, err = a.data.operatorappClient.Apps(appObj.Namespace).Update(ctx, appObj)
 	if err != nil {
 		return err
 	}

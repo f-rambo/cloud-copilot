@@ -151,6 +151,7 @@ func delete() *cobra.Command {
 			if err != nil {
 				return err
 			}
+			l.Info("delete app success", "appID", app.Id)
 			return nil
 		},
 	}

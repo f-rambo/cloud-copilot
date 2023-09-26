@@ -41,6 +41,15 @@ func NewAppUsecase(repo AppRepo, logger log.Logger) *AppUsecase {
 }
 
 func (a *AppUsecase) Save(ctx context.Context, app *App) error {
+	apps, err := a.GetApps(ctx, app.ClusterID)
+	if err != nil {
+		return err
+	}
+	for _, v := range apps {
+		if v.Name == app.Name && app.ID == 0 {
+			app.ID = v.ID
+		}
+	}
 	return a.repo.Save(ctx, app)
 }
 

@@ -71,6 +71,7 @@ func (a *AppService) Save(ctx context.Context, app *v1alpha1.App) (*v1alpha1.App
 		return nil, errors.New("cluster id is require")
 	}
 	bizApp := &biz.App{
+		ID:        int(app.Id),
 		Name:      app.Name,
 		RepoName:  app.RepoName,
 		RepoURL:   app.RepoUrl,

@@ -20,6 +20,7 @@ type AppInterface interface {
 	Create(context.Context, *operatoroceaniov1alpha1.App) (*operatoroceaniov1alpha1.App, error)
 	Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error)
 	Delete(ctx context.Context, name string) error
+	Update(ctx context.Context, app *operatoroceaniov1alpha1.App) (*operatoroceaniov1alpha1.App, error)
 	// ...
 }
 
@@ -54,13 +55,13 @@ func (c *appClient) Get(ctx context.Context, name string, opts metav1.GetOptions
 	return &result, err
 }
 
-func (c *appClient) Create(ctx context.Context, project *operatoroceaniov1alpha1.App) (*operatoroceaniov1alpha1.App, error) {
+func (c *appClient) Create(ctx context.Context, app *operatoroceaniov1alpha1.App) (*operatoroceaniov1alpha1.App, error) {
 	result := operatoroceaniov1alpha1.App{}
 	err := c.restClient.
 		Post().
 		Namespace(c.ns).
 		Resource(resourceName).
-		Body(project).
+		Body(app).
 		Do(ctx).
 		Into(&result)
 
@@ -85,4 +86,18 @@ func (c *appClient) Delete(ctx context.Context, name string) error {
 		Name(name).
 		Do(ctx).
 		Error()
+}
+
+func (c *appClient) Update(ctx context.Context, app *operatoroceaniov1alpha1.App) (*operatoroceaniov1alpha1.App, error) {
+	// app.ResourceVersion = utils.GetUUID()
+	result := &operatoroceaniov1alpha1.App{}
+	err := c.restClient.
+		Put().Namespace(c.ns).
+		Resource(resourceName).
+		Name(app.Name).
+		Body(app).
+		Do(ctx).
+		Into(result)
+
+	return result, err
 }
