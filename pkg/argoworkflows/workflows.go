@@ -5,7 +5,6 @@ import (
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	wfcommon "github.com/argoproj/argo-workflows/v3/workflow/common"
-	argoJson "github.com/argoproj/pkg/json"
 	"github.com/f-rambo/ocean/utils"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
@@ -81,14 +80,14 @@ func (c *workflowClient) Watch(ctx context.Context, opts metav1.ListOptions) (wa
 
 // unmarshalWorkflows unmarshals the input bytes as either json or yaml
 func UnmarshalWorkflow(wfStr string, strict bool) (wfv1.Workflow, error) {
-	wfBytes := []byte(wfStr)
-	var wf wfv1.Workflow
-	var jsonOpts []argoJson.JSONOpt
-	if strict {
-		jsonOpts = append(jsonOpts, argoJson.DisallowUnknownFields)
+	wfs, err := UnmarshalWorkflows(wfStr, strict)
+	if err != nil {
+		return wfv1.Workflow{}, err
 	}
-	err := argoJson.Unmarshal(wfBytes, &wf, jsonOpts...)
-	return wf, err
+	for _, v := range wfs {
+		return v, nil
+	}
+	return wfv1.Workflow{}, nil
 }
 
 func UnmarshalWorkflows(wfStr string, strict bool) ([]wfv1.Workflow, error) {

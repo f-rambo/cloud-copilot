@@ -16,7 +16,7 @@ type Service struct {
 	Registry     string `json:"registry" gorm:"column:registry; default:''; NOT NULL"`
 	RegistryUser string `json:"registry_user" gorm:"column:registry_user; default:''; NOT NULL"`
 	RegistryPwd  string `json:"registry_pwd" gorm:"column:registry_pwd; default:''; NOT NULL"`
-	Workflow     string `json:"workflow" gorm:"column:workflow; default:''; NOT NULL"`
+	Workflow     string `json:"workflow" gorm:"column:workflow; type:text"`
 	CIItems      []*CI  `json:"ci_items,omitempty" gorm:"-"`
 	Replicas     int32  `json:"replicas" gorm:"column:replicas; default:0; NOT NULL"`
 	CPU          string `json:"cpu" gorm:"column:cpu; default:''; NOT NULL"`
@@ -36,14 +36,14 @@ type Port struct {
 }
 
 type CI struct {
-	ID           int               `json:"id" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
-	Version      string            `json:"version,omitempty" gorm:"column:version; default:''; NOT NULL"`
-	Branch       string            `json:"branch,omitempty" gorm:"column:branch; default:''; NOT NULL"`
-	Tag          string            `json:"tag,omitempty" gorm:"column:tag; default:''; NOT NULL"`
-	Args         map[string]string `json:"args,omitempty" gorm:"column:args; type:json"`
-	Description  string            `json:"description,omitempty" gorm:"column:description; default:''; NOT NULL"`
-	WorkflowName string            `json:"workflow_name,omitempty" gorm:"column:workflow_name; default:''; NOT NULL"`
-	ServiceID    int               `json:"service_id,omitempty" gorm:"column:service_id; default:0; NOT NULL"`
+	ID           int    `json:"id" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
+	Version      string `json:"version,omitempty" gorm:"column:version; default:''; NOT NULL"`
+	Branch       string `json:"branch,omitempty" gorm:"column:branch; default:''; NOT NULL"`
+	Tag          string `json:"tag,omitempty" gorm:"column:tag; default:''; NOT NULL"`
+	Args         string `json:"args,omitempty" gorm:"column:args; type:json"`
+	Description  string `json:"description,omitempty" gorm:"column:description; default:''; NOT NULL"`
+	WorkflowName string `json:"workflow_name,omitempty" gorm:"column:workflow_name; default:''; NOT NULL"`
+	ServiceID    int    `json:"service_id,omitempty" gorm:"column:service_id; default:0; NOT NULL"`
 	gorm.Model
 }
 

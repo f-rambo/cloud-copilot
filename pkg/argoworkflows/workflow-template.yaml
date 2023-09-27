@@ -13,7 +13,6 @@ spec:
       - name: version
       - name: branch
       - name: tag
-      - name: custom
 
   entrypoint: main
   onExit: image

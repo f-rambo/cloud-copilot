@@ -91,6 +91,7 @@ func apply() *cobra.Command {
 			service.Spec.Workflow = wfContent
 			service.Spec.Config = configContent
 			service.Spec.Secret = secretContent
+			service.Spec.Namespace = service.MetaData.Namespace
 			serviceRes, err := client.SaveService(cmd.Context(), service.Spec)
 			if err != nil {
 				return err
@@ -120,13 +121,13 @@ func apply() *cobra.Command {
 			if err != nil {
 				return err
 			}
+			ci.Spec.ServiceId = service.Spec.Id
 			ciRes, err := client.SaveCI(cmd.Context(), ci.Spec)
 			if err != nil {
 				return err
 			}
 			if ci.Spec.Id == 0 {
 				ci.Spec.Id = ciRes.GetId()
-				ci.Spec.ServiceId = service.Spec.Id
 				ciYamlData, err := yaml.Marshal(ci)
 				if err != nil {
 					return err
@@ -271,7 +272,15 @@ func example() *cobra.Command {
 				Kind:     "service",
 				Spec:     oceanService,
 			}
-			ciYaml, err := yaml.Marshal(oceanService.Cis[0])
+			ciMetaData := &v1alpha1.MetaData{
+				Name:      "ocean",
+				Namespace: "default",
+			}
+			ciYaml, err := yaml.Marshal(&v1alpha1.CIV1Alpha1{
+				MetaData: ciMetaData,
+				Kind:     "ci",
+				Spec:     oceanService.Cis[0],
+			})
 			if err != nil {
 				return err
 			}

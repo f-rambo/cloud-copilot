@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 
 	v1alpha1 "github.com/f-rambo/ocean/api/service/v1alpha1"
@@ -224,24 +225,29 @@ func (s *ServicesService) serviceTransformationApi(service *biz.Service) *v1alph
 }
 
 func (s *ServicesService) ciTransformationBiz(ci *v1alpha1.CI) *biz.CI {
+	args, _ := json.Marshal(ci.Args)
 	return &biz.CI{
 		ID:          int(ci.Id),
 		Version:     ci.Version,
 		Branch:      ci.Branch,
 		Tag:         ci.Tag,
-		Args:        ci.Args,
+		Args:        string(args),
 		Description: ci.Description,
 		ServiceID:   int(ci.ServiceId),
 	}
 }
 
 func (s *ServicesService) ciTransformationApi(ci *biz.CI) *v1alpha1.CI {
+	args := make(map[string]string)
+	if ci.Args != "" {
+		json.Unmarshal([]byte(ci.Args), &args)
+	}
 	return &v1alpha1.CI{
 		Id:           int32(ci.ID),
 		Version:      ci.Version,
 		Branch:       ci.Branch,
 		Tag:          ci.Tag,
-		Args:         ci.Args,
+		Args:         args,
 		Description:  ci.Description,
 		ServiceId:    int32(ci.ServiceID),
 		WorkflowName: ci.WorkflowName,

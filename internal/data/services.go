@@ -2,6 +2,7 @@ package data
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -10,6 +11,7 @@ import (
 	"github.com/f-rambo/ocean/pkg/argoworkflows"
 	operatoroceaniov1alpha1 "github.com/f-rambo/operatorapp/api/v1alpha1"
 	"github.com/go-kratos/kratos/v2/log"
+	"github.com/spf13/cast"
 	"gorm.io/gorm"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -45,7 +47,7 @@ func (s *servicesRepo) Save(ctx context.Context, svc *biz.Service) error {
 			return errors.New("service name already exists")
 		}
 	}
-	return s.data.db.Save(svc).Error
+	return s.data.db.Omit("created_at").Save(svc).Error
 }
 
 func (s *servicesRepo) Get(ctx context.Context, id int) (*biz.Service, error) {
@@ -118,15 +120,15 @@ func (s *servicesRepo) SaveCI(ctx context.Context, ci *biz.CI) error {
 	s.wfAssign(ctx, svc, ci, &wf)
 	wf.Labels = map[string]string{
 		"service":    svc.Name,
-		"service_id": string(rune(svc.ID)),
-		"ci_id":      string(rune(ci.ID)),
+		"service_id": cast.ToString(svc.ID),
+		"ci_id":      cast.ToString(ci.ID),
 	}
 	resWf, err := s.data.workflowClient.Workflows(wf.Namespace).Create(ctx, &wf)
 	if err != nil {
 		return err
 	}
 	ci.SetWorkflowName(resWf.Name)
-	err = s.data.db.Save(ci).Error
+	err = s.data.db.Omit("created_at").Save(ci).Error
 	if err != nil {
 		return err
 	}
@@ -233,12 +235,13 @@ func (s *servicesRepo) GetOceanService(ctx context.Context) (*biz.Service, error
 		RegistryUser: "",
 		RegistryPwd:  "",
 		Workflow:     wf,
+		NameSpace:    "default",
 	}
 	ci := &biz.CI{
 		Version:     "0.0.1",
 		Branch:      "master",
 		Tag:         "latest",
-		Args:        map[string]string{},
+		Args:        "",
 		Description: "example",
 		ServiceID:   service.ID,
 	}
@@ -247,6 +250,11 @@ func (s *servicesRepo) GetOceanService(ctx context.Context) (*biz.Service, error
 }
 
 func (s *servicesRepo) wfAssign(ctx context.Context, svc *biz.Service, ci *biz.CI, wf *wfv1.Workflow) {
+	args := make(map[string]string)
+	if ci != nil && ci.Args != "" {
+		json.Unmarshal([]byte(ci.Args), &args)
+	}
+	wf.Namespace = svc.NameSpace
 	for i, param := range wf.Spec.Arguments.Parameters {
 		switch param.Name {
 		case "name":
@@ -266,7 +274,7 @@ func (s *servicesRepo) wfAssign(ctx context.Context, svc *biz.Service, ci *biz.C
 		case "tag":
 			wf.Spec.Arguments.Parameters[i].Value = wfv1.AnyStringPtr(ci.Tag)
 		default:
-			if val, ok := ci.Args[param.Name]; ok {
+			if val, ok := args[param.Name]; ok {
 				wf.Spec.Arguments.Parameters[i].Value = wfv1.AnyStringPtr(val)
 			}
 		}
