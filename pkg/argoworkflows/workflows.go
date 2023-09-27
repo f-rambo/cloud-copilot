@@ -21,6 +21,7 @@ type WorkflowInterface interface {
 	Get(ctx context.Context, name string, options metav1.GetOptions) (*wfv1.Workflow, error)
 	Create(context.Context, *wfv1.Workflow) (*wfv1.Workflow, error)
 	Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error)
+	Delete(ctx context.Context, name string) error
 	// ...
 }
 
@@ -55,13 +56,13 @@ func (c *workflowClient) Get(ctx context.Context, name string, opts metav1.GetOp
 	return &result, err
 }
 
-func (c *workflowClient) Create(ctx context.Context, project *wfv1.Workflow) (*wfv1.Workflow, error) {
+func (c *workflowClient) Create(ctx context.Context, wf *wfv1.Workflow) (*wfv1.Workflow, error) {
 	result := wfv1.Workflow{}
 	err := c.restClient.
 		Post().
 		Namespace(c.ns).
 		Resource(resourceName).
-		Body(project).
+		Body(wf).
 		Do(ctx).
 		Into(&result)
 
@@ -76,6 +77,16 @@ func (c *workflowClient) Watch(ctx context.Context, opts metav1.ListOptions) (wa
 		Resource(resourceName).
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Watch(ctx)
+}
+
+func (c *workflowClient) Delete(ctx context.Context, name string) error {
+	return c.restClient.
+		Delete().
+		Namespace(c.ns).
+		Resource(resourceName).
+		Name(name).
+		Do(ctx).
+		Error()
 }
 
 // unmarshalWorkflows unmarshals the input bytes as either json or yaml

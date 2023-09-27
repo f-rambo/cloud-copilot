@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/f-rambo/ocean/api/service/v1alpha1"
+	"github.com/f-rambo/ocean/pkg/operatorapp"
 	"github.com/f-rambo/ocean/utils"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/spf13/cast"
@@ -66,7 +67,6 @@ func apply() *cobra.Command {
 			if !utils.CheckFileIsExist(workflowPath) {
 				return fmt.Errorf("workflow file not exist")
 			}
-			// save service & if cluster id == 0 update cluster id
 			serviceContent, err := utils.ReadFile(servicePath)
 			if err != nil {
 				return err
@@ -268,18 +268,20 @@ func example() *cobra.Command {
 				Namespace: "default",
 			}
 			service := &v1alpha1.ServiceV1Alpha1{
-				MetaData: metaData,
-				Kind:     "service",
-				Spec:     oceanService,
+				ApiVersion: operatorapp.GetApiVersion(),
+				MetaData:   metaData,
+				Kind:       "service",
+				Spec:       oceanService,
 			}
 			ciMetaData := &v1alpha1.MetaData{
 				Name:      "ocean",
 				Namespace: "default",
 			}
 			ciYaml, err := yaml.Marshal(&v1alpha1.CIV1Alpha1{
-				MetaData: ciMetaData,
-				Kind:     "ci",
-				Spec:     oceanService.Cis[0],
+				ApiVersion: operatorapp.GetApiVersion(),
+				MetaData:   ciMetaData,
+				Kind:       "ci",
+				Spec:       oceanService.Cis[0],
 			})
 			if err != nil {
 				return err

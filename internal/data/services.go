@@ -157,7 +157,19 @@ func (s *servicesRepo) DeleteCI(ctx context.Context, ci *biz.CI) error {
 	if ci == nil || ci.ID == 0 {
 		return errors.New("ci is nil")
 	}
-	err := s.data.db.Where("id = ?", ci.ID).Delete(&biz.CI{}).Error
+	err := s.k8s()
+	if err != nil {
+		return err
+	}
+	service, err := s.Get(ctx, ci.ServiceID)
+	if err != nil {
+		return err
+	}
+	err = s.data.workflowClient.Workflows(service.NameSpace).Delete(ctx, ci.WorkflowName)
+	if err != nil && !k8serr.IsNotFound(err) {
+		return err
+	}
+	err = s.data.db.Where("id = ?", ci.ID).Delete(&biz.CI{}).Error
 	if err != nil && err != gorm.ErrRecordNotFound {
 		return err
 	}
@@ -239,9 +251,9 @@ func (s *servicesRepo) GetOceanService(ctx context.Context) (*biz.Service, error
 	}
 	ci := &biz.CI{
 		Version:     "0.0.1",
-		Branch:      "master",
-		Tag:         "latest",
-		Args:        "",
+		Branch:      "main",
+		Tag:         "",
+		Args:        "", // json string
 		Description: "example",
 		ServiceID:   service.ID,
 	}
