@@ -51,7 +51,6 @@ func (a *appRepo) GetApp(ctx context.Context, appId int) (*biz.App, error) {
 }
 
 func (a *appRepo) DeleteApp(ctx context.Context, app *biz.App) error {
-	// 删除app
 	err := a.k8s()
 	if err != nil {
 		return err
@@ -72,7 +71,6 @@ func (a *appRepo) Apply(ctx context.Context, app *biz.App) error {
 	if err != nil {
 		return err
 	}
-	// 创建app
 	appObj := &operatoroceaniov1alpha1.App{}
 	appObj.ObjectMeta = metav1.ObjectMeta{
 		Name:      app.Name,

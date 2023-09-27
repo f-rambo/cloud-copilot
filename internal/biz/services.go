@@ -79,7 +79,15 @@ func NewServicesUseCase(repo ServicesRepo, logger log.Logger) *ServicesUseCase {
 }
 
 func (s *ServicesUseCase) SaveService(ctx context.Context, service *Service) error {
-	// 只保存service，忽略ci
+	services, err := s.GetServices(ctx)
+	if err != nil {
+		return err
+	}
+	for _, s := range services {
+		if s.Name == service.Name && s.NameSpace == service.NameSpace && service.ID == 0 {
+			service.ID = s.ID
+		}
+	}
 	return s.repo.Save(ctx, service)
 }
 

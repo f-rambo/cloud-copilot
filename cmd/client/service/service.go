@@ -31,7 +31,6 @@ func NewServiceCommand(conn *grpc.ClientConn, logger log.Logger) *cobra.Command 
 		Use:   "service",
 		Short: "Manage services",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			l.Info(args)
 			return nil
 		},
 	}
@@ -166,6 +165,9 @@ func get() *cobra.Command {
 				if err != nil {
 					return err
 				}
+				if len(services.Services) == 0 {
+					fmt.Println("no service")
+				}
 				for _, service := range services.Services {
 					fmt.Printf("service id: %d, name: %s\n", service.GetId(), service.GetName())
 				}
@@ -178,6 +180,10 @@ func get() *cobra.Command {
 			service, err := client.GetService(cmd.Context(), &v1alpha1.ServiceID{Id: serviceID})
 			if err != nil {
 				return err
+			}
+			if service == nil || service.Id == 0 {
+				fmt.Println("not found service : ", args[0])
+				return nil
 			}
 			fmt.Printf("service id: %d, name: %s\n", service.GetId(), service.GetName())
 			for _, ci := range service.Cis {
@@ -265,19 +271,7 @@ func example() *cobra.Command {
 				Kind:     "service",
 				Spec:     oceanService,
 			}
-			service.Spec.Cis = nil
-			service.Spec.Secret = ""
-			service.Spec.Workflow = ""
-			service.Spec.Config = ""
-			serviceYaml, err := yaml.Marshal(service)
-			if err != nil {
-				return err
-			}
 			ciYaml, err := yaml.Marshal(oceanService.Cis[0])
-			if err != nil {
-				return err
-			}
-			err = utils.WriteFile(serviceYamlFile, string(serviceYaml))
 			if err != nil {
 				return err
 			}
@@ -297,6 +291,19 @@ func example() *cobra.Command {
 			if err != nil {
 				return err
 			}
+			service.Spec.Cis = nil
+			service.Spec.Secret = ""
+			service.Spec.Workflow = ""
+			service.Spec.Config = ""
+			serviceYaml, err := yaml.Marshal(service)
+			if err != nil {
+				return err
+			}
+			err = utils.WriteFile(serviceYamlFile, string(serviceYaml))
+			if err != nil {
+				return err
+			}
+			l.Info("generate example successd")
 			return nil
 		},
 	}

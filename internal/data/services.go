@@ -12,6 +12,7 @@ import (
 	"github.com/go-kratos/kratos/v2/log"
 	"gorm.io/gorm"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type servicesRepo struct {
@@ -189,7 +190,19 @@ func (s *servicesRepo) Deploy(ctx context.Context, svc *biz.Service, ci *biz.CI)
 	if err != nil {
 		return err
 	}
-	_, err = s.data.operatorappClient.Apps(app.Namespace).Create(ctx, app)
+	resAppData, err := s.data.operatorappClient.Apps(app.Namespace).Get(ctx, app.Name, metav1.GetOptions{})
+	if err != nil && !k8serr.IsNotFound(err) {
+		return err
+	}
+	if resAppData == nil || k8serr.IsNotFound(err) {
+		_, err = s.data.operatorappClient.Apps(app.Namespace).Create(ctx, app)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+	app.ResourceVersion = resAppData.ResourceVersion
+	_, err = s.data.operatorappClient.Apps(app.Namespace).Update(ctx, app)
 	if err != nil {
 		return err
 	}
