@@ -1,0 +1,612 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ocean
+  labels:
+    name: ocean
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.11.1
+  name: apps.operator.ocean.io
+spec:
+  group: operator.ocean.io
+  names:
+    kind: App
+    listKind: AppList
+    plural: apps
+    singular: app
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: App is the Schema for the apps API
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: AppSpec defines the desired state of App
+            properties:
+              appChart:
+                properties:
+                  chartName:
+                    type: string
+                  config:
+                    type: string
+                  enable:
+                    type: boolean
+                  repoName:
+                    type: string
+                  repoURL:
+                    type: string
+                  secret:
+                    type: string
+                  version:
+                    type: string
+                required:
+                - enable
+                type: object
+              service:
+                properties:
+                  config:
+                    type: string
+                  cpu:
+                    type: string
+                  enable:
+                    type: boolean
+                  enableIngress:
+                    type: boolean
+                  enableService:
+                    type: boolean
+                  gpu:
+                    type: string
+                  image:
+                    type: string
+                  limitCpu:
+                    type: string
+                  limitMemory:
+                    type: string
+                  memory:
+                    type: string
+                  ports:
+                    items:
+                      properties:
+                        containerPort:
+                          format: int32
+                          type: integer
+                        ingressPath:
+                          type: string
+                      type: object
+                    type: array
+                  replicas:
+                    format: int32
+                    type: integer
+                  secret:
+                    type: string
+                required:
+                - enable
+                - enableService
+                - replicas
+                type: object
+            type: object
+          status:
+            description: AppStatus defines the observed state of App
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ocean
+  namespace: ocean
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: operatorapp
+  namespace: ocean
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    rbac.authorization.k8s.io/aggregate-to-admin: "true"
+  name: ocean-admin
+rules:
+- apiGroups:
+  - operator.ocean.io
+  resources:
+  - apps
+  verbs:
+  - create
+  - delete
+  - deletecollection
+  - get
+  - list
+  - patch
+  - update
+  - watch
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: operatorapp
+  namespace: ocean
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    rbac.authorization.k8s.io/aggregate-to-admin: "true"
+  name: operator-admin
+rules:
+- apiGroups:
+  - operator.ocean.io
+  resources:
+  - apps
+  verbs:
+  - create
+  - delete
+  - deletecollection
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  - pods/exec
+  verbs:
+  - create
+  - get
+  - list
+  - watch
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  verbs:
+  - create
+  - get
+  - list
+  - watch
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - ""
+  resources:
+  - serviceaccounts
+  verbs:
+  - get
+  - list
+- apiGroups:
+  - ""
+  resources:
+  - deployments
+  verbs:
+  - create
+  - get
+  - list
+  - watch
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - ""
+  resources:
+  - ingresses
+  verbs:
+  - create
+  - get
+  - list
+  - watch
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - ""
+  resources:
+  - services
+  verbs:
+  - create
+  - get
+  - list
+  - watch
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - create
+  - get
+  - list
+  - watch
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - coordination.k8s.io
+  resources:
+  - leases
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
+  - patch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: ocean-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: ocean-admin
+subjects:
+- kind: ServiceAccount
+  name: ocean
+  namespace: ocean
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: operator-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: operator-admin
+subjects:
+- kind: ServiceAccount
+  name: operatorapp
+  namespace: ocean
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ocean-configmap
+  namespace: ocean
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ocean
+  namespace: ocean
+spec:
+  ports:
+  - name: http
+    port: 8000
+    targetPort: 8000
+  - name: grpc
+    port: 9000
+    targetPort: 9000
+  selector:
+    app: ocean
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql
+  namespace: ocean
+spec:
+  ports:
+  - name: mysql
+    port: 3306
+    targetPort: 3306
+  selector:
+    app: mysql
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+  namespace: ocean
+  labels:
+    app: redis
+spec:
+  ports:
+    - port: 6379
+  selector:
+    app: redis
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: semaphore
+  namespace: ocean
+  labels:
+    app: semaphore
+spec:
+  ports:
+    - port: 3000
+  selector:
+    app: semaphore
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mysql
+  namespace: ocean
+spec:
+  serviceName: mysql
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mysql
+  template:
+    metadata:
+      labels:
+        app: mysql
+    spec:
+      containers:
+        - name: mysql
+          image: mysql:8.0
+          ports:
+            - containerPort: 3306
+          env:
+            - name: MYSQL_RANDOM_ROOT_PASSWORD
+              value: 'yes'
+            - name: MYSQL_DATABASE
+              value: ocean
+            - name: MYSQL_USER
+              value: ocean
+            - name: MYSQL_PASSWORD
+              value: ocean
+          volumeMounts:
+            - name: mysql
+              mountPath: /var/lib/mysql
+  volumeClaimTemplates:
+    - metadata:
+        name: mysql
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        resources:
+          requests:
+            storage: 3Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  namespace: ocean
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+        - name: redis
+          image: redis:6.0.9
+          ports:
+            - containerPort: 6379
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: semaphore
+  namespace: ocean
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: semaphore
+  template:
+    metadata:
+      labels:
+        app: semaphore
+    spec:
+      containers:
+        - name: semaphore
+          image: semaphoreui/semaphore:v2.9.4
+          ports:
+            - containerPort: 3000
+          env:
+            - name: SEMAPHORE_DB_USER
+              value: ocean
+            - name: SEMAPHORE_DB_PASS
+              value: ocean
+            - name: SEMAPHORE_DB_HOST
+              value: mysql
+            - name: SEMAPHORE_DB_PORT
+              value: "3306"
+            - name: SEMAPHORE_DB_DIALECT
+              value: mysql
+            - name: SEMAPHORE_DB
+              value: ocean
+            - name: SEMAPHORE_PLAYBOOK_PATH
+              value: /tmp/semaphore/
+            - name: SEMAPHORE_ADMIN_PASSWORD
+              value: admin
+            - name: SEMAPHORE_ADMIN_NAME
+              value: admin
+            - name: SEMAPHORE_ADMIN_EMAIL
+              value: admin@localhost
+            - name: SEMAPHORE_ADMIN
+              value: admin
+            - name: SEMAPHORE_ACCESS_KEY_ENCRYPTION
+              value: gs72mPntFATGJs9qK0pQ0rKtfidlexiMjYCH9gWKhTU=
+            - name: SEMAPHORE_LDAP_ACTIVATED
+              value: 'no'
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ocean
+  namespace: ocean
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ocean
+  template:
+    metadata:
+      labels:
+        app: ocean
+    spec:
+      serviceAccountName: ocean
+      containers:
+        - name: ocean
+          image: frambos/ocean:0.0.1
+          ports:
+            - containerPort: 8000
+            - containerPort: 9000
+          env:
+            - name: HTTP_NETWORK
+              value: ""
+            - name: HTTP_ADDR
+              value: ""
+            - name: GRPC_NETWORK
+              value: ""
+            - name: GRPC_ADDR
+              value: ""
+            - name: DATABASE_DRIVER
+              value: mysql
+            - name: DATABASE_USERNAME
+              value: ocean
+            - name: DATABASE_PASSWORD
+              value: ocean
+            - name: DATABASE_HOST
+              value: mysql
+            - name: DATABASE_PORT
+              value: '3306'
+            - name: DATABASE_DATABASE
+              value: ocean
+            - name: REDIS_HOST
+              value: redis
+            - name: REDIS_PORT
+              value: '6379'
+            - name: REDIS_PASSWORD
+              value: ''
+            - name: REDIS_DB
+              value: '0'
+            - name: SEMAPHORE_ADMIN
+              value: admin
+            - name: SEMAPHORE_ADMIN_PASSWORD
+              value: admin
+            - name: SEMAPHORE_HOST
+              value: semaphore
+            - name: SEMAPHORE_PORT
+              value: '3000'
+            - name: KUBERNETES_MASTER_URL
+              value: ''
+            - name: KUBERNETES_KUBE_CONFIG
+              value: ''
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app.kubernetes.io/component: manager
+    app.kubernetes.io/created-by: operatorapp
+    app.kubernetes.io/instance: controller-manager
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: deployment
+    app.kubernetes.io/part-of: operatorapp
+    control-plane: controller-manager
+  name: operatorapp
+  namespace: ocean
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      control-plane: controller-manager
+  template:
+    metadata:
+      annotations:
+        kubectl.kubernetes.io/default-container: manager
+      labels:
+        control-plane: controller-manager
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kubernetes.io/arch
+                operator: In
+                values:
+                - amd64
+                - arm64
+                - ppc64le
+                - s390x
+              - key: kubernetes.io/os
+                operator: In
+                values:
+                - linux
+      containers:
+      - args:
+        - --health-probe-bind-address=:8081
+        - --metrics-bind-address=127.0.0.1:8080
+        - --leader-elect
+        command:
+        - /manager
+        image: frambos/operatorapp:0.0.1
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8081
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        name: manager
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: 8081
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        resources:
+          limits:
+            cpu: 500m
+            memory: 128Mi
+          requests:
+            cpu: 10m
+            memory: 64Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+      securityContext:
+        runAsNonRoot: true
+      serviceAccountName: operatorapp
+      terminationGracePeriodSeconds: 10

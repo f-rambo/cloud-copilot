@@ -136,9 +136,9 @@ func (d *Data) newKubernetes() error {
 // 获取Redis客户端
 func newRedis(c conf.Redis) (*redis.Client, error) {
 	client := redis.NewClient(&redis.Options{
-		Addr:     fmt.Sprintf("%s:%d", c.Host, c.Port),
+		Addr:     fmt.Sprintf("%s:%d", c.GetHost(), c.GetPort()),
 		Password: c.Password,
-		DB:       int(c.Db),
+		DB:       int(c.GetDb()),
 	})
 	_, err := client.Ping().Result()
 	if err != nil {

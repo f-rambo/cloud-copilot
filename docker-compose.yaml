@@ -1,84 +1,86 @@
 services:
-  # uncomment this section and comment out the mysql section to use postgres instead of mysql
-  #postgres:
-    #restart: unless-stopped
-    #image: postgres:14
-    #hostname: postgres
-    #volumes: 
-    #  - semaphore-postgres:/var/lib/postgresql/data
-    #environment:
-    #  POSTGRES_USER: semaphore
-    #  POSTGRES_PASSWORD: semaphore
-    #  POSTGRES_DB: semaphore
-  # if you wish to use postgres, comment the mysql service section below 
+  redis:
+    restart: unless-stopped
+    ports:
+      - 6379:6379
+    image: redis:6.0.9
+    hostname: redis
+    volumes:
+      - redis:/data
   mysql:
     restart: unless-stopped
+    ports:
+      - 3306:3306
     image: mysql:8.0
     hostname: mysql
     volumes:
-      - semaphore-mysql:/var/lib/mysql
+      - mysql:/var/lib/mysql
     environment:
       MYSQL_RANDOM_ROOT_PASSWORD: 'yes'
-      MYSQL_DATABASE: semaphore
-      MYSQL_USER: semaphore
-      MYSQL_PASSWORD: semaphore
+      MYSQL_DATABASE: ocean
+      MYSQL_USER: ocean
+      MYSQL_PASSWORD: ocean
   semaphore:
     restart: unless-stopped
     ports:
       - 3000:3000
     image: semaphoreui/semaphore:v2.9.4
+    hostname: semaphore
     environment:
-      SEMAPHORE_DB_USER: semaphore
-      SEMAPHORE_DB_PASS: semaphore
-      SEMAPHORE_DB_HOST: mysql # for postgres, change to: postgres
-      SEMAPHORE_DB_PORT: 3306 # change to 5432 for postgres
-      SEMAPHORE_DB_DIALECT: mysql # for postgres, change to: postgres
-      SEMAPHORE_DB: semaphore
+      SEMAPHORE_DB_USER: ocean
+      SEMAPHORE_DB_PASS: ocean
+      SEMAPHORE_DB_HOST: mysql
+      SEMAPHORE_DB_PORT: 3306
+      SEMAPHORE_DB_DIALECT: mysql
+      SEMAPHORE_DB: ocean
       SEMAPHORE_PLAYBOOK_PATH: /tmp/semaphore/
-      SEMAPHORE_ADMIN_PASSWORD: changeme
+      SEMAPHORE_ADMIN_PASSWORD: admin
       SEMAPHORE_ADMIN_NAME: admin
       SEMAPHORE_ADMIN_EMAIL: admin@localhost
       SEMAPHORE_ADMIN: admin
       SEMAPHORE_ACCESS_KEY_ENCRYPTION: gs72mPntFATGJs9qK0pQ0rKtfidlexiMjYCH9gWKhTU=
-      SEMAPHORE_LDAP_ACTIVATED: 'no' # if you wish to use ldap, set to: 'yes' 
-      SEMAPHORE_LDAP_HOST: 
+      SEMAPHORE_LDAP_ACTIVATED: 'no'
+      SEMAPHORE_LDAP_HOST: ''
       SEMAPHORE_LDAP_PORT: ''
       SEMAPHORE_LDAP_NEEDTLS: ''
       SEMAPHORE_LDAP_DN_BIND: ''
       SEMAPHORE_LDAP_PASSWORD: ''
       SEMAPHORE_LDAP_DN_SEARCH: ''
-      SEMAPHORE_LDAP_SEARCH_FILTER: ""
+      SEMAPHORE_LDAP_SEARCH_FILTER: ''
     depends_on:
-      - mysql # for postgres, change to: postgres
+      - mysql
   ocean:
     restart: unless-stopped
     ports:
       - 8000:8000
       - 9000:9000
-    image: frambos/ocean:v0.1.0
+    image: frambos/ocean:0.0.1
+    hostname: ocean
     environment:
-      HTTP_NETWORK:
-      HTTP_ADDR:
-      GRPC_NETWORK:
-      GRPC_ADDR:
-      DATABASE_DRIVER:
-      DATABASE_USERNAME:
-      DATABASE_PASSWORD:
-      DATABASE_HOST:
-      DATABASE_PORT:
-      DATABASE_DATABASE:
-      REDIS_HOST:
-      REDIS_PORT:
-      REDIS_PASSWORD:
-      REDIS_DB:
-      SEMAPHORE_ADMIN:
-      SEMAPHORE_ADMIN_PASSWORD:
-      SEMAPHORE_HOST:
-      SEMAPHORE_PORT:
-      KUBERNETES_MASTER_URL:
-      KUBERNETES_KUBE_CONFIG:
+      HTTP_NETWORK: 
+      HTTP_ADDR: 
+      GRPC_NETWORK: 
+      GRPC_ADDR: 
+      DATABASE_DRIVER: mysql
+      DATABASE_USERNAME: ocean
+      DATABASE_PASSWORD: ocean
+      DATABASE_HOST: mysql
+      DATABASE_PORT: 3306
+      DATABASE_DATABASE: ocean
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: 
+      REDIS_DB: 0
+      SEMAPHORE_ADMIN: admin
+      SEMAPHORE_ADMIN_PASSWORD: admin
+      SEMAPHORE_HOST: semaphore
+      SEMAPHORE_PORT: 3000
+      KUBERNETES_MASTER_URL: 
+      KUBERNETES_KUBE_CONFIG: 
     depends_on:
       - semaphore
       - mysql
+      - redis
 volumes:
-  semaphore-mysql: # to use postgres, switch to: semaphore-postgres
+  mysql:
+  redis:
