@@ -95,7 +95,7 @@ func (c *Cluster) Merge(cluster *Cluster) {
 	c.InventoryID = cluster.InventoryID
 	c.TemplateIDs = cluster.TemplateIDs
 	c.CreatedAt = cluster.CreatedAt
-	c.Deployed = false
+	c.Deployed = cluster.Deployed
 }
 
 type ClusterRepo interface {

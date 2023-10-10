@@ -53,8 +53,9 @@ func (c *ClusterService) Get(ctx context.Context, _ *emptypb.Empty) (*v1alpha1.C
 
 func (c *ClusterService) Save(ctx context.Context, cluster *v1alpha1.Cluster) (*v1alpha1.Msg, error) {
 	bizCluster := &biz.Cluster{
-		ID:   int(cluster.Id),
-		Name: cluster.ClusterName,
+		ID:       int(cluster.Id),
+		Name:     cluster.ClusterName,
+		Deployed: cluster.Applyed,
 	}
 	bizCluster.Config = []byte(cluster.Config)
 	bizCluster.Addons = []byte(cluster.Addons)
