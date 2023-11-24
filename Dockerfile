@@ -1,19 +1,18 @@
-FROM golang:1.19 AS builder
+FROM golang:1.21 AS builder
 
-ENV GOPROXY=https://goproxy.io,direct
-ENV GOPRIVATE=github.com/f-rambo/
+COPY . /src
+WORKDIR /src
 
-COPY . /app
+RUN GOPROXY=https://goproxy.cn GOPRIVATE=github.com/f-rambo/ make build
+
+FROM debian:stable-slim
+
+COPY --from=builder /src/bin /app
+
 WORKDIR /app
-
-RUN apt-get update && apt-get install -y \
-		ca-certificates netbase net-tools openssh-client && \
-        rm -rf /var/lib/apt/lists/ && \
-        apt-get autoremove -y && apt-get autoclean -y && \
-        ssh-keygen -t rsa -f ~/.ssh/id_rsa -N '' && \
-        make generate && make build
 
 EXPOSE 8000
 EXPOSE 9000
+VOLUME /data/conf
 
-CMD ["./bin/server", "-conf", "configs"]
+CMD ["./bin/server", "-conf", "/data/conf"]

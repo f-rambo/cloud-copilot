@@ -61,8 +61,6 @@ dev-run:
 # generate
 generate:
 	go mod tidy
-	go get github.com/google/wire/cmd/wire@latest
-	go generate ./...
 
 .PHONY: all
 # generate all

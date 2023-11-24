@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package user.v1alpha1;
+
+import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
+import "api/user/v1alpha1/error_reason.proto";
+import "api/user/v1alpha1/message.proto";
+
+option go_package = "api/user/v1alpha1;v1alpha1";
+
+service UserService {
+      rpc SignIn(user.v1alpha1.SignIn) returns (user.v1alpha1.User) {
+            option (google.api.http) = {
+              put: "/user/v1alpha1/signin"
+              body: "*"
+            };
+      }
+
+
+      rpc SignOut(google.protobuf.Empty) returns (user.v1alpha1.Msg) {
+            option (google.api.http) = {
+              post: "/user/v1alpha1/signout"
+              body: "*"
+            };
+      }
+
+      rpc GetUserInfo(google.protobuf.Empty) returns (user.v1alpha1.User) {
+            option (google.api.http) = {
+              get: "/user/v1alpha1"
+            };
+      }
+}

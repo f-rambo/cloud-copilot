@@ -34,3 +34,8 @@ log:
   max_age: 28
   compress: true
   local_time: true
+auth:
+  exp: 24
+  key: 'ocean'
+  email: 'admin'
+  password: '123456'

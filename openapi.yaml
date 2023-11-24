@@ -371,6 +371,52 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/service.v1alpha1.Msg'
+    /user/v1alpha1:
+        get:
+            tags:
+                - UserService
+            operationId: UserService_GetUserInfo
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/user.v1alpha1.User'
+    /user/v1alpha1/signin:
+        put:
+            tags:
+                - UserService
+            operationId: UserService_SignIn
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/user.v1alpha1.SignIn'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/user.v1alpha1.User'
+    /user/v1alpha1/signout:
+        post:
+            tags:
+                - UserService
+            operationId: UserService_SignOut
+            requestBody:
+                content:
+                    application/json: {}
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/user.v1alpha1.Msg'
 components:
     schemas:
         app.v1alpha1.App:
@@ -591,7 +637,35 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/service.v1alpha1.Service'
+        user.v1alpha1.Msg:
+            type: object
+            properties:
+                Reason:
+                    type: integer
+                    format: enum
+                Message:
+                    type: string
+        user.v1alpha1.SignIn:
+            type: object
+            properties:
+                email:
+                    type: string
+                password:
+                    type: string
+        user.v1alpha1.User:
+            type: object
+            properties:
+                id:
+                    type: integer
+                    format: int64
+                username:
+                    type: string
+                email:
+                    type: string
+                token:
+                    type: string
 tags:
     - name: AppService
     - name: ClusterService
     - name: ServiceService
+    - name: UserService

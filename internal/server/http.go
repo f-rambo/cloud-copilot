@@ -13,9 +13,15 @@ import (
 )
 
 // NewHTTPServer new an HTTP server.
-func NewHTTPServer(c *conf.Server, cluster *service.ClusterService, app *service.AppService, services *service.ServicesService, logger log.Logger) *http.Server {
+func NewHTTPServer(c *conf.Server,
+	cluster *service.ClusterService,
+	app *service.AppService,
+	services *service.ServicesService,
+	user *service.UserService,
+	logger log.Logger) *http.Server {
 	var opts = []http.ServerOption{
 		http.Middleware(
+			NewAuthServer(user),
 			recovery.Recovery(),
 		),
 	}

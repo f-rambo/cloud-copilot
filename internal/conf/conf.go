@@ -234,3 +234,43 @@ type Log struct {
 	Compress   bool   `json:"compress,omitempty"`
 	LocalTime  bool   `json:"local_time,omitempty"`
 }
+
+type Auth struct {
+	Exp      int32  `json:"exp"`
+	Key      string `json:"key"`
+	Email    string `json:"email"`
+	PassWord string `json:"password"`
+}
+
+func (a Auth) GetExp() int32 {
+	exp := os.Getenv("AUTH_EXP")
+	if exp != "" {
+		expInt, _ := strconv.Atoi(exp)
+		return int32(expInt)
+	}
+	return a.Exp
+}
+
+func (a Auth) GetKey() string {
+	key := os.Getenv("AUTH_KEY")
+	if key != "" {
+		return key
+	}
+	return a.Key
+}
+
+func (a Auth) GetEmail() string {
+	email := os.Getenv("AUTH_EMAIL")
+	if email != "" {
+		return email
+	}
+	return a.Email
+}
+
+func (a Auth) GetPassWord() string {
+	password := os.Getenv("AUTH_PASSWORD")
+	if password != "" {
+		return password
+	}
+	return a.PassWord
+}
