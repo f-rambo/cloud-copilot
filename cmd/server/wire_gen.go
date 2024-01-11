@@ -10,38 +10,46 @@ import (
 	"github.com/f-rambo/ocean/internal/biz"
 	"github.com/f-rambo/ocean/internal/conf"
 	"github.com/f-rambo/ocean/internal/data"
+	"github.com/f-rambo/ocean/internal/interfaces"
 	"github.com/f-rambo/ocean/internal/server"
-	"github.com/f-rambo/ocean/internal/service"
 	"github.com/go-kratos/kratos/v2"
 	"github.com/go-kratos/kratos/v2/log"
 )
 
 import (
+	_ "github.com/joho/godotenv/autoload"
 	_ "go.uber.org/automaxprocs"
 )
 
 // Injectors from wire.go:
 
 // wireApp init kratos application.
-func wireApp(confServer *conf.Server, confData *conf.Data, logger log.Logger) (*kratos.App, func(), error) {
-	dataData, cleanup, err := data.NewData(confData, logger)
+func wireApp(confServer *conf.Server, confData *conf.Data, auth *conf.Auth, kubernetes *conf.Kubernetes, resource *conf.Resource, logger log.Logger) (*kratos.App, func(), error) {
+	dataData, cleanup, err := data.NewData(confData, kubernetes, logger)
 	if err != nil {
 		return nil, nil, err
 	}
-	clusterRepo := data.NewClusterRepo(dataData, logger)
+	clusterRepo, err := data.NewClusterRepo(dataData, logger)
+	if err != nil {
+		cleanup()
+		return nil, nil, err
+	}
 	clusterUsecase := biz.NewClusterUseCase(clusterRepo, logger)
-	clusterService := service.NewClusterService(clusterUsecase, confData)
+	clusterInterface := interfaces.NewClusterInterface(clusterUsecase)
 	appRepo := data.NewAppRepo(dataData, logger)
-	appUsecase := biz.NewAppUsecase(appRepo, logger)
-	appService := service.NewAppService(appUsecase)
+	projectRepo := data.NewProjectRepo(dataData, logger)
+	appUsecase := biz.NewAppUsecase(appRepo, logger, resource, clusterRepo, projectRepo)
+	userRepo := data.NewUserRepo(dataData, logger)
+	userUseCase := biz.NewUseUser(userRepo, logger, auth)
+	appInterface := interfaces.NewAppInterface(appUsecase, userUseCase, resource, logger)
 	servicesRepo := data.NewServicesRepo(dataData, logger)
 	servicesUseCase := biz.NewServicesUseCase(servicesRepo, logger)
-	servicesService := service.NewServicesService(servicesUseCase, confData)
-	userRepo := data.NewUserRepo(dataData, logger)
-	userUseCase := biz.NewUseUser(userRepo, logger)
-	userService := service.NewUserService(userUseCase)
-	grpcServer := server.NewGRPCServer(confServer, clusterService, appService, servicesService, userService, logger)
-	httpServer := server.NewHTTPServer(confServer, clusterService, appService, servicesService, userService, logger)
+	servicesInterface := interfaces.NewServicesInterface(servicesUseCase)
+	userInterface := interfaces.NewUserInterface(userUseCase, auth)
+	projectUsecase := biz.NewProjectUseCase(projectRepo, logger)
+	projectInterface := interfaces.NewProjectInterface(projectUsecase, logger)
+	grpcServer := server.NewGRPCServer(confServer, clusterInterface, appInterface, servicesInterface, userInterface, projectInterface, logger)
+	httpServer := server.NewHTTPServer(confServer, clusterInterface, appInterface, servicesInterface, userInterface, projectInterface, logger)
 	app := newApp(logger, grpcServer, httpServer)
 	return app, func() {
 		cleanup()

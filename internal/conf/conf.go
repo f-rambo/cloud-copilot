@@ -6,14 +6,48 @@ import (
 )
 
 type Bootstrap struct {
-	Server Server `json:"server,omitempty"`
-	Data   Data   `json:"data,omitempty"`
-	Log    Log    `json:"log,omitempty"`
+	Server     Server     `json:"server,omitempty"`
+	Data       Data       `json:"data,omitempty"`
+	Log        Log        `json:"log,omitempty"`
+	Auth       Auth       `json:"auth,omitempty"`
+	Kubernetes Kubernetes `json:"kubernetes,omitempty"`
+	Resource   Resource   `json:"resource,omitempty"`
+}
+
+type Resource struct {
+	AppPath  string `json:"app_path,omitempty"`
+	IconPath string `json:"icon_path,omitempty"`
+	RepoPath string `json:"repo_path,omitempty"`
+}
+
+func (r Resource) GetAppPath() string {
+	appPath := os.Getenv("APP_PATH")
+	if appPath == "" {
+		appPath = r.AppPath
+	}
+	return appPath
+}
+
+func (r Resource) GetIconPath() string {
+	iconPath := os.Getenv("ICON_PATH")
+	if iconPath == "" {
+		iconPath = r.IconPath
+	}
+	return iconPath
+}
+
+func (r Resource) GetRepoPath() string {
+	repoPath := os.Getenv("REPO_PATH")
+	if repoPath == "" {
+		repoPath = r.RepoPath
+	}
+	return repoPath
 }
 
 type Server struct {
-	HTTP HTTP `json:"http,omitempty"`
-	GRPC GRPC `json:"grpc,omitempty"`
+	HTTP   HTTP   `json:"http,omitempty"`
+	GRPC   GRPC   `json:"grpc,omitempty"`
+	STATIC STATIC `json:"static,omitempty"`
 }
 
 type HTTP struct {
@@ -58,20 +92,39 @@ func (g GRPC) GetAddr() string {
 	return g.Addr
 }
 
+type STATIC struct {
+	Network string `json:"network,omitempty"`
+	Addr    string `json:"addr,omitempty"`
+}
+
+func (s STATIC) GetNetwork() string {
+	netWork := os.Getenv("STATIC_NETWORK")
+	if netWork != "" {
+		return netWork
+	}
+	return s.Network
+}
+
+func (s STATIC) GetAddr() string {
+	addr := os.Getenv("STATIC_ADDR")
+	if addr != "" {
+		return addr
+	}
+	return s.Addr
+}
+
 type Data struct {
-	Database   Database   `json:"database,omitempty"`
-	Redis      Redis      `json:"redis,omitempty"`
-	Semaphore  Semaphore  `json:"semaphore,omitempty"`
-	Kubernetes Kubernetes `json:"kubernetes,omitempty"`
+	Database Database `json:"database,omitempty"`
 }
 
 type Database struct {
-	Driver   string `json:"driver,omitempty"`
-	Username string `json:"username,omitempty"`
-	Password string `json:"password,omitempty"`
-	Host     string `json:"host,omitempty"`
-	Port     int32  `json:"port,omitempty"`
-	Database string `json:"database,omitempty"`
+	Driver     string `json:"driver,omitempty"`
+	Username   string `json:"username,omitempty"`
+	Password   string `json:"password,omitempty"`
+	Host       string `json:"host,omitempty"`
+	Port       int32  `json:"port,omitempty"`
+	Database   string `json:"database,omitempty"`
+	DBFilePath string `json:"dbfilepath,omitempty"`
 }
 
 func (d Database) GetDriver() string {
@@ -123,90 +176,18 @@ func (d Database) GetDatabase() string {
 	return d.Database
 }
 
-type Redis struct {
-	Host     string `json:"host,omitempty"`
-	Port     int32  `json:"port,omitempty"`
-	Password string `json:"password,omitempty"`
-	Db       int32  `json:"db,omitempty"`
-}
-
-func (r Redis) GetHost() string {
-	host := os.Getenv("REDIS_HOST")
-	if host != "" {
-		return host
+func (d Database) GetDBFilePath() string {
+	dbFilePath := os.Getenv("DATABASE_DBFILEPATH")
+	if dbFilePath != "" {
+		return dbFilePath
 	}
-	return r.Host
-}
-
-func (r Redis) GetPort() int32 {
-	port := os.Getenv("REDIS_PORT")
-	if port != "" {
-		portInt, _ := strconv.Atoi(port)
-		return int32(portInt)
-	}
-	return r.Port
-}
-
-func (r Redis) GetPassword() string {
-	password := os.Getenv("REDIS_PASSWORD")
-	if password != "" {
-		return password
-	}
-	return r.Password
-}
-
-func (r Redis) GetDb() int32 {
-	db := os.Getenv("REDIS_DB")
-	if db != "" {
-		dbInt, _ := strconv.Atoi(db)
-		return int32(dbInt)
-	}
-	return r.Db
-}
-
-type Semaphore struct {
-	Admin         string `json:"admin,omitempty"`
-	AdminPassword string `json:"admin_password,omitempty"`
-	Host          string `json:"host,omitempty"`
-	Port          int32  `json:"port,omitempty"`
-}
-
-func (s Semaphore) GetAdmin() string {
-	admin := os.Getenv("SEMAPHORE_ADMIN")
-	if admin != "" {
-		return admin
-	}
-	return s.Admin
-}
-
-func (s Semaphore) GetAdminPassword() string {
-	adminPassword := os.Getenv("SEMAPHORE_ADMIN_PASSWORD")
-	if adminPassword != "" {
-		return adminPassword
-	}
-	return s.AdminPassword
-}
-
-func (s Semaphore) GetHost() string {
-	host := os.Getenv("SEMAPHORE_HOST")
-	if host != "" {
-		return host
-	}
-	return s.Host
-}
-
-func (s Semaphore) GetPort() int32 {
-	port := os.Getenv("SEMAPHORE_PORT")
-	if port != "" {
-		portInt, _ := strconv.Atoi(port)
-		return int32(portInt)
-	}
-	return s.Port
+	return d.DBFilePath
 }
 
 type Kubernetes struct {
 	MasterUrl  string `json:"master_url,omitempty"`
 	KubeConfig string `json:"kube_config,omitempty"`
+	Namespace  string `json:"namespace,omitempty"`
 }
 
 func (k Kubernetes) GetMasterUrl() string {
@@ -236,10 +217,10 @@ type Log struct {
 }
 
 type Auth struct {
-	Exp      int32  `json:"exp"`
-	Key      string `json:"key"`
-	Email    string `json:"email"`
-	PassWord string `json:"password"`
+	Exp      int32  `json:"exp,omitempty"`
+	Key      string `json:"key,omitempty"`
+	Email    string `json:"email,omitempty"`
+	PassWord string `json:"password,omitempty"`
 }
 
 func (a Auth) GetExp() int32 {

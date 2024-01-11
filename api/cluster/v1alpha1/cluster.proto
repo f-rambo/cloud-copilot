@@ -9,31 +9,35 @@ import "api/cluster/v1alpha1/message.proto";
 
 option go_package = "api/cluster/v1alpha1;v1alpha1";
 
-service ClusterService {
-  rpc Get(google.protobuf.Empty) returns (cluster.v1alpha1.Clusters) {
-    option (google.api.http) = {
-      get: "/cluster/v1alpha1/get"
-    };
-  }
+service ClusterInterface {
+      rpc Ping(google.protobuf.Empty) returns (cluster.v1alpha1.Msg) {
+            option (google.api.http) = {
+              get: "/api/v1alpha1/cluster/ping"
+            };
+      }
 
-  rpc Save(cluster.v1alpha1.Cluster) returns (cluster.v1alpha1.Msg) {
-    option (google.api.http) = {
-      post: "/cluster/v1alpha1/save"
-      body: "*"
-    };
-  }
+      rpc Get(cluster.v1alpha1.ClusterID) returns (cluster.v1alpha1.Cluster) {
+            option (google.api.http) = {
+              get: "/api/v1alpha1/cluster"
+            };
+      }
 
-  rpc Delete(cluster.v1alpha1.ClusterID) returns (cluster.v1alpha1.Msg) {
-    option (google.api.http) = {
-      delete: "/cluster/v1alpha1/delete/{id}"
-    };
-  }
+      rpc Save(cluster.v1alpha1.Cluster) returns (cluster.v1alpha1.Cluster) {
+            option (google.api.http) = {
+              post: "/api/v1alpha1/cluster"
+              body: "*"
+            };
+      }
 
-  rpc Apply(cluster.v1alpha1.ClusterName) returns (cluster.v1alpha1.Msg) {
-    option (google.api.http) = {
-      post: "/cluster/v1alpha1/apply"
-      body: "*"
-    };
-  }
+      rpc List(google.protobuf.Empty) returns (cluster.v1alpha1.ClusterList) {
+            option (google.api.http) = {
+              get: "/api/v1alpha1/cluster/list"
+            };
+      }
 
+      rpc Delete(cluster.v1alpha1.ClusterID) returns (cluster.v1alpha1.Msg) {
+            option (google.api.http) = {
+              delete: "/api/v1alpha1/cluster"
+            };
+      }
 }

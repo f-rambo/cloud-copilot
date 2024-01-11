@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package project.v1alpha1;
+
+option go_package = "api/project/v1alpha1;v1alpha1";
+
+message ProjectReq {
+      string name = 1 [json_name="name"];
+      int64 cluster_id = 3 [json_name="cluster_id"];
+      int64 id = 4 [json_name="id"];
+}
+
+message ProjectList {
+      repeated Project projects = 1;
+}
+
+message Project {
+      int64 id = 1 [json_name="id"];
+      string name = 2 [json_name="name"];
+      string description = 3 [json_name="description"];
+      int64 cluster_id = 4 [json_name="cluster_id"];
+}

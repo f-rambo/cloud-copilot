@@ -7,8 +7,16 @@ import (
 )
 
 func TestK(t *testing.T) {
-	tem, _ := utils.ReadFile("workflow-template.yaml")
-	wf, err := UnmarshalWorkflow(tem, true)
+	file, err := utils.NewFile("./", "workflow-template.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer file.Close()
+	data, err := file.Read()
+	if err != nil {
+		t.Fatal(err)
+	}
+	wf, err := UnmarshalWorkflow(string(data), true)
 	if err != nil {
 		t.Fatal(err)
 	}

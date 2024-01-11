@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package project.v1alpha1;
+
+option go_package = "api/project/v1alpha1;v1alpha1";
+
+enum ErrorReason {
+      SUCCEED = 0;
+      FAILED = 1;
+    }
+    
+    message Msg {
+      ErrorReason Reason = 1;
+      string Message = 2;
+    }
+    

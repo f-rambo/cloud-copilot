@@ -9,25 +9,23 @@ import "api/user/v1alpha1/message.proto";
 
 option go_package = "api/user/v1alpha1;v1alpha1";
 
-service UserService {
+service UserInterface {
       rpc SignIn(user.v1alpha1.SignIn) returns (user.v1alpha1.User) {
             option (google.api.http) = {
-              put: "/user/v1alpha1/signin"
+              post: "/api/v1alpha1/user/signin"
               body: "*"
             };
       }
 
-
       rpc SignOut(google.protobuf.Empty) returns (user.v1alpha1.Msg) {
             option (google.api.http) = {
-              post: "/user/v1alpha1/signout"
-              body: "*"
+              get: "/api/v1alpha1/user/signout"
             };
       }
 
       rpc GetUserInfo(google.protobuf.Empty) returns (user.v1alpha1.User) {
             option (google.api.http) = {
-              get: "/user/v1alpha1"
+              get: "/api/v1alpha1/user"
             };
       }
 }

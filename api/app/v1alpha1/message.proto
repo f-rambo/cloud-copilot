@@ -4,41 +4,157 @@ package app.v1alpha1;
 
 option go_package = "api/app/v1alpha1;v1alpha1";
 
-message MetaData {
+message Dependency {
       string name = 1;
-      string namespace = 2;
-      map<string,string> labels = 3;
+      string version = 2;
+      string repository = 3;
+      string condition = 4;
+      repeated string tags = 5;
+      bool enabled = 6;
+      repeated string import_values = 7 [json_name="import_values"];
+      string alias = 8;
+
 }
 
-message AppV1alpha1 {
-      string apiVersion = 1;
-      string kind = 2;
-      MetaData metaData = 3;
-      App spec = 4;
+message Maintainer {
+      string name = 1;
+      string email = 2;
+      string url = 3;
 }
 
-message Apps {
-      repeated App apps = 1;
+message Metadata {
+      string name = 1;
+      string home = 2;
+      repeated string sources = 3;
+      string version = 4;
+      string description = 5;
+      repeated string keywords = 6;
+      repeated Maintainer maintainers = 7;
+      string icon = 8;
+      string api_version = 9 [json_name="api_version"];
+      string condition = 10;
+      string tags = 11;
+      string app_version = 12 [json_name="app_version"];
+      bool deprecated = 13;
+      map<string, string> annotations = 14;
+      string kube_version = 15 [json_name="kube_version"];
+      repeated Dependency dependencies = 16;
+      string type = 17;
 }
 
-message ClusterID {
-      int32 clusterID = 1;
-}
 
-message AppID {
-      int32 clusterID = 1;
-      int32 appID = 2;
-}
 
 message App {
-      int32 id = 1;
+      int64 id = 1;
       string name = 2;
-      string repoName = 3;
-      string repoUrl = 4;
-      string chartName = 5;
-      string version = 6;
-      string config = 7;
-      string secret = 8;
-      string namespace = 9;
-      int32 clusterID = 10;
+      string icon = 3;
+      int64 app_type_id = 10 [json_name="app_type_id"];
+      string app_type_name = 11 [json_name="app_type_name"];
+      repeated AppVersion versions = 12;
+}
+
+message AppVersion {
+      int64 id = 1;
+      int64 app_id = 2;
+      string app_name = 3 [json_name="app_name"];
+      string chart = 4;
+      string version = 5;
+      string config = 6;
+      string description = 7;
+      string readme = 8;
+      string state = 9;
+      string test_result = 10 [json_name="test_result"];
+      Metadata metadata = 11;
+}
+
+message AppReq {
+      int64 id = 1;
+      int32 page = 2;
+      int32 page_size = 3 [json_name="page_size"];
+      string name = 4;
+      string state = 5;
+      int64 app_type_id = 6 [json_name="app_type_id"];
+      int64 version_id = 7 [json_name="version_id"];
+}
+
+message AppList {
+      int32 itemCount = 1;
+      int32 pageCount = 2;
+      repeated App items = 3;
+}
+
+message FileUploadRequest {
+      string file_name = 1;
+      string chunk = 2;
+      bool resume = 3;
+      bool finish = 4;
+}
+
+message FileUploadResponse {
+      string file_name = 1 [json_name="file_name"];
+}
+
+message AppType {
+      int64 id = 1;
+      string name = 2;
+}
+
+message AppTypeList {
+      repeated AppType items = 1;
+}
+
+message AppTypeReq {
+      int64 id = 1;
+}
+
+message DeployAppReq {
+      int64 app_id = 1 [json_name="app_id"];
+      int64 version_id = 2 [json_name="version_id"];
+      int64 cluster_id = 3 [json_name="cluster_id"];
+      int64 project_id = 4 [json_name="project_id"];
+      int64 id = 5;
+      string release_name = 6 [json_name="release_name"];
+      string namespace = 7;
+      int32 page = 8;
+      int32 page_size = 9 [json_name="page_size"];
+}
+
+message DeployAppList {
+      repeated DeployApp items = 1;
+      int32 count = 2;
+}
+
+message DeployApp {
+      int64 id = 1;
+      string release_name = 2 [json_name="release_name"];
+      int64 app_id = 3 [json_name="app_id"];
+      int64 version_id = 4 [json_name="version_id"];
+      string version = 5;
+      string chart = 6;
+      int64 cluster_id = 7 [json_name="cluster_id"];
+      int64 project_id = 8 [json_name="project_id"];
+      int64 user_id = 9 [json_name="user_id"];
+      string namespace = 10;
+      string config = 11;
+      string state = 12;
+      bool is_test = 13 [json_name="is_test"];
+      string manifest = 14;
+      string notes = 15;
+}
+
+message AppHelmRepoList {
+      repeated AppHelmRepo items = 1;
+}
+
+message AppHelmRepoReq {
+      int64 id = 1;
+      string app_name = 2 [json_name="app_name"];
+      string version = 3;
+}
+
+message AppHelmRepo {
+      int64 id = 1;
+      string name = 2;
+      string url = 3;
+      string description = 4;
 }

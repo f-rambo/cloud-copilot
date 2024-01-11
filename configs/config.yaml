@@ -2,30 +2,25 @@ server:
   http:
     network: tcp
     addr: 0.0.0.0:8000
+  static:
+    network: tcp
+    addr: 0.0.0.0:8080
   grpc:
     network: tcp
     addr: 0.0.0.0:9000
 data:
   database:
-    driver: mysql
+    driver: 
     host: localhost
     port: 3306
     username: root
     password: '123456'
     database: ocean
-  redis:
-    host: localhost
-    port: 6379
-    password:
-    db: 0
-  semaphore:
-    admin: admin
-    admin_password: 'changeme'
-    host: localhost
-    port: 3000
-  kubernetes:
-    master_url: 
-    kube_config: 
+    dbfilepath: '/tmp/gorm.db'
+kubernetes:
+  master_url: 
+  kube_config: 
+  namespace: default
 log:
   path: logs
   filename: log.log
@@ -39,3 +34,7 @@ auth:
   key: 'ocean'
   email: 'admin'
   password: '123456'
+resource:
+  app_path: 'resource/app/'
+  icon_path: 'resource/icon/'
+  repo_path: 'resource/repo/'

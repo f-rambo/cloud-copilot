@@ -6,11 +6,446 @@ info:
     title: ""
     version: 0.0.1
 paths:
-    /app/v1alpha1/save:
-        put:
+    /api/v1alpha1/app:
+        get:
             tags:
-                - AppService
-            operationId: AppService_Save
+                - AppInterface
+            operationId: AppInterface_Get
+            parameters:
+                - name: id
+                  in: query
+                  schema:
+                    type: string
+                - name: page
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: page_size
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: name
+                  in: query
+                  schema:
+                    type: string
+                - name: state
+                  in: query
+                  schema:
+                    type: string
+                - name: app_type_id
+                  in: query
+                  schema:
+                    type: string
+                - name: version_id
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/app.v1alpha1.App'
+        delete:
+            tags:
+                - AppInterface
+            operationId: AppInterface_Delete
+            parameters:
+                - name: id
+                  in: query
+                  schema:
+                    type: string
+                - name: page
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: page_size
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: name
+                  in: query
+                  schema:
+                    type: string
+                - name: state
+                  in: query
+                  schema:
+                    type: string
+                - name: app_type_id
+                  in: query
+                  schema:
+                    type: string
+                - name: version_id
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/app.v1alpha1.Msg'
+    /api/v1alpha1/app/deploy:
+        get:
+            tags:
+                - AppInterface
+            operationId: AppInterface_GetAppDeployed
+            parameters:
+                - name: id
+                  in: query
+                  schema:
+                    type: string
+                - name: release_name
+                  in: query
+                  schema:
+                    type: string
+                - name: app_id
+                  in: query
+                  schema:
+                    type: string
+                - name: version_id
+                  in: query
+                  schema:
+                    type: string
+                - name: version
+                  in: query
+                  schema:
+                    type: string
+                - name: chart
+                  in: query
+                  schema:
+                    type: string
+                - name: cluster_id
+                  in: query
+                  schema:
+                    type: string
+                - name: project_id
+                  in: query
+                  schema:
+                    type: string
+                - name: user_id
+                  in: query
+                  schema:
+                    type: string
+                - name: namespace
+                  in: query
+                  schema:
+                    type: string
+                - name: config
+                  in: query
+                  schema:
+                    type: string
+                - name: state
+                  in: query
+                  schema:
+                    type: string
+                - name: is_test
+                  in: query
+                  schema:
+                    type: boolean
+                - name: manifest
+                  in: query
+                  schema:
+                    type: string
+                - name: notes
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/app.v1alpha1.DeployApp'
+        post:
+            tags:
+                - AppInterface
+            operationId: AppInterface_DeployApp
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/app.v1alpha1.DeployAppReq'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/app.v1alpha1.DeployApp'
+        delete:
+            tags:
+                - AppInterface
+            operationId: AppInterface_DeleteDeployedApp
+            parameters:
+                - name: app_id
+                  in: query
+                  schema:
+                    type: string
+                - name: version_id
+                  in: query
+                  schema:
+                    type: string
+                - name: cluster_id
+                  in: query
+                  schema:
+                    type: string
+                - name: project_id
+                  in: query
+                  schema:
+                    type: string
+                - name: id
+                  in: query
+                  schema:
+                    type: string
+                - name: release_name
+                  in: query
+                  schema:
+                    type: string
+                - name: namespace
+                  in: query
+                  schema:
+                    type: string
+                - name: page
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: page_size
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/app.v1alpha1.Msg'
+    /api/v1alpha1/app/deploy/list:
+        get:
+            tags:
+                - AppInterface
+            operationId: AppInterface_ListDeployedApp
+            parameters:
+                - name: app_id
+                  in: query
+                  schema:
+                    type: string
+                - name: version_id
+                  in: query
+                  schema:
+                    type: string
+                - name: cluster_id
+                  in: query
+                  schema:
+                    type: string
+                - name: project_id
+                  in: query
+                  schema:
+                    type: string
+                - name: id
+                  in: query
+                  schema:
+                    type: string
+                - name: release_name
+                  in: query
+                  schema:
+                    type: string
+                - name: namespace
+                  in: query
+                  schema:
+                    type: string
+                - name: page
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: page_size
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/app.v1alpha1.DeployAppList'
+    /api/v1alpha1/app/list:
+        get:
+            tags:
+                - AppInterface
+            operationId: AppInterface_List
+            parameters:
+                - name: id
+                  in: query
+                  schema:
+                    type: string
+                - name: page
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: page_size
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: name
+                  in: query
+                  schema:
+                    type: string
+                - name: state
+                  in: query
+                  schema:
+                    type: string
+                - name: app_type_id
+                  in: query
+                  schema:
+                    type: string
+                - name: version_id
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/app.v1alpha1.AppList'
+    /api/v1alpha1/app/ping:
+        get:
+            tags:
+                - AppInterface
+            operationId: AppInterface_Ping
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/app.v1alpha1.Msg'
+    /api/v1alpha1/app/repo:
+        post:
+            tags:
+                - AppInterface
+            operationId: AppInterface_SaveRepo
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/app.v1alpha1.AppHelmRepo'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/app.v1alpha1.Msg'
+        delete:
+            tags:
+                - AppInterface
+            operationId: AppInterface_DeleteRepo
+            parameters:
+                - name: id
+                  in: query
+                  schema:
+                    type: string
+                - name: app_name
+                  in: query
+                  schema:
+                    type: string
+                - name: version
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/app.v1alpha1.Msg'
+    /api/v1alpha1/app/repo/app/detail:
+        get:
+            tags:
+                - AppInterface
+            operationId: AppInterface_GetAppDetailByRepo
+            parameters:
+                - name: id
+                  in: query
+                  schema:
+                    type: string
+                - name: app_name
+                  in: query
+                  schema:
+                    type: string
+                - name: version
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/app.v1alpha1.App'
+    /api/v1alpha1/app/repo/apps:
+        get:
+            tags:
+                - AppInterface
+            operationId: AppInterface_GetAppsByRepo
+            parameters:
+                - name: id
+                  in: query
+                  schema:
+                    type: string
+                - name: app_name
+                  in: query
+                  schema:
+                    type: string
+                - name: version
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/app.v1alpha1.AppList'
+    /api/v1alpha1/app/repo/list:
+        get:
+            tags:
+                - AppInterface
+            operationId: AppInterface_ListRepo
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/app.v1alpha1.AppHelmRepoList'
+    /api/v1alpha1/app/save:
+        post:
+            tags:
+                - AppInterface
+            operationId: AppInterface_Save
             requestBody:
                 content:
                     application/json:
@@ -23,30 +458,53 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/app.v1alpha1.AppID'
-    /app/v1alpha1/{clusterID}/apply/{appID}:
-        put:
+                                $ref: '#/components/schemas/app.v1alpha1.Msg'
+    /api/v1alpha1/app/stop:
+        post:
             tags:
-                - AppService
-            operationId: AppService_Apply
-            parameters:
-                - name: clusterID
-                  in: path
-                  required: true
-                  schema:
-                    type: integer
-                    format: int32
-                - name: appID
-                  in: path
-                  required: true
-                  schema:
-                    type: integer
-                    format: int32
+                - AppInterface
+            operationId: AppInterface_StopApp
             requestBody:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/app.v1alpha1.AppID'
+                            $ref: '#/components/schemas/app.v1alpha1.DeployAppReq'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/app.v1alpha1.Msg'
+    /api/v1alpha1/app/test:
+        post:
+            tags:
+                - AppInterface
+            operationId: AppInterface_AppTest
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/app.v1alpha1.DeployAppReq'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/app.v1alpha1.DeployApp'
+    /api/v1alpha1/app/type:
+        post:
+            tags:
+                - AppInterface
+            operationId: AppInterface_CreateAppType
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/app.v1alpha1.AppType'
                 required: true
             responses:
                 "200":
@@ -57,21 +515,13 @@ paths:
                                 $ref: '#/components/schemas/app.v1alpha1.Msg'
         delete:
             tags:
-                - AppService
-            operationId: AppService_Delete
+                - AppInterface
+            operationId: AppInterface_DeleteAppType
             parameters:
-                - name: clusterID
-                  in: path
-                  required: true
+                - name: id
+                  in: query
                   schema:
-                    type: integer
-                    format: int32
-                - name: appID
-                  in: path
-                  required: true
-                  schema:
-                    type: integer
-                    format: int32
+                    type: string
             responses:
                 "200":
                     description: OK
@@ -79,43 +529,29 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/app.v1alpha1.Msg'
-    /app/v1alpha1/{clusterID}/get:
+    /api/v1alpha1/app/type/list:
         get:
             tags:
-                - AppService
-            operationId: AppService_GetApps
-            parameters:
-                - name: clusterID
-                  in: path
-                  required: true
-                  schema:
-                    type: integer
-                    format: int32
+                - AppInterface
+            operationId: AppInterface_ListAppType
             responses:
                 "200":
                     description: OK
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/app.v1alpha1.Apps'
-    /app/v1alpha1/{clusterID}/get/{appID}:
-        get:
+                                $ref: '#/components/schemas/app.v1alpha1.AppTypeList'
+    /api/v1alpha1/app/upload:
+        post:
             tags:
-                - AppService
-            operationId: AppService_GetApp
-            parameters:
-                - name: clusterID
-                  in: path
-                  required: true
-                  schema:
-                    type: integer
-                    format: int32
-                - name: appID
-                  in: path
-                  required: true
-                  schema:
-                    type: integer
-                    format: int32
+                - AppInterface
+            operationId: AppInterface_UploadApp
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/app.v1alpha1.FileUploadRequest'
+                required: true
             responses:
                 "200":
                     description: OK
@@ -123,16 +559,16 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/app.v1alpha1.App'
-    /cluster/v1alpha1/apply:
+    /api/v1alpha1/app/upload/icon:
         post:
             tags:
-                - ClusterService
-            operationId: ClusterService_Apply
+                - AppInterface
+            operationId: AppInterface_UploadAppIcon
             requestBody:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/cluster.v1alpha1.ClusterName'
+                            $ref: '#/components/schemas/app.v1alpha1.FileUploadRequest'
                 required: true
             responses:
                 "200":
@@ -140,43 +576,28 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/cluster.v1alpha1.Msg'
-    /cluster/v1alpha1/delete/{id}:
-        delete:
-            tags:
-                - ClusterService
-            operationId: ClusterService_Delete
-            parameters:
-                - name: id
-                  in: path
-                  required: true
-                  schema:
-                    type: integer
-                    format: int32
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/cluster.v1alpha1.Msg'
-    /cluster/v1alpha1/get:
+                                $ref: '#/components/schemas/app.v1alpha1.FileUploadResponse'
+    /api/v1alpha1/cluster:
         get:
             tags:
-                - ClusterService
-            operationId: ClusterService_Get
+                - ClusterInterface
+            operationId: ClusterInterface_Get
+            parameters:
+                - name: id
+                  in: query
+                  schema:
+                    type: string
             responses:
                 "200":
                     description: OK
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/cluster.v1alpha1.Clusters'
-    /cluster/v1alpha1/save:
+                                $ref: '#/components/schemas/cluster.v1alpha1.Cluster'
         post:
             tags:
-                - ClusterService
-            operationId: ClusterService_Save
+                - ClusterInterface
+            operationId: ClusterInterface_Save
             requestBody:
                 content:
                     application/json:
@@ -189,63 +610,81 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/cluster.v1alpha1.Msg'
-    /service/v1alpha1:
-        get:
+                                $ref: '#/components/schemas/cluster.v1alpha1.Cluster'
+        delete:
             tags:
-                - ServiceService
-            operationId: ServiceService_GetServices
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/service.v1alpha1.Services'
-        post:
-            tags:
-                - ServiceService
-            operationId: ServiceService_SaveService
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/service.v1alpha1.Service'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/service.v1alpha1.ServiceID'
-    /service/v1alpha1/ci:
-        get:
-            tags:
-                - ServiceService
-            operationId: ServiceService_GetCIs
+                - ClusterInterface
+            operationId: ClusterInterface_Delete
             parameters:
                 - name: id
                   in: query
                   schema:
-                    type: integer
-                    format: int32
+                    type: string
             responses:
                 "200":
                     description: OK
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/service.v1alpha1.CIs'
+                                $ref: '#/components/schemas/cluster.v1alpha1.Msg'
+    /api/v1alpha1/cluster/list:
+        get:
+            tags:
+                - ClusterInterface
+            operationId: ClusterInterface_List
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/cluster.v1alpha1.ClusterList'
+    /api/v1alpha1/cluster/ping:
+        get:
+            tags:
+                - ClusterInterface
+            operationId: ClusterInterface_Ping
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/cluster.v1alpha1.Msg'
+    /api/v1alpha1/project:
+        get:
+            tags:
+                - ProjectService
+            operationId: ProjectService_Get
+            parameters:
+                - name: name
+                  in: query
+                  schema:
+                    type: string
+                - name: cluster_id
+                  in: query
+                  schema:
+                    type: string
+                - name: id
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/project.v1alpha1.Project'
         post:
             tags:
-                - ServiceService
-            operationId: ServiceService_SaveCI
+                - ProjectService
+            operationId: ProjectService_Save
             requestBody:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/service.v1alpha1.CI'
+                            $ref: '#/components/schemas/project.v1alpha1.Project'
                 required: true
             responses:
                 "200":
@@ -253,117 +692,73 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/service.v1alpha1.CIID'
-    /service/v1alpha1/ci/{id}:
-        get:
-            tags:
-                - ServiceService
-            operationId: ServiceService_DeleteCI
-            parameters:
-                - name: id
-                  in: path
-                  required: true
-                  schema:
-                    type: integer
-                    format: int32
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/service.v1alpha1.Msg'
-        put:
-            tags:
-                - ServiceService
-            operationId: ServiceService_Deploy
-            parameters:
-                - name: id
-                  in: path
-                  required: true
-                  schema:
-                    type: integer
-                    format: int32
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/service.v1alpha1.CIID'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/service.v1alpha1.Msg'
-    /service/v1alpha1/get/ocean:
-        get:
-            tags:
-                - ServiceService
-            operationId: ServiceService_GetOceanService
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/service.v1alpha1.Service'
-    /service/v1alpha1/undeploy/{id}:
-        put:
-            tags:
-                - ServiceService
-            operationId: ServiceService_UnDeploy
-            parameters:
-                - name: id
-                  in: path
-                  required: true
-                  schema:
-                    type: integer
-                    format: int32
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/service.v1alpha1.ServiceID'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/service.v1alpha1.Msg'
-    /service/v1alpha1/{id}:
-        get:
-            tags:
-                - ServiceService
-            operationId: ServiceService_GetService
-            parameters:
-                - name: id
-                  in: path
-                  required: true
-                  schema:
-                    type: integer
-                    format: int32
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/service.v1alpha1.Service'
+                                $ref: '#/components/schemas/project.v1alpha1.Msg'
         delete:
             tags:
-                - ServiceService
-            operationId: ServiceService_DeleteService
+                - ProjectService
+            operationId: ProjectService_Delete
             parameters:
-                - name: id
-                  in: path
-                  required: true
+                - name: name
+                  in: query
                   schema:
-                    type: integer
-                    format: int32
+                    type: string
+                - name: cluster_id
+                  in: query
+                  schema:
+                    type: string
+                - name: id
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/project.v1alpha1.Msg'
+    /api/v1alpha1/project/list:
+        get:
+            tags:
+                - ProjectService
+            operationId: ProjectService_List
+            parameters:
+                - name: name
+                  in: query
+                  schema:
+                    type: string
+                - name: cluster_id
+                  in: query
+                  schema:
+                    type: string
+                - name: id
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/project.v1alpha1.ProjectList'
+    /api/v1alpha1/project/ping:
+        get:
+            tags:
+                - ProjectService
+            operationId: ProjectService_Ping
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/project.v1alpha1.Msg'
+    /api/v1alpha1/service/ping:
+        get:
+            tags:
+                - ServiceInterface
+            operationId: ServiceInterface_Ping
             responses:
                 "200":
                     description: OK
@@ -371,11 +766,11 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/service.v1alpha1.Msg'
-    /user/v1alpha1:
+    /api/v1alpha1/user:
         get:
             tags:
-                - UserService
-            operationId: UserService_GetUserInfo
+                - UserInterface
+            operationId: UserInterface_GetUserInfo
             responses:
                 "200":
                     description: OK
@@ -383,11 +778,11 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/user.v1alpha1.User'
-    /user/v1alpha1/signin:
-        put:
+    /api/v1alpha1/user/signin:
+        post:
             tags:
-                - UserService
-            operationId: UserService_SignIn
+                - UserInterface
+            operationId: UserInterface_SignIn
             requestBody:
                 content:
                     application/json:
@@ -401,15 +796,11 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/user.v1alpha1.User'
-    /user/v1alpha1/signout:
-        post:
+    /api/v1alpha1/user/signout:
+        get:
             tags:
-                - UserService
-            operationId: UserService_SignOut
-            requestBody:
-                content:
-                    application/json: {}
-                required: true
+                - UserInterface
+            operationId: UserInterface_SignOut
             responses:
                 "200":
                     description: OK
@@ -423,43 +814,250 @@ components:
             type: object
             properties:
                 id:
-                    type: integer
-                    format: int32
+                    type: string
                 name:
                     type: string
-                repoName:
+                icon:
                     type: string
-                repoUrl:
+                app_type_id:
                     type: string
-                chartName:
+                app_type_name:
+                    type: string
+                versions:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/app.v1alpha1.AppVersion'
+        app.v1alpha1.AppHelmRepo:
+            type: object
+            properties:
+                id:
+                    type: string
+                name:
+                    type: string
+                url:
+                    type: string
+                description:
+                    type: string
+        app.v1alpha1.AppHelmRepoList:
+            type: object
+            properties:
+                items:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/app.v1alpha1.AppHelmRepo'
+        app.v1alpha1.AppList:
+            type: object
+            properties:
+                itemCount:
+                    type: integer
+                    format: int32
+                pageCount:
+                    type: integer
+                    format: int32
+                items:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/app.v1alpha1.App'
+        app.v1alpha1.AppType:
+            type: object
+            properties:
+                id:
+                    type: string
+                name:
+                    type: string
+        app.v1alpha1.AppTypeList:
+            type: object
+            properties:
+                items:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/app.v1alpha1.AppType'
+        app.v1alpha1.AppVersion:
+            type: object
+            properties:
+                id:
+                    type: string
+                appId:
+                    type: string
+                app_name:
+                    type: string
+                chart:
                     type: string
                 version:
                     type: string
                 config:
                     type: string
-                secret:
+                description:
+                    type: string
+                readme:
+                    type: string
+                state:
+                    type: string
+                test_result:
+                    type: string
+                metadata:
+                    $ref: '#/components/schemas/app.v1alpha1.Metadata'
+        app.v1alpha1.Dependency:
+            type: object
+            properties:
+                name:
+                    type: string
+                version:
+                    type: string
+                repository:
+                    type: string
+                condition:
+                    type: string
+                tags:
+                    type: array
+                    items:
+                        type: string
+                enabled:
+                    type: boolean
+                import_values:
+                    type: array
+                    items:
+                        type: string
+                alias:
+                    type: string
+        app.v1alpha1.DeployApp:
+            type: object
+            properties:
+                id:
+                    type: string
+                release_name:
+                    type: string
+                app_id:
+                    type: string
+                version_id:
+                    type: string
+                version:
+                    type: string
+                chart:
+                    type: string
+                cluster_id:
+                    type: string
+                project_id:
+                    type: string
+                user_id:
                     type: string
                 namespace:
                     type: string
-                clusterID:
-                    type: integer
-                    format: int32
-        app.v1alpha1.AppID:
+                config:
+                    type: string
+                state:
+                    type: string
+                is_test:
+                    type: boolean
+                manifest:
+                    type: string
+                notes:
+                    type: string
+        app.v1alpha1.DeployAppList:
             type: object
             properties:
-                clusterID:
-                    type: integer
-                    format: int32
-                appID:
-                    type: integer
-                    format: int32
-        app.v1alpha1.Apps:
-            type: object
-            properties:
-                apps:
+                items:
                     type: array
                     items:
-                        $ref: '#/components/schemas/app.v1alpha1.App'
+                        $ref: '#/components/schemas/app.v1alpha1.DeployApp'
+                count:
+                    type: integer
+                    format: int32
+        app.v1alpha1.DeployAppReq:
+            type: object
+            properties:
+                app_id:
+                    type: string
+                version_id:
+                    type: string
+                cluster_id:
+                    type: string
+                project_id:
+                    type: string
+                id:
+                    type: string
+                release_name:
+                    type: string
+                namespace:
+                    type: string
+                page:
+                    type: integer
+                    format: int32
+                page_size:
+                    type: integer
+                    format: int32
+        app.v1alpha1.FileUploadRequest:
+            type: object
+            properties:
+                fileName:
+                    type: string
+                chunk:
+                    type: string
+                resume:
+                    type: boolean
+                finish:
+                    type: boolean
+        app.v1alpha1.FileUploadResponse:
+            type: object
+            properties:
+                file_name:
+                    type: string
+        app.v1alpha1.Maintainer:
+            type: object
+            properties:
+                name:
+                    type: string
+                email:
+                    type: string
+                url:
+                    type: string
+        app.v1alpha1.Metadata:
+            type: object
+            properties:
+                name:
+                    type: string
+                home:
+                    type: string
+                sources:
+                    type: array
+                    items:
+                        type: string
+                version:
+                    type: string
+                description:
+                    type: string
+                keywords:
+                    type: array
+                    items:
+                        type: string
+                maintainers:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/app.v1alpha1.Maintainer'
+                icon:
+                    type: string
+                api_version:
+                    type: string
+                condition:
+                    type: string
+                tags:
+                    type: string
+                app_version:
+                    type: string
+                deprecated:
+                    type: boolean
+                annotations:
+                    type: object
+                    additionalProperties:
+                        type: string
+                kube_version:
+                    type: string
+                dependencies:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/app.v1alpha1.Dependency'
+                type:
+                    type: string
         app.v1alpha1.Msg:
             type: object
             properties:
@@ -472,9 +1070,12 @@ components:
             type: object
             properties:
                 id:
-                    type: integer
-                    format: int32
-                clusterName:
+                    type: string
+                name:
+                    type: string
+                server_version:
+                    type: string
+                api_server_address:
                     type: string
                 config:
                     type: string
@@ -484,14 +1085,7 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/cluster.v1alpha1.Node'
-                applyed:
-                    type: boolean
-        cluster.v1alpha1.ClusterName:
-            type: object
-            properties:
-                name:
-                    type: string
-        cluster.v1alpha1.Clusters:
+        cluster.v1alpha1.ClusterList:
             type: object
             properties:
                 clusters:
@@ -510,58 +1104,63 @@ components:
             type: object
             properties:
                 id:
-                    type: integer
-                    format: int32
-                host:
                     type: string
                 name:
+                    type: string
+                labels:
+                    type: string
+                annotations:
+                    type: string
+                os_image:
+                    type: string
+                kernel:
+                    type: string
+                container:
+                    type: string
+                kubelet:
+                    type: string
+                kube_proxy:
+                    type: string
+                internal_ip:
+                    type: string
+                external_ip:
                     type: string
                 user:
                     type: string
                 password:
                     type: string
-                sudoPassword:
+                sudo_password:
                     type: string
                 role:
-                    type: array
-                    items:
-                        type: string
-        service.v1alpha1.CI:
+                    type: string
+                cluster_id:
+                    type: string
+        project.v1alpha1.Msg:
+            type: object
+            properties:
+                Reason:
+                    type: integer
+                    format: enum
+                Message:
+                    type: string
+        project.v1alpha1.Project:
             type: object
             properties:
                 id:
-                    type: integer
-                    format: int32
-                version:
                     type: string
-                branch:
+                name:
                     type: string
-                tag:
-                    type: string
-                args:
-                    type: object
-                    additionalProperties:
-                        type: string
                 description:
                     type: string
-                serviceId:
-                    type: integer
-                    format: int32
-                workflowName:
+                cluster_id:
                     type: string
-        service.v1alpha1.CIID:
+        project.v1alpha1.ProjectList:
             type: object
             properties:
-                id:
-                    type: integer
-                    format: int32
-        service.v1alpha1.CIs:
-            type: object
-            properties:
-                CIs:
+                projects:
                     type: array
                     items:
-                        $ref: '#/components/schemas/service.v1alpha1.CI'
+                        $ref: '#/components/schemas/project.v1alpha1.Project'
         service.v1alpha1.Msg:
             type: object
             properties:
@@ -570,73 +1169,6 @@ components:
                     format: enum
                 Message:
                     type: string
-        service.v1alpha1.Port:
-            type: object
-            properties:
-                ID:
-                    type: integer
-                    format: int32
-                ingressPath:
-                    type: string
-                containerPort:
-                    type: integer
-                    format: int32
-        service.v1alpha1.Service:
-            type: object
-            properties:
-                id:
-                    type: integer
-                    format: int32
-                name:
-                    type: string
-                repo:
-                    type: string
-                registry:
-                    type: string
-                registryUser:
-                    type: string
-                registryPwd:
-                    type: string
-                workflow:
-                    type: string
-                cis:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/service.v1alpha1.CI'
-                namespace:
-                    type: string
-                Replicas:
-                    type: integer
-                    format: int32
-                cpu:
-                    type: string
-                limitCpu:
-                    type: string
-                memory:
-                    type: string
-                limitMemory:
-                    type: string
-                config:
-                    type: string
-                secret:
-                    type: string
-                ports:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/service.v1alpha1.Port'
-        service.v1alpha1.ServiceID:
-            type: object
-            properties:
-                id:
-                    type: integer
-                    format: int32
-        service.v1alpha1.Services:
-            type: object
-            properties:
-                services:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/service.v1alpha1.Service'
         user.v1alpha1.Msg:
             type: object
             properties:
@@ -656,16 +1188,19 @@ components:
             type: object
             properties:
                 id:
-                    type: integer
-                    format: int64
+                    type: string
                 username:
                     type: string
                 email:
                     type: string
                 token:
                     type: string
+                expHour:
+                    type: integer
+                    format: int32
 tags:
-    - name: AppService
-    - name: ClusterService
-    - name: ServiceService
-    - name: UserService
+    - name: AppInterface
+    - name: ClusterInterface
+    - name: ProjectService
+    - name: ServiceInterface
+    - name: UserInterface
