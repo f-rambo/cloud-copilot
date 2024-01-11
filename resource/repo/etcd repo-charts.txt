@@ -1,2 +1,0 @@
-etcd
-rook-ceph-cluster
