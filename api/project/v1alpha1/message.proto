@@ -19,4 +19,5 @@ message Project {
       string name = 2 [json_name="name"];
       string description = 3 [json_name="description"];
       int64 cluster_id = 4 [json_name="cluster_id"];
+      string namespace = 5 [json_name="namespace"];
 }

@@ -44,8 +44,14 @@ type CommonUserID struct {
 	Name   string `json:"name,omitempty"`
 }
 
+const (
+	AdminID   = -1
+	AdminName = "admin"
+)
+
 type UserRepo interface {
 	GetUserInfoByEmail(ctx context.Context, email string) (*User, error)
+	GetUserByID(ctx context.Context, id int64) (*User, error)
 	Save(ctx context.Context, user *User) error
 }
 
@@ -70,11 +76,7 @@ func (u *UserUseCase) SetUserID(ctx context.Context, cu *CommonUserID) error {
 
 func (u *UserUseCase) SignIn(ctx context.Context, email string, password string) (token string, err error) {
 	if email == u.authConf.Email && password == utils.Md5(u.authConf.PassWord) {
-		return u.userToken(ctx, &User{
-			Name:  u.authConf.Email,
-			Email: u.authConf.Email,
-			State: utils.Valid,
-		})
+		return u.userToken(ctx, u.getAdmin())
 	}
 	userInfo, err := u.repo.GetUserInfoByEmail(ctx, email)
 	if err != nil {
@@ -115,6 +117,22 @@ func (u *UserUseCase) GetUserInfo(ctx context.Context) (*User, error) {
 	}
 	user.PassWord = newToken
 	return user, nil
+}
+
+func (u *UserUseCase) GetUserByID(ctx context.Context, id int64) (*User, error) {
+	if id == AdminID {
+		return u.getAdmin(), nil
+	}
+	return u.repo.GetUserByID(ctx, id)
+}
+
+func (u *UserUseCase) getAdmin() *User {
+	return &User{
+		ID:    AdminID,
+		Name:  AdminName,
+		Email: u.authConf.Email,
+		State: utils.Valid,
+	}
 }
 
 // 解析jwt

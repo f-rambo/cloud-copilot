@@ -31,6 +31,7 @@ const OperationAppInterfaceGet = "/app.v1alpha1.AppInterface/Get"
 const OperationAppInterfaceGetAppDeployed = "/app.v1alpha1.AppInterface/GetAppDeployed"
 const OperationAppInterfaceGetAppDetailByRepo = "/app.v1alpha1.AppInterface/GetAppDetailByRepo"
 const OperationAppInterfaceGetAppsByRepo = "/app.v1alpha1.AppInterface/GetAppsByRepo"
+const OperationAppInterfaceGetDeployedAppResources = "/app.v1alpha1.AppInterface/GetDeployedAppResources"
 const OperationAppInterfaceList = "/app.v1alpha1.AppInterface/List"
 const OperationAppInterfaceListAppType = "/app.v1alpha1.AppInterface/ListAppType"
 const OperationAppInterfaceListDeployedApp = "/app.v1alpha1.AppInterface/ListDeployedApp"
@@ -54,6 +55,7 @@ type AppInterfaceHTTPServer interface {
 	GetAppDeployed(context.Context, *DeployApp) (*DeployApp, error)
 	GetAppDetailByRepo(context.Context, *AppHelmRepoReq) (*App, error)
 	GetAppsByRepo(context.Context, *AppHelmRepoReq) (*AppList, error)
+	GetDeployedAppResources(context.Context, *DeployAppReq) (*DeployAppResources, error)
 	List(context.Context, *AppReq) (*AppList, error)
 	ListAppType(context.Context, *emptypb.Empty) (*AppTypeList, error)
 	ListDeployedApp(context.Context, *DeployAppReq) (*DeployAppList, error)
@@ -84,6 +86,7 @@ func RegisterAppInterfaceHTTPServer(s *http.Server, srv AppInterfaceHTTPServer) 
 	r.GET("/api/v1alpha1/app/deploy/list", _AppInterface_ListDeployedApp0_HTTP_Handler(srv))
 	r.POST("/api/v1alpha1/app/stop", _AppInterface_StopApp0_HTTP_Handler(srv))
 	r.DELETE("/api/v1alpha1/app/deploy", _AppInterface_DeleteDeployedApp0_HTTP_Handler(srv))
+	r.GET("/api/v1alpha1/app/deploy/resources", _AppInterface_GetDeployedAppResources0_HTTP_Handler(srv))
 	r.POST("/api/v1alpha1/app/repo", _AppInterface_SaveRepo0_HTTP_Handler(srv))
 	r.GET("/api/v1alpha1/app/repo/list", _AppInterface_ListRepo0_HTTP_Handler(srv))
 	r.DELETE("/api/v1alpha1/app/repo", _AppInterface_DeleteRepo0_HTTP_Handler(srv))
@@ -416,6 +419,25 @@ func _AppInterface_DeleteDeployedApp0_HTTP_Handler(srv AppInterfaceHTTPServer) f
 	}
 }
 
+func _AppInterface_GetDeployedAppResources0_HTTP_Handler(srv AppInterfaceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in DeployAppReq
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationAppInterfaceGetDeployedAppResources)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.GetDeployedAppResources(ctx, req.(*DeployAppReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*DeployAppResources)
+		return ctx.Result(200, reply)
+	}
+}
+
 func _AppInterface_SaveRepo0_HTTP_Handler(srv AppInterfaceHTTPServer) func(ctx http.Context) error {
 	return func(ctx http.Context) error {
 		var in AppHelmRepo
@@ -526,6 +548,7 @@ type AppInterfaceHTTPClient interface {
 	GetAppDeployed(ctx context.Context, req *DeployApp, opts ...http.CallOption) (rsp *DeployApp, err error)
 	GetAppDetailByRepo(ctx context.Context, req *AppHelmRepoReq, opts ...http.CallOption) (rsp *App, err error)
 	GetAppsByRepo(ctx context.Context, req *AppHelmRepoReq, opts ...http.CallOption) (rsp *AppList, err error)
+	GetDeployedAppResources(ctx context.Context, req *DeployAppReq, opts ...http.CallOption) (rsp *DeployAppResources, err error)
 	List(ctx context.Context, req *AppReq, opts ...http.CallOption) (rsp *AppList, err error)
 	ListAppType(ctx context.Context, req *emptypb.Empty, opts ...http.CallOption) (rsp *AppTypeList, err error)
 	ListDeployedApp(ctx context.Context, req *DeployAppReq, opts ...http.CallOption) (rsp *DeployAppList, err error)
@@ -681,6 +704,19 @@ func (c *AppInterfaceHTTPClientImpl) GetAppsByRepo(ctx context.Context, in *AppH
 	pattern := "/api/v1alpha1/app/repo/apps"
 	path := binding.EncodeURL(pattern, in, true)
 	opts = append(opts, http.Operation(OperationAppInterfaceGetAppsByRepo))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, err
+}
+
+func (c *AppInterfaceHTTPClientImpl) GetDeployedAppResources(ctx context.Context, in *DeployAppReq, opts ...http.CallOption) (*DeployAppResources, error) {
+	var out DeployAppResources
+	pattern := "/api/v1alpha1/app/deploy/resources"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationAppInterfaceGetDeployedAppResources))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
 	if err != nil {

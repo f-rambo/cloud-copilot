@@ -262,6 +262,13 @@ func (a *AppInterface) GetAppDeployed(ctx context.Context, appDeployId *v1alpha1
 		return nil, err
 	}
 	appDeploy.Id = appDeployRes.ID
+	user, err := a.user.GetUserByID(ctx, appDeploy.UserId)
+	if err != nil {
+		return nil, err
+	}
+	appDeploy.UserName = user.Name
+	appDeploy.CreateTime = appDeployRes.CreatedAt.Format("2006-01-02 15:04:05")
+	appDeploy.UpdateTime = appDeployRes.UpdatedAt.Format("2006-01-02 15:04:05")
 	return appDeploy, nil
 }
 
@@ -318,10 +325,32 @@ func (a *AppInterface) DeployApp(ctx context.Context, deployAppReq *v1alpha1.Dep
 	if deployAppReq.ProjectId == 0 {
 		return nil, errors.New("project id is required")
 	}
-	if deployAppReq.AppId == 0 || deployAppReq.VersionId == 0 {
-		return nil, errors.New("app id and version id is required")
+	if deployAppReq.AppTypeId == biz.AppTypeRepo {
+		if deployAppReq.AppName == "" || deployAppReq.RepoId == 0 || deployAppReq.Version == "" {
+			return nil, errors.New("app name / repo id / version is required")
+		}
+	} else {
+		if deployAppReq.AppId == 0 || deployAppReq.VersionId == 0 {
+			return nil, errors.New("app id / version id is required")
+		}
 	}
-	appDeployRes, err := a.uc.DeployApp(ctx, deployAppReq.AppId, deployAppReq.VersionId, deployAppReq.ClusterId, deployAppReq.ProjectId)
+	user, err := a.user.GetUserInfo(ctx)
+	if err != nil {
+		return nil, err
+	}
+	appDeployRes, err := a.uc.DeployApp(ctx, &biz.DeployApp{
+		ID:        deployAppReq.Id,
+		ClusterID: deployAppReq.ClusterId,
+		ProjectID: deployAppReq.ProjectId,
+		AppID:     deployAppReq.AppId,
+		VersionID: deployAppReq.VersionId,
+		AppName:   deployAppReq.AppName,
+		AppTypeID: deployAppReq.AppTypeId,
+		RepoID:    deployAppReq.RepoId,
+		Version:   deployAppReq.Version,
+		UserID:    user.ID,
+		Config:    deployAppReq.Config,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -331,7 +360,31 @@ func (a *AppInterface) DeployApp(ctx context.Context, deployAppReq *v1alpha1.Dep
 		return nil, err
 	}
 	appDeploy.Id = appDeployRes.ID
+	go func() {
+		err = a.uc.TrackingAppDeployed(context.TODO(), appDeployRes.ID)
+		if err != nil {
+			a.log.Error(err)
+		}
+	}()
 	return appDeploy, nil
+}
+
+func (a *AppInterface) GetDeployedAppResources(ctx context.Context, deployAppReq *v1alpha1.DeployAppReq) (*v1alpha1.DeployAppResources, error) {
+	if deployAppReq.Id == 0 {
+		return nil, errors.New("app deploy id is required")
+	}
+	resources, err := a.uc.GetDeployedResources(ctx, deployAppReq.Id)
+	if err != nil {
+		return nil, err
+	}
+	data := &v1alpha1.DeployAppResources{}
+	items := make([]*v1alpha1.AppDeployedResource, 0)
+	err = utils.StructTransform(resources, &items)
+	if err != nil {
+		return nil, err
+	}
+	data.Items = items
+	return data, nil
 }
 
 func (a *AppInterface) DeleteDeployedApp(ctx context.Context, deployAppReq *v1alpha1.DeployAppReq) (*v1alpha1.Msg, error) {

@@ -5,6 +5,7 @@ import (
 
 	"github.com/go-kratos/kratos/v2/log"
 	"gorm.io/gorm"
+	"k8s.io/client-go/kubernetes"
 )
 
 type Cluster struct {
@@ -43,6 +44,7 @@ type ClusterRepo interface {
 	Get(context.Context, int64) (*Cluster, error)
 	List(context.Context) ([]*Cluster, error)
 	Delete(context.Context, int64) error
+	ClusterClient(ctx context.Context, clusterID int64) (*kubernetes.Clientset, error)
 }
 
 type ClusterUsecase struct {

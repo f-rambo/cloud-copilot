@@ -10,6 +10,7 @@ import (
 	"github.com/go-kratos/kratos/v2/log"
 	coreV1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 )
 
 type clusterRepo struct {
@@ -149,10 +150,12 @@ func (c *clusterRepo) Get(ctx context.Context, id int64) (*biz.Cluster, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = c.data.db.Model(cluster).Association("Nodes").Find(&cluster.Nodes)
+	nodes := make([]*biz.Node, 0)
+	err = c.data.db.Model(&biz.Node{}).Where("cluster_id = ?", cluster.ID).Find(&nodes).Error
 	if err != nil {
 		return nil, err
 	}
+	cluster.Nodes = append(cluster.Nodes, nodes...)
 	return cluster, nil
 }
 
@@ -181,4 +184,9 @@ func (c *clusterRepo) Delete(ctx context.Context, id int64) error {
 		return err
 	}
 	return tx.Commit().Error
+}
+
+func (c *clusterRepo) ClusterClient(ctx context.Context, clusterID int64) (*kubernetes.Clientset, error) {
+	// todo 来区分不同的集群
+	return c.data.kubeClient, nil
 }

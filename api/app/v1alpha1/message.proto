@@ -117,6 +117,11 @@ message DeployAppReq {
       string namespace = 7;
       int32 page = 8;
       int32 page_size = 9 [json_name="page_size"];
+      string app_name = 10 [json_name="app_name"];
+      string version = 11;
+      int64 app_type_id = 12 [json_name="app_type_id"];
+      int64 repo_id = 13 [json_name="repo_id"];
+      string config = 14;
 }
 
 message DeployAppList {
@@ -140,6 +145,11 @@ message DeployApp {
       bool is_test = 13 [json_name="is_test"];
       string manifest = 14;
       string notes = 15;
+      string user_name = 16 [json_name="user_name"];
+      string app_name = 17 [json_name="app_name"];
+      string logs = 18;
+      string create_time = 19 [json_name="create_time"];
+      string update_time = 20 [json_name="update_time"];
 }
 
 message AppHelmRepoList {
@@ -157,4 +167,16 @@ message AppHelmRepo {
       string name = 2;
       string url = 3;
       string description = 4;
+}
+
+message DeployAppResources {
+      repeated AppDeployedResource items = 1;
+}
+
+message AppDeployedResource {
+      string name = 1 [json_name="name"];
+      string kind = 2 [json_name="kind"];
+      repeated string events = 3 [json_name="events"];
+      string started_at = 4 [json_name="started_at"];
+      repeated string status = 5 [json_name="status"];
 }

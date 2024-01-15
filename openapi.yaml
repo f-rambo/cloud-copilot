@@ -157,6 +157,26 @@ paths:
                   in: query
                   schema:
                     type: string
+                - name: user_name
+                  in: query
+                  schema:
+                    type: string
+                - name: app_name
+                  in: query
+                  schema:
+                    type: string
+                - name: logs
+                  in: query
+                  schema:
+                    type: string
+                - name: create_time
+                  in: query
+                  schema:
+                    type: string
+                - name: update_time
+                  in: query
+                  schema:
+                    type: string
             responses:
                 "200":
                     description: OK
@@ -224,6 +244,26 @@ paths:
                   schema:
                     type: integer
                     format: int32
+                - name: app_name
+                  in: query
+                  schema:
+                    type: string
+                - name: version
+                  in: query
+                  schema:
+                    type: string
+                - name: app_type_id
+                  in: query
+                  schema:
+                    type: string
+                - name: repo_id
+                  in: query
+                  schema:
+                    type: string
+                - name: config
+                  in: query
+                  schema:
+                    type: string
             responses:
                 "200":
                     description: OK
@@ -275,6 +315,26 @@ paths:
                   schema:
                     type: integer
                     format: int32
+                - name: app_name
+                  in: query
+                  schema:
+                    type: string
+                - name: version
+                  in: query
+                  schema:
+                    type: string
+                - name: app_type_id
+                  in: query
+                  schema:
+                    type: string
+                - name: repo_id
+                  in: query
+                  schema:
+                    type: string
+                - name: config
+                  in: query
+                  schema:
+                    type: string
             responses:
                 "200":
                     description: OK
@@ -282,6 +342,77 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/app.v1alpha1.DeployAppList'
+    /api/v1alpha1/app/deploy/resources:
+        get:
+            tags:
+                - AppInterface
+            operationId: AppInterface_GetDeployedAppResources
+            parameters:
+                - name: app_id
+                  in: query
+                  schema:
+                    type: string
+                - name: version_id
+                  in: query
+                  schema:
+                    type: string
+                - name: cluster_id
+                  in: query
+                  schema:
+                    type: string
+                - name: project_id
+                  in: query
+                  schema:
+                    type: string
+                - name: id
+                  in: query
+                  schema:
+                    type: string
+                - name: release_name
+                  in: query
+                  schema:
+                    type: string
+                - name: namespace
+                  in: query
+                  schema:
+                    type: string
+                - name: page
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: page_size
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: app_name
+                  in: query
+                  schema:
+                    type: string
+                - name: version
+                  in: query
+                  schema:
+                    type: string
+                - name: app_type_id
+                  in: query
+                  schema:
+                    type: string
+                - name: repo_id
+                  in: query
+                  schema:
+                    type: string
+                - name: config
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/app.v1alpha1.DeployAppResources'
     /api/v1alpha1/app/list:
         get:
             tags:
@@ -827,6 +958,23 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/app.v1alpha1.AppVersion'
+        app.v1alpha1.AppDeployedResource:
+            type: object
+            properties:
+                name:
+                    type: string
+                kind:
+                    type: string
+                events:
+                    type: array
+                    items:
+                        type: string
+                started_at:
+                    type: string
+                status:
+                    type: array
+                    items:
+                        type: string
         app.v1alpha1.AppHelmRepo:
             type: object
             properties:
@@ -953,6 +1101,16 @@ components:
                     type: string
                 notes:
                     type: string
+                user_name:
+                    type: string
+                app_name:
+                    type: string
+                logs:
+                    type: string
+                create_time:
+                    type: string
+                update_time:
+                    type: string
         app.v1alpha1.DeployAppList:
             type: object
             properties:
@@ -986,6 +1144,23 @@ components:
                 page_size:
                     type: integer
                     format: int32
+                app_name:
+                    type: string
+                version:
+                    type: string
+                app_type_id:
+                    type: string
+                repo_id:
+                    type: string
+                config:
+                    type: string
+        app.v1alpha1.DeployAppResources:
+            type: object
+            properties:
+                items:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/app.v1alpha1.AppDeployedResource'
         app.v1alpha1.FileUploadRequest:
             type: object
             properties:
@@ -1153,6 +1328,8 @@ components:
                 description:
                     type: string
                 cluster_id:
+                    type: string
+                namespace:
                     type: string
         project.v1alpha1.ProjectList:
             type: object

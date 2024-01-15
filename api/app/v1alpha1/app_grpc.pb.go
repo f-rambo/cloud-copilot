@@ -20,27 +20,28 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	AppInterface_Ping_FullMethodName               = "/app.v1alpha1.AppInterface/Ping"
-	AppInterface_UploadApp_FullMethodName          = "/app.v1alpha1.AppInterface/UploadApp"
-	AppInterface_UploadAppIcon_FullMethodName      = "/app.v1alpha1.AppInterface/UploadAppIcon"
-	AppInterface_Save_FullMethodName               = "/app.v1alpha1.AppInterface/Save"
-	AppInterface_Get_FullMethodName                = "/app.v1alpha1.AppInterface/Get"
-	AppInterface_List_FullMethodName               = "/app.v1alpha1.AppInterface/List"
-	AppInterface_Delete_FullMethodName             = "/app.v1alpha1.AppInterface/Delete"
-	AppInterface_CreateAppType_FullMethodName      = "/app.v1alpha1.AppInterface/CreateAppType"
-	AppInterface_ListAppType_FullMethodName        = "/app.v1alpha1.AppInterface/ListAppType"
-	AppInterface_DeleteAppType_FullMethodName      = "/app.v1alpha1.AppInterface/DeleteAppType"
-	AppInterface_AppTest_FullMethodName            = "/app.v1alpha1.AppInterface/AppTest"
-	AppInterface_GetAppDeployed_FullMethodName     = "/app.v1alpha1.AppInterface/GetAppDeployed"
-	AppInterface_DeployApp_FullMethodName          = "/app.v1alpha1.AppInterface/DeployApp"
-	AppInterface_ListDeployedApp_FullMethodName    = "/app.v1alpha1.AppInterface/ListDeployedApp"
-	AppInterface_StopApp_FullMethodName            = "/app.v1alpha1.AppInterface/StopApp"
-	AppInterface_DeleteDeployedApp_FullMethodName  = "/app.v1alpha1.AppInterface/DeleteDeployedApp"
-	AppInterface_SaveRepo_FullMethodName           = "/app.v1alpha1.AppInterface/SaveRepo"
-	AppInterface_ListRepo_FullMethodName           = "/app.v1alpha1.AppInterface/ListRepo"
-	AppInterface_DeleteRepo_FullMethodName         = "/app.v1alpha1.AppInterface/DeleteRepo"
-	AppInterface_GetAppsByRepo_FullMethodName      = "/app.v1alpha1.AppInterface/GetAppsByRepo"
-	AppInterface_GetAppDetailByRepo_FullMethodName = "/app.v1alpha1.AppInterface/GetAppDetailByRepo"
+	AppInterface_Ping_FullMethodName                    = "/app.v1alpha1.AppInterface/Ping"
+	AppInterface_UploadApp_FullMethodName               = "/app.v1alpha1.AppInterface/UploadApp"
+	AppInterface_UploadAppIcon_FullMethodName           = "/app.v1alpha1.AppInterface/UploadAppIcon"
+	AppInterface_Save_FullMethodName                    = "/app.v1alpha1.AppInterface/Save"
+	AppInterface_Get_FullMethodName                     = "/app.v1alpha1.AppInterface/Get"
+	AppInterface_List_FullMethodName                    = "/app.v1alpha1.AppInterface/List"
+	AppInterface_Delete_FullMethodName                  = "/app.v1alpha1.AppInterface/Delete"
+	AppInterface_CreateAppType_FullMethodName           = "/app.v1alpha1.AppInterface/CreateAppType"
+	AppInterface_ListAppType_FullMethodName             = "/app.v1alpha1.AppInterface/ListAppType"
+	AppInterface_DeleteAppType_FullMethodName           = "/app.v1alpha1.AppInterface/DeleteAppType"
+	AppInterface_AppTest_FullMethodName                 = "/app.v1alpha1.AppInterface/AppTest"
+	AppInterface_GetAppDeployed_FullMethodName          = "/app.v1alpha1.AppInterface/GetAppDeployed"
+	AppInterface_DeployApp_FullMethodName               = "/app.v1alpha1.AppInterface/DeployApp"
+	AppInterface_ListDeployedApp_FullMethodName         = "/app.v1alpha1.AppInterface/ListDeployedApp"
+	AppInterface_StopApp_FullMethodName                 = "/app.v1alpha1.AppInterface/StopApp"
+	AppInterface_DeleteDeployedApp_FullMethodName       = "/app.v1alpha1.AppInterface/DeleteDeployedApp"
+	AppInterface_GetDeployedAppResources_FullMethodName = "/app.v1alpha1.AppInterface/GetDeployedAppResources"
+	AppInterface_SaveRepo_FullMethodName                = "/app.v1alpha1.AppInterface/SaveRepo"
+	AppInterface_ListRepo_FullMethodName                = "/app.v1alpha1.AppInterface/ListRepo"
+	AppInterface_DeleteRepo_FullMethodName              = "/app.v1alpha1.AppInterface/DeleteRepo"
+	AppInterface_GetAppsByRepo_FullMethodName           = "/app.v1alpha1.AppInterface/GetAppsByRepo"
+	AppInterface_GetAppDetailByRepo_FullMethodName      = "/app.v1alpha1.AppInterface/GetAppDetailByRepo"
 )
 
 // AppInterfaceClient is the client API for AppInterface service.
@@ -63,6 +64,7 @@ type AppInterfaceClient interface {
 	ListDeployedApp(ctx context.Context, in *DeployAppReq, opts ...grpc.CallOption) (*DeployAppList, error)
 	StopApp(ctx context.Context, in *DeployAppReq, opts ...grpc.CallOption) (*Msg, error)
 	DeleteDeployedApp(ctx context.Context, in *DeployAppReq, opts ...grpc.CallOption) (*Msg, error)
+	GetDeployedAppResources(ctx context.Context, in *DeployAppReq, opts ...grpc.CallOption) (*DeployAppResources, error)
 	SaveRepo(ctx context.Context, in *AppHelmRepo, opts ...grpc.CallOption) (*Msg, error)
 	ListRepo(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*AppHelmRepoList, error)
 	DeleteRepo(ctx context.Context, in *AppHelmRepoReq, opts ...grpc.CallOption) (*Msg, error)
@@ -222,6 +224,15 @@ func (c *appInterfaceClient) DeleteDeployedApp(ctx context.Context, in *DeployAp
 	return out, nil
 }
 
+func (c *appInterfaceClient) GetDeployedAppResources(ctx context.Context, in *DeployAppReq, opts ...grpc.CallOption) (*DeployAppResources, error) {
+	out := new(DeployAppResources)
+	err := c.cc.Invoke(ctx, AppInterface_GetDeployedAppResources_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *appInterfaceClient) SaveRepo(ctx context.Context, in *AppHelmRepo, opts ...grpc.CallOption) (*Msg, error) {
 	out := new(Msg)
 	err := c.cc.Invoke(ctx, AppInterface_SaveRepo_FullMethodName, in, out, opts...)
@@ -287,6 +298,7 @@ type AppInterfaceServer interface {
 	ListDeployedApp(context.Context, *DeployAppReq) (*DeployAppList, error)
 	StopApp(context.Context, *DeployAppReq) (*Msg, error)
 	DeleteDeployedApp(context.Context, *DeployAppReq) (*Msg, error)
+	GetDeployedAppResources(context.Context, *DeployAppReq) (*DeployAppResources, error)
 	SaveRepo(context.Context, *AppHelmRepo) (*Msg, error)
 	ListRepo(context.Context, *emptypb.Empty) (*AppHelmRepoList, error)
 	DeleteRepo(context.Context, *AppHelmRepoReq) (*Msg, error)
@@ -346,6 +358,9 @@ func (UnimplementedAppInterfaceServer) StopApp(context.Context, *DeployAppReq) (
 }
 func (UnimplementedAppInterfaceServer) DeleteDeployedApp(context.Context, *DeployAppReq) (*Msg, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteDeployedApp not implemented")
+}
+func (UnimplementedAppInterfaceServer) GetDeployedAppResources(context.Context, *DeployAppReq) (*DeployAppResources, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetDeployedAppResources not implemented")
 }
 func (UnimplementedAppInterfaceServer) SaveRepo(context.Context, *AppHelmRepo) (*Msg, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SaveRepo not implemented")
@@ -663,6 +678,24 @@ func _AppInterface_DeleteDeployedApp_Handler(srv interface{}, ctx context.Contex
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AppInterface_GetDeployedAppResources_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeployAppReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AppInterfaceServer).GetDeployedAppResources(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AppInterface_GetDeployedAppResources_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AppInterfaceServer).GetDeployedAppResources(ctx, req.(*DeployAppReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AppInterface_SaveRepo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(AppHelmRepo)
 	if err := dec(in); err != nil {
@@ -823,6 +856,10 @@ var AppInterface_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeleteDeployedApp",
 			Handler:    _AppInterface_DeleteDeployedApp_Handler,
+		},
+		{
+			MethodName: "GetDeployedAppResources",
+			Handler:    _AppInterface_GetDeployedAppResources_Handler,
 		},
 		{
 			MethodName: "SaveRepo",

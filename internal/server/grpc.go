@@ -1,6 +1,8 @@
 package server
 
 import (
+	"time"
+
 	appv1alpha1 "github.com/f-rambo/ocean/api/app/v1alpha1"
 	clusterv1alpha1 "github.com/f-rambo/ocean/api/cluster/v1alpha1"
 	projectv1alpha1 "github.com/f-rambo/ocean/api/project/v1alpha1"
@@ -28,6 +30,7 @@ func NewGRPCServer(c *conf.Server,
 			selector.Server(NewAuthServer(user)).Match(NewWhiteListMatcher()).Build(),
 			recovery.Recovery(),
 		),
+		grpc.Timeout(10 * time.Minute),
 	}
 	netWork := c.GRPC.GetNetwork()
 	if netWork != "" {

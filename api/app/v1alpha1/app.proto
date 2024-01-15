@@ -114,6 +114,12 @@ service AppInterface {
             };
       }
 
+      rpc GetDeployedAppResources(app.v1alpha1.DeployAppReq) returns (app.v1alpha1.DeployAppResources) {
+            option (google.api.http) = {
+                  get: "/api/v1alpha1/app/deploy/resources"
+            };
+      }
+
       rpc SaveRepo(app.v1alpha1.AppHelmRepo) returns (app.v1alpha1.Msg) {
             option (google.api.http) = {
                   post: "/api/v1alpha1/app/repo"
