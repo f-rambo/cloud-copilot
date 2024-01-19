@@ -3,7 +3,6 @@ package biz
 import (
 	"context"
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/pkg/errors"
@@ -103,7 +102,7 @@ func (u *UserUseCase) SignUp(ctx context.Context, email, name, password string) 
 
 // 通过token获取用户信息
 func (u *UserUseCase) GetUserInfo(ctx context.Context) (*User, error) {
-	token := ctx.Value(os.Getenv(utils.TokenKey))
+	token := ctx.Value(utils.TokenKey)
 	if token == nil || cast.ToString(token) == "" {
 		return nil, errors.New("token is null")
 	}

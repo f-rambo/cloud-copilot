@@ -37,7 +37,11 @@ func wireApp(confServer *conf.Server, confData *conf.Data, auth *conf.Auth, kube
 	clusterUsecase := biz.NewClusterUseCase(clusterRepo, logger)
 	clusterInterface := interfaces.NewClusterInterface(clusterUsecase)
 	appRepo := data.NewAppRepo(dataData, logger)
-	projectRepo := data.NewProjectRepo(dataData, logger)
+	projectRepo, err := data.NewProjectRepo(dataData, logger, confServer)
+	if err != nil {
+		cleanup()
+		return nil, nil, err
+	}
 	appUsecase := biz.NewAppUsecase(appRepo, logger, resource, clusterRepo, projectRepo)
 	userRepo := data.NewUserRepo(dataData, logger)
 	userUseCase := biz.NewUseUser(userRepo, logger, auth)

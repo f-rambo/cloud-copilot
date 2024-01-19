@@ -1,4 +1,5 @@
 server:
+  name: ocean
   http:
     network: tcp
     addr: 0.0.0.0:8000
@@ -33,7 +34,7 @@ auth:
   exp: 24
   key: 'ocean'
   email: 'admin'
-  password: '123456'
+  password: '123.456a'
 resource:
   app_path: 'resource/app/'
   icon_path: 'resource/icon/'

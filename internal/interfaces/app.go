@@ -273,8 +273,8 @@ func (a *AppInterface) GetAppDeployed(ctx context.Context, appDeployId *v1alpha1
 }
 
 func (a *AppInterface) ListDeployedApp(ctx context.Context, deployAppReq *v1alpha1.DeployAppReq) (*v1alpha1.DeployAppList, error) {
-	bizDeployApp := &biz.DeployApp{}
-	err := utils.StructTransform(deployAppReq, bizDeployApp)
+	bizDeployApp := biz.DeployApp{}
+	err := utils.StructTransform(deployAppReq, &bizDeployApp)
 	if err != nil {
 		return nil, err
 	}
@@ -360,12 +360,6 @@ func (a *AppInterface) DeployApp(ctx context.Context, deployAppReq *v1alpha1.Dep
 		return nil, err
 	}
 	appDeploy.Id = appDeployRes.ID
-	go func() {
-		err = a.uc.TrackingAppDeployed(context.TODO(), appDeployRes.ID)
-		if err != nil {
-			a.log.Error(err)
-		}
-	}()
 	return appDeploy, nil
 }
 

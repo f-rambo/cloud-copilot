@@ -3,106 +3,22 @@ package biz
 import (
 	"context"
 	"fmt"
-	"os"
-	"time"
 
 	"github.com/f-rambo/ocean/internal/conf"
+	"github.com/f-rambo/ocean/pkg/helm"
 	"github.com/f-rambo/ocean/utils"
 	"github.com/pkg/errors"
 	"github.com/spf13/cast"
-	"gopkg.in/yaml.v3"
 
 	"github.com/go-kratos/kratos/v2/log"
 	"gorm.io/gorm"
-	"helm.sh/helm/v3/pkg/action"
-	"helm.sh/helm/v3/pkg/chart/loader"
+	pkgChart "helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/cli"
 	"helm.sh/helm/v3/pkg/getter"
 	releasePkg "helm.sh/helm/v3/pkg/release"
 	"helm.sh/helm/v3/pkg/repo"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
-
-// Dependency describes a chart upon which another chart depends.
-//
-// Dependencies can be used to express developer intent, or to capture the state
-// of a chart.
-type Dependency struct {
-	// Name is the name of the dependency.
-	//
-	// This must mach the name in the dependency's Chart.yaml.
-	Name string `json:"name"`
-	// Version is the version (range) of this chart.
-	//
-	// A lock file will always produce a single version, while a dependency
-	// may contain a semantic version range.
-	Version string `json:"version,omitempty"`
-	// The URL to the repository.
-	//
-	// Appending `index.yaml` to this string should result in a URL that can be
-	// used to fetch the repository index.
-	Repository string `json:"repository"`
-	// A yaml path that resolves to a boolean, used for enabling/disabling charts (e.g. subchart1.enabled )
-	Condition string `json:"condition,omitempty"`
-	// Tags can be used to group charts for enabling/disabling together
-	Tags []string `json:"tags,omitempty"`
-	// Enabled bool determines if chart should be loaded
-	Enabled bool `json:"enabled,omitempty"`
-	// ImportValues holds the mapping of source values to parent key to be imported. Each item can be a
-	// string or pair of child/parent sublist items.
-	ImportValues []interface{} `json:"import-values,omitempty"`
-	// Alias usable alias to be used for the chart
-	Alias string `json:"alias,omitempty"`
-}
-
-// Maintainer describes a Chart maintainer.
-type Maintainer struct {
-	// Name is a user name or organization name
-	Name string `json:"name,omitempty"`
-	// Email is an optional email address to contact the named maintainer
-	Email string `json:"email,omitempty"`
-	// URL is an optional URL to an address for the named maintainer
-	URL string `json:"url,omitempty"`
-}
-
-// Metadata for a Chart file. This models the structure of a Chart.yaml file.
-type Metadata struct {
-	// The name of the chart. Required.
-	Name string `json:"name,omitempty"`
-	// The URL to a relevant project page, git repo, or contact person
-	Home string `json:"home,omitempty"`
-	// Source is the URL to the source code of this chart
-	Sources []string `json:"sources,omitempty"`
-	// A SemVer 2 conformant version string of the chart. Required.
-	Version string `json:"version,omitempty"`
-	// A one-sentence description of the chart
-	Description string `json:"description,omitempty"`
-	// A list of string keywords
-	Keywords []string `json:"keywords,omitempty"`
-	// A list of name and URL/email address combinations for the maintainer(s)
-	Maintainers []*Maintainer `json:"maintainers,omitempty"`
-	// The URL to an icon file.
-	Icon string `json:"icon,omitempty"`
-	// The API Version of this chart. Required.
-	APIVersion string `json:"apiVersion,omitempty"`
-	// The condition to check to enable chart
-	Condition string `json:"condition,omitempty"`
-	// The tags to check to enable chart
-	Tags string `json:"tags,omitempty"`
-	// The version of the application enclosed inside of this chart.
-	AppVersion string `json:"appVersion,omitempty"`
-	// Whether or not this chart is deprecated
-	Deprecated bool `json:"deprecated,omitempty"`
-	// Annotations are additional mappings uninterpreted by Helm,
-	// made available for inspection by other applications.
-	Annotations map[string]string `json:"annotations,omitempty"`
-	// KubeVersion is a SemVer constraint specifying the version of Kubernetes required.
-	KubeVersion string `json:"kubeVersion,omitempty"`
-	// Dependencies are a list of dependencies for a chart.
-	Dependencies []*Dependency `json:"dependencies,omitempty"`
-	// Specifies the chart type: application or library
-	Type string `json:"type,omitempty"`
-}
 
 type AppType struct {
 	ID   int64  `json:"id" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
@@ -148,18 +64,18 @@ type App struct {
 }
 
 type AppVersion struct {
-	ID          int64    `json:"id" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
-	AppID       int64    `json:"app_id" gorm:"column:app_id; default:0; NOT NULL; index"`
-	AppName     string   `json:"app_name,omitempty" gorm:"column:app_name; default:''; NOT NULL"`
-	Name        string   `json:"name,omitempty" gorm:"column:name; default:''; NOT NULL"`
-	Chart       string   `json:"chart,omitempty" gorm:"column:chart; default:''; NOT NULL"`
-	Version     string   `json:"version,omitempty" gorm:"column:version; default:''; NOT NULL; index"`
-	Config      string   `json:"config,omitempty" gorm:"column:config; default:''; NOT NULL"`
-	Readme      string   `json:"readme,omitempty" gorm:"-"`
-	State       string   `json:"state,omitempty" gorm:"column:state; default:''; NOT NULL"`
-	TestResult  string   `json:"test_result,omitempty" gorm:"column:test_result; default:''; NOT NULL"` // 哪些资源部署成功，哪些失败
-	Description string   `json:"description,omitempty" gorm:"column:description; default:''; NOT NULL"`
-	Metadata    Metadata `json:"metadata,omitempty" gorm:"-"`
+	ID          int64             `json:"id" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
+	AppID       int64             `json:"app_id" gorm:"column:app_id; default:0; NOT NULL; index"`
+	AppName     string            `json:"app_name,omitempty" gorm:"column:app_name; default:''; NOT NULL"`
+	Name        string            `json:"name,omitempty" gorm:"column:name; default:''; NOT NULL"`
+	Chart       string            `json:"chart,omitempty" gorm:"column:chart; default:''; NOT NULL"`
+	Version     string            `json:"version,omitempty" gorm:"column:version; default:''; NOT NULL; index"`
+	Config      string            `json:"config,omitempty" gorm:"column:config; default:''; NOT NULL"`
+	Readme      string            `json:"readme,omitempty" gorm:"-"`
+	State       string            `json:"state,omitempty" gorm:"column:state; default:''; NOT NULL"`
+	TestResult  string            `json:"test_result,omitempty" gorm:"column:test_result; default:''; NOT NULL"` // 哪些资源部署成功，哪些失败
+	Description string            `json:"description,omitempty" gorm:"column:description; default:''; NOT NULL"`
+	Metadata    pkgChart.Metadata `json:"metadata,omitempty" gorm:"-"`
 	gorm.Model
 }
 
@@ -184,17 +100,6 @@ type DeployApp struct {
 	Notes       string `json:"notes,omitempty" gorm:"column:notes; default:''; NOT NULL"`
 	Logs        string `json:"logs,omitempty" gorm:"column:logs; default:''; NOT NULL"`
 	gorm.Model
-	log *log.Helper `json:"-" gorm:"-"`
-}
-
-func (d *DeployApp) newLog(log *log.Helper) *DeployApp {
-	d.log = log
-	return d
-}
-
-func (d *DeployApp) deployAppLogf(format string, v ...interface{}) {
-	d.log.Debugf(format, v...)
-	d.Logs = fmt.Sprintf("%s%s\n", d.Logs, fmt.Sprintf(format, v...))
 }
 
 const (
@@ -256,43 +161,17 @@ func (a *App) DeleteVersion(version string) {
 }
 
 func (v *AppVersion) GetChartInfo(appPath string) error {
-	if v.Chart == "" {
-		return nil
-	}
-	if utils.IsHttpUrl(v.Chart) {
-		appPath = fmt.Sprintf("%s%s/", appPath, v.AppName)
-		fileName := utils.GetFileNameByUrl(v.Chart)
-		err := utils.DownloadFile(v.Chart, appPath, fileName)
-		if err != nil {
-			return errors.WithMessage(err, "download chart fail")
-		}
-		v.Chart = fileName
-	}
-	chartPath := appPath + v.Chart
-	readme, err := action.NewShow(action.ShowReadme).Run(chartPath)
+	charInfo, err := helm.GetLocalChartInfo(v.AppName, appPath, v.Chart)
 	if err != nil {
-		return errors.WithMessage(err, "show readme fail")
+		return err
 	}
-	chartYaml, err := action.NewShow(action.ShowChart).Run(chartPath)
-	if err != nil {
-		return errors.WithMessage(err, "show chart fail")
-	}
-	valuesYaml, err := action.NewShow(action.ShowValues).Run(chartPath)
-	if err != nil {
-		return errors.WithMessage(err, "show values fail")
-	}
-	chartMateData := &Metadata{}
-	err = yaml.Unmarshal([]byte(chartYaml), chartMateData)
-	if err != nil {
-		return errors.WithMessage(err, "unmarshal chart yaml fail")
-	}
-	v.Name = chartMateData.Name
-	v.Config = valuesYaml
-	v.Readme = readme
-	v.Description = chartMateData.Description
-	v.Metadata = *chartMateData
-	v.Version = chartMateData.Version
-	v.AppName = chartMateData.Name
+	v.Name = charInfo.Name
+	v.Config = charInfo.Config
+	v.Readme = charInfo.Readme
+	v.Description = charInfo.Description
+	v.Metadata = charInfo.Metadata
+	v.Version = charInfo.Version
+	v.AppName = charInfo.Name
 	return nil
 }
 
@@ -320,7 +199,7 @@ type AppRepo interface {
 	DeleteAppType(ctx context.Context, appTypeID int64) error
 	SaveDeployApp(ctx context.Context, appDeployed *DeployApp) error
 	DeleteDeployApp(ctx context.Context, id int64) error
-	DeployAppList(ctx context.Context, appDeployedReq *DeployApp, page, pageSuze int32) ([]*DeployApp, int32, error)
+	DeployAppList(ctx context.Context, appDeployedReq DeployApp, page, pageSuze int32) ([]*DeployApp, int32, error)
 	GetDeployApp(ctx context.Context, id int64) (*DeployApp, error)
 	SaveRepo(ctx context.Context, helmRepo *AppHelmRepo) error
 	ListRepo(ctx context.Context) ([]*AppHelmRepo, error)
@@ -422,7 +301,7 @@ func (uc *AppUsecase) GetAppDeployed(ctx context.Context, id int64) (*DeployApp,
 	return uc.repo.GetDeployApp(ctx, id)
 }
 
-func (uc *AppUsecase) DeployAppList(ctx context.Context, appDeployedReq *DeployApp, page, pageSize int32) ([]*DeployApp, int32, error) {
+func (uc *AppUsecase) DeployAppList(ctx context.Context, appDeployedReq DeployApp, page, pageSize int32) ([]*DeployApp, int32, error) {
 	return uc.repo.DeployAppList(ctx, appDeployedReq, page, pageSize)
 }
 
@@ -437,7 +316,7 @@ func (uc *AppUsecase) AppTest(ctx context.Context, appID, versionID int64) (*Dep
 	}
 	appDeployed := appVersion.GetAppDeployed()
 	appDeployed.IsTest = true
-	deployAppData, err := uc.findOneDeployApp(ctx, &DeployApp{AppID: appID, VersionID: versionID, IsTest: true})
+	deployAppData, err := uc.findOneDeployApp(ctx, DeployApp{AppID: appID, VersionID: versionID, IsTest: true})
 	if err != nil {
 		return nil, err
 	}
@@ -506,15 +385,7 @@ func (uc *AppUsecase) DeployApp(ctx context.Context, deployAppReq *DeployApp) (*
 	appDeployed.Config = deployAppReq.Config
 	appDeployed.UserID = deployAppReq.UserID
 
-	deployAppRes, err := uc.findOneDeployApp(ctx, &DeployApp{
-		ID:        deployAppReq.ID,
-		ProjectID: deployAppReq.ProjectID,
-		ClusterID: deployAppReq.ClusterID,
-		AppID:     deployAppReq.AppID,
-		VersionID: deployAppReq.VersionID,
-		AppName:   deployAppReq.AppName,
-		Version:   deployAppReq.Version,
-	})
+	deployAppRes, err := uc.findOneDeployApp(ctx, *appDeployed)
 	if err != nil {
 		return nil, err
 	}
@@ -529,7 +400,7 @@ func (uc *AppUsecase) DeployApp(ctx context.Context, deployAppReq *DeployApp) (*
 	return appDeployed, deployAppErr
 }
 
-func (uc *AppUsecase) findOneDeployApp(ctx context.Context, deployAppReq *DeployApp) (*DeployApp, error) {
+func (uc *AppUsecase) findOneDeployApp(ctx context.Context, deployAppReq DeployApp) (*DeployApp, error) {
 	appDeployeds, _, err := uc.repo.DeployAppList(ctx, deployAppReq, 1, 1)
 	if err != nil {
 		return nil, err
@@ -643,67 +514,30 @@ func (uc *AppUsecase) GetAppDetailByRepo(ctx context.Context, helmRepoID int64, 
 }
 
 func (uc *AppUsecase) deployApp(ctx context.Context, appDeployed *DeployApp) error {
-	// todo 需要区分不同的集群
-	settings := cli.New()
-	actionConfig := new(action.Configuration)
-	if err := actionConfig.Init(
-		settings.RESTClientGetter(),
-		appDeployed.Namespace,
-		os.Getenv("HELM_DRIVER"),
-		appDeployed.newLog(uc.log).deployAppLogf,
-	); err != nil {
-		return errors.WithMessage(err, "init action fail")
-	}
-	install := action.NewInstall(actionConfig)
-	install.Namespace = appDeployed.Namespace
-	install.ReleaseName = appDeployed.ReleaseName
-	install.Version = appDeployed.Version
-	install.CreateNamespace = true
-	install.DryRun = appDeployed.IsTest
-	install.GenerateName = true
-	install.Atomic = true
-	install.Wait = true
-	install.Timeout = 3 * time.Minute
-	chartPath := fmt.Sprintf("%s%s", uc.resConf.GetAppPath(), appDeployed.Chart)
-	if appDeployed.AppTypeID == AppTypeRepo {
-		chartPath = fmt.Sprintf("%s%s/%s", uc.resConf.GetRepoPath(), appDeployed.AppName, appDeployed.Chart)
-	}
-	chart, err := loader.Load(chartPath)
-	if err != nil {
-		return errors.WithMessage(err, "load chart fail")
-	}
-	values := make(map[string]interface{})
-	if appDeployed.Config != "" {
-		err = yaml.Unmarshal([]byte(appDeployed.Config), &values)
-		if err != nil {
-			return err
-		}
-	}
-	list := action.NewList(actionConfig)
-	appList, err := list.Run()
+	helmPkg, err := helm.NewHelmPkg(uc.log, appDeployed.Namespace)
 	if err != nil {
 		return err
 	}
-	for _, release := range appList {
-		// 升级配置更新
-		if release.Name == appDeployed.ReleaseName {
-			upgrade := action.NewUpgrade(actionConfig)
-			upgrade.Namespace = appDeployed.Namespace
-			upgrade.Version = appDeployed.Version
-			upgrade.DryRun = appDeployed.IsTest
-			upgrade.Atomic = true
-			upgrade.Wait = true
-			upgrade.Timeout = 3 * time.Minute
-			_, err = upgrade.Run(appDeployed.ReleaseName, chart, values)
-			if err != nil {
-				return errors.WithMessage(err, "upgrade fail")
-			}
-			return nil
-		}
-	}
-	release, err := install.Run(chart, values)
+	install, err := helmPkg.NewInstall()
 	if err != nil {
-		return errors.WithMessage(err, "install fail")
+		return err
+	}
+	chart := fmt.Sprintf("%s%s", uc.resConf.GetAppPath(), appDeployed.Chart)
+	if appDeployed.AppTypeID == AppTypeRepo {
+		chart = fmt.Sprintf("%s%s/%s", uc.resConf.GetRepoPath(), appDeployed.AppName, appDeployed.Chart)
+	}
+	install.Namespace = appDeployed.Namespace
+	install.CreateNamespace = true
+	install.ReleaseName = appDeployed.ReleaseName
+	install.GenerateName = true
+	install.Version = appDeployed.Version
+	install.DryRun = appDeployed.IsTest
+	install.Atomic = true
+	install.Wait = true
+	release, err := helmPkg.RunInstall(ctx, install, chart, appDeployed.Config)
+	appDeployed.Logs = helmPkg.GetLogs()
+	if err != nil {
+		return err
 	}
 	if release != nil {
 		appDeployed.ReleaseName = release.Name
@@ -712,42 +546,26 @@ func (uc *AppUsecase) deployApp(ctx context.Context, appDeployed *DeployApp) err
 			appDeployed.State = string(release.Info.Status)
 			appDeployed.Notes = release.Info.Notes
 		}
-	} else {
-		appDeployed.State = releasePkg.StatusUnknown.String()
+		return nil
 	}
+	appDeployed.State = releasePkg.StatusUnknown.String()
 	return nil
 }
 
 func (uc *AppUsecase) unDeployApp(ctx context.Context, appDeployed *DeployApp) error {
-	settings := cli.New()
-	actionConfig := new(action.Configuration)
-	if err := actionConfig.Init(
-		settings.RESTClientGetter(),
-		appDeployed.Namespace,
-		os.Getenv("HELM_DRIVER"),
-		appDeployed.newLog(uc.log).deployAppLogf,
-	); err != nil {
-		return errors.WithMessage(err, "init action fail")
-	}
-	list := action.NewList(actionConfig)
-	appList, err := list.Run()
+	helmPkg, err := helm.NewHelmPkg(uc.log, appDeployed.Namespace)
 	if err != nil {
 		return err
 	}
-	isInstalled := false
-	for _, release := range appList {
-		if release.Name == appDeployed.ReleaseName {
-			isInstalled = true
-		}
+	uninstall, err := helmPkg.NewUninstall()
+	if err != nil {
+		return err
 	}
-	if !isInstalled {
-		appDeployed.State = releasePkg.StatusUninstalled.String()
-		uc.log.Infof("%s not installed", appDeployed.ReleaseName)
-		return nil
-	}
-	uninstall := action.NewUninstall(actionConfig)
 	uninstall.KeepHistory = false
-	resp, err := uninstall.Run(appDeployed.ReleaseName)
+	uninstall.DryRun = appDeployed.IsTest
+	uninstall.Wait = true
+	resp, err := helmPkg.RunUninstall(uninstall, appDeployed.ReleaseName)
+	appDeployed.Logs = helmPkg.GetLogs()
 	if err != nil {
 		return errors.WithMessage(err, "uninstall fail")
 	}
@@ -756,67 +574,6 @@ func (uc *AppUsecase) unDeployApp(ctx context.Context, appDeployed *DeployApp) e
 	}
 	appDeployed.Notes = resp.Info
 	return nil
-}
-
-func (uc *AppUsecase) TrackingAppDeployed(ctx context.Context, appDeployedId int64) error {
-	deployApp, err := uc.repo.GetDeployApp(ctx, appDeployedId)
-	if err != nil {
-		return err
-	}
-	getAppDeployedStatusErr := uc.getAppDeployedStatus(ctx, deployApp)
-	if getAppDeployedStatusErr != nil && (getAppDeployedStatusErr.Error() == "timeout" || getAppDeployedStatusErr.Error() == "release info is nil") {
-		deployApp.State = releasePkg.StatusUnknown.String()
-		deployApp.Notes = err.Error()
-	}
-	err = uc.repo.SaveDeployApp(ctx, deployApp)
-	if err != nil {
-		return err
-	}
-	return getAppDeployedStatusErr
-}
-
-func (uc *AppUsecase) getAppDeployedStatus(ctx context.Context, appDeployed *DeployApp) error {
-	settings := cli.New()
-	actionConfig := new(action.Configuration)
-	if err := actionConfig.Init(
-		settings.RESTClientGetter(),
-		appDeployed.Namespace,
-		os.Getenv("HELM_DRIVER"),
-		appDeployed.newLog(uc.log).deployAppLogf,
-	); err != nil {
-		return errors.WithMessage(err, "init action fail")
-	}
-	statucAction := action.NewStatus(actionConfig)
-	timeout := time.After(5 * time.Minute)
-	ticker := time.NewTicker(5 * time.Second)
-	tick := ticker.C
-	for {
-		select {
-		case <-timeout:
-			return errors.New("timeout")
-		case <-tick:
-			release, err := statucAction.Run(appDeployed.ReleaseName)
-			if err != nil {
-				return err
-			}
-			if release == nil || release.Info == nil {
-				return errors.New("release info is nil")
-			}
-			appDeployed.State = string(release.Info.Status)
-			appDeployed.Manifest = release.Manifest
-			appDeployed.Notes = release.Info.Notes
-			// StatusPendingInstall：表示一个安装操作正在进行中。
-			// StatusPendingUpgrade：表示一个升级操作正在进行中。
-			// StatusPendingRollback：表示一个回滚操作正在进行中。
-			// StatusUninstalling：表示一个卸载操作正在进行中。
-			if release.Info.Status != releasePkg.StatusPendingInstall &&
-				release.Info.Status != releasePkg.StatusPendingUpgrade &&
-				release.Info.Status != releasePkg.StatusPendingRollback &&
-				release.Info.Status != releasePkg.StatusUninstalling {
-				return nil
-			}
-		}
-	}
 }
 
 type AppDeployedResource struct {

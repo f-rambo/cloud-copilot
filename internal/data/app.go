@@ -155,22 +155,37 @@ func (a *appRepo) SaveDeployApp(ctx context.Context, appDeployed *biz.DeployApp)
 	return a.data.db.Save(appDeployed).Error
 }
 
-func (a *appRepo) DeployAppList(ctx context.Context, appDeployedReq *biz.DeployApp, page, pageSize int32) ([]*biz.DeployApp, int32, error) {
+func (a *appRepo) DeployAppList(ctx context.Context, appDeployedReq biz.DeployApp, page, pageSize int32) ([]*biz.DeployApp, int32, error) {
+	whereMap := map[string]interface{}{
+		"id":         appDeployedReq.ID,
+		"project_id": appDeployedReq.ProjectID,
+		"cluster_id": appDeployedReq.ClusterID,
+		"app_id":     appDeployedReq.AppID,
+		"version_id": appDeployedReq.VersionID,
+		"app_name":   appDeployedReq.AppName,
+		"version":    appDeployedReq.Version,
+		"is_test":    appDeployedReq.IsTest,
+		"state":      appDeployedReq.State,
+		"namespace":  appDeployedReq.Namespace,
+		"user_id":    appDeployedReq.UserID,
+	}
 	appDeployeds := make([]*biz.DeployApp, 0)
 	appDeployedOrmDb := a.data.db.Model(&biz.DeployApp{})
 	if appDeployedReq.ReleaseName != "" {
 		appDeployedOrmDb = appDeployedOrmDb.Where("release_name like ?", "%"+appDeployedReq.ReleaseName+"%")
 		appDeployedReq.ReleaseName = ""
 	}
-	err := appDeployedOrmDb.Where(appDeployedReq).Offset(int((page - 1) * pageSize)).Limit(int(pageSize)).Find(&appDeployeds).Error
+	err := appDeployedOrmDb.Where(whereMap).Offset(int((page - 1) * pageSize)).Limit(int(pageSize)).Find(&appDeployeds).Error
 	if err != nil {
 		return nil, 0, err
 	}
+
 	var appDeployedCount int64 = 0
-	err = appDeployedOrmDb.Where(appDeployedReq).Count(&appDeployedCount).Error
+	err = appDeployedOrmDb.Where(whereMap).Count(&appDeployedCount).Error
 	if err != nil {
 		return nil, 0, err
 	}
+
 	return appDeployeds, int32(appDeployedCount), nil
 }
 

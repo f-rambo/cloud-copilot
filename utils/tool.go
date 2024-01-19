@@ -236,3 +236,15 @@ func DownloadFileToWriter(url string, writer io.Writer) error {
 	}
 	return nil
 }
+
+// 生成一个随机字符串
+func GetRandomString() string {
+	str := "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	bytes := []byte(str)
+	result := []byte{}
+	rand.Seed(time.Now().UnixNano())
+	for i := 0; i < 12; i++ {
+		result = append(result, bytes[rand.Intn(len(bytes))])
+	}
+	return string(result)
+}

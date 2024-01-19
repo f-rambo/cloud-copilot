@@ -4,19 +4,41 @@ import (
 	"context"
 
 	"github.com/f-rambo/ocean/internal/biz"
+	"github.com/f-rambo/ocean/internal/conf"
 	"github.com/go-kratos/kratos/v2/log"
 )
 
 type projectRepo struct {
-	data *Data
-	log  *log.Helper
+	data       *Data
+	log        *log.Helper
+	confServer *conf.Server
 }
 
-func NewProjectRepo(data *Data, logger log.Logger) biz.ProjectRepo {
-	return &projectRepo{
-		data: data,
-		log:  log.NewHelper(logger),
+func NewProjectRepo(data *Data, logger log.Logger, confServer *conf.Server) (biz.ProjectRepo, error) {
+	projectRepo := &projectRepo{
+		data:       data,
+		log:        log.NewHelper(logger),
+		confServer: confServer,
 	}
+	return projectRepo, projectRepo.init()
+}
+
+func (p *projectRepo) init() error {
+	var count int64 = 0
+	err := p.data.db.Model(&biz.Project{}).Where("name = ?", p.confServer.GetName()).Count(&count).Error
+	if err != nil {
+		return err
+	}
+	if count > 0 {
+		return nil
+	}
+	project := &biz.Project{
+		Name:        p.confServer.GetName(),
+		Namespace:   p.confServer.GetName(),
+		ClusterID:   1,
+		Description: "defualt project",
+	}
+	return p.data.db.Model(&biz.Project{}).Create(project).Error
 }
 
 func (p *projectRepo) Save(ctx context.Context, project *biz.Project) error {

@@ -45,6 +45,7 @@ func (r Resource) GetRepoPath() string {
 }
 
 type Server struct {
+	Name   string `json:"name,omitempty"`
 	HTTP   HTTP   `json:"http,omitempty"`
 	GRPC   GRPC   `json:"grpc,omitempty"`
 	STATIC STATIC `json:"static,omitempty"`
@@ -53,6 +54,14 @@ type Server struct {
 type HTTP struct {
 	Network string `json:"network,omitempty"`
 	Addr    string `json:"addr,omitempty"`
+}
+
+func (s Server) GetName() string {
+	name := os.Getenv("SERVER_NAME")
+	if name != "" {
+		return name
+	}
+	return s.Name
 }
 
 func (h HTTP) GetNetwork() string {

@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"os"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -37,12 +36,12 @@ func NewAuthServer(user *interfaces.UserInterface) func(handler middleware.Handl
 			}
 			// 获取token
 			jwtToken := authorizationArr[1]
-			ctx = context.WithValue(ctx, os.Getenv(utils.TokenKey), jwtToken)
+			ctx = context.WithValue(ctx, utils.TokenKey, jwtToken)
 			user, err := user.GetUserInfo(ctx, &emptypb.Empty{})
 			if err != nil {
 				return nil, err
 			}
-			ctx = context.WithValue(ctx, os.Getenv(utils.UserIDKey), user.Id)
+			ctx = context.WithValue(ctx, utils.UserIDKey, user.Id)
 			reply, err = handler(ctx, req)
 			return
 		}
