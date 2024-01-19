@@ -18,6 +18,7 @@ type ChartInfo struct {
 	Metadata    pkgChart.Metadata
 	Version     string
 	AppName     string
+	Chart       string
 }
 
 func GetLocalChartInfo(appName, path, chart string) (*ChartInfo, error) {
@@ -27,9 +28,11 @@ func GetLocalChartInfo(appName, path, chart string) (*ChartInfo, error) {
 	if utils.IsHttpUrl(chart) {
 		path = fmt.Sprintf("%s%s/", path, appName)
 		fileName := utils.GetFileNameByUrl(chart)
-		err := utils.DownloadFile(chart, path, fileName)
-		if err != nil {
-			return nil, errors.WithMessage(err, "download chart fail")
+		if !utils.IsFileExist(path + fileName) {
+			err := utils.DownloadFile(chart, path, fileName)
+			if err != nil {
+				return nil, errors.WithMessage(err, "download chart fail")
+			}
 		}
 		chart = fileName
 	}
@@ -59,6 +62,7 @@ func GetLocalChartInfo(appName, path, chart string) (*ChartInfo, error) {
 		Metadata:    *chartMateData,
 		Version:     chartMateData.Version,
 		AppName:     chartMateData.Name,
+		Chart:       chart,
 	}
 	return chartInfo, nil
 }

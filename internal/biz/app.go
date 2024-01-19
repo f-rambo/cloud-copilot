@@ -3,6 +3,7 @@ package biz
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/f-rambo/ocean/internal/conf"
 	"github.com/f-rambo/ocean/pkg/helm"
@@ -132,6 +133,9 @@ func (a *App) UpdateVersion(version *AppVersion) {
 
 func (a *App) GetVersion(version string) *AppVersion {
 	for _, v := range a.Versions {
+		if version == "" {
+			return v
+		}
 		if v.Version == version {
 			return v
 		}
@@ -172,12 +176,13 @@ func (v *AppVersion) GetChartInfo(appPath string) error {
 	v.Metadata = charInfo.Metadata
 	v.Version = charInfo.Version
 	v.AppName = charInfo.Name
+	v.Chart = charInfo.Chart
 	return nil
 }
 
 func (v *AppVersion) GetAppDeployed() *DeployApp {
+	releaseName := fmt.Sprintf("%s-%s", v.AppName, strings.ReplaceAll(v.Version, ".", "-"))
 	return &DeployApp{
-		ReleaseName: v.AppName,
 		AppID:       v.AppID,
 		VersionID:   v.ID,
 		Version:     v.Version,
@@ -186,6 +191,7 @@ func (v *AppVersion) GetAppDeployed() *DeployApp {
 		Namespace:   "default",
 		Config:      v.Config,
 		State:       releasePkg.StatusUnknown.String(),
+		ReleaseName: releaseName,
 	}
 }
 
@@ -316,14 +322,6 @@ func (uc *AppUsecase) AppTest(ctx context.Context, appID, versionID int64) (*Dep
 	}
 	appDeployed := appVersion.GetAppDeployed()
 	appDeployed.IsTest = true
-	deployAppData, err := uc.findOneDeployApp(ctx, DeployApp{AppID: appID, VersionID: versionID, IsTest: true})
-	if err != nil {
-		return nil, err
-	}
-	if deployAppData != nil {
-		appDeployed.ID = deployAppData.ID
-
-	}
 	deployAppErr := uc.deployApp(ctx, appDeployed)
 	if deployAppErr != nil {
 		appVersion.State = AppTestFailed
@@ -337,15 +335,10 @@ func (uc *AppUsecase) AppTest(ctx context.Context, appID, versionID int64) (*Dep
 	if err != nil {
 		return nil, err
 	}
-	err = uc.repo.SaveDeployApp(ctx, appDeployed)
-	if err != nil {
-		return nil, err
-	}
 	return appDeployed, deployAppErr
 }
 
 func (uc *AppUsecase) DeployApp(ctx context.Context, deployAppReq *DeployApp) (*DeployApp, error) {
-	// 两种app部署方式，一种是app package，一种是helm repo
 	var app *App
 	var appVersion *AppVersion
 	var err error
@@ -355,28 +348,20 @@ func (uc *AppUsecase) DeployApp(ctx context.Context, deployAppReq *DeployApp) (*
 			return nil, err
 		}
 		appVersion = app.GetVersion(deployAppReq.Version)
-		if appVersion == nil {
-			return nil, errors.New("app version not found")
-		}
-	} else {
+	}
+	if deployAppReq.AppTypeID != AppTypeRepo {
 		app, err = uc.Get(ctx, deployAppReq.AppID, deployAppReq.VersionID)
 		if err != nil {
 			return nil, err
 		}
 		appVersion = app.GetVersionById(deployAppReq.VersionID)
-		if appVersion == nil {
-			return nil, errors.New("app version not found")
-		}
 	}
-
 	project, err := uc.projectRepo.Get(ctx, deployAppReq.ProjectID)
 	if err != nil {
 		return nil, err
 	}
-	if project == nil {
-		return nil, errors.New("project not found")
-	}
 	appDeployed := appVersion.GetAppDeployed()
+	appDeployed.ID = deployAppReq.ID
 	appDeployed.RepoID = deployAppReq.RepoID
 	appDeployed.AppTypeID = app.AppTypeID
 	appDeployed.ClusterID = deployAppReq.ClusterID
@@ -384,13 +369,12 @@ func (uc *AppUsecase) DeployApp(ctx context.Context, deployAppReq *DeployApp) (*
 	appDeployed.Namespace = project.Namespace
 	appDeployed.Config = deployAppReq.Config
 	appDeployed.UserID = deployAppReq.UserID
-
-	deployAppRes, err := uc.findOneDeployApp(ctx, *appDeployed)
-	if err != nil {
-		return nil, err
-	}
-	if deployAppRes != nil {
-		appDeployed.ID = deployAppRes.ID
+	if deployAppReq.ID != 0 {
+		appDeployedRes, err := uc.repo.GetDeployApp(ctx, deployAppReq.ID)
+		if err != nil {
+			return nil, err
+		}
+		appDeployed.ReleaseName = appDeployedRes.ReleaseName
 	}
 	deployAppErr := uc.deployApp(ctx, appDeployed)
 	err = uc.repo.SaveDeployApp(ctx, appDeployed)
@@ -398,18 +382,6 @@ func (uc *AppUsecase) DeployApp(ctx context.Context, deployAppReq *DeployApp) (*
 		return nil, err
 	}
 	return appDeployed, deployAppErr
-}
-
-func (uc *AppUsecase) findOneDeployApp(ctx context.Context, deployAppReq DeployApp) (*DeployApp, error) {
-	appDeployeds, _, err := uc.repo.DeployAppList(ctx, deployAppReq, 1, 1)
-	if err != nil {
-		return nil, err
-	}
-	for _, v := range appDeployeds {
-		return v, nil
-	}
-	return nil, nil
-
 }
 
 func (uc *AppUsecase) DeleteDeployedApp(ctx context.Context, id int64) error {
@@ -526,9 +498,9 @@ func (uc *AppUsecase) deployApp(ctx context.Context, appDeployed *DeployApp) err
 	if appDeployed.AppTypeID == AppTypeRepo {
 		chart = fmt.Sprintf("%s%s/%s", uc.resConf.GetRepoPath(), appDeployed.AppName, appDeployed.Chart)
 	}
+	install.ReleaseName = appDeployed.ReleaseName
 	install.Namespace = appDeployed.Namespace
 	install.CreateNamespace = true
-	install.ReleaseName = appDeployed.ReleaseName
 	install.GenerateName = true
 	install.Version = appDeployed.Version
 	install.DryRun = appDeployed.IsTest
