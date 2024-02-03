@@ -6,24 +6,32 @@ import (
 )
 
 type Bootstrap struct {
-	Server     Server     `json:"server,omitempty"`
-	Data       Data       `json:"data,omitempty"`
-	Log        Log        `json:"log,omitempty"`
-	Auth       Auth       `json:"auth,omitempty"`
-	Kubernetes Kubernetes `json:"kubernetes,omitempty"`
-	Resource   Resource   `json:"resource,omitempty"`
+	Server   Server   `json:"server,omitempty"`
+	Data     Data     `json:"data,omitempty"`
+	Log      Log      `json:"log,omitempty"`
+	Auth     Auth     `json:"auth,omitempty"`
+	Resource Resource `json:"resource,omitempty"`
 }
 
 type Resource struct {
-	AppPath  string `json:"app_path,omitempty"`
-	IconPath string `json:"icon_path,omitempty"`
-	RepoPath string `json:"repo_path,omitempty"`
+	App     string `json:"app,omitempty"`     // app chart package
+	Icon    string `json:"icon,omitempty"`    // app icon img
+	Repo    string `json:"repo,omitempty"`    // app repo
+	Cluster string `json:"cluster,omitempty"` // cluster setting
+}
+
+func (r Resource) GetClusterPath() string {
+	clusterPath := os.Getenv("CLUSTER_PATH")
+	if clusterPath == "" {
+		clusterPath = r.Cluster
+	}
+	return clusterPath
 }
 
 func (r Resource) GetAppPath() string {
 	appPath := os.Getenv("APP_PATH")
 	if appPath == "" {
-		appPath = r.AppPath
+		appPath = r.App
 	}
 	return appPath
 }
@@ -31,7 +39,7 @@ func (r Resource) GetAppPath() string {
 func (r Resource) GetIconPath() string {
 	iconPath := os.Getenv("ICON_PATH")
 	if iconPath == "" {
-		iconPath = r.IconPath
+		iconPath = r.Icon
 	}
 	return iconPath
 }
@@ -39,7 +47,7 @@ func (r Resource) GetIconPath() string {
 func (r Resource) GetRepoPath() string {
 	repoPath := os.Getenv("REPO_PATH")
 	if repoPath == "" {
-		repoPath = r.RepoPath
+		repoPath = r.Repo
 	}
 	return repoPath
 }
@@ -191,28 +199,6 @@ func (d Database) GetDBFilePath() string {
 		return dbFilePath
 	}
 	return d.DBFilePath
-}
-
-type Kubernetes struct {
-	MasterUrl  string `json:"master_url,omitempty"`
-	KubeConfig string `json:"kube_config,omitempty"`
-	Namespace  string `json:"namespace,omitempty"`
-}
-
-func (k Kubernetes) GetMasterUrl() string {
-	masterUrl := os.Getenv("KUBERNETES_MASTER_URL")
-	if masterUrl != "" {
-		return masterUrl
-	}
-	return k.MasterUrl
-}
-
-func (k Kubernetes) GetKubeConfig() string {
-	kubeConfig := os.Getenv("KUBERNETES_KUBE_CONFIG")
-	if kubeConfig != "" {
-		return kubeConfig
-	}
-	return k.KubeConfig
 }
 
 type Log struct {

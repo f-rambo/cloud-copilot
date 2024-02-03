@@ -6,16 +6,170 @@ import (
 
 	v1alpha1 "github.com/f-rambo/ocean/api/cluster/v1alpha1"
 	"github.com/f-rambo/ocean/internal/biz"
+	"github.com/go-kratos/kratos/v2/log"
 	"google.golang.org/protobuf/types/known/emptypb"
+	"gopkg.in/yaml.v2"
+	"helm.sh/helm/v3/pkg/release"
 )
 
 type ClusterInterface struct {
 	v1alpha1.UnimplementedClusterInterfaceServer
-	uc *biz.ClusterUsecase
+	clusterUc *biz.ClusterUsecase
+	projectUc *biz.ProjectUsecase
+	appUc     *biz.AppUsecase
+	log       *log.Helper
 }
 
-func NewClusterInterface(uc *biz.ClusterUsecase) *ClusterInterface {
-	return &ClusterInterface{uc: uc}
+func NewClusterInterface(clusterUc *biz.ClusterUsecase, projectUc *biz.ProjectUsecase, appUc *biz.AppUsecase, logger log.Logger) (*ClusterInterface, error) {
+	cluster := &ClusterInterface{
+		clusterUc: clusterUc,
+		projectUc: projectUc,
+		appUc:     appUc,
+		log:       log.NewHelper(logger),
+	}
+	ctx := context.Background()
+	bizCluster, err := cluster.clusterInit(ctx)
+	if err != nil {
+		cluster.log.Errorf("not cluster error: %v", err)
+		return cluster, nil
+	}
+	bizProject, err := cluster.ProjectInit(ctx, bizCluster)
+	if err != nil {
+		return nil, err
+	}
+	err = cluster.AppInit(ctx, bizCluster, bizProject)
+	return cluster, err
+}
+
+func (c *ClusterInterface) clusterInit(ctx context.Context) (*biz.Cluster, error) {
+	cluster, err := c.clusterUc.CurrentCluster(ctx)
+	if err != nil {
+		return nil, err
+	}
+	clusters, err := c.clusterUc.List(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for _, v := range clusters {
+		if v.Name == cluster.Name {
+			cluster.ID = v.ID
+			break
+		}
+	}
+	err = c.clusterUc.Save(ctx, cluster)
+	if err != nil {
+		return nil, err
+	}
+	return cluster, nil
+}
+
+func (c *ClusterInterface) ProjectInit(ctx context.Context, cluster *biz.Cluster) (*biz.Project, error) {
+	projects, err := c.projectUc.List(ctx, cluster.ID)
+	if err != nil {
+		return nil, err
+	}
+	for _, v := range projects {
+		if v.Name == cluster.Name {
+			return v, nil
+		}
+	}
+	project := &biz.Project{
+		Name:      cluster.Name,
+		Namespace: cluster.Name,
+		ClusterID: cluster.ID,
+	}
+	err = c.projectUc.Save(ctx, project)
+	if err != nil {
+		return nil, err
+	}
+	return project, nil
+}
+
+func (c *ClusterInterface) AppInit(ctx context.Context, cluster *biz.Cluster, project *biz.Project) error {
+	appinstallfuncs := []func(ctx context.Context, cluster *biz.Cluster, project *biz.Project) error{
+		c.installOpenEBS,
+		c.installPrometheus,
+		c.installGrafana,
+		c.installHarbor,
+		c.installTraefik,
+		c.installIstio,
+	}
+	for _, appinstallfunc := range appinstallfuncs {
+		err := appinstallfunc(ctx, cluster, project)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (c *ClusterInterface) installOpenEBS(ctx context.Context, cluster *biz.Cluster, project *biz.Project) error {
+	repo := &biz.AppHelmRepo{
+		Name: "openebs",
+		Url:  "https://openebs.github.io/charts",
+	}
+	err := c.appUc.SaveRepo(ctx, repo)
+	if err != nil {
+		return err
+	}
+	var appName string = "openebs"
+	var version string = "3.10.0"
+	deployApps, _, err := c.appUc.DeployAppList(ctx,
+		biz.DeployApp{
+			RepoID: repo.ID, AppName: appName, Version: version, AppTypeID: biz.AppTypeRepo, ClusterID: cluster.ID, ProjectID: project.ID,
+		},
+		1, 1)
+	if err != nil {
+		return err
+	}
+	var deployAppID int64 = 0
+	for _, deployApp := range deployApps {
+		deployAppID = deployApp.ID
+		if deployApp.State == release.StatusDeployed.String() {
+			return nil
+		}
+	}
+	configmap := map[string]interface{}{}
+	yamlByte, err := yaml.Marshal(configmap)
+	if err != nil {
+		return err
+	}
+	deployApp := &biz.DeployApp{
+		ID:        deployAppID,
+		ClusterID: cluster.ID,
+		ProjectID: project.ID,
+		AppName:   appName,
+		AppTypeID: biz.AppTypeRepo,
+		RepoID:    repo.ID,
+		Version:   version,
+		UserID:    biz.AdminID,
+		Config:    string(yamlByte),
+	}
+	_, err = c.appUc.DeployApp(ctx, deployApp)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *ClusterInterface) installPrometheus(ctx context.Context, cluster *biz.Cluster, project *biz.Project) error {
+	return nil
+}
+
+func (c *ClusterInterface) installGrafana(ctx context.Context, cluster *biz.Cluster, project *biz.Project) error {
+	return nil
+}
+
+func (c *ClusterInterface) installHarbor(ctx context.Context, cluster *biz.Cluster, project *biz.Project) error {
+	return nil
+}
+
+func (c *ClusterInterface) installTraefik(ctx context.Context, cluster *biz.Cluster, project *biz.Project) error {
+	return nil
+}
+
+func (c *ClusterInterface) installIstio(ctx context.Context, cluster *biz.Cluster, project *biz.Project) error {
+	return nil
 }
 
 func (c *ClusterInterface) Ping(ctx context.Context, _ *emptypb.Empty) (*v1alpha1.Msg, error) {
@@ -23,10 +177,7 @@ func (c *ClusterInterface) Ping(ctx context.Context, _ *emptypb.Empty) (*v1alpha
 }
 
 func (c *ClusterInterface) Get(ctx context.Context, clusterID *v1alpha1.ClusterID) (*v1alpha1.Cluster, error) {
-	if clusterID.Id == 0 {
-		return nil, errors.New("cluster id is required")
-	}
-	cluster, err := c.uc.Get(ctx, clusterID.Id)
+	cluster, err := c.clusterUc.Get(ctx, clusterID.Id)
 	if err != nil {
 		return nil, err
 	}
@@ -46,7 +197,7 @@ func (c *ClusterInterface) Save(ctx context.Context, cluster *v1alpha1.Cluster) 
 		return nil, errors.New("api server address is required")
 	}
 	bizCluster := c.clusterToBizCluster(cluster)
-	err := c.uc.Save(ctx, bizCluster)
+	err := c.clusterUc.Save(ctx, bizCluster)
 	if err != nil {
 		return nil, err
 	}
@@ -54,7 +205,7 @@ func (c *ClusterInterface) Save(ctx context.Context, cluster *v1alpha1.Cluster) 
 }
 
 func (c *ClusterInterface) List(ctx context.Context, _ *emptypb.Empty) (*v1alpha1.ClusterList, error) {
-	clusters, err := c.uc.List(ctx)
+	clusters, err := c.clusterUc.List(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -69,7 +220,7 @@ func (c *ClusterInterface) Delete(ctx context.Context, clusterID *v1alpha1.Clust
 	if clusterID.Id == 0 {
 		return nil, errors.New("cluster id is required")
 	}
-	err := c.uc.Delete(ctx, clusterID.Id)
+	err := c.clusterUc.Delete(ctx, clusterID.Id)
 	if err != nil {
 		return nil, err
 	}

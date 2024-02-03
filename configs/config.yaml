@@ -18,10 +18,6 @@ data:
     password: '123456'
     database: ocean
     dbfilepath: '/tmp/gorm.db'
-kubernetes:
-  master_url: 
-  kube_config: 
-  namespace: default
 log:
   path: logs
   filename: log.log
@@ -36,6 +32,7 @@ auth:
   email: 'admin'
   password: '123.456a'
 resource:
-  app_path: 'resource/app/'
-  icon_path: 'resource/icon/'
-  repo_path: 'resource/repo/'
+  app: 'resource/app/'
+  icon: 'resource/icon/'
+  repo: 'resource/repo/'
+  cluster: 'resource/cluster/'

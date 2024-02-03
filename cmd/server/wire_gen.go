@@ -24,25 +24,22 @@ import (
 // Injectors from wire.go:
 
 // wireApp init kratos application.
-func wireApp(confServer *conf.Server, confData *conf.Data, auth *conf.Auth, kubernetes *conf.Kubernetes, resource *conf.Resource, logger log.Logger) (*kratos.App, func(), error) {
-	dataData, cleanup, err := data.NewData(confData, kubernetes, logger)
+func wireApp(confServer *conf.Server, confData *conf.Data, auth *conf.Auth, resource *conf.Resource, logger log.Logger) (*kratos.App, func(), error) {
+	dataData, cleanup, err := data.NewData(confData, logger)
 	if err != nil {
 		return nil, nil, err
 	}
-	clusterRepo, err := data.NewClusterRepo(dataData, logger)
-	if err != nil {
-		cleanup()
-		return nil, nil, err
-	}
-	clusterUsecase := biz.NewClusterUseCase(clusterRepo, logger)
-	clusterInterface := interfaces.NewClusterInterface(clusterUsecase)
+	clusterRepo := data.NewClusterRepo(dataData, logger)
+	clusterUsecase := biz.NewClusterUseCase(confServer, clusterRepo, logger)
+	projectRepo := data.NewProjectRepo(dataData, logger, confServer)
+	projectUsecase := biz.NewProjectUseCase(projectRepo, logger)
 	appRepo := data.NewAppRepo(dataData, logger)
-	projectRepo, err := data.NewProjectRepo(dataData, logger, confServer)
+	appUsecase := biz.NewAppUsecase(appRepo, logger, resource, clusterRepo, projectRepo)
+	clusterInterface, err := interfaces.NewClusterInterface(clusterUsecase, projectUsecase, appUsecase, logger)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
 	}
-	appUsecase := biz.NewAppUsecase(appRepo, logger, resource, clusterRepo, projectRepo)
 	userRepo := data.NewUserRepo(dataData, logger)
 	userUseCase := biz.NewUseUser(userRepo, logger, auth)
 	appInterface := interfaces.NewAppInterface(appUsecase, userUseCase, resource, logger)
@@ -50,7 +47,6 @@ func wireApp(confServer *conf.Server, confData *conf.Data, auth *conf.Auth, kube
 	servicesUseCase := biz.NewServicesUseCase(servicesRepo, logger)
 	servicesInterface := interfaces.NewServicesInterface(servicesUseCase)
 	userInterface := interfaces.NewUserInterface(userUseCase, auth)
-	projectUsecase := biz.NewProjectUseCase(projectRepo, logger)
 	projectInterface := interfaces.NewProjectInterface(projectUsecase, logger)
 	grpcServer := server.NewGRPCServer(confServer, clusterInterface, appInterface, servicesInterface, userInterface, projectInterface, logger)
 	httpServer := server.NewHTTPServer(confServer, clusterInterface, appInterface, servicesInterface, userInterface, projectInterface, logger)

@@ -1,7 +1,6 @@
 package biz
 
 import (
-	"github.com/f-rambo/ocean/internal/conf"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/wire"
 )
@@ -12,6 +11,6 @@ var ProviderSet = wire.NewSet(NewBiz, NewClusterUseCase, NewAppUsecase, NewServi
 type Biz struct {
 }
 
-func NewBiz(kube *conf.Kubernetes, logger log.Logger) (*Biz, error) {
+func NewBiz(logger log.Logger) (*Biz, error) {
 	return &Biz{}, nil
 }

@@ -84,7 +84,6 @@ func main() {
 		&bc.Server,
 		&bc.Data,
 		&bc.Auth,
-		&bc.Kubernetes,
 		&bc.Resource,
 		logger,
 	)

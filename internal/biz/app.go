@@ -7,6 +7,7 @@ import (
 
 	"github.com/f-rambo/ocean/internal/conf"
 	"github.com/f-rambo/ocean/pkg/helm"
+	"github.com/f-rambo/ocean/pkg/kubeclient"
 	"github.com/f-rambo/ocean/utils"
 	"github.com/pkg/errors"
 	"github.com/spf13/cast"
@@ -427,7 +428,7 @@ func (uc *AppUsecase) SaveRepo(ctx context.Context, helmRepo *AppHelmRepo) error
 	}
 	for _, v := range repoList {
 		if v.Name == helmRepo.Name {
-			return errors.New("repo name already exists")
+			helmRepo.ID = v.ID
 		}
 	}
 	err = uc.addRepo(ctx, helmRepo)
@@ -579,7 +580,7 @@ func (uc *AppUsecase) GetDeployedResources(ctx context.Context, appDeployID int6
 
 func (uc *AppUsecase) getPodResources(ctx context.Context, appDeployed *DeployApp) (resources []*AppDeployedResource, err error) {
 	resources = make([]*AppDeployedResource, 0)
-	clusterClient, err := uc.clusterRepo.ClusterClient(ctx, appDeployed.ClusterID)
+	clusterClient, err := kubeclient.GetKubeClientSet()
 	if err != nil {
 		return nil, err
 	}
@@ -612,7 +613,7 @@ func (uc *AppUsecase) getPodResources(ctx context.Context, appDeployed *DeployAp
 
 func (uc *AppUsecase) getNetResouces(ctx context.Context, appDeployed *DeployApp) (resources []*AppDeployedResource, err error) {
 	resources = make([]*AppDeployedResource, 0)
-	clusterClient, err := uc.clusterRepo.ClusterClient(ctx, appDeployed.ClusterID)
+	clusterClient, err := kubeclient.GetKubeClientSet()
 	if err != nil {
 		return nil, err
 	}
@@ -686,7 +687,7 @@ func (uc *AppUsecase) getNetResouces(ctx context.Context, appDeployed *DeployApp
 
 func (uc *AppUsecase) getAppsReouces(ctx context.Context, appDeployed *DeployApp) (resources []*AppDeployedResource, err error) {
 	resources = make([]*AppDeployedResource, 0)
-	clusterClient, err := uc.clusterRepo.ClusterClient(ctx, appDeployed.ClusterID)
+	clusterClient, err := kubeclient.GetKubeClientSet()
 	if err != nil {
 		return nil, err
 	}

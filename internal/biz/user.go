@@ -10,8 +10,7 @@ import (
 	"github.com/f-rambo/ocean/internal/conf"
 	"github.com/f-rambo/ocean/utils"
 	"github.com/go-kratos/kratos/v2/log"
-	jwtv5 "github.com/golang-jwt/jwt/v5"
-	pq "github.com/lib/pq" // gorm customize data type
+	jwtv5 "github.com/golang-jwt/jwt/v5" // gorm customize data type
 	"github.com/spf13/cast"
 	"gorm.io/gorm"
 )
@@ -23,24 +22,6 @@ type User struct {
 	PassWord string `json:"password,omitempty" gorm:"column:password; default:''; NOT NULL"`
 	State    int32  `json:"state,omitempty" gorm:"column:state; default:0; NOT NULL"`
 	gorm.Model
-}
-
-type Role struct {
-	ID   int64  `json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
-	Name string `json:"name,omitempty" gorm:"column:name; default:''; NOT NULL"`
-	gorm.Model
-}
-
-type UserRole struct {
-	ID     int64         `json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
-	UserID int64         `json:"user_id,omitempty" gorm:"column:user_id; NOT NULL"`
-	RoleID pq.Int64Array `json:"role_id,omitempty" gorm:"column:role_id; NOT NULL"`
-	gorm.Model
-}
-
-type CommonUserID struct {
-	UserID int64  `json:"user_id,omitempty" gorm:"column:user_id; NOT NULL"`
-	Name   string `json:"name,omitempty"`
 }
 
 const (
@@ -62,15 +43,6 @@ type UserUseCase struct {
 
 func NewUseUser(repo UserRepo, logger log.Logger, conf *conf.Auth) *UserUseCase {
 	return &UserUseCase{repo: repo, log: log.NewHelper(logger), authConf: conf}
-}
-
-func (u *UserUseCase) SetUserID(ctx context.Context, cu *CommonUserID) error {
-	user, err := u.GetUserInfo(ctx)
-	if err != nil {
-		return err
-	}
-	cu.UserID = user.ID
-	return nil
 }
 
 func (u *UserUseCase) SignIn(ctx context.Context, email string, password string) (token string, err error) {
