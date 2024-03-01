@@ -5,7 +5,6 @@ import (
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	wfcommon "github.com/argoproj/argo-workflows/v3/workflow/common"
-	"github.com/f-rambo/ocean/utils"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -104,21 +103,4 @@ func UnmarshalWorkflow(wfStr string, strict bool) (wfv1.Workflow, error) {
 func UnmarshalWorkflows(wfStr string, strict bool) ([]wfv1.Workflow, error) {
 	wfBytes := []byte(wfStr)
 	return wfcommon.SplitWorkflowYAMLFile(wfBytes, strict)
-}
-
-func GetDefaultWorkflow() (*wfv1.Workflow, error) {
-	content, err := utils.ReadFile(getWorkflowTemplatePath())
-	if err != nil {
-		return nil, err
-	}
-	wf, err := UnmarshalWorkflow(content, true)
-	return &wf, err
-}
-
-func GetDefaultWorkflowStr() (string, error) {
-	return utils.ReadFile(getWorkflowTemplatePath())
-}
-
-func getWorkflowTemplatePath() string {
-	return "pkg/argoworkflows/workflow-template.yaml"
 }

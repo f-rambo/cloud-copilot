@@ -5,40 +5,142 @@ package app.v1alpha1;
 import "google/api/annotations.proto";
 import "api/app/v1alpha1/error_reason.proto";
 import "api/app/v1alpha1/message.proto";
+import "google/protobuf/empty.proto";
 
 option go_package = "api/app/v1alpha1;v1alpha1";
 
-service AppService {
-  rpc GetApps(app.v1alpha1.ClusterID) returns (app.v1alpha1.Apps) {
-    option (google.api.http) = {
-      get: "/app/v1alpha1/{clusterID}/get"
-    };
-  }
+service AppInterface {
+      rpc Ping(google.protobuf.Empty) returns (app.v1alpha1.Msg) {
+            option (google.api.http) = {
+                  get: "/api/v1alpha1/app/ping"
+            };
+      }
 
-  rpc GetApp(app.v1alpha1.AppID) returns (app.v1alpha1.App) {
-    option (google.api.http) = {
-      get: "/app/v1alpha1/{clusterID}/get/{appID}"
-    };
-  }
+      rpc UploadApp(app.v1alpha1.FileUploadRequest) returns(app.v1alpha1.App) {
+            option (google.api.http) = {
+                  post: "/api/v1alpha1/app/upload"
+                  body: "*"
+            };
+      }
 
-  rpc Save(app.v1alpha1.App) returns (app.v1alpha1.AppID) {
-    option (google.api.http) = {
-      put: "/app/v1alpha1/save"
-      body: "*"
-    };
-  }
+      rpc Save(app.v1alpha1.App) returns (app.v1alpha1.Msg) {
+            option (google.api.http) = {
+                  post: "/api/v1alpha1/app/save"
+                  body: "*"
+            };
+      }
 
-  rpc Apply(app.v1alpha1.AppID) returns (app.v1alpha1.Msg) {
-    option (google.api.http) = {
-      put: "/app/v1alpha1/{clusterID}/apply/{appID}"
-      body: "*"
-    };
-  }
+      rpc Get(app.v1alpha1.AppReq) returns (app.v1alpha1.App) {
+            option (google.api.http) = {
+                  get: "/api/v1alpha1/app"
+            };
+      }
 
-  rpc Delete(app.v1alpha1.AppID) returns (app.v1alpha1.Msg) {
-    option (google.api.http) = {
-      delete: "/app/v1alpha1/{clusterID}/apply/{appID}"
-    };
-  }
+      rpc List(app.v1alpha1.AppReq) returns (app.v1alpha1.AppList) {
+            option (google.api.http) = {
+                  get: "/api/v1alpha1/app/list"
+            };
+      }
+
+      rpc Delete(app.v1alpha1.AppReq) returns (app.v1alpha1.Msg) {
+            option (google.api.http) = {
+                  delete: "/api/v1alpha1/app"
+            };
+      }
+
+      rpc CreateAppType(app.v1alpha1.AppType) returns (app.v1alpha1.Msg) {
+            option (google.api.http) = {
+                  post: "/api/v1alpha1/app/type"
+                  body: "*"
+            };
+      }
+
+      rpc ListAppType(google.protobuf.Empty) returns (app.v1alpha1.AppTypeList) {
+            option (google.api.http) = {
+                  get: "/api/v1alpha1/app/type/list"
+            };
+      }
+
+      rpc DeleteAppType(app.v1alpha1.AppTypeReq) returns (app.v1alpha1.Msg) {
+            option (google.api.http) = {
+                  delete: "/api/v1alpha1/app/type"
+            };
+      }
+
+      rpc AppTest(app.v1alpha1.DeployAppReq) returns (app.v1alpha1.DeployApp) {
+            option (google.api.http) = {
+                  post: "/api/v1alpha1/app/test"
+                  body: "*"
+            };
+      }
+
+      rpc GetAppDeployed(app.v1alpha1.DeployApp) returns (app.v1alpha1.DeployApp) {
+            option (google.api.http) = {
+                  get: "/api/v1alpha1/app/deploy"
+            };
+      }
+      
+      rpc DeployApp(app.v1alpha1.DeployAppReq) returns (app.v1alpha1.DeployApp) {
+            option (google.api.http) = {
+                  post: "/api/v1alpha1/app/deploy"
+                  body: "*"
+            };
+      }
+
+      rpc ListDeployedApp(app.v1alpha1.DeployAppReq) returns (app.v1alpha1.DeployAppList) {
+            option (google.api.http) = {
+                  get: "/api/v1alpha1/app/deploy/list"
+            };
+      }
+
+      rpc StopApp(app.v1alpha1.DeployAppReq) returns (app.v1alpha1.Msg) {
+            option (google.api.http) = {
+                  post: "/api/v1alpha1/app/stop"
+                  body: "*"
+            };
+      }
+
+      rpc DeleteDeployedApp(app.v1alpha1.DeployAppReq) returns (app.v1alpha1.Msg) {
+            option (google.api.http) = {
+                  delete: "/api/v1alpha1/app/deploy"
+            };
+      }
+
+      rpc GetDeployedAppResources(app.v1alpha1.DeployAppReq) returns (app.v1alpha1.DeployAppResources) {
+            option (google.api.http) = {
+                  get: "/api/v1alpha1/app/deploy/resources"
+            };
+      }
+
+      rpc SaveRepo(app.v1alpha1.AppHelmRepo) returns (app.v1alpha1.Msg) {
+            option (google.api.http) = {
+                  post: "/api/v1alpha1/app/repo"
+                  body: "*"
+            };
+      }
+
+      rpc ListRepo(google.protobuf.Empty) returns (app.v1alpha1.AppHelmRepoList) {
+            option (google.api.http) = {
+                  get: "/api/v1alpha1/app/repo/list"
+            };
+      }
+
+      rpc DeleteRepo(app.v1alpha1.AppHelmRepoReq) returns (app.v1alpha1.Msg) {
+            option (google.api.http) = {
+                  delete: "/api/v1alpha1/app/repo"
+            };
+      }
+
+      rpc GetAppsByRepo(app.v1alpha1.AppHelmRepoReq) returns (app.v1alpha1.AppList) {
+            option (google.api.http) = {
+                  get: "/api/v1alpha1/app/repo/apps"
+            };
+      }
+
+      rpc GetAppDetailByRepo(app.v1alpha1.AppHelmRepoReq) returns (app.v1alpha1.App) {
+            option (google.api.http) = {
+                  get: "/api/v1alpha1/app/repo/app/detail"
+            };
+      }
 
 }

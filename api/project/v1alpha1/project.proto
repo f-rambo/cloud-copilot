@@ -1,0 +1,44 @@
+syntax = "proto3";
+
+package project.v1alpha1;
+
+import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
+import "api/project/v1alpha1/message.proto";
+import "api/project/v1alpha1/error_reason.proto";
+
+option go_package = "api/project/v1alpha1;v1alpha1";
+
+
+service ProjectService {
+      rpc Ping(google.protobuf.Empty) returns (project.v1alpha1.Msg) {
+            option (google.api.http) = {
+                  get: "/api/v1alpha1/project/ping"
+            };
+      }
+
+      rpc Save(project.v1alpha1.Project) returns (project.v1alpha1.Msg) {
+            option (google.api.http) = {
+                  post: "/api/v1alpha1/project"
+                  body: "*"
+            };
+      }
+
+      rpc Get(project.v1alpha1.ProjectReq) returns (project.v1alpha1.Project) {
+            option (google.api.http) = {
+                  get: "/api/v1alpha1/project"
+            };
+      }
+
+      rpc List(project.v1alpha1.ProjectReq) returns (project.v1alpha1.ProjectList) {
+            option (google.api.http) = {
+                  get: "/api/v1alpha1/project/list"
+            };
+      }
+
+      rpc Delete(project.v1alpha1.ProjectReq) returns (project.v1alpha1.Msg) {
+            option (google.api.http) = {
+                  delete: "/api/v1alpha1/project"
+            };
+      }
+}

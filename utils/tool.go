@@ -1,15 +1,144 @@
 package utils
 
 import (
-	"bufio"
+	"archive/tar"
+	"compress/gzip"
 	"crypto/md5"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
+	"io"
+	"math/rand"
+	"net/http"
 	"os"
+	"path/filepath"
+	"strings"
+	"time"
 
 	"gopkg.in/yaml.v3"
 )
 
+type File struct {
+	path       string
+	name       string
+	outputFile *os.File
+	resume     bool
+}
+
+func NewFile(path, name string, resume bool) (*File, error) {
+	name = getRandomTimeString() + filepath.Ext(name)
+	f := &File{path: path, name: name, resume: resume}
+	err := f.handlerPath()
+	if err != nil {
+		return nil, err
+	}
+	err = f.handlerFile()
+	if err != nil {
+		return nil, err
+	}
+	return f, nil
+}
+
+func (f *File) Write(chunk []byte) error {
+	if f.outputFile == nil {
+		return fmt.Errorf("file is not open")
+	}
+	_, err := f.outputFile.Write(chunk)
+	return err
+}
+
+func (f *File) Read() ([]byte, error) {
+	if f.outputFile == nil {
+		return nil, fmt.Errorf("file is not open")
+	}
+	return io.ReadAll(f.outputFile)
+}
+
+func (f *File) Close() error {
+	if f.outputFile == nil {
+		return fmt.Errorf("file is not open")
+	}
+	err := f.outputFile.Close()
+	if err != nil {
+		return err
+	}
+	f.outputFile = nil
+	return nil
+}
+
+func (f *File) GetFileName() string {
+	return f.name
+}
+
+func (f *File) handlerPath() error {
+	if f.path == "" {
+		return fmt.Errorf("path is empty")
+	}
+	if f.path[:len(f.path)-1] != "/" {
+		f.path += "/"
+	}
+	if f.checkIsObjExist(f.path) {
+		return nil
+	}
+	return f.createDir()
+}
+
+func (f *File) handlerFile() (err error) {
+	if f.name == "" {
+		return fmt.Errorf("name is empty")
+	}
+	if f.checkIsObjExist(f.path + f.name) {
+		if f.resume {
+			// resume
+			f.outputFile, err = os.OpenFile(f.path+f.name, os.O_APPEND|os.O_WRONLY, 0644)
+			return err
+		}
+		err = f.deleteFile()
+		if err != nil {
+			return err
+		}
+	}
+	f.outputFile, err = f.createFile()
+	return err
+}
+
+func (f *File) checkIsObjExist(obj string) bool {
+	if _, err := os.Stat(obj); os.IsNotExist(err) {
+		return false
+	}
+	return true
+}
+
+func (f *File) createDir() error {
+	return os.MkdirAll(f.path, os.ModePerm)
+}
+
+func (f *File) createFile() (*os.File, error) {
+	return os.Create(f.path + f.name)
+}
+
+func (f *File) deleteFile() error {
+	return os.Remove(f.path + f.name)
+}
+
+// 判断切片中是否包含查所要的元素
+func Contains(slice []string, item string) bool {
+	for _, s := range slice {
+		if s == item {
+			return true
+		}
+	}
+	return false
+}
+
+// md5加密
+func Md5(str string) string {
+	h := md5.New()
+	h.Write([]byte(str))
+	return hex.EncodeToString(h.Sum(nil))
+}
+
+// yaml to json
 func YamlToJson(yamlDatas ...string) (string, error) {
 	data := make(map[string]interface{})
 	for _, v := range yamlDatas {
@@ -29,88 +158,148 @@ func YamlToJson(yamlDatas ...string) (string, error) {
 	return string(jsonStr), nil
 }
 
+func StructTransform(a, b any) error {
+	aJson, err := json.Marshal(a)
+	if err != nil {
+		return err
+	}
+	return json.Unmarshal(aJson, b)
+}
+
+func TimeParse(timeStr string) (time.Time, error) {
+	return time.Parse("2006-01-02 15:04:05", timeStr)
+}
+
+func getRandomTimeString() string {
+	rand.Seed(time.Now().UnixNano())
+	randPart := rand.Intn(1000)                     // Generate a random integer
+	timePart := time.Now().Format("20060102150405") // Get the current time in the format YYYYMMDDHHMMSS
+	return fmt.Sprintf("%s%d", timePart, randPart)
+}
+
+func ReadFile(path string) ([]byte, error) {
+	return os.ReadFile(path)
+}
+
+// 删除文件
+func DeleteFile(path string) error {
+	return os.Remove(path)
+}
+
+// 修改文件名字
+func RenameFile(oldPath, newPath string) error {
+	return os.Rename(oldPath, newPath)
+}
+
 // 判断文件是否存在
-func CheckFileIsExist(filename string) bool {
-	var exist = true
-	if _, err := os.Stat(filename); os.IsNotExist(err) {
-		exist = false
-	}
-	return exist
+func IsFileExist(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil || os.IsExist(err)
 }
 
-// 创建一个可读可写的文件
-func CreateFile(filename string) error {
-	var file, err = os.Create(filename)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-	return nil
+func IsHttpUrl(url string) bool {
+	return url[:4] == "http"
 }
 
-// 创建一个嵌套的目录
-func CreateDir(path string) error {
-	var err = os.MkdirAll(path, 0755)
-	if err != nil {
-		return err
+// 通过http url下 获取文件名字
+func GetFileNameByUrl(url string) string {
+	if !IsHttpUrl(url) {
+		return ""
 	}
-	return nil
+	return url[strings.LastIndex(url, "/")+1:]
 }
 
-// ReadFile 读取文件内容
-func ReadFile(filename string) (string, error) {
-	file, err := os.Open(filename)
-	if err != nil {
-		return "", err
+// 通过一个http url下载文件， 文件路径和文件名字
+func DownloadFile(url, path, name string) error {
+	if !IsHttpUrl(url) {
+		return fmt.Errorf("url is not http url")
 	}
-	defer file.Close()
-
-	var content string
-	scanner := bufio.NewScanner(file)
-	buf := make([]byte, 0, 64*1024)
-	scanner.Buffer(buf, 10*1024*1024)
-
-	for scanner.Scan() {
-		content += scanner.Text()
-		content += "\n"
-	}
-
-	if err := scanner.Err(); err != nil {
-		return "", err
-	}
-
-	return content, nil
-}
-
-func WriteFile(filename string, content string) error {
-	if !CheckFileIsExist(filename) {
-		err := CreateFile(filename)
+	if !IsFileExist(path) {
+		err := os.MkdirAll(path, os.ModePerm)
 		if err != nil {
 			return err
 		}
 	}
-	file, err := os.OpenFile(filename, os.O_WRONLY|os.O_CREATE, 0644)
+	file, err := os.Create(path + name)
 	if err != nil {
 		return err
 	}
 	defer file.Close()
-	_, err = file.WriteString(content)
-	return err
+	return DownloadFileToWriter(url, file)
 }
 
-// 判断切片中是否包含查所要的元素
-func Contains(slice []string, item string) bool {
-	for _, s := range slice {
-		if s == item {
-			return true
+// 通过一个http url下载文件， 文件路径和文件名字
+func DownloadFileToWriter(url string, writer io.Writer) error {
+	response, err := http.Get(url)
+	if err != nil {
+		return err
+	}
+	defer response.Body.Close()
+
+	_, err = io.Copy(writer, response.Body)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// 解压文件 param1: tarball: 压缩文件路径 param2: target: 解压目标路径
+func Decompress(tarball, target string) error {
+	reader, err := os.Open(tarball)
+	if err != nil {
+		return err
+	}
+	defer reader.Close()
+
+	gz, err := gzip.NewReader(reader)
+	if err != nil {
+		return err
+	}
+	defer gz.Close()
+
+	tarReader := tar.NewReader(gz)
+
+	for {
+		header, err := tarReader.Next()
+
+		switch {
+		case err == io.EOF:
+			return nil
+		case err != nil:
+			return err
+		case header == nil:
+			continue
+		}
+
+		targetPath := filepath.Join(target, header.Name)
+		switch header.Typeflag {
+		case tar.TypeDir:
+			if _, err := os.Stat(targetPath); err != nil {
+				if err := os.MkdirAll(targetPath, 0755); err != nil {
+					return err
+				}
+			}
+		case tar.TypeReg:
+			file, err := os.OpenFile(targetPath, os.O_CREATE|os.O_RDWR, os.FileMode(header.Mode))
+			if err != nil {
+				return err
+			}
+			defer file.Close()
+			if _, err := io.Copy(file, tarReader); err != nil {
+				return err
+			}
 		}
 	}
-	return false
 }
 
-// md5加密
-func Md5(str string) string {
-	h := md5.New()
-	h.Write([]byte(str))
-	return hex.EncodeToString(h.Sum(nil))
+// 生成一个随机字符串
+func GetRandomString() string {
+	str := "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	bytes := []byte(str)
+	result := []byte{}
+	rand.Seed(time.Now().UnixNano())
+	for i := 0; i < 12; i++ {
+		result = append(result, bytes[rand.Intn(len(bytes))])
+	}
+	return string(result)
 }

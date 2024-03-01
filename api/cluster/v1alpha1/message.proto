@@ -5,46 +5,43 @@ package cluster.v1alpha1;
 option go_package = "api/cluster/v1alpha1;v1alpha1";
 
 
-message MetaData {
-  string name = 1;
-  string namespace = 2;
-  map<string,string> labels = 3;
-}
-
-message ClusterV1alpha1 {
-  string apiVersion = 1;
-  string kind = 2;
-  MetaData metaData = 3;
-  Cluster spec = 4;
-}
-
 message ClusterID {
-  int32 id = 1;
+    int64 id = 1;
+    int64 node_id = 2;
 }
 
-message ClusterName {
-  string name = 1;
-}
-
-message Clusters {
-  repeated Cluster clusters = 1;
+message ClusterList {
+    repeated Cluster clusters = 1;
 }
 
 message Cluster {
-  int32 id = 1;
-  string cluster_name = 2;
-  string config = 3;
-  string addons = 4;
-  repeated Node nodes = 5;
-  bool applyed = 6;
+    int64 id = 1;
+    string name = 2 [json_name = "name"];
+    string server_version = 3 [json_name = "server_version"];
+    string api_server_address = 4 [json_name = "api_server_address"];
+    string config = 5 [json_name = "config"];
+    string addons = 6 [json_name = "addons"];
+    string state = 7 [json_name = "state"];
+    repeated Node nodes = 8;
+    string logs = 9 [json_name = "logs"];
 }
 
 message Node {
-  int32 id = 1;
-  string host = 2;
-  string name = 3;
-  string user = 4;
-  string password = 5;
-  string sudo_password = 6;
-  repeated string role = 7;
+    int64 id = 1;
+    string name = 2 [json_name = "name"];
+    string labels = 3 [json_name = "labels"];
+    string annotations = 4 [json_name = "annotations"];
+    string os_image = 5 [json_name = "os_image"];
+    string kernel = 6 [json_name = "kernel"];
+    string container = 7 [json_name = "container"];
+    string kubelet = 8 [json_name = "kubelet"];
+    string kube_proxy = 9 [json_name = "kube_proxy"];
+    string internal_ip = 10 [json_name = "internal_ip"];
+    string external_ip = 11 [json_name = "external_ip"];
+    string user = 12 [json_name = "user"];
+    string password = 13 [json_name = "password"];
+    string sudo_password = 14 [json_name = "sudo_password"];
+    string role = 15 [json_name = "role"];
+    string state = 16 [json_name = "state"];
+    int64 cluster_id = 17 [json_name = "cluster_id"];
 }

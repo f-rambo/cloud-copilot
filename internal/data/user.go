@@ -5,6 +5,7 @@ import (
 
 	"github.com/f-rambo/ocean/internal/biz"
 	"github.com/go-kratos/kratos/v2/log"
+	"gorm.io/gorm"
 )
 
 type UserRepo struct {
@@ -20,9 +21,23 @@ func NewUserRepo(data *Data, logger log.Logger) biz.UserRepo {
 }
 
 func (u *UserRepo) GetUserInfoByEmail(ctx context.Context, email string) (*biz.User, error) {
-	return &biz.User{}, nil
+	user := &biz.User{}
+	err := u.data.db.Where("email = ?", email).First(user).Error
+	if err != nil && err != gorm.ErrRecordNotFound {
+		return nil, err
+	}
+	return user, nil
 }
 
 func (u *UserRepo) Save(ctx context.Context, user *biz.User) error {
-	return nil
+	return u.data.db.Save(user).Error
+}
+
+func (u *UserRepo) GetUserByID(ctx context.Context, id int64) (*biz.User, error) {
+	user := &biz.User{}
+	err := u.data.db.Where("id = ?", id).First(user).Error
+	if err != nil && err != gorm.ErrRecordNotFound {
+		return nil, err
+	}
+	return user, nil
 }

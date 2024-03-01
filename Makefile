@@ -52,9 +52,9 @@ docker-build:
 docker-push:
 	docker push $(IMG)
 
-.PHONY: dev-run
-# dev-run
-dev-run:
+.PHONY: dev
+# dev
+dev:
 	go run ./cmd/server
 
 .PHONY: generate
