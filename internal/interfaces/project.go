@@ -89,6 +89,19 @@ func (p *ProjectInterface) Delete(ctx context.Context, projectReq *v1alpha1.Proj
 	return &v1alpha1.Msg{}, nil
 }
 
+func (p *ProjectInterface) GetProjectMockData(ctx context.Context, _ *emptypb.Empty) (*v1alpha1.Project, error) {
+	bizProject := &biz.Project{
+		ID:          0,
+		Name:        "project name",
+		Namespace:   "projectNamespace",
+		ClusterID:   0,
+		Description: "project description",
+		State:       biz.ProjectStateInit,
+	}
+	bizProject.GetBusinessTypes()
+	return p.bizProjectToProject(bizProject)
+}
+
 func (p *ProjectInterface) projectTobizProject(project *v1alpha1.Project) (*biz.Project, error) {
 	bizProject := &biz.Project{}
 	err := utils.StructTransform(project, bizProject)
@@ -105,6 +118,15 @@ func (p *ProjectInterface) bizProjectToProject(bizProject *biz.Project) (*v1alph
 	if err != nil {
 		return nil, err
 	}
+	businessTechnology := ""
+	for _, v := range bizProject.BusinessTypes {
+		businessTechnology += v.Name + "/"
+		for _, v2 := range v.TechnologyTypes {
+			businessTechnology += v2.Name
+			break
+		}
+	}
 	project.Id = bizProject.ID
+	project.BusinessTechnology = businessTechnology
 	return project, nil
 }

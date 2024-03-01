@@ -973,6 +973,18 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/project.v1alpha1.ProjectList'
+    /api/v1alpha1/project/mock:
+        get:
+            tags:
+                - ProjectService
+            operationId: ProjectService_GetProjectMockData
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/project.v1alpha1.Project'
     /api/v1alpha1/project/ping:
         get:
             tags:
@@ -1422,6 +1434,19 @@ components:
                     type: string
                 cluster_id:
                     type: string
+        project.v1alpha1.BusinessType:
+            type: object
+            properties:
+                id:
+                    type: string
+                name:
+                    type: string
+                technology_types:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/project.v1alpha1.TechnologyType'
+                project_id:
+                    type: string
         project.v1alpha1.Msg:
             type: object
             properties:
@@ -1443,6 +1468,14 @@ components:
                     type: string
                 namespace:
                     type: string
+                state:
+                    type: string
+                business_types:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/project.v1alpha1.BusinessType'
+                business_technology:
+                    type: string
         project.v1alpha1.ProjectList:
             type: object
             properties:
@@ -1450,6 +1483,15 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/project.v1alpha1.Project'
+        project.v1alpha1.TechnologyType:
+            type: object
+            properties:
+                id:
+                    type: string
+                name:
+                    type: string
+                business_type_id:
+                    type: string
         service.v1alpha1.Msg:
             type: object
             properties:

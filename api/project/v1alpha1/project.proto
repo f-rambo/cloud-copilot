@@ -41,4 +41,10 @@ service ProjectService {
                   delete: "/api/v1alpha1/project"
             };
       }
+
+      rpc GetProjectMockData(google.protobuf.Empty) returns (project.v1alpha1.Project) {
+            option (google.api.http) = {
+                  get: "/api/v1alpha1/project/mock"
+            };
+      }
 }
