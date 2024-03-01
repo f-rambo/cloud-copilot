@@ -21,7 +21,9 @@ type Cluster struct {
 	ApiServerAddress string  `json:"api_server_address" gorm:"column:api_server_address; default:''; NOT NULL"`
 	Config           string  `json:"config" gorm:"column:config; default:''; NOT NULL;"`
 	Addons           string  `json:"addons" gorm:"column:addons; default:''; NOT NULL;"`
+	State            string  `json:"state" gorm:"column:state; default:''; NOT NULL;"`
 	Nodes            []*Node `json:"nodes" gorm:"-"`
+	Logs             string  `json:"logs" gorm:"-"` // logs data from localfile
 	gorm.Model
 }
 
@@ -41,9 +43,24 @@ type Node struct {
 	Password     string `json:"password" gorm:"column:password; default:''; NOT NULL"`
 	SudoPassword string `json:"sudo_password" gorm:"column:sudo_password; default:''; NOT NULL"`
 	Role         string `json:"role" gorm:"column:role; default:''; NOT NULL;"` // master worker edge
+	State        string `json:"state" gorm:"column:state; default:''; NOT NULL"`
 	ClusterID    int64  `json:"cluster_id" gorm:"column:cluster_id; default:0; NOT NULL"`
 	gorm.Model
 }
+
+const (
+	ClusterStateInit     = "init"
+	ClusterStateRunning  = "running"
+	ClusterStateFailed   = "failed"
+	ClusterStateFinished = "finished"
+)
+
+const (
+	NodeSateInit      = "init"
+	NodeStateRunning  = "running"
+	NodeStateFailed   = "failed"
+	NodeStateFinished = "finished"
+)
 
 const (
 	ClusterRoleMaster = "master"
@@ -79,14 +96,14 @@ func (uc *ClusterUsecase) CurrentCluster(ctx context.Context) (*Cluster, error) 
 	}
 	serverAddress := clientSet.Discovery().RESTClient().Get().URL().Host
 	cluster := &Cluster{Name: uc.server.Name, ServerVersion: versionInfo.String(), ApiServerAddress: serverAddress}
-	err = uc.getNodes(ctx, cluster)
+	err = uc.getNodes(cluster)
 	if err != nil {
 		return nil, err
 	}
 	return cluster, nil
 }
 
-func (uc *ClusterUsecase) getNodes(ctx context.Context, cluster *Cluster) error {
+func (uc *ClusterUsecase) getNodes(cluster *Cluster) error {
 	clientSet, err := kubeclient.GetKubeClientSet()
 	if err != nil {
 		return err
@@ -153,6 +170,9 @@ func (uc *ClusterUsecase) getNodes(ctx context.Context, cluster *Cluster) error 
 }
 
 func (uc *ClusterUsecase) Save(ctx context.Context, cluster *Cluster) error {
+	if cluster.ID == 0 {
+		cluster.State = ClusterStateInit
+	}
 	return uc.repo.Save(ctx, cluster)
 }
 
@@ -168,9 +188,23 @@ func (uc *ClusterUsecase) Delete(ctx context.Context, id int64) error {
 	return uc.repo.Delete(ctx, id)
 }
 
+func (uc *ClusterUsecase) DeleteNode(ctx context.Context, clusterID int64, nodeID int64) error {
+	cluster, err := uc.Get(ctx, clusterID)
+	if err != nil {
+		return err
+	}
+	for i, node := range cluster.Nodes {
+		if node.ID == nodeID {
+			cluster.Nodes = append(cluster.Nodes[:i], cluster.Nodes[i+1:]...)
+			break
+		}
+	}
+	return uc.Save(ctx, cluster)
+}
+
 // param cluster: cluster to generate inventory file
 // result: inventory file path
-func (uc *ClusterUsecase) getInventory(ctx context.Context, cluster *Cluster) (string, error) {
+func (uc *ClusterUsecase) getInventory(cluster *Cluster) (string, error) {
 	servers := make([]ansible.Server, 0)
 	for _, node := range cluster.Nodes {
 		servers = append(servers, ansible.Server{
@@ -202,21 +236,21 @@ func (uc *ClusterUsecase) getInventory(ctx context.Context, cluster *Cluster) (s
 }
 
 // 安装集群
-func (uc *ClusterUsecase) SetUpCluster(ctx context.Context, cluster *Cluster) error {
-	return nil
-}
-
-// 添加节点
-func (uc *ClusterUsecase) AddNode(ctx context.Context, cluster *Cluster, node *Node) error {
-	return nil
-}
-
-// 删除节点
-func (uc *ClusterUsecase) DeleteNode(ctx context.Context, cluster *Cluster, node *Node) error {
+func (uc *ClusterUsecase) SetUpCluster(ctx context.Context, clusterID int64) error {
 	return nil
 }
 
 // 卸载集群
-func (uc *ClusterUsecase) UninstallCluster(ctx context.Context, cluster *Cluster) error {
+func (uc *ClusterUsecase) UninstallCluster(ctx context.Context, clusterID int64) error {
+	return nil
+}
+
+// 添加节点
+func (uc *ClusterUsecase) AddNode(ctx context.Context, clusterID int64, nodeID int64) error {
+	return nil
+}
+
+// 移除节点
+func (uc *ClusterUsecase) RemoveNode(ctx context.Context, clusterID int64, nodeID int64) error {
 	return nil
 }

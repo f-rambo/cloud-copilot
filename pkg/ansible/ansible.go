@@ -4,12 +4,15 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/apenella/go-ansible/pkg/execute"
 	"github.com/apenella/go-ansible/pkg/options"
 	"github.com/apenella/go-ansible/pkg/playbook"
 	"github.com/apenella/go-ansible/pkg/stdoutcallback/results"
+	"github.com/f-rambo/ocean/internal/conf"
+	"github.com/f-rambo/ocean/utils"
 )
 
 type GoAnsiblePkg struct {
@@ -61,6 +64,7 @@ func (a *GoAnsiblePkg) execPlayBooks(ctx context.Context, inventoryfile string, 
 type ExecLog struct{}
 
 func (l *ExecLog) Write(p []byte) (n int, err error) {
+	// todo log path
 	fmt.Println(string(p))
 	return len(p), nil
 }
@@ -68,6 +72,7 @@ func (l *ExecLog) Write(p []byte) (n int, err error) {
 type ExecLogErr struct{}
 
 func (l *ExecLogErr) Write(p []byte) (n int, err error) {
+	// todo log path
 	fmt.Println(string(p))
 	return len(p), nil
 }
@@ -154,4 +159,60 @@ func GenerateInventoryFile(servers []Server) string {
 	calico_rr
 	`
 	return inventory
+}
+
+type Kubespray struct {
+	packagePath string
+}
+
+func NewKubespray(c *conf.Resource) (*Kubespray, error) {
+	k := &Kubespray{}
+	// 检查文件是否存储
+	k.packagePath = c.GetClusterPath() + "kubespray"
+	if utils.IsFileExist(k.packagePath) {
+		return k, nil
+	}
+	// 下载kubespray
+	fileName := "kubespray.tar.gz"
+	err := utils.DownloadFile(c.GetKubesprayUrl(), c.GetClusterPath(), fileName)
+	if err != nil {
+		return nil, err
+	}
+	// 解压kubespray
+	err = utils.Decompress(c.GetClusterPath()+fileName, c.GetClusterPath())
+	if err != nil {
+		return nil, err
+	}
+	version := ""
+	re := regexp.MustCompile(`v(\d+\.\d+\.\d+)`)
+	match := re.FindStringSubmatch(c.GetKubesprayUrl())
+	if len(match) > 1 {
+		version = match[1]
+	} else {
+		return nil, fmt.Errorf("kubespray version not found")
+	}
+	// 重命名kubespray
+	err = utils.RenameFile(c.GetClusterPath()+"kubespray-"+version, k.packagePath)
+	if err != nil {
+		return nil, err
+	}
+	return k, nil
+}
+
+func (k *Kubespray) GetDefaultClusterConfig(ctx context.Context) (string, error) {
+	defaultClusterConfig := k.packagePath + "/inventory/sample/group_vars/all/all.yml"
+	fileData, err := utils.ReadFile(defaultClusterConfig)
+	if err != nil {
+		return "", err
+	}
+	return string(fileData), nil
+}
+
+func (k *Kubespray) GetDefaultClusterAddons(ctx context.Context) (string, error) {
+	defaultClusterAddons := k.packagePath + "/inventory/sample/group_vars/k8s_cluster/addons.yml"
+	fileData, err := utils.ReadFile(defaultClusterAddons)
+	if err != nil {
+		return "", err
+	}
+	return string(fileData), nil
 }

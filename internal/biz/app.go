@@ -210,6 +210,7 @@ type AppRepo interface {
 	GetDeployApp(ctx context.Context, id int64) (*DeployApp, error)
 	SaveRepo(ctx context.Context, helmRepo *AppHelmRepo) error
 	ListRepo(ctx context.Context) ([]*AppHelmRepo, error)
+	GetRepo(ctx context.Context, helmRepoID int64) (*AppHelmRepo, error)
 	DeleteRepo(ctx context.Context, helmRepoID int64) error
 }
 
@@ -450,19 +451,9 @@ func (uc *AppUsecase) DeleteRepo(ctx context.Context, helmRepoID int64) error {
 
 // 根据repo获取app列表
 func (uc *AppUsecase) GetAppsByRepo(ctx context.Context, helmRepoID int64) ([]*App, error) {
-	helmRepos, err := uc.repo.ListRepo(ctx)
+	helmRepo, err := uc.repo.GetRepo(ctx, helmRepoID)
 	if err != nil {
 		return nil, err
-	}
-	var helmRepo *AppHelmRepo
-	for _, v := range helmRepos {
-		if v.ID == helmRepoID {
-			helmRepo = v
-			break
-		}
-	}
-	if helmRepo == nil {
-		return nil, errors.New("helm repo not found")
 	}
 	return uc.getAppsByRepo(ctx, helmRepo)
 }
@@ -825,6 +816,8 @@ func (uc *AppUsecase) getAppsByRepo(ctx context.Context, helmRepo *AppHelmRepo) 
 			AppHelmRepoID: helmRepo.ID,
 			Versions:      make([]*AppVersion, 0),
 		}
+		app.CreatedAt = helmRepo.CreatedAt
+		app.UpdatedAt = helmRepo.UpdatedAt
 		for _, chartMatedata := range chartVersions {
 			if app.Icon == "" {
 				app.Icon = chartMatedata.Icon
@@ -838,6 +831,7 @@ func (uc *AppUsecase) getAppsByRepo(ctx context.Context, helmRepo *AppHelmRepo) 
 				Chart:       chartMatedata.URLs[0],
 				Version:     chartMatedata.Version,
 				Description: chartMatedata.Description,
+				State:       AppTested,
 			}
 			app.AddVersion(appVersion)
 		}

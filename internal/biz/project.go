@@ -7,6 +7,8 @@ import (
 	"gorm.io/gorm"
 )
 
+// 项目类型 例如 后端，前端  大数据等  根据不同的业务类型 安装不同的应用和cicd的工具
+
 type Project struct {
 	ID          int64  `json:"id" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
 	Name        string `json:"name" gorm:"column:name; default:''; NOT NULL"`

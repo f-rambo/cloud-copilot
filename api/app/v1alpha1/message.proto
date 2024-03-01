@@ -48,9 +48,10 @@ message App {
       int64 id = 1;
       string name = 2;
       string icon = 3;
-      int64 app_type_id = 10 [json_name="app_type_id"];
-      string app_type_name = 11 [json_name="app_type_name"];
-      repeated AppVersion versions = 12;
+      int64 app_type_id = 4 [json_name="app_type_id"];
+      string app_type_name = 5 [json_name="app_type_name"];
+      repeated AppVersion versions = 6;
+      string update_time = 8 [json_name="update_time"];
 }
 
 message AppVersion {
@@ -84,10 +85,11 @@ message AppList {
 }
 
 message FileUploadRequest {
-      string file_name = 1;
-      string chunk = 2;
-      bool resume = 3;
-      bool finish = 4;
+      string icon = 1;
+      string file_name = 2;
+      string chunk = 3;
+      bool resume = 4;
+      bool finish = 5;
 }
 
 message FileUploadResponse {

@@ -85,6 +85,7 @@ func main() {
 		&bc.Data,
 		&bc.Auth,
 		&bc.Resource,
+		&bc.Log,
 		logger,
 	)
 	if err != nil {

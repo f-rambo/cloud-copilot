@@ -690,24 +690,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/app.v1alpha1.App'
-    /api/v1alpha1/app/upload/icon:
-        post:
-            tags:
-                - AppInterface
-            operationId: AppInterface_UploadAppIcon
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/app.v1alpha1.FileUploadRequest'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/app.v1alpha1.FileUploadResponse'
     /api/v1alpha1/cluster:
         get:
             tags:
@@ -715,6 +697,10 @@ paths:
             operationId: ClusterInterface_Get
             parameters:
                 - name: id
+                  in: query
+                  schema:
+                    type: string
+                - name: nodeId
                   in: query
                   schema:
                     type: string
@@ -751,6 +737,10 @@ paths:
                   in: query
                   schema:
                     type: string
+                - name: nodeId
+                  in: query
+                  schema:
+                    type: string
             responses:
                 "200":
                     description: OK
@@ -770,11 +760,121 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/cluster.v1alpha1.ClusterList'
+    /api/v1alpha1/cluster/mock:
+        get:
+            tags:
+                - ClusterInterface
+            operationId: ClusterInterface_GetClusterMockData
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/cluster.v1alpha1.Cluster'
+    /api/v1alpha1/cluster/node:
+        post:
+            tags:
+                - ClusterInterface
+            operationId: ClusterInterface_AddNode
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/cluster.v1alpha1.ClusterID'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/cluster.v1alpha1.Msg'
+        delete:
+            tags:
+                - ClusterInterface
+            operationId: ClusterInterface_DeleteNode
+            parameters:
+                - name: id
+                  in: query
+                  schema:
+                    type: string
+                - name: nodeId
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/cluster.v1alpha1.Msg'
+    /api/v1alpha1/cluster/node/remove:
+        delete:
+            tags:
+                - ClusterInterface
+            operationId: ClusterInterface_RemoveNode
+            parameters:
+                - name: id
+                  in: query
+                  schema:
+                    type: string
+                - name: nodeId
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/cluster.v1alpha1.Msg'
     /api/v1alpha1/cluster/ping:
         get:
             tags:
                 - ClusterInterface
             operationId: ClusterInterface_Ping
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/cluster.v1alpha1.Msg'
+    /api/v1alpha1/cluster/setup:
+        post:
+            tags:
+                - ClusterInterface
+            operationId: ClusterInterface_SetUpCluster
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/cluster.v1alpha1.ClusterID'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/cluster.v1alpha1.Msg'
+    /api/v1alpha1/cluster/uninstall:
+        delete:
+            tags:
+                - ClusterInterface
+            operationId: ClusterInterface_UninstallCluster
+            parameters:
+                - name: id
+                  in: query
+                  schema:
+                    type: string
+                - name: nodeId
+                  in: query
+                  schema:
+                    type: string
             responses:
                 "200":
                     description: OK
@@ -958,6 +1058,8 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/app.v1alpha1.AppVersion'
+                update_time:
+                    type: string
         app.v1alpha1.AppDeployedResource:
             type: object
             properties:
@@ -1164,6 +1266,8 @@ components:
         app.v1alpha1.FileUploadRequest:
             type: object
             properties:
+                icon:
+                    type: string
                 fileName:
                     type: string
                 chunk:
@@ -1172,11 +1276,6 @@ components:
                     type: boolean
                 finish:
                     type: boolean
-        app.v1alpha1.FileUploadResponse:
-            type: object
-            properties:
-                file_name:
-                    type: string
         app.v1alpha1.Maintainer:
             type: object
             properties:
@@ -1256,10 +1355,21 @@ components:
                     type: string
                 addons:
                     type: string
+                state:
+                    type: string
                 nodes:
                     type: array
                     items:
                         $ref: '#/components/schemas/cluster.v1alpha1.Node'
+                logs:
+                    type: string
+        cluster.v1alpha1.ClusterID:
+            type: object
+            properties:
+                id:
+                    type: string
+                nodeId:
+                    type: string
         cluster.v1alpha1.ClusterList:
             type: object
             properties:
@@ -1307,6 +1417,8 @@ components:
                 sudo_password:
                     type: string
                 role:
+                    type: string
+                state:
                     type: string
                 cluster_id:
                     type: string

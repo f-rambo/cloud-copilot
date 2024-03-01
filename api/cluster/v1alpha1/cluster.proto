@@ -40,4 +40,42 @@ service ClusterInterface {
               delete: "/api/v1alpha1/cluster"
             };
       }
+
+      rpc DeleteNode(cluster.v1alpha1.ClusterID) returns (cluster.v1alpha1.Msg) {
+            option (google.api.http) = {
+                  delete: "/api/v1alpha1/cluster/node"
+            };
+      }
+
+      rpc GetClusterMockData(google.protobuf.Empty) returns (cluster.v1alpha1.Cluster) {
+            option (google.api.http) = {
+              get: "/api/v1alpha1/cluster/mock"
+            };
+      }
+
+      rpc SetUpCluster(cluster.v1alpha1.ClusterID) returns (cluster.v1alpha1.Msg) {
+            option (google.api.http) = {
+                  post: "/api/v1alpha1/cluster/setup"
+                  body: "*"
+            };
+      }
+
+      rpc UninstallCluster(cluster.v1alpha1.ClusterID) returns (cluster.v1alpha1.Msg) {
+            option (google.api.http) = {
+                  delete: "/api/v1alpha1/cluster/uninstall"
+            };
+      }
+
+      rpc AddNode(cluster.v1alpha1.ClusterID) returns (cluster.v1alpha1.Msg) {
+            option (google.api.http) = {
+                  post: "/api/v1alpha1/cluster/node"
+                  body: "*"
+            };
+      }
+
+      rpc RemoveNode(cluster.v1alpha1.ClusterID) returns (cluster.v1alpha1.Msg) {
+            option (google.api.http) = {
+                  delete: "/api/v1alpha1/cluster/node/remove"
+            };
+      }
 }

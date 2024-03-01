@@ -2,11 +2,13 @@ package interfaces
 
 import (
 	"context"
-	"errors"
 
-	v1alpha1 "github.com/f-rambo/ocean/api/cluster/v1alpha1"
+	"github.com/f-rambo/ocean/api/cluster/v1alpha1"
 	"github.com/f-rambo/ocean/internal/biz"
+	"github.com/f-rambo/ocean/internal/conf"
+	"github.com/f-rambo/ocean/pkg/ansible"
 	"github.com/go-kratos/kratos/v2/log"
+	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"gopkg.in/yaml.v2"
 	"helm.sh/helm/v3/pkg/release"
@@ -17,14 +19,16 @@ type ClusterInterface struct {
 	clusterUc *biz.ClusterUsecase
 	projectUc *biz.ProjectUsecase
 	appUc     *biz.AppUsecase
+	c         *conf.Resource
 	log       *log.Helper
 }
 
-func NewClusterInterface(clusterUc *biz.ClusterUsecase, projectUc *biz.ProjectUsecase, appUc *biz.AppUsecase, logger log.Logger) (*ClusterInterface, error) {
+func NewClusterInterface(clusterUc *biz.ClusterUsecase, projectUc *biz.ProjectUsecase, appUc *biz.AppUsecase, c *conf.Resource, logger log.Logger) (*ClusterInterface, error) {
 	cluster := &ClusterInterface{
 		clusterUc: clusterUc,
 		projectUc: projectUc,
 		appUc:     appUc,
+		c:         c,
 		log:       log.NewHelper(logger),
 	}
 	ctx := context.Background()
@@ -201,7 +205,7 @@ func (c *ClusterInterface) Save(ctx context.Context, cluster *v1alpha1.Cluster) 
 	if err != nil {
 		return nil, err
 	}
-	return cluster, nil
+	return c.bizCLusterToCluster(bizCluster), nil
 }
 
 func (c *ClusterInterface) List(ctx context.Context, _ *emptypb.Empty) (*v1alpha1.ClusterList, error) {
@@ -227,6 +231,96 @@ func (c *ClusterInterface) Delete(ctx context.Context, clusterID *v1alpha1.Clust
 	return &v1alpha1.Msg{}, nil
 }
 
+func (c *ClusterInterface) DeleteNode(ctx context.Context, clusterParam *v1alpha1.ClusterID) (*v1alpha1.Msg, error) {
+	if clusterParam.Id == 0 || clusterParam.NodeId == 0 {
+		return nil, errors.New("cluster id is required and node id is required")
+	}
+	err := c.clusterUc.DeleteNode(ctx, clusterParam.Id, clusterParam.NodeId)
+	if err != nil {
+		return nil, err
+	}
+	return &v1alpha1.Msg{}, nil
+}
+
+func (c *ClusterInterface) GetClusterMockData(ctx context.Context, _ *emptypb.Empty) (*v1alpha1.Cluster, error) {
+	k, err := ansible.NewKubespray(c.c)
+	if err != nil {
+		return nil, err
+	}
+	defaultClusterConfig, err := k.GetDefaultClusterConfig(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defaultClusterAddons, err := k.GetDefaultClusterAddons(ctx)
+	if err != nil {
+		return nil, err
+	}
+	cluster := &v1alpha1.Cluster{
+		Name:             "cluster1",
+		Config:           defaultClusterConfig,
+		Addons:           defaultClusterAddons,
+		ApiServerAddress: "127.0.0.1:6443",
+		Nodes: []*v1alpha1.Node{
+			{
+				Name:         "node1",
+				ExternalIp:   "127.0.0.1:22",
+				User:         "root",
+				Password:     "password",
+				SudoPassword: "sudo password",
+				Role:         "master/worker/edge",
+			},
+		},
+	}
+	return cluster, nil
+}
+
+func (c *ClusterInterface) SetUpCluster(ctx context.Context, cluster *v1alpha1.ClusterID) (*v1alpha1.Msg, error) {
+	if cluster.Id == 0 {
+		return nil, errors.New("cluster id is required")
+	}
+	err := c.clusterUc.SetUpCluster(ctx, cluster.Id)
+	if err != nil {
+		return nil, err
+	}
+	return &v1alpha1.Msg{}, nil
+}
+
+// UninstallCluster
+func (c *ClusterInterface) UninstallCluster(ctx context.Context, cluster *v1alpha1.ClusterID) (*v1alpha1.Msg, error) {
+	if cluster.Id == 0 {
+		return nil, errors.New("cluster id is required")
+	}
+	err := c.clusterUc.UninstallCluster(ctx, cluster.Id)
+	if err != nil {
+		return nil, err
+	}
+	return &v1alpha1.Msg{}, nil
+}
+
+// AddNode
+func (c *ClusterInterface) AddNode(ctx context.Context, clusterParam *v1alpha1.ClusterID) (*v1alpha1.Msg, error) {
+	if clusterParam.Id == 0 || clusterParam.NodeId == 0 {
+		return nil, errors.New("cluster id is required and node id is required")
+	}
+	err := c.clusterUc.AddNode(ctx, clusterParam.Id, clusterParam.NodeId)
+	if err != nil {
+		return nil, err
+	}
+	return &v1alpha1.Msg{}, nil
+}
+
+// RemoveNode
+func (c *ClusterInterface) RemoveNode(ctx context.Context, clusterParam *v1alpha1.ClusterID) (*v1alpha1.Msg, error) {
+	if clusterParam.Id == 0 || clusterParam.NodeId == 0 {
+		return nil, errors.New("cluster id is required and node id is required")
+	}
+	err := c.clusterUc.RemoveNode(ctx, clusterParam.Id, clusterParam.NodeId)
+	if err != nil {
+		return nil, err
+	}
+	return &v1alpha1.Msg{}, nil
+}
+
 func (c *ClusterInterface) bizCLusterToCluster(bizCluster *biz.Cluster) *v1alpha1.Cluster {
 	cluster := &v1alpha1.Cluster{
 		Id:               bizCluster.ID,
@@ -235,6 +329,8 @@ func (c *ClusterInterface) bizCLusterToCluster(bizCluster *biz.Cluster) *v1alpha
 		ApiServerAddress: bizCluster.ApiServerAddress,
 		Config:           bizCluster.Config,
 		Addons:           bizCluster.Addons,
+		State:            bizCluster.State,
+		Logs:             bizCluster.Logs,
 	}
 	for _, node := range bizCluster.Nodes {
 		cluster.Nodes = append(cluster.Nodes, c.bizNodeToNode(node))
@@ -259,6 +355,7 @@ func (c *ClusterInterface) bizNodeToNode(bizNode *biz.Node) *v1alpha1.Node {
 		Password:     bizNode.Password,
 		SudoPassword: bizNode.SudoPassword,
 		Role:         bizNode.Role,
+		State:        bizNode.State,
 		ClusterId:    bizNode.ClusterID,
 	}
 	return node

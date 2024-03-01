@@ -29,10 +29,11 @@ log:
 auth:
   exp: 24
   key: 'ocean'
-  email: 'admin'
-  password: '123.456a'
+  email: 'admin@admin.com'
+  password: '123456qwe'
 resource:
   app: 'resource/app/'
   icon: 'resource/icon/'
   repo: 'resource/repo/'
   cluster: 'resource/cluster/'
+  kubespray_url: '2.24.0'

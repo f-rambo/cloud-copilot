@@ -23,14 +23,6 @@ service AppInterface {
             };
       }
 
-      rpc UploadAppIcon(app.v1alpha1.FileUploadRequest) returns(app.v1alpha1.FileUploadResponse) {
-            option (google.api.http) = {
-                  post: "/api/v1alpha1/app/upload/icon"
-                  body: "*"
-            };
-      }
-
-
       rpc Save(app.v1alpha1.App) returns (app.v1alpha1.Msg) {
             option (google.api.http) = {
                   post: "/api/v1alpha1/app/save"

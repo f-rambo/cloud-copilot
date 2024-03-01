@@ -14,10 +14,11 @@ type Bootstrap struct {
 }
 
 type Resource struct {
-	App     string `json:"app,omitempty"`     // app chart package
-	Icon    string `json:"icon,omitempty"`    // app icon img
-	Repo    string `json:"repo,omitempty"`    // app repo
-	Cluster string `json:"cluster,omitempty"` // cluster setting
+	App          string `json:"app,omitempty"`           // app chart package
+	Icon         string `json:"icon,omitempty"`          // app icon img
+	Repo         string `json:"repo,omitempty"`          // app repo
+	Cluster      string `json:"cluster,omitempty"`       // cluster setting
+	KubesprayUrl string `json:"kubespray_url,omitempty"` // kubespray url
 }
 
 func (r Resource) GetClusterPath() string {
@@ -50,6 +51,14 @@ func (r Resource) GetRepoPath() string {
 		repoPath = r.Repo
 	}
 	return repoPath
+}
+
+func (r Resource) GetKubesprayUrl() string {
+	kubesprayUrl := os.Getenv("KUBESPRAY_URL")
+	if kubesprayUrl == "" {
+		kubesprayUrl = r.KubesprayUrl
+	}
+	return kubesprayUrl
 }
 
 type Server struct {

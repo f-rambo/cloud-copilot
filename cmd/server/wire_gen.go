@@ -24,18 +24,18 @@ import (
 // Injectors from wire.go:
 
 // wireApp init kratos application.
-func wireApp(confServer *conf.Server, confData *conf.Data, auth *conf.Auth, resource *conf.Resource, logger log.Logger) (*kratos.App, func(), error) {
+func wireApp(confServer *conf.Server, confData *conf.Data, auth *conf.Auth, resource *conf.Resource, confLog *conf.Log, logger log.Logger) (*kratos.App, func(), error) {
 	dataData, cleanup, err := data.NewData(confData, logger)
 	if err != nil {
 		return nil, nil, err
 	}
-	clusterRepo := data.NewClusterRepo(dataData, logger)
+	clusterRepo := data.NewClusterRepo(dataData, logger, confLog)
 	clusterUsecase := biz.NewClusterUseCase(confServer, clusterRepo, logger)
 	projectRepo := data.NewProjectRepo(dataData, logger, confServer)
 	projectUsecase := biz.NewProjectUseCase(projectRepo, logger)
 	appRepo := data.NewAppRepo(dataData, logger)
 	appUsecase := biz.NewAppUsecase(appRepo, logger, resource, clusterRepo, projectRepo)
-	clusterInterface, err := interfaces.NewClusterInterface(clusterUsecase, projectUsecase, appUsecase, logger)
+	clusterInterface, err := interfaces.NewClusterInterface(clusterUsecase, projectUsecase, appUsecase, resource, logger)
 	if err != nil {
 		cleanup()
 		return nil, nil, err

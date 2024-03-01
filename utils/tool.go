@@ -1,6 +1,8 @@
 package utils
 
 import (
+	"archive/tar"
+	"compress/gzip"
 	"crypto/md5"
 	"encoding/hex"
 	"encoding/json"
@@ -175,6 +177,10 @@ func getRandomTimeString() string {
 	return fmt.Sprintf("%s%d", timePart, randPart)
 }
 
+func ReadFile(path string) ([]byte, error) {
+	return os.ReadFile(path)
+}
+
 // 删除文件
 func DeleteFile(path string) error {
 	return os.Remove(path)
@@ -235,6 +241,55 @@ func DownloadFileToWriter(url string, writer io.Writer) error {
 		return err
 	}
 	return nil
+}
+
+// 解压文件 param1: tarball: 压缩文件路径 param2: target: 解压目标路径
+func Decompress(tarball, target string) error {
+	reader, err := os.Open(tarball)
+	if err != nil {
+		return err
+	}
+	defer reader.Close()
+
+	gz, err := gzip.NewReader(reader)
+	if err != nil {
+		return err
+	}
+	defer gz.Close()
+
+	tarReader := tar.NewReader(gz)
+
+	for {
+		header, err := tarReader.Next()
+
+		switch {
+		case err == io.EOF:
+			return nil
+		case err != nil:
+			return err
+		case header == nil:
+			continue
+		}
+
+		targetPath := filepath.Join(target, header.Name)
+		switch header.Typeflag {
+		case tar.TypeDir:
+			if _, err := os.Stat(targetPath); err != nil {
+				if err := os.MkdirAll(targetPath, 0755); err != nil {
+					return err
+				}
+			}
+		case tar.TypeReg:
+			file, err := os.OpenFile(targetPath, os.O_CREATE|os.O_RDWR, os.FileMode(header.Mode))
+			if err != nil {
+				return err
+			}
+			defer file.Close()
+			if _, err := io.Copy(file, tarReader); err != nil {
+				return err
+			}
+		}
+	}
 }
 
 // 生成一个随机字符串

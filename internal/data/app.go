@@ -207,6 +207,15 @@ func (a *appRepo) ListRepo(ctx context.Context) ([]*biz.AppHelmRepo, error) {
 	return helmRepos, nil
 }
 
+func (a *appRepo) GetRepo(ctx context.Context, helmRepoID int64) (*biz.AppHelmRepo, error) {
+	helmRepo := &biz.AppHelmRepo{}
+	err := a.data.db.First(helmRepo, helmRepoID).Error
+	if err != nil {
+		return nil, err
+	}
+	return helmRepo, nil
+}
+
 func (a *appRepo) DeleteRepo(ctx context.Context, helmRepoID int64) error {
 	return a.data.db.Delete(&biz.AppHelmRepo{}, helmRepoID).Error
 }

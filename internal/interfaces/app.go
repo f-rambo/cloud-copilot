@@ -145,22 +145,15 @@ func (a *AppInterface) UploadApp(ctx context.Context, req *v1alpha1.FileUploadRe
 	if app == nil {
 		app = &biz.App{Name: appVersion.AppName}
 	}
+	if req.Icon != "" {
+		app.Icon = req.Icon
+	}
 	if app.GetVersion(appVersion.Version) != nil {
 		app.UpdateVersion(appVersion)
 	} else {
 		app.AddVersion(appVersion)
 	}
 	return a.bizAppToApp(app)
-}
-
-func (a *AppInterface) UploadAppIcon(ctx context.Context, req *v1alpha1.FileUploadRequest) (*v1alpha1.FileUploadResponse, error) {
-	fileName, err := a.upload(ctx, a.res.GetIconPath(), req.GetFileName(), req.GetChunk())
-	if err != nil {
-		return nil, err
-	}
-	return &v1alpha1.FileUploadResponse{
-		FileName: fileName,
-	}, nil
 }
 
 // 上传文件
@@ -449,24 +442,18 @@ func (a *AppInterface) GetAppsByRepo(ctx context.Context, repoReq *v1alpha1.AppH
 	if err != nil {
 		return nil, err
 	}
+	itemCount := len(apps)
 	appList := &v1alpha1.AppList{
-		Items: make([]*v1alpha1.App, len(apps)),
-	}
-	appTypes, err := a.uc.ListAppType(ctx)
-	if err != nil {
-		return nil, err
+		Items:     make([]*v1alpha1.App, itemCount),
+		ItemCount: int32(itemCount),
 	}
 	for index, app := range apps {
 		dataApp, err := a.bizAppToApp(app)
 		if err != nil {
 			return nil, err
 		}
-		for _, appType := range appTypes {
-			if appType.ID == app.AppTypeID {
-				dataApp.AppTypeName = appType.Name
-				break
-			}
-		}
+		dataApp.Id = int64(index) + 1
+		dataApp.UpdateTime = app.UpdatedAt.Format("2006/01/02")
 		appList.Items[index] = dataApp
 	}
 	return appList, nil
@@ -483,22 +470,31 @@ func (a *AppInterface) GetAppDetailByRepo(ctx context.Context, repoReq *v1alpha1
 	if err != nil {
 		return nil, err
 	}
-	return a.bizAppToApp(app)
+	appRes, err := a.bizAppToApp(app)
+	if err != nil {
+		return nil, err
+	}
+	// mock id
+	appRes.Id = repoReq.Id
+	return appRes, nil
 }
 
 func (a *AppInterface) bizAppToApp(bizApp *biz.App) (*v1alpha1.App, error) {
 	app := &v1alpha1.App{
-		Id:        bizApp.ID,
-		Name:      bizApp.Name,
-		Icon:      bizApp.Icon,
-		AppTypeId: bizApp.AppTypeID,
-		Versions:  make([]*v1alpha1.AppVersion, len(bizApp.Versions)),
+		Id:         bizApp.ID,
+		Name:       bizApp.Name,
+		Icon:       bizApp.Icon,
+		AppTypeId:  bizApp.AppTypeID,
+		Versions:   make([]*v1alpha1.AppVersion, len(bizApp.Versions)),
+		UpdateTime: bizApp.UpdatedAt.Format("2006/01/02"),
 	}
 	for index, v := range bizApp.Versions {
 		appversion, err := a.bizAppVersionToAppVersion(v)
 		if err != nil {
 			return nil, err
 		}
+		// mock id
+		appversion.Id = int64(index) + 1
 		app.Versions[index] = appversion
 	}
 	return app, nil
