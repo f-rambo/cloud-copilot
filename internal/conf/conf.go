@@ -14,11 +14,12 @@ type Bootstrap struct {
 }
 
 type Resource struct {
-	App          string `json:"app,omitempty"`           // app chart package
-	Icon         string `json:"icon,omitempty"`          // app icon img
-	Repo         string `json:"repo,omitempty"`          // app repo
-	Cluster      string `json:"cluster,omitempty"`       // cluster setting
-	KubesprayUrl string `json:"kubespray_url,omitempty"` // kubespray url
+	App          string  `json:"app,omitempty"`           // app chart package
+	Icon         string  `json:"icon,omitempty"`          // app icon img
+	Repo         string  `json:"repo,omitempty"`          // app repo
+	Cluster      string  `json:"cluster,omitempty"`       // cluster setting
+	KubesprayUrl string  `json:"kubespray_url,omitempty"` // kubespray url
+	Ansible      Ansible `json:"ansible,omitempty"`       // ansible
 }
 
 func (r Resource) GetClusterPath() string {
@@ -59,6 +60,27 @@ func (r Resource) GetKubesprayUrl() string {
 		kubesprayUrl = r.KubesprayUrl
 	}
 	return kubesprayUrl
+}
+
+type Ansible struct {
+	Cli        string `json:"cli,omitempty"`
+	ServerInit string `json:"server_init,omitempty"`
+}
+
+func (a Ansible) GetCli() string {
+	cli := os.Getenv("ANSIBLE_CLI")
+	if cli == "" {
+		cli = a.Cli
+	}
+	return cli
+}
+
+func (a Ansible) GetServerInit() string {
+	serverTest := os.Getenv("ANSIBLE_SERVER_INIT")
+	if serverTest == "" {
+		serverTest = a.ServerInit
+	}
+	return serverTest
 }
 
 type Server struct {

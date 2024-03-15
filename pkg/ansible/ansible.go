@@ -3,78 +3,116 @@ package ansible
 import (
 	"context"
 	"fmt"
-	"path/filepath"
-	"regexp"
-	"strings"
 
 	"github.com/apenella/go-ansible/pkg/execute"
 	"github.com/apenella/go-ansible/pkg/options"
 	"github.com/apenella/go-ansible/pkg/playbook"
 	"github.com/apenella/go-ansible/pkg/stdoutcallback/results"
-	"github.com/f-rambo/ocean/internal/conf"
-	"github.com/f-rambo/ocean/utils"
 )
 
 type GoAnsiblePkg struct {
 	logPrefix             string
-	log                   *ExecLog
-	logErr                *ExecLogErr
 	ansiblePlaybookBinary string
+	LogChan               chan string
+	cmdRunDir             string
+	inventoryfile         string
+	playbooks             []string
+	env                   map[string]string
 }
 
-func NewGoAnsiblePkg(ansiblePlaybookBinary string, logPrefixs ...string) *GoAnsiblePkg {
-	logPrefix := strings.Join(logPrefixs, "")
-	if ansiblePlaybookBinary == "" {
-		ansiblePlaybookBinary = playbook.DefaultAnsiblePlaybookBinary
-	}
+func NewGoAnsiblePkg() *GoAnsiblePkg {
 	return &GoAnsiblePkg{
-		logPrefix:             logPrefix,
-		log:                   new(ExecLog),
-		logErr:                new(ExecLogErr),
-		ansiblePlaybookBinary: ansiblePlaybookBinary,
+		ansiblePlaybookBinary: playbook.DefaultAnsiblePlaybookBinary,
 	}
 }
 
-func (a *GoAnsiblePkg) execPlayBooks(ctx context.Context, inventoryfile string, playbooks []string) error {
+func (a *GoAnsiblePkg) Write(p []byte) (n int, err error) {
+	a.LogChan <- string(p)
+	return len(p), nil
+}
+
+func (a *GoAnsiblePkg) SetLogChan(logchan chan string) *GoAnsiblePkg {
+	a.LogChan = logchan
+	return a
+}
+
+func (a *GoAnsiblePkg) SetLogPrefix(logPrefix string) *GoAnsiblePkg {
+	a.logPrefix = logPrefix
+	return a
+}
+
+func (a *GoAnsiblePkg) SetAnsiblePlaybookBinary(ansiblePlaybookBinary string) *GoAnsiblePkg {
+	a.ansiblePlaybookBinary = ansiblePlaybookBinary
+	return a
+}
+
+func (a *GoAnsiblePkg) SetCmdRunDir(cmdRunDir string) *GoAnsiblePkg {
+	a.cmdRunDir = cmdRunDir
+	return a
+}
+
+func (a *GoAnsiblePkg) SetInventoryFile(inventoryfile string) *GoAnsiblePkg {
+	a.inventoryfile = inventoryfile
+	return a
+}
+
+func (a *GoAnsiblePkg) SetPlaybooks(playbooks []string) *GoAnsiblePkg {
+	a.playbooks = playbooks
+	return a
+}
+
+func (a *GoAnsiblePkg) SetEnv(key, val string) *GoAnsiblePkg {
+	if a.env == nil {
+		a.env = make(map[string]string)
+	}
+	a.env[key] = val
+	return a
+}
+
+func (a *GoAnsiblePkg) SetEnvMap(env map[string]string) *GoAnsiblePkg {
+	a.env = env
+	return a
+}
+
+func (a *GoAnsiblePkg) ExecPlayBooks(ctx context.Context) error {
+	if a.cmdRunDir == "" {
+		return fmt.Errorf("cmdRunDir path is required")
+	}
+	if a.inventoryfile == "" {
+		return fmt.Errorf("inventory file is required")
+	}
+	if len(a.playbooks) == 0 {
+		return fmt.Errorf("playbooks is required")
+	}
+	if a.LogChan == nil {
+		return fmt.Errorf("log channel is required")
+	}
+	envExecute := []execute.ExecuteOptions{
+		execute.WithCmdRunDir(a.cmdRunDir),
+		execute.WithWrite(a),
+		execute.WithWriteError(a),
+		execute.WithTransformers(
+			results.Prepend(a.logPrefix),
+		),
+		execute.WithEnvVar("ANSIBLE_FORCE_COLOR", "true"),
+	}
+	for k, v := range a.env {
+		envExecute = append(envExecute, execute.WithEnvVar(k, v))
+	}
 	playbook := &playbook.AnsiblePlaybookCmd{
 		Binary:    a.ansiblePlaybookBinary,
-		Playbooks: playbooks,
+		Playbooks: a.playbooks,
 		Options: &playbook.AnsiblePlaybookOptions{
-			Inventory: inventoryfile,
+			Inventory: a.inventoryfile,
 		},
 		PrivilegeEscalationOptions: &options.AnsiblePrivilegeEscalationOptions{
 			Become:       true,
 			BecomeMethod: "sudo",
 			BecomeUser:   "root",
 		},
-		Exec: execute.NewDefaultExecute(
-			execute.WithCmdRunDir(filepath.Dir(inventoryfile)),
-			execute.WithEnvVar("ANSIBLE_FORCE_COLOR", "true"),
-			execute.WithWrite(a.log),
-			execute.WithWriteError(a.logErr),
-			execute.WithShowDuration(),
-			execute.WithTransformers(
-				results.Prepend(a.logPrefix),
-			),
-		),
+		Exec: execute.NewDefaultExecute(envExecute...),
 	}
 	return playbook.Run(ctx)
-}
-
-type ExecLog struct{}
-
-func (l *ExecLog) Write(p []byte) (n int, err error) {
-	// todo log path
-	fmt.Println(string(p))
-	return len(p), nil
-}
-
-type ExecLogErr struct{}
-
-func (l *ExecLogErr) Write(p []byte) (n int, err error) {
-	// todo log path
-	fmt.Println(string(p))
-	return len(p), nil
 }
 
 type Server struct {
@@ -87,35 +125,33 @@ type Server struct {
 // param servers: list of servers to generate inventory file
 // result: inventory file content
 func GenerateInventoryFile(servers []Server) string {
+	// node1 ansible_host=95.54.0.12 ip=10.3.0.1 ansible_user=username etcd_member_name=etcd1
 	inventory := `
-	# ## Configure 'ip' variable to bind kubernetes services on a
-	# ## different ip than the default iface
-	# ## We should set etcd_member_name for etcd cluster. The node that is not a etcd member do not need to set the value, or can set the empty string value.
-	[all]
-	# node1 ansible_host=95.54.0.12 ip=10.3.0.1 ansible_user=username etcd_member_name=etcd1
-	`
+# ## Configure 'ip' variable to bind kubernetes services on a
+# ## different ip than the default iface
+# ## We should set etcd_member_name for etcd cluster. The node that is not a etcd member do not need to set the value, or can set the empty string value.
+[all]
+`
+	etcdNum := 1
 	for _, server := range servers {
-		inventory += fmt.Sprintf("%s ansible_host=%s ansible_user=%s\n", server.ID, server.Ip, server.Username)
+		etcdName := ""
+		if server.Role == "master" {
+			etcdName = fmt.Sprintf("etcd_member_name=etcd%d", etcdNum)
+			etcdNum++
+		}
+		inventory += fmt.Sprintf("%s ansible_host=%s ip=%s ansible_user=%s %s\n",
+			server.ID, server.Ip, server.Ip, server.Username, etcdName)
 	}
 
 	inventory += `
-
-
-	`
-
+# ## configure a bastion host if your nodes are not directly reachable
+# [bastion]
+# bastion ansible_host=x.x.x.x ansible_user=some_user
+`
 	inventory += `
-	# ## configure a bastion host if your nodes are not directly reachable
-	# [bastion]
-	# bastion ansible_host=x.x.x.x ansible_user=some_user
-	`
-	inventory += `
-	# ## configure masters
-	[kube_control_plane]
-	# node1
-	# node2
-	# node3
-	`
-
+# ## configure masters
+[kube_control_plane]
+`
 	for _, server := range servers {
 		if server.Role == "master" {
 			inventory += fmt.Sprintf("%s\n", server.ID)
@@ -123,12 +159,9 @@ func GenerateInventoryFile(servers []Server) string {
 	}
 
 	inventory += `
-	# ## configure etcd
-	[etcd]
-	# node1
-	# node2
-	# node3
-	`
+# ## configure etcd
+[etcd]
+`
 	for _, server := range servers {
 		if server.Role == "master" {
 			inventory += fmt.Sprintf("%s\n", server.ID)
@@ -136,12 +169,9 @@ func GenerateInventoryFile(servers []Server) string {
 	}
 
 	inventory += `
-	# ## configure nodes
-	[kube_node]
-	# node4
-	# node5
-	# node6
-	`
+# ## configure nodes
+[kube_node]
+`
 	for _, server := range servers {
 		if server.Role == "worker" {
 			inventory += fmt.Sprintf("%s\n", server.ID)
@@ -149,70 +179,14 @@ func GenerateInventoryFile(servers []Server) string {
 	}
 
 	inventory += `
-	[calico_rr]
-	`
+[calico_rr]
+`
 	inventory += `
-	# ## configure k8s cluster using kubeadm
-	[k8s_cluster:children]
-	kube_control_plane
-	kube_node
-	calico_rr
-	`
+# ## configure k8s cluster using kubeadm
+[k8s_cluster:children]
+kube_control_plane
+kube_node
+calico_rr
+`
 	return inventory
-}
-
-type Kubespray struct {
-	packagePath string
-}
-
-func NewKubespray(c *conf.Resource) (*Kubespray, error) {
-	k := &Kubespray{}
-	// 检查文件是否存储
-	k.packagePath = c.GetClusterPath() + "kubespray"
-	if utils.IsFileExist(k.packagePath) {
-		return k, nil
-	}
-	// 下载kubespray
-	fileName := "kubespray.tar.gz"
-	err := utils.DownloadFile(c.GetKubesprayUrl(), c.GetClusterPath(), fileName)
-	if err != nil {
-		return nil, err
-	}
-	// 解压kubespray
-	err = utils.Decompress(c.GetClusterPath()+fileName, c.GetClusterPath())
-	if err != nil {
-		return nil, err
-	}
-	version := ""
-	re := regexp.MustCompile(`v(\d+\.\d+\.\d+)`)
-	match := re.FindStringSubmatch(c.GetKubesprayUrl())
-	if len(match) > 1 {
-		version = match[1]
-	} else {
-		return nil, fmt.Errorf("kubespray version not found")
-	}
-	// 重命名kubespray
-	err = utils.RenameFile(c.GetClusterPath()+"kubespray-"+version, k.packagePath)
-	if err != nil {
-		return nil, err
-	}
-	return k, nil
-}
-
-func (k *Kubespray) GetDefaultClusterConfig(ctx context.Context) (string, error) {
-	defaultClusterConfig := k.packagePath + "/inventory/sample/group_vars/all/all.yml"
-	fileData, err := utils.ReadFile(defaultClusterConfig)
-	if err != nil {
-		return "", err
-	}
-	return string(fileData), nil
-}
-
-func (k *Kubespray) GetDefaultClusterAddons(ctx context.Context) (string, error) {
-	defaultClusterAddons := k.packagePath + "/inventory/sample/group_vars/k8s_cluster/addons.yml"
-	fileData, err := utils.ReadFile(defaultClusterAddons)
-	if err != nil {
-		return "", err
-	}
-	return string(fileData), nil
 }

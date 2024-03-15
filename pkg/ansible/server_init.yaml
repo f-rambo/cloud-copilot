@@ -1,0 +1,26 @@
+---
+- hosts: all
+  tasks:
+  - name: check 'root' user home directory
+    shell: echo 'Hi ocean' | tee -a /root/ocean.log
+  - name: cheack IPv4
+    shell: cat /proc/sys/net/ipv4/ip_forward
+    register: ipv4_status
+  - name: IPv4
+    when: ipv4_status.stdout == "0"
+    shell: echo 'net.ipv4.ip_forward=1' | tee -a /etc/sysctl.conf
+  - name: cheack IPv6
+    shell: cat /proc/sys/net/ipv6/conf/all/forwarding
+    register: ipv6_status
+  - name: IPv6
+    when: ipv6_status.stdout == "0"
+    shell: echo 'net.ipv6.conf.all.forwarding=1' | tee -a /etc/sysctl.conf
+  - name: Reload sysctl 
+    shell: sysctl -p
+  - name: Check firewall status
+    command: systemctl is-active firewalld
+    register: firewall_status
+    ignore_errors: yes
+  - name: Close firewall
+    when: firewall_status.stdout == "active"
+    shell: systemctl stop firewalld && systemctl disable firewalld

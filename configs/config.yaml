@@ -36,4 +36,7 @@ resource:
   icon: 'resource/icon/'
   repo: 'resource/repo/'
   cluster: 'resource/cluster/'
-  kubespray_url: '2.24.0'
+  kubespray_url: 'https://github.com/kubernetes-sigs/kubespray/archive/refs/tags/v2.24.1.tar.gz'
+  ansible:
+    cli: '/Users/yangzongfang/anaconda3/envs/ansible/bin/ansible-playbook'
+    server_init: '/Users/yangzongfang/code/go/src/github.com/f-rambo/ocean/pkg/ansible/server_init.yaml'

@@ -21,9 +21,10 @@ message Cluster {
     string api_server_address = 4 [json_name = "api_server_address"];
     string config = 5 [json_name = "config"];
     string addons = 6 [json_name = "addons"];
-    string state = 7 [json_name = "state"];
-    repeated Node nodes = 8;
-    string logs = 9 [json_name = "logs"];
+    string addons_config = 7 [json_name = "addons_config"];
+    string state = 8 [json_name = "state"];
+    repeated Node nodes = 9;
+    string logs = 10 [json_name = "logs"];
 }
 
 message Node {

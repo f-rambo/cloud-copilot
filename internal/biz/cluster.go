@@ -3,12 +3,17 @@ package biz
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"path/filepath"
+	"time"
 
 	"github.com/f-rambo/ocean/internal/conf"
 	"github.com/f-rambo/ocean/pkg/ansible"
 	"github.com/f-rambo/ocean/pkg/kubeclient"
 	"github.com/f-rambo/ocean/utils"
 	"github.com/go-kratos/kratos/v2/log"
+	"github.com/pkg/errors"
+	"golang.org/x/sync/errgroup"
 	"gorm.io/gorm"
 	coreV1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -21,10 +26,20 @@ type Cluster struct {
 	ApiServerAddress string  `json:"api_server_address" gorm:"column:api_server_address; default:''; NOT NULL"`
 	Config           string  `json:"config" gorm:"column:config; default:''; NOT NULL;"`
 	Addons           string  `json:"addons" gorm:"column:addons; default:''; NOT NULL;"`
+	AddonsConfig     string  `json:"addons_config" gorm:"column:addons_config; default:''; NOT NULL;"`
 	State            string  `json:"state" gorm:"column:state; default:''; NOT NULL;"`
 	Nodes            []*Node `json:"nodes" gorm:"-"`
 	Logs             string  `json:"logs" gorm:"-"` // logs data from localfile
 	gorm.Model
+}
+
+func (c *Cluster) GetNode(nodeId int64) *Node {
+	for _, node := range c.Nodes {
+		if node.ID == nodeId {
+			return node
+		}
+	}
+	return nil
 }
 
 type Node struct {
@@ -50,6 +65,8 @@ type Node struct {
 
 const (
 	ClusterStateInit     = "init"
+	ClusterStateChecked  = "checked"
+	ClusterStateNotReady = "not ready"
 	ClusterStateRunning  = "running"
 	ClusterStateFailed   = "failed"
 	ClusterStateFinished = "finished"
@@ -71,18 +88,31 @@ const (
 type ClusterRepo interface {
 	Save(context.Context, *Cluster) error
 	Get(context.Context, int64) (*Cluster, error)
-	List(context.Context) ([]*Cluster, error)
+	List(context.Context, *Cluster) ([]*Cluster, error)
 	Delete(context.Context, int64) error
+	ReadClusterLog(cluster *Cluster) error
+	WriteClusterLog(cluster *Cluster) error
 }
 
 type ClusterUsecase struct {
-	server *conf.Server
-	repo   ClusterRepo
-	log    *log.Helper
+	server   *conf.Server
+	resource *conf.Resource
+	repo     ClusterRepo
+	log      *log.Helper
 }
 
-func NewClusterUseCase(server *conf.Server, repo ClusterRepo, logger log.Logger) *ClusterUsecase {
-	return &ClusterUsecase{server: server, repo: repo, log: log.NewHelper(logger)}
+func NewClusterUseCase(
+	server *conf.Server,
+	resource *conf.Resource,
+	repo ClusterRepo,
+	logger log.Logger,
+) *ClusterUsecase {
+	return &ClusterUsecase{
+		server:   server,
+		resource: resource,
+		repo:     repo,
+		log:      log.NewHelper(logger),
+	}
 }
 
 func (uc *ClusterUsecase) CurrentCluster(ctx context.Context) (*Cluster, error) {
@@ -170,18 +200,34 @@ func (uc *ClusterUsecase) getNodes(cluster *Cluster) error {
 }
 
 func (uc *ClusterUsecase) Save(ctx context.Context, cluster *Cluster) error {
-	if cluster.ID == 0 {
-		cluster.State = ClusterStateInit
+	if cluster.ID != 0 {
+		return uc.repo.Save(ctx, cluster)
 	}
+	clusters, err := uc.repo.List(ctx, &Cluster{Name: cluster.Name})
+	if err != nil {
+		return err
+	}
+	if len(clusters) > 0 {
+		return errors.New("cluster name already exists")
+	}
+	cluster.State = ClusterStateInit
 	return uc.repo.Save(ctx, cluster)
 }
 
 func (uc *ClusterUsecase) Get(ctx context.Context, id int64) (*Cluster, error) {
-	return uc.repo.Get(ctx, id)
+	cluster, err := uc.repo.Get(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	err = uc.repo.ReadClusterLog(cluster)
+	if err != nil {
+		return nil, err
+	}
+	return cluster, nil
 }
 
 func (uc *ClusterUsecase) List(ctx context.Context) ([]*Cluster, error) {
-	return uc.repo.List(ctx)
+	return uc.repo.List(ctx, nil)
 }
 
 func (uc *ClusterUsecase) Delete(ctx context.Context, id int64) error {
@@ -202,6 +248,160 @@ func (uc *ClusterUsecase) DeleteNode(ctx context.Context, clusterID int64, nodeI
 	return uc.Save(ctx, cluster)
 }
 
+// 安装集群
+func (uc *ClusterUsecase) SetUpCluster(ctx context.Context, clusterID int64) error {
+	cluster, err := uc.Get(ctx, clusterID)
+	if err != nil {
+		return err
+	}
+	kubespray, err := ansible.NewKubespray(uc.resource)
+	if err != nil {
+		return err
+	}
+	execplayBookParam := newExecPlaybookParam().
+		SetCtx(context.TODO()).
+		SetCluster(cluster).
+		SetPlaybooks(kubespray.GetClusterPath()).
+		SetCmdRunDir(kubespray.GetPackagePath())
+	go func() {
+		err = uc.execPlaybook(execplayBookParam)
+		if err != nil {
+			uc.log.Errorf("setup cluster error: %v", err)
+			return
+		}
+	}()
+	return nil
+}
+
+// 卸载集群
+func (uc *ClusterUsecase) UninstallCluster(ctx context.Context, clusterID int64) error {
+	cluster, err := uc.Get(ctx, clusterID)
+	if err != nil {
+		return err
+	}
+	kubespray, err := ansible.NewKubespray(uc.resource)
+	if err != nil {
+		return err
+	}
+	execplayBookParam := newExecPlaybookParam().
+		SetCtx(context.TODO()).
+		SetCluster(cluster).
+		SetPlaybooks(kubespray.GetResetPath()).
+		SetCmdRunDir(kubespray.GetPackagePath())
+	go func() {
+		err = uc.execPlaybook(execplayBookParam)
+		if err != nil {
+			uc.log.Errorf("uninstall cluster error: %v", err)
+			return
+		}
+	}()
+	return nil
+}
+
+// 添加节点
+func (uc *ClusterUsecase) AddNode(ctx context.Context, clusterID int64, nodeID int64) error {
+	cluster, err := uc.Get(ctx, clusterID)
+	if err != nil {
+		return err
+	}
+	node := cluster.GetNode(nodeID)
+	if node == nil {
+		return errors.New("node not found")
+	}
+	kubespray, err := ansible.NewKubespray(uc.resource)
+	if err != nil {
+		return err
+	}
+	execplayBookParam := newExecPlaybookParam().
+		SetCtx(context.TODO()).
+		SetCluster(cluster).
+		SetPlaybooks(kubespray.GetScalePath()).
+		SetCmdRunDir(kubespray.GetPackagePath())
+	go func() {
+		err = uc.execPlaybook(execplayBookParam)
+		if err != nil {
+			uc.log.Errorf("add nodes error: %v", err)
+			return
+		}
+	}()
+	return nil
+}
+
+// 移除节点
+func (uc *ClusterUsecase) RemoveNode(ctx context.Context, clusterID int64, nodeID int64) error {
+	cluster, err := uc.Get(ctx, clusterID)
+	if err != nil {
+		return err
+	}
+	node := cluster.GetNode(nodeID)
+	if node == nil {
+		return errors.New("node not found")
+	}
+	kubespray, err := ansible.NewKubespray(uc.resource)
+	if err != nil {
+		return err
+	}
+	execplayBookParam := newExecPlaybookParam().
+		SetCtx(context.TODO()).
+		SetCluster(cluster).
+		SetPlaybooks(kubespray.GetRemoveNodePath()).
+		SetCmdRunDir(kubespray.GetPackagePath()).
+		SetEnv("node", node.Name)
+	go func() {
+		err = uc.execPlaybook(execplayBookParam)
+		if err != nil {
+			uc.log.Errorf("remove nodes error: %v", err)
+			return
+		}
+	}()
+	return nil
+}
+
+func (uc *ClusterUsecase) CheckConfig(ctx context.Context, clusterID int64) (*Cluster, error) {
+	cluster, err := uc.repo.Get(ctx, clusterID)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		err = uc.repo.Save(ctx, cluster)
+		if err != nil {
+			uc.log.Errorf("save cluster error: %v", err)
+			return
+		}
+	}()
+	checkFuncs := []func(ctx context.Context, cluster *Cluster) error{
+		uc.checkServerConfig,
+		uc.checkClusterConfig,
+		uc.checkClusterAddons,
+	}
+	for _, f := range checkFuncs {
+		err = f(ctx, cluster)
+		if err != nil {
+			cluster.State = ClusterStateNotReady
+			return cluster, err
+		}
+	}
+	cluster.State = ClusterStateChecked
+	return cluster, nil
+}
+
+func (uc *ClusterUsecase) checkServerConfig(ctx context.Context, cluster *Cluster) error {
+	execPlayBookParam := newExecPlaybookParam().
+		SetCluster(cluster).
+		SetCtx(ctx).
+		SetPlaybooks(uc.resource.Ansible.ServerInit).
+		SetCmdRunDir(filepath.Dir(uc.resource.Ansible.ServerInit))
+	return uc.execPlaybook(execPlayBookParam)
+}
+
+func (uc *ClusterUsecase) checkClusterConfig(ctx context.Context, cluster *Cluster) error {
+	return nil
+}
+
+func (uc *ClusterUsecase) checkClusterAddons(ctx context.Context, cluter *Cluster) error {
+	return nil
+}
+
 // param cluster: cluster to generate inventory file
 // result: inventory file path
 func (uc *ClusterUsecase) getInventory(cluster *Cluster) (string, error) {
@@ -214,8 +414,14 @@ func (uc *ClusterUsecase) getInventory(cluster *Cluster) (string, error) {
 			Role:     node.Role,
 		})
 	}
+
 	ansibleInventory := ansible.GenerateInventoryFile(servers)
-	file, err := utils.NewFile("./", "inventory.ini", false)
+	inventoryFileName := fmt.Sprintf("%d-inventory.ini", cluster.ID)
+	file, err := utils.NewFile(uc.resource.GetClusterPath(), inventoryFileName, true)
+	if err != nil {
+		return "", err
+	}
+	err = file.ClearFileContent()
 	if err != nil {
 		return "", err
 	}
@@ -232,25 +438,121 @@ func (uc *ClusterUsecase) getInventory(cluster *Cluster) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return file.GetFileName(), nil
+	return file.GetFilePath() + file.GetFileName(), nil
 }
 
-// 安装集群
-func (uc *ClusterUsecase) SetUpCluster(ctx context.Context, clusterID int64) error {
-	return nil
+type execPlaybookParam struct {
+	ctx       context.Context
+	cluster   *Cluster
+	env       map[string]string
+	cmdRunDir string
+	playbooks []string
 }
 
-// 卸载集群
-func (uc *ClusterUsecase) UninstallCluster(ctx context.Context, clusterID int64) error {
-	return nil
+func newExecPlaybookParam() *execPlaybookParam {
+	return &execPlaybookParam{}
 }
 
-// 添加节点
-func (uc *ClusterUsecase) AddNode(ctx context.Context, clusterID int64, nodeID int64) error {
-	return nil
+func (e execPlaybookParam) SetCtx(ctx context.Context) *execPlaybookParam {
+	e.ctx = ctx
+	return &e
 }
 
-// 移除节点
-func (uc *ClusterUsecase) RemoveNode(ctx context.Context, clusterID int64, nodeID int64) error {
+func (e execPlaybookParam) SetCluster(cluster *Cluster) *execPlaybookParam {
+	e.cluster = cluster
+	return &e
+}
+
+func (e execPlaybookParam) SetEnv(key, val string) *execPlaybookParam {
+	if e.env == nil {
+		e.env = make(map[string]string)
+	}
+	e.env[key] = val
+	return &e
+}
+
+func (e execPlaybookParam) SetCmdRunDir(cmdRunDir string) *execPlaybookParam {
+	e.cmdRunDir = cmdRunDir
+	return &e
+}
+
+func (e execPlaybookParam) SetPlaybooks(playbooks ...string) *execPlaybookParam {
+	e.playbooks = playbooks
+	return &e
+}
+
+func (uc *ClusterUsecase) execPlaybook(param *execPlaybookParam) error {
+	if param.cluster == nil {
+		return errors.New("cluster is required")
+	}
+	if param.cmdRunDir == "" {
+		return errors.New("cmdRunDir is required")
+	}
+	if len(param.playbooks) == 0 {
+		return errors.New("playbooks is required")
+	}
+	if param.ctx == nil {
+		param.ctx = context.Background()
+	}
+	inventoryFilePathName, err := uc.getInventory(param.cluster)
+	if err != nil {
+		return err
+	}
+	g := new(errgroup.Group)
+	ansibleLog := make(chan string, 100)
+	ansibleObj := ansible.NewGoAnsiblePkg().
+		SetAnsiblePlaybookBinary(uc.resource.Ansible.GetCli()).
+		SetLogChan(ansibleLog).
+		SetInventoryFile(inventoryFilePathName).
+		SetCmdRunDir(param.cmdRunDir).
+		SetPlaybooks(param.playbooks).
+		SetEnvMap(param.env)
+	g.Go(func() error {
+		defer func() {
+			close(ansibleLog)
+			err := recover()
+			if err != nil {
+				uc.log.Errorf("execPlaybook panic: %v", err)
+			}
+		}()
+		err = ansibleObj.ExecPlayBooks(param.ctx)
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+	g.Go(func() error {
+		defer func() {
+			if r := recover(); r != nil {
+				uc.log.Errorf("execPlaybook panic: %v", r)
+			}
+			if param.cluster.Logs != "" {
+				err = uc.repo.WriteClusterLog(param.cluster)
+				if err != nil {
+					uc.log.Errorf("write cluster log error: %v", err)
+					return
+				}
+				param.cluster.Logs = ""
+			}
+		}()
+		for {
+			select {
+			case log, ok := <-ansibleLog:
+				if !ok {
+					return nil
+				}
+				param.cluster.Logs += log
+			case <-time.After(10 * time.Second):
+				err = uc.repo.WriteClusterLog(param.cluster)
+				if err != nil {
+					return err
+				}
+				param.cluster.Logs = ""
+			}
+		}
+	})
+	if err := g.Wait(); err != nil {
+		return err
+	}
 	return nil
 }

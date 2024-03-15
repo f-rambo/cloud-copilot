@@ -748,6 +748,24 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/cluster.v1alpha1.Msg'
+    /api/v1alpha1/cluster/check:
+        post:
+            tags:
+                - ClusterInterface
+            operationId: ClusterInterface_CheckClusterConfig
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/cluster.v1alpha1.ClusterID'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/cluster.v1alpha1.Cluster'
     /api/v1alpha1/cluster/list:
         get:
             tags:
@@ -1366,6 +1384,8 @@ components:
                 config:
                     type: string
                 addons:
+                    type: string
+                addons_config:
                     type: string
                 state:
                     type: string

@@ -6,7 +6,6 @@ import (
 	"os"
 
 	"github.com/f-rambo/ocean/internal/conf"
-	"github.com/gin-gonic/gin"
 
 	"github.com/go-kratos/kratos/v2"
 	"github.com/go-kratos/kratos/v2/config"
@@ -92,20 +91,9 @@ func main() {
 		panic(err)
 	}
 
-	// start gin server
-	go ginServer(&bc)
-
 	defer cleanup()
 	// start and wait for stop signal
 	if err := app.Run(); err != nil {
 		panic(err)
 	}
-}
-
-func ginServer(c *conf.Bootstrap) {
-	gin.SetMode(gin.ReleaseMode)
-	r := gin.Default()
-	// 访问静态资源
-	r.Static("/backend/static", "./resource/")
-	r.Run(c.Server.STATIC.Addr)
 }

@@ -26,7 +26,9 @@ type File struct {
 }
 
 func NewFile(path, name string, resume bool) (*File, error) {
-	name = getRandomTimeString() + filepath.Ext(name)
+	if !resume {
+		name = getRandomTimeString() + filepath.Ext(name)
+	}
 	f := &File{path: path, name: name, resume: resume}
 	err := f.handlerPath()
 	if err != nil {
@@ -70,11 +72,23 @@ func (f *File) GetFileName() string {
 	return f.name
 }
 
+func (f *File) GetFilePath() string {
+	return f.path
+}
+
+func (f *File) GetFileFullPath() string {
+	return f.path + f.name
+}
+
+func (f *File) ClearFileContent() error {
+	return os.Truncate(f.path+f.name, 0)
+}
+
 func (f *File) handlerPath() error {
 	if f.path == "" {
 		return fmt.Errorf("path is empty")
 	}
-	if f.path[:len(f.path)-1] != "/" {
+	if f.path[len(f.path)-1:] != "/" {
 		f.path += "/"
 	}
 	if f.checkIsObjExist(f.path) {

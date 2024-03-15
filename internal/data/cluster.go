@@ -80,24 +80,55 @@ func (c *clusterRepo) Get(ctx context.Context, id int64) (*biz.Cluster, error) {
 		return nil, err
 	}
 	cluster.Nodes = append(cluster.Nodes, nodes...)
-	logPath := c.getClusterLogPath(cluster.ID)
-	if utils.IsFileExist(logPath) {
-		logs, err := utils.ReadFile(logPath)
-		if err != nil {
-			return nil, err
-		}
-		cluster.Logs = string(logs)
-	}
 	return cluster, nil
 }
 
-func (c *clusterRepo) getClusterLogPath(clusterID int64) string {
-	return fmt.Sprintf("%s/%d.log", c.logConf.Path, clusterID)
+func (c *clusterRepo) ReadClusterLog(cluster *biz.Cluster) error {
+	logPath := fmt.Sprintf("%s/cluster-%d.log", c.logConf.Path, cluster.ID)
+	if utils.IsFileExist(logPath) {
+		logs, err := utils.ReadFile(logPath)
+		if err != nil {
+			return err
+		}
+		cluster.Logs = string(logs)
+	}
+	return nil
 }
 
-func (c *clusterRepo) List(ctx context.Context) ([]*biz.Cluster, error) {
+func (c *clusterRepo) WriteClusterLog(cluster *biz.Cluster) error {
+	file, err := utils.NewFile(c.logConf.Path,
+		fmt.Sprintf("cluster-%d.log", cluster.ID), true)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	err = file.Write([]byte(cluster.Logs))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *clusterRepo) List(ctx context.Context, cluster *biz.Cluster) ([]*biz.Cluster, error) {
 	var clusters []*biz.Cluster
-	err := c.data.db.Model(&biz.Cluster{}).Find(&clusters).Error
+	clusterModelObj := c.data.db.Model(&biz.Cluster{})
+	if cluster == nil {
+		err := clusterModelObj.Find(&clusters).Error
+		return clusters, err
+	}
+	if cluster.ID != 0 {
+		clusterModelObj = clusterModelObj.Where("id = ?", cluster.ID)
+	}
+	if cluster.Name != "" {
+		clusterModelObj = clusterModelObj.Where("name = ?", cluster.Name)
+	}
+	if cluster.State != "" {
+		clusterModelObj = clusterModelObj.Where("state = ?", cluster.State)
+	}
+	if cluster.ServerVersion != "" {
+		clusterModelObj = clusterModelObj.Where("server_version = ?", cluster.ServerVersion)
+	}
+	err := clusterModelObj.Find(&clusters).Error
 	return clusters, err
 }
 

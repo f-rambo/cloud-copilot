@@ -53,6 +53,13 @@ service ClusterInterface {
             };
       }
 
+      rpc CheckClusterConfig(cluster.v1alpha1.ClusterID) returns (cluster.v1alpha1.Cluster) {
+            option (google.api.http) = {
+                  post: "/api/v1alpha1/cluster/check"
+                  body: "*"
+            };
+      }
+
       rpc SetUpCluster(cluster.v1alpha1.ClusterID) returns (cluster.v1alpha1.Msg) {
             option (google.api.http) = {
                   post: "/api/v1alpha1/cluster/setup"

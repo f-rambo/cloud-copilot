@@ -27,6 +27,7 @@ const (
 	ClusterInterface_Delete_FullMethodName             = "/cluster.v1alpha1.ClusterInterface/Delete"
 	ClusterInterface_DeleteNode_FullMethodName         = "/cluster.v1alpha1.ClusterInterface/DeleteNode"
 	ClusterInterface_GetClusterMockData_FullMethodName = "/cluster.v1alpha1.ClusterInterface/GetClusterMockData"
+	ClusterInterface_CheckClusterConfig_FullMethodName = "/cluster.v1alpha1.ClusterInterface/CheckClusterConfig"
 	ClusterInterface_SetUpCluster_FullMethodName       = "/cluster.v1alpha1.ClusterInterface/SetUpCluster"
 	ClusterInterface_UninstallCluster_FullMethodName   = "/cluster.v1alpha1.ClusterInterface/UninstallCluster"
 	ClusterInterface_AddNode_FullMethodName            = "/cluster.v1alpha1.ClusterInterface/AddNode"
@@ -44,6 +45,7 @@ type ClusterInterfaceClient interface {
 	Delete(ctx context.Context, in *ClusterID, opts ...grpc.CallOption) (*Msg, error)
 	DeleteNode(ctx context.Context, in *ClusterID, opts ...grpc.CallOption) (*Msg, error)
 	GetClusterMockData(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*Cluster, error)
+	CheckClusterConfig(ctx context.Context, in *ClusterID, opts ...grpc.CallOption) (*Cluster, error)
 	SetUpCluster(ctx context.Context, in *ClusterID, opts ...grpc.CallOption) (*Msg, error)
 	UninstallCluster(ctx context.Context, in *ClusterID, opts ...grpc.CallOption) (*Msg, error)
 	AddNode(ctx context.Context, in *ClusterID, opts ...grpc.CallOption) (*Msg, error)
@@ -121,6 +123,15 @@ func (c *clusterInterfaceClient) GetClusterMockData(ctx context.Context, in *emp
 	return out, nil
 }
 
+func (c *clusterInterfaceClient) CheckClusterConfig(ctx context.Context, in *ClusterID, opts ...grpc.CallOption) (*Cluster, error) {
+	out := new(Cluster)
+	err := c.cc.Invoke(ctx, ClusterInterface_CheckClusterConfig_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *clusterInterfaceClient) SetUpCluster(ctx context.Context, in *ClusterID, opts ...grpc.CallOption) (*Msg, error) {
 	out := new(Msg)
 	err := c.cc.Invoke(ctx, ClusterInterface_SetUpCluster_FullMethodName, in, out, opts...)
@@ -168,6 +179,7 @@ type ClusterInterfaceServer interface {
 	Delete(context.Context, *ClusterID) (*Msg, error)
 	DeleteNode(context.Context, *ClusterID) (*Msg, error)
 	GetClusterMockData(context.Context, *emptypb.Empty) (*Cluster, error)
+	CheckClusterConfig(context.Context, *ClusterID) (*Cluster, error)
 	SetUpCluster(context.Context, *ClusterID) (*Msg, error)
 	UninstallCluster(context.Context, *ClusterID) (*Msg, error)
 	AddNode(context.Context, *ClusterID) (*Msg, error)
@@ -199,6 +211,9 @@ func (UnimplementedClusterInterfaceServer) DeleteNode(context.Context, *ClusterI
 }
 func (UnimplementedClusterInterfaceServer) GetClusterMockData(context.Context, *emptypb.Empty) (*Cluster, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetClusterMockData not implemented")
+}
+func (UnimplementedClusterInterfaceServer) CheckClusterConfig(context.Context, *ClusterID) (*Cluster, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CheckClusterConfig not implemented")
 }
 func (UnimplementedClusterInterfaceServer) SetUpCluster(context.Context, *ClusterID) (*Msg, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SetUpCluster not implemented")
@@ -351,6 +366,24 @@ func _ClusterInterface_GetClusterMockData_Handler(srv interface{}, ctx context.C
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ClusterInterface_CheckClusterConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ClusterID)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ClusterInterfaceServer).CheckClusterConfig(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ClusterInterface_CheckClusterConfig_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ClusterInterfaceServer).CheckClusterConfig(ctx, req.(*ClusterID))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _ClusterInterface_SetUpCluster_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ClusterID)
 	if err := dec(in); err != nil {
@@ -457,6 +490,10 @@ var ClusterInterface_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetClusterMockData",
 			Handler:    _ClusterInterface_GetClusterMockData_Handler,
+		},
+		{
+			MethodName: "CheckClusterConfig",
+			Handler:    _ClusterInterface_CheckClusterConfig_Handler,
 		},
 		{
 			MethodName: "SetUpCluster",

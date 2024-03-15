@@ -197,9 +197,6 @@ func (c *ClusterInterface) Save(ctx context.Context, cluster *v1alpha1.Cluster) 
 	if cluster.Name == "" {
 		return nil, errors.New("cluster name is required")
 	}
-	if cluster.ApiServerAddress == "" {
-		return nil, errors.New("api server address is required")
-	}
 	bizCluster := c.clusterToBizCluster(cluster)
 	err := c.clusterUc.Save(ctx, bizCluster)
 	if err != nil {
@@ -255,23 +252,56 @@ func (c *ClusterInterface) GetClusterMockData(ctx context.Context, _ *emptypb.Em
 	if err != nil {
 		return nil, err
 	}
+	defaultClusterAddonsConfig, err := k.GetDefaultClusterAddonsConfig(ctx)
+	if err != nil {
+		return nil, err
+	}
 	cluster := &v1alpha1.Cluster{
 		Name:             "cluster1",
 		Config:           defaultClusterConfig,
 		Addons:           defaultClusterAddons,
+		AddonsConfig:     defaultClusterAddonsConfig,
 		ApiServerAddress: "127.0.0.1:6443",
 		Nodes: []*v1alpha1.Node{
 			{
-				Name:         "node1",
-				ExternalIp:   "127.0.0.1:22",
-				User:         "root",
-				Password:     "password",
-				SudoPassword: "sudo password",
-				Role:         "master/worker/edge",
+				Name:       "node1",
+				ExternalIp: "192.168.90.130",
+				User:       "username",
+				Role:       "master",
+			},
+			{
+				Name:         "node2",
+				ExternalIp:   "192.168.90.132",
+				User:         "username",
+				Password:     "123456",
+				SudoPassword: "123456",
+				Role:         "worker",
+			},
+			{
+				Name:       "node3",
+				ExternalIp: "192.168.90.133",
+				User:       "username",
+				Role:       "worker",
 			},
 		},
 	}
 	return cluster, nil
+}
+
+func (c *ClusterInterface) CheckClusterConfig(ctx context.Context, clusterId *v1alpha1.ClusterID) (*v1alpha1.Cluster, error) {
+	if clusterId.Id == 0 {
+		return nil, errors.New("cluster id is required")
+	}
+	cluster, err := c.clusterUc.CheckConfig(ctx, clusterId.Id)
+	if err != nil {
+		return nil, err
+	}
+	data := &v1alpha1.Cluster{}
+	if cluster == nil {
+		return data, nil
+	}
+	data = c.bizCLusterToCluster(cluster)
+	return data, nil
 }
 
 func (c *ClusterInterface) SetUpCluster(ctx context.Context, cluster *v1alpha1.ClusterID) (*v1alpha1.Msg, error) {

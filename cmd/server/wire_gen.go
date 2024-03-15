@@ -30,7 +30,7 @@ func wireApp(confServer *conf.Server, confData *conf.Data, auth *conf.Auth, reso
 		return nil, nil, err
 	}
 	clusterRepo := data.NewClusterRepo(dataData, logger, confLog)
-	clusterUsecase := biz.NewClusterUseCase(confServer, clusterRepo, logger)
+	clusterUsecase := biz.NewClusterUseCase(confServer, resource, clusterRepo, logger)
 	projectRepo := data.NewProjectRepo(dataData, logger, confServer)
 	projectUsecase := biz.NewProjectUseCase(projectRepo, logger)
 	appRepo := data.NewAppRepo(dataData, logger)

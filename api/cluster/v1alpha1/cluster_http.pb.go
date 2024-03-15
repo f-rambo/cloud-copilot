@@ -21,6 +21,7 @@ var _ = binding.EncodeURL
 const _ = http.SupportPackageIsVersion1
 
 const OperationClusterInterfaceAddNode = "/cluster.v1alpha1.ClusterInterface/AddNode"
+const OperationClusterInterfaceCheckClusterConfig = "/cluster.v1alpha1.ClusterInterface/CheckClusterConfig"
 const OperationClusterInterfaceDelete = "/cluster.v1alpha1.ClusterInterface/Delete"
 const OperationClusterInterfaceDeleteNode = "/cluster.v1alpha1.ClusterInterface/DeleteNode"
 const OperationClusterInterfaceGet = "/cluster.v1alpha1.ClusterInterface/Get"
@@ -34,6 +35,7 @@ const OperationClusterInterfaceUninstallCluster = "/cluster.v1alpha1.ClusterInte
 
 type ClusterInterfaceHTTPServer interface {
 	AddNode(context.Context, *ClusterID) (*Msg, error)
+	CheckClusterConfig(context.Context, *ClusterID) (*Cluster, error)
 	Delete(context.Context, *ClusterID) (*Msg, error)
 	DeleteNode(context.Context, *ClusterID) (*Msg, error)
 	Get(context.Context, *ClusterID) (*Cluster, error)
@@ -55,6 +57,7 @@ func RegisterClusterInterfaceHTTPServer(s *http.Server, srv ClusterInterfaceHTTP
 	r.DELETE("/api/v1alpha1/cluster", _ClusterInterface_Delete0_HTTP_Handler(srv))
 	r.DELETE("/api/v1alpha1/cluster/node", _ClusterInterface_DeleteNode0_HTTP_Handler(srv))
 	r.GET("/api/v1alpha1/cluster/mock", _ClusterInterface_GetClusterMockData0_HTTP_Handler(srv))
+	r.POST("/api/v1alpha1/cluster/check", _ClusterInterface_CheckClusterConfig0_HTTP_Handler(srv))
 	r.POST("/api/v1alpha1/cluster/setup", _ClusterInterface_SetUpCluster0_HTTP_Handler(srv))
 	r.DELETE("/api/v1alpha1/cluster/uninstall", _ClusterInterface_UninstallCluster0_HTTP_Handler(srv))
 	r.POST("/api/v1alpha1/cluster/node", _ClusterInterface_AddNode0_HTTP_Handler(srv))
@@ -197,6 +200,28 @@ func _ClusterInterface_GetClusterMockData0_HTTP_Handler(srv ClusterInterfaceHTTP
 	}
 }
 
+func _ClusterInterface_CheckClusterConfig0_HTTP_Handler(srv ClusterInterfaceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in ClusterID
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationClusterInterfaceCheckClusterConfig)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.CheckClusterConfig(ctx, req.(*ClusterID))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*Cluster)
+		return ctx.Result(200, reply)
+	}
+}
+
 func _ClusterInterface_SetUpCluster0_HTTP_Handler(srv ClusterInterfaceHTTPServer) func(ctx http.Context) error {
 	return func(ctx http.Context) error {
 		var in ClusterID
@@ -281,6 +306,7 @@ func _ClusterInterface_RemoveNode0_HTTP_Handler(srv ClusterInterfaceHTTPServer) 
 
 type ClusterInterfaceHTTPClient interface {
 	AddNode(ctx context.Context, req *ClusterID, opts ...http.CallOption) (rsp *Msg, err error)
+	CheckClusterConfig(ctx context.Context, req *ClusterID, opts ...http.CallOption) (rsp *Cluster, err error)
 	Delete(ctx context.Context, req *ClusterID, opts ...http.CallOption) (rsp *Msg, err error)
 	DeleteNode(ctx context.Context, req *ClusterID, opts ...http.CallOption) (rsp *Msg, err error)
 	Get(ctx context.Context, req *ClusterID, opts ...http.CallOption) (rsp *Cluster, err error)
@@ -306,6 +332,19 @@ func (c *ClusterInterfaceHTTPClientImpl) AddNode(ctx context.Context, in *Cluste
 	pattern := "/api/v1alpha1/cluster/node"
 	path := binding.EncodeURL(pattern, in, false)
 	opts = append(opts, http.Operation(OperationClusterInterfaceAddNode))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, err
+}
+
+func (c *ClusterInterfaceHTTPClientImpl) CheckClusterConfig(ctx context.Context, in *ClusterID, opts ...http.CallOption) (*Cluster, error) {
+	var out Cluster
+	pattern := "/api/v1alpha1/cluster/check"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationClusterInterfaceCheckClusterConfig))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
 	if err != nil {
