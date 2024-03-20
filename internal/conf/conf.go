@@ -6,6 +6,35 @@ import (
 )
 
 type Bootstrap struct {
+	Ocean      Ocean `json:"ocean,omitempty"`
+	Ansible    any   `json:"ansible,omitempty"`
+	Istio      any   `json:"istio,omitempty"`
+	Traefik    any   `json:"traefik,omitempty"`
+	Serverinit any   `json:"serverinit,omitempty"`
+	OpenEBS    any   `json:"openebs,omitempty"`
+}
+
+func (b *Bootstrap) GetOceanData() Data {
+	return b.Ocean.Data
+}
+
+func (b *Bootstrap) GetOceanServer() Server {
+	return b.Ocean.Server
+}
+
+func (b *Bootstrap) GetOceanAuth() Auth {
+	return b.Ocean.Auth
+}
+
+func (b *Bootstrap) GetOceanResource() Resource {
+	return b.Ocean.Resource
+}
+
+func (b *Bootstrap) GetOceanLog() Log {
+	return b.Ocean.Log
+}
+
+type Ocean struct {
 	Server   Server   `json:"server,omitempty"`
 	Data     Data     `json:"data,omitempty"`
 	Log      Log      `json:"log,omitempty"`
@@ -14,12 +43,12 @@ type Bootstrap struct {
 }
 
 type Resource struct {
-	App          string  `json:"app,omitempty"`           // app chart package
-	Icon         string  `json:"icon,omitempty"`          // app icon img
-	Repo         string  `json:"repo,omitempty"`          // app repo
-	Cluster      string  `json:"cluster,omitempty"`       // cluster setting
-	KubesprayUrl string  `json:"kubespray_url,omitempty"` // kubespray url
-	Ansible      Ansible `json:"ansible,omitempty"`       // ansible
+	App          string `json:"app,omitempty"`           // app chart package
+	Icon         string `json:"icon,omitempty"`          // app icon img
+	Repo         string `json:"repo,omitempty"`          // app repo
+	Cluster      string `json:"cluster,omitempty"`       // cluster setting
+	KubesprayUrl string `json:"kubespray_url,omitempty"` // kubespray url
+	AnsibleCli   string `json:"ansible_cli,omitempty"`   // ansible cli
 }
 
 func (r Resource) GetClusterPath() string {
@@ -62,25 +91,12 @@ func (r Resource) GetKubesprayUrl() string {
 	return kubesprayUrl
 }
 
-type Ansible struct {
-	Cli        string `json:"cli,omitempty"`
-	ServerInit string `json:"server_init,omitempty"`
-}
-
-func (a Ansible) GetCli() string {
-	cli := os.Getenv("ANSIBLE_CLI")
-	if cli == "" {
-		cli = a.Cli
+func (r Resource) GetAnsibleCli() string {
+	ansibleCli := os.Getenv("ANSIBLE_CLI")
+	if ansibleCli == "" {
+		ansibleCli = r.AnsibleCli
 	}
-	return cli
-}
-
-func (a Ansible) GetServerInit() string {
-	serverTest := os.Getenv("ANSIBLE_SERVER_INIT")
-	if serverTest == "" {
-		serverTest = a.ServerInit
-	}
-	return serverTest
+	return ansibleCli
 }
 
 type Server struct {
@@ -240,6 +256,14 @@ type Log struct {
 	MaxBackups int32  `json:"max_backups,omitempty"`
 	Compress   bool   `json:"compress,omitempty"`
 	LocalTime  bool   `json:"local_time,omitempty"`
+}
+
+func (l Log) GetPath() string {
+	path := os.Getenv("LOG_PATH")
+	if path != "" {
+		return path
+	}
+	return l.Path
 }
 
 type Auth struct {

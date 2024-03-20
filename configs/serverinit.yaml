@@ -1,5 +1,4 @@
----
-- hosts: all
+serverinit:
   tasks:
   - name: check 'root' user home directory
     shell: echo 'Hi ocean' | tee -a /root/ocean.log
@@ -17,10 +16,12 @@
     shell: echo 'net.ipv6.conf.all.forwarding=1' | tee -a /etc/sysctl.conf
   - name: Reload sysctl 
     shell: sysctl -p
+    ignore_errors: yes
   - name: Check firewall status
-    command: systemctl is-active firewalld
+    shell: systemctl is-active firewalld
     register: firewall_status
     ignore_errors: yes
   - name: Close firewall
     when: firewall_status.stdout == "active"
     shell: systemctl stop firewalld && systemctl disable firewalld
+  

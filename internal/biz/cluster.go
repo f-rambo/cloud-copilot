@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"path/filepath"
 	"time"
 
 	"github.com/f-rambo/ocean/internal/conf"
@@ -95,23 +94,16 @@ type ClusterRepo interface {
 }
 
 type ClusterUsecase struct {
-	server   *conf.Server
-	resource *conf.Resource
-	repo     ClusterRepo
-	log      *log.Helper
+	c    *conf.Bootstrap
+	repo ClusterRepo
+	log  *log.Helper
 }
 
-func NewClusterUseCase(
-	server *conf.Server,
-	resource *conf.Resource,
-	repo ClusterRepo,
-	logger log.Logger,
-) *ClusterUsecase {
+func NewClusterUseCase(c *conf.Bootstrap, repo ClusterRepo, logger log.Logger) *ClusterUsecase {
 	return &ClusterUsecase{
-		server:   server,
-		resource: resource,
-		repo:     repo,
-		log:      log.NewHelper(logger),
+		c:    c,
+		repo: repo,
+		log:  log.NewHelper(logger),
 	}
 }
 
@@ -125,7 +117,8 @@ func (uc *ClusterUsecase) CurrentCluster(ctx context.Context) (*Cluster, error) 
 		return nil, err
 	}
 	serverAddress := clientSet.Discovery().RESTClient().Get().URL().Host
-	cluster := &Cluster{Name: uc.server.Name, ServerVersion: versionInfo.String(), ApiServerAddress: serverAddress}
+	cserver := uc.c.GetOceanServer()
+	cluster := &Cluster{Name: cserver.Name, ServerVersion: versionInfo.String(), ApiServerAddress: serverAddress}
 	err = uc.getNodes(cluster)
 	if err != nil {
 		return nil, err
@@ -254,15 +247,16 @@ func (uc *ClusterUsecase) SetUpCluster(ctx context.Context, clusterID int64) err
 	if err != nil {
 		return err
 	}
-	kubespray, err := ansible.NewKubespray(uc.resource)
+	cresource := uc.c.GetOceanResource()
+	kubespray, err := ansible.NewKubespray(&cresource)
 	if err != nil {
 		return err
 	}
 	execplayBookParam := newExecPlaybookParam().
-		SetCtx(context.TODO()).
-		SetCluster(cluster).
-		SetPlaybooks(kubespray.GetClusterPath()).
-		SetCmdRunDir(kubespray.GetPackagePath())
+		setCtx(context.TODO()).
+		setCluster(cluster).
+		setPlaybooks(kubespray.GetClusterPath()).
+		setCmdRunDir(kubespray.GetPackagePath())
 	go func() {
 		err = uc.execPlaybook(execplayBookParam)
 		if err != nil {
@@ -279,15 +273,16 @@ func (uc *ClusterUsecase) UninstallCluster(ctx context.Context, clusterID int64)
 	if err != nil {
 		return err
 	}
-	kubespray, err := ansible.NewKubespray(uc.resource)
+	cresource := uc.c.GetOceanResource()
+	kubespray, err := ansible.NewKubespray(&cresource)
 	if err != nil {
 		return err
 	}
 	execplayBookParam := newExecPlaybookParam().
-		SetCtx(context.TODO()).
-		SetCluster(cluster).
-		SetPlaybooks(kubespray.GetResetPath()).
-		SetCmdRunDir(kubespray.GetPackagePath())
+		setCtx(context.TODO()).
+		setCluster(cluster).
+		setPlaybooks(kubespray.GetResetPath()).
+		setCmdRunDir(kubespray.GetPackagePath())
 	go func() {
 		err = uc.execPlaybook(execplayBookParam)
 		if err != nil {
@@ -308,15 +303,16 @@ func (uc *ClusterUsecase) AddNode(ctx context.Context, clusterID int64, nodeID i
 	if node == nil {
 		return errors.New("node not found")
 	}
-	kubespray, err := ansible.NewKubespray(uc.resource)
+	cresource := uc.c.GetOceanResource()
+	kubespray, err := ansible.NewKubespray(&cresource)
 	if err != nil {
 		return err
 	}
 	execplayBookParam := newExecPlaybookParam().
-		SetCtx(context.TODO()).
-		SetCluster(cluster).
-		SetPlaybooks(kubespray.GetScalePath()).
-		SetCmdRunDir(kubespray.GetPackagePath())
+		setCtx(context.TODO()).
+		setCluster(cluster).
+		setPlaybooks(kubespray.GetScalePath()).
+		setCmdRunDir(kubespray.GetPackagePath())
 	go func() {
 		err = uc.execPlaybook(execplayBookParam)
 		if err != nil {
@@ -337,16 +333,17 @@ func (uc *ClusterUsecase) RemoveNode(ctx context.Context, clusterID int64, nodeI
 	if node == nil {
 		return errors.New("node not found")
 	}
-	kubespray, err := ansible.NewKubespray(uc.resource)
+	cresource := uc.c.GetOceanResource()
+	kubespray, err := ansible.NewKubespray(&cresource)
 	if err != nil {
 		return err
 	}
 	execplayBookParam := newExecPlaybookParam().
-		SetCtx(context.TODO()).
-		SetCluster(cluster).
-		SetPlaybooks(kubespray.GetRemoveNodePath()).
-		SetCmdRunDir(kubespray.GetPackagePath()).
-		SetEnv("node", node.Name)
+		setCtx(context.TODO()).
+		setCluster(cluster).
+		setPlaybooks(kubespray.GetRemoveNodePath()).
+		setCmdRunDir(kubespray.GetPackagePath()).
+		setEnv("node", node.Name)
 	go func() {
 		err = uc.execPlaybook(execplayBookParam)
 		if err != nil {
@@ -370,6 +367,7 @@ func (uc *ClusterUsecase) CheckConfig(ctx context.Context, clusterID int64) (*Cl
 		}
 	}()
 	checkFuncs := []func(ctx context.Context, cluster *Cluster) error{
+		uc.ansibleCfgInit,
 		uc.checkServerConfig,
 		uc.checkClusterConfig,
 		uc.checkClusterAddons,
@@ -385,12 +383,79 @@ func (uc *ClusterUsecase) CheckConfig(ctx context.Context, clusterID int64) (*Cl
 	return cluster, nil
 }
 
+func (uc *ClusterUsecase) ansibleCfgInit(ctx context.Context, _ *Cluster) error {
+	cresource := uc.c.GetOceanResource()
+	kubespray, err := ansible.NewKubespray(&cresource)
+	if err != nil {
+		return err
+	}
+	ansiblePkg := ansible.NewGoAnsiblePkg(uc.c)
+	ansibleCfgContent, err := ansiblePkg.GenerateAnsibleCfg()
+	if err != nil {
+		return err
+	}
+	file, err := utils.NewFile(kubespray.GetPackagePath(), "ansible.cfg", true)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			uc.log.Errorf("ansibleCfgInit panic: %v", r)
+		}
+		err := file.Close()
+		if err != nil {
+			uc.log.Errorf("close file error: %v", err)
+		}
+	}()
+	err = file.ClearFileContent()
+	if err != nil {
+		return err
+	}
+	err = file.Write([]byte(ansibleCfgContent))
+	if err != nil {
+		return err
+	}
+	return nil
+
+}
+
 func (uc *ClusterUsecase) checkServerConfig(ctx context.Context, cluster *Cluster) error {
+	cresource := uc.c.GetOceanResource()
+	kubespray, err := ansible.NewKubespray(&cresource)
+	if err != nil {
+		return err
+	}
+	file, err := utils.NewFile(kubespray.GetPackagePath(), "server-init.yml", true)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			uc.log.Errorf("checkServerConfig panic: %v", r)
+		}
+		err := file.Close()
+		if err != nil {
+			uc.log.Errorf("close file error: %v", err)
+		}
+	}()
+	err = file.ClearFileContent()
+	if err != nil {
+		return err
+	}
+	ansiblePkg := ansible.NewGoAnsiblePkg(uc.c)
+	serverinitPlaybook, err := ansiblePkg.GenerateServerInitPlaybook()
+	if err != nil {
+		return err
+	}
+	err = file.Write([]byte(serverinitPlaybook))
+	if err != nil {
+		return err
+	}
 	execPlayBookParam := newExecPlaybookParam().
-		SetCluster(cluster).
-		SetCtx(ctx).
-		SetPlaybooks(uc.resource.Ansible.ServerInit).
-		SetCmdRunDir(filepath.Dir(uc.resource.Ansible.ServerInit))
+		setCluster(cluster).
+		setCtx(ctx).
+		setPlaybooks(file.GetFileName()).
+		setCmdRunDir(kubespray.GetPackagePath())
 	return uc.execPlaybook(execPlayBookParam)
 }
 
@@ -403,7 +468,7 @@ func (uc *ClusterUsecase) checkClusterAddons(ctx context.Context, cluter *Cluste
 }
 
 // param cluster: cluster to generate inventory file
-// result: inventory file path
+// result: inventory file name
 func (uc *ClusterUsecase) getInventory(cluster *Cluster) (string, error) {
 	servers := make([]ansible.Server, 0)
 	for _, node := range cluster.Nodes {
@@ -414,10 +479,13 @@ func (uc *ClusterUsecase) getInventory(cluster *Cluster) (string, error) {
 			Role:     node.Role,
 		})
 	}
-
+	cresource := uc.c.GetOceanResource()
+	kubespray, err := ansible.NewKubespray(&cresource)
+	if err != nil {
+		return "", err
+	}
 	ansibleInventory := ansible.GenerateInventoryFile(servers)
-	inventoryFileName := fmt.Sprintf("%d-inventory.ini", cluster.ID)
-	file, err := utils.NewFile(uc.resource.GetClusterPath(), inventoryFileName, true)
+	file, err := utils.NewFile(kubespray.GetPackagePath(), fmt.Sprintf("inventory-%d.ini", cluster.ID), true)
 	if err != nil {
 		return "", err
 	}
@@ -426,6 +494,9 @@ func (uc *ClusterUsecase) getInventory(cluster *Cluster) (string, error) {
 		return "", err
 	}
 	defer func() {
+		if r := recover(); r != nil {
+			uc.log.Errorf("getInventory panic: %v", r)
+		}
 		if file == nil {
 			return
 		}
@@ -438,7 +509,7 @@ func (uc *ClusterUsecase) getInventory(cluster *Cluster) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return file.GetFilePath() + file.GetFileName(), nil
+	return file.GetFileName(), nil
 }
 
 type execPlaybookParam struct {
@@ -453,17 +524,17 @@ func newExecPlaybookParam() *execPlaybookParam {
 	return &execPlaybookParam{}
 }
 
-func (e execPlaybookParam) SetCtx(ctx context.Context) *execPlaybookParam {
+func (e execPlaybookParam) setCtx(ctx context.Context) *execPlaybookParam {
 	e.ctx = ctx
 	return &e
 }
 
-func (e execPlaybookParam) SetCluster(cluster *Cluster) *execPlaybookParam {
+func (e execPlaybookParam) setCluster(cluster *Cluster) *execPlaybookParam {
 	e.cluster = cluster
 	return &e
 }
 
-func (e execPlaybookParam) SetEnv(key, val string) *execPlaybookParam {
+func (e execPlaybookParam) setEnv(key, val string) *execPlaybookParam {
 	if e.env == nil {
 		e.env = make(map[string]string)
 	}
@@ -471,12 +542,12 @@ func (e execPlaybookParam) SetEnv(key, val string) *execPlaybookParam {
 	return &e
 }
 
-func (e execPlaybookParam) SetCmdRunDir(cmdRunDir string) *execPlaybookParam {
+func (e execPlaybookParam) setCmdRunDir(cmdRunDir string) *execPlaybookParam {
 	e.cmdRunDir = cmdRunDir
 	return &e
 }
 
-func (e execPlaybookParam) SetPlaybooks(playbooks ...string) *execPlaybookParam {
+func (e execPlaybookParam) setPlaybooks(playbooks ...string) *execPlaybookParam {
 	e.playbooks = playbooks
 	return &e
 }
@@ -498,10 +569,11 @@ func (uc *ClusterUsecase) execPlaybook(param *execPlaybookParam) error {
 	if err != nil {
 		return err
 	}
+	cresource := uc.c.GetOceanResource()
 	g := new(errgroup.Group)
 	ansibleLog := make(chan string, 100)
-	ansibleObj := ansible.NewGoAnsiblePkg().
-		SetAnsiblePlaybookBinary(uc.resource.Ansible.GetCli()).
+	ansibleObj := ansible.NewGoAnsiblePkg(uc.c).
+		SetAnsiblePlaybookBinary(cresource.GetAnsibleCli()).
 		SetLogChan(ansibleLog).
 		SetInventoryFile(inventoryFilePathName).
 		SetCmdRunDir(param.cmdRunDir).

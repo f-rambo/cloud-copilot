@@ -15,8 +15,9 @@ type UserInterface struct {
 	authConf *conf.Auth
 }
 
-func NewUserInterface(uc *biz.UserUseCase, conf *conf.Auth) *UserInterface {
-	return &UserInterface{uc: uc, authConf: conf}
+func NewUserInterface(uc *biz.UserUseCase, conf *conf.Bootstrap) *UserInterface {
+	cAuth := conf.GetOceanAuth()
+	return &UserInterface{uc: uc, authConf: &cAuth}
 }
 
 func (u *UserInterface) SignIn(ctx context.Context, in *v1alpha1.SignIn) (*v1alpha1.User, error) {

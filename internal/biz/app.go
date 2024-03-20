@@ -217,13 +217,13 @@ type AppRepo interface {
 type AppUsecase struct {
 	repo        AppRepo
 	log         *log.Helper
-	resConf     *conf.Resource
+	c           *conf.Bootstrap
 	clusterRepo ClusterRepo
 	projectRepo ProjectRepo
 }
 
-func NewAppUsecase(repo AppRepo, logger log.Logger, resConf *conf.Resource, clusterRepo ClusterRepo, projectRepo ProjectRepo) *AppUsecase {
-	return &AppUsecase{repo, log.NewHelper(logger), resConf, clusterRepo, projectRepo}
+func NewAppUsecase(repo AppRepo, logger log.Logger, c *conf.Bootstrap, clusterRepo ClusterRepo, projectRepo ProjectRepo) *AppUsecase {
+	return &AppUsecase{repo, log.NewHelper(logger), c, clusterRepo, projectRepo}
 }
 
 func (uc *AppUsecase) GetAppByName(ctx context.Context, name string) (app *App, err error) {
@@ -250,7 +250,8 @@ func (uc *AppUsecase) Get(ctx context.Context, id, versionId int64) (*App, error
 	if appVersion == nil {
 		return app, nil
 	}
-	err = appVersion.GetChartInfo(uc.resConf.GetAppPath())
+	cresource := uc.c.GetOceanResource()
+	err = appVersion.GetChartInfo(cresource.GetAppPath())
 	if err != nil {
 		return nil, err
 	}
@@ -270,21 +271,22 @@ func (uc *AppUsecase) Delete(ctx context.Context, id, versionId int64) error {
 	if err != nil {
 		return err
 	}
-	if app.Icon != "" && utils.IsFileExist(uc.resConf.GetIconPath()+app.Icon) && versionId == 0 {
-		err = utils.DeleteFile(uc.resConf.GetIconPath() + app.Icon)
+	cresource := uc.c.GetOceanResource()
+	if app.Icon != "" && utils.IsFileExist(cresource.GetIconPath()+app.Icon) && versionId == 0 {
+		err = utils.DeleteFile(cresource.GetIconPath() + app.Icon)
 		if err != nil {
 			return err
 		}
 	}
 	for _, v := range app.Versions {
-		if v.Chart != "" && utils.IsFileExist(uc.resConf.GetAppPath()+v.Chart) && versionId == 0 {
-			err = utils.DeleteFile(uc.resConf.GetAppPath() + v.Chart)
+		if v.Chart != "" && utils.IsFileExist(cresource.GetAppPath()+v.Chart) && versionId == 0 {
+			err = utils.DeleteFile(cresource.GetAppPath() + v.Chart)
 			if err != nil {
 				return err
 			}
 		}
-		if v.Chart != "" && utils.IsFileExist(uc.resConf.GetAppPath()+v.Chart) && versionId == v.ID {
-			err = utils.DeleteFile(uc.resConf.GetAppPath() + v.Chart)
+		if v.Chart != "" && utils.IsFileExist(cresource.GetAppPath()+v.Chart) && versionId == v.ID {
+			err = utils.DeleteFile(cresource.GetAppPath() + v.Chart)
 			if err != nil {
 				return err
 			}
@@ -327,7 +329,6 @@ func (uc *AppUsecase) AppTest(ctx context.Context, appID, versionID int64) (*Dep
 	deployAppErr := uc.deployApp(ctx, appDeployed)
 	if deployAppErr != nil {
 		appVersion.State = AppTestFailed
-		appVersion.TestResult = err.Error()
 	}
 	if deployAppErr == nil {
 		appVersion.State = AppTested
@@ -394,7 +395,7 @@ func (uc *AppUsecase) DeleteDeployedApp(ctx context.Context, id int64) error {
 	if appDeployed == nil {
 		return nil
 	}
-	err = uc.unDeployApp(ctx, appDeployed)
+	err = uc.unDeployApp(appDeployed)
 	if err != nil {
 		return err
 	}
@@ -413,7 +414,7 @@ func (uc *AppUsecase) StopApp(ctx context.Context, id int64) error {
 	if appDeployed == nil {
 		return errors.New("app deployed not found")
 	}
-	unDeployAppErr := uc.unDeployApp(ctx, appDeployed)
+	unDeployAppErr := uc.unDeployApp(appDeployed)
 	err = uc.repo.SaveDeployApp(ctx, appDeployed)
 	if err != nil {
 		return err
@@ -432,7 +433,7 @@ func (uc *AppUsecase) SaveRepo(ctx context.Context, helmRepo *AppHelmRepo) error
 			helmRepo.ID = v.ID
 		}
 	}
-	err = uc.addRepo(ctx, helmRepo)
+	err = uc.addRepo(helmRepo)
 	if err != nil {
 		return err
 	}
@@ -455,7 +456,7 @@ func (uc *AppUsecase) GetAppsByRepo(ctx context.Context, helmRepoID int64) ([]*A
 	if err != nil {
 		return nil, err
 	}
-	return uc.getAppsByRepo(ctx, helmRepo)
+	return uc.getAppsByRepo(helmRepo)
 }
 
 // 根据repo获取app详情包含app version
@@ -474,7 +475,7 @@ func (uc *AppUsecase) GetAppDetailByRepo(ctx context.Context, helmRepoID int64, 
 	if helmRepo == nil {
 		return nil, errors.New("helm repo not found")
 	}
-	return uc.getAppDetailByRepo(ctx, helmRepo, appName, version)
+	return uc.getAppDetailByRepo(helmRepo, appName, version)
 }
 
 func (uc *AppUsecase) deployApp(ctx context.Context, appDeployed *DeployApp) error {
@@ -486,9 +487,10 @@ func (uc *AppUsecase) deployApp(ctx context.Context, appDeployed *DeployApp) err
 	if err != nil {
 		return err
 	}
-	chart := fmt.Sprintf("%s%s", uc.resConf.GetAppPath(), appDeployed.Chart)
+	cresource := uc.c.GetOceanResource()
+	chart := fmt.Sprintf("%s%s", cresource.GetAppPath(), appDeployed.Chart)
 	if appDeployed.AppTypeID == AppTypeRepo {
-		chart = fmt.Sprintf("%s%s/%s", uc.resConf.GetRepoPath(), appDeployed.AppName, appDeployed.Chart)
+		chart = fmt.Sprintf("%s%s/%s", cresource.GetRepoPath(), appDeployed.AppName, appDeployed.Chart)
 	}
 	install.ReleaseName = appDeployed.ReleaseName
 	install.Namespace = appDeployed.Namespace
@@ -516,7 +518,7 @@ func (uc *AppUsecase) deployApp(ctx context.Context, appDeployed *DeployApp) err
 	return nil
 }
 
-func (uc *AppUsecase) unDeployApp(ctx context.Context, appDeployed *DeployApp) error {
+func (uc *AppUsecase) unDeployApp(appDeployed *DeployApp) error {
 	helmPkg, err := helm.NewHelmPkg(uc.log, appDeployed.Namespace)
 	if err != nil {
 		return err
@@ -785,7 +787,7 @@ func (uc *AppUsecase) getAppsReouces(ctx context.Context, appDeployed *DeployApp
 }
 
 // add helm repo
-func (uc *AppUsecase) addRepo(ctx context.Context, helmRepo *AppHelmRepo) error {
+func (uc *AppUsecase) addRepo(helmRepo *AppHelmRepo) error {
 	settings := cli.New()
 	r, err := repo.NewChartRepository(&repo.Entry{
 		Name: helmRepo.Name,
@@ -794,7 +796,8 @@ func (uc *AppUsecase) addRepo(ctx context.Context, helmRepo *AppHelmRepo) error 
 	if err != nil {
 		return err
 	}
-	r.CachePath = uc.resConf.GetRepoPath()
+	cresource := uc.c.GetOceanResource()
+	r.CachePath = cresource.GetRepoPath()
 	indexFile, err := r.DownloadIndexFile()
 	if err != nil {
 		return err
@@ -803,7 +806,7 @@ func (uc *AppUsecase) addRepo(ctx context.Context, helmRepo *AppHelmRepo) error 
 	return nil
 }
 
-func (uc *AppUsecase) getAppsByRepo(ctx context.Context, helmRepo *AppHelmRepo) ([]*App, error) {
+func (uc *AppUsecase) getAppsByRepo(helmRepo *AppHelmRepo) ([]*App, error) {
 	index, err := repo.LoadIndexFile(helmRepo.IndexPath)
 	if err != nil {
 		return nil, err
@@ -840,7 +843,8 @@ func (uc *AppUsecase) getAppsByRepo(ctx context.Context, helmRepo *AppHelmRepo) 
 	return apps, nil
 }
 
-func (uc *AppUsecase) getAppDetailByRepo(ctx context.Context, helmRepo *AppHelmRepo, appName, version string) (*App, error) {
+func (uc *AppUsecase) getAppDetailByRepo(helmRepo *AppHelmRepo, appName, version string) (*App, error) {
+	cresource := uc.c.GetOceanResource()
 	index, err := repo.LoadIndexFile(helmRepo.IndexPath)
 	if err != nil {
 		return nil, err
@@ -870,7 +874,7 @@ func (uc *AppUsecase) getAppDetailByRepo(ctx context.Context, helmRepo *AppHelmR
 				Description: chartMatedata.Description,
 			}
 			if (version == "" && i == 0) || (version != "" && version == chartMatedata.Version) {
-				err = appVersion.GetChartInfo(uc.resConf.GetRepoPath())
+				err = appVersion.GetChartInfo(cresource.GetRepoPath())
 				if err != nil {
 					return nil, err
 				}

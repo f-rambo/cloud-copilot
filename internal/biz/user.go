@@ -41,8 +41,9 @@ type UserUseCase struct {
 	authConf *conf.Auth
 }
 
-func NewUseUser(repo UserRepo, logger log.Logger, conf *conf.Auth) *UserUseCase {
-	return &UserUseCase{repo: repo, log: log.NewHelper(logger), authConf: conf}
+func NewUseUser(repo UserRepo, logger log.Logger, conf *conf.Bootstrap) *UserUseCase {
+	cAuth := conf.GetOceanAuth()
+	return &UserUseCase{repo: repo, log: log.NewHelper(logger), authConf: &cAuth}
 }
 
 func (u *UserUseCase) SignIn(ctx context.Context, email string, password string) (token string, err error) {

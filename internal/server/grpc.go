@@ -18,7 +18,7 @@ import (
 )
 
 // NewGRPCServer new a gRPC server.
-func NewGRPCServer(c *conf.Server,
+func NewGRPCServer(c *conf.Bootstrap,
 	cluster *interfaces.ClusterInterface,
 	app *interfaces.AppInterface,
 	services *interfaces.ServicesInterface,
@@ -32,11 +32,12 @@ func NewGRPCServer(c *conf.Server,
 		),
 		grpc.Timeout(10 * time.Minute),
 	}
-	netWork := c.GRPC.GetNetwork()
+	cserver := c.GetOceanServer()
+	netWork := cserver.GRPC.GetNetwork()
 	if netWork != "" {
 		opts = append(opts, grpc.Network(netWork))
 	}
-	addr := c.GRPC.GetAddr()
+	addr := cserver.GRPC.GetAddr()
 	if addr != "" {
 		opts = append(opts, grpc.Address(addr))
 	}

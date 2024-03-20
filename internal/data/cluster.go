@@ -11,16 +11,16 @@ import (
 )
 
 type clusterRepo struct {
-	data    *Data
-	log     *log.Helper
-	logConf *conf.Log
+	data *Data
+	log  *log.Helper
+	c    *conf.Bootstrap
 }
 
-func NewClusterRepo(data *Data, logger log.Logger, logConf *conf.Log) biz.ClusterRepo {
+func NewClusterRepo(data *Data, c *conf.Bootstrap, logger log.Logger) biz.ClusterRepo {
 	return &clusterRepo{
-		data:    data,
-		log:     log.NewHelper(logger),
-		logConf: logConf,
+		data: data,
+		log:  log.NewHelper(logger),
+		c:    c,
 	}
 }
 
@@ -84,7 +84,8 @@ func (c *clusterRepo) Get(ctx context.Context, id int64) (*biz.Cluster, error) {
 }
 
 func (c *clusterRepo) ReadClusterLog(cluster *biz.Cluster) error {
-	logPath := fmt.Sprintf("%s/cluster-%d.log", c.logConf.Path, cluster.ID)
+	clog := c.c.GetOceanLog()
+	logPath := fmt.Sprintf("%s/cluster-%d.log", clog.GetPath(), cluster.ID)
 	if utils.IsFileExist(logPath) {
 		logs, err := utils.ReadFile(logPath)
 		if err != nil {
@@ -96,7 +97,8 @@ func (c *clusterRepo) ReadClusterLog(cluster *biz.Cluster) error {
 }
 
 func (c *clusterRepo) WriteClusterLog(cluster *biz.Cluster) error {
-	file, err := utils.NewFile(c.logConf.Path,
+	clog := c.c.GetOceanLog()
+	file, err := utils.NewFile(clog.GetPath(),
 		fmt.Sprintf("cluster-%d.log", cluster.ID), true)
 	if err != nil {
 		return err

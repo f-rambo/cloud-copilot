@@ -24,32 +24,32 @@ import (
 // Injectors from wire.go:
 
 // wireApp init kratos application.
-func wireApp(confServer *conf.Server, confData *conf.Data, auth *conf.Auth, resource *conf.Resource, confLog *conf.Log, logger log.Logger) (*kratos.App, func(), error) {
-	dataData, cleanup, err := data.NewData(confData, logger)
+func wireApp(bootstrap *conf.Bootstrap, logger log.Logger) (*kratos.App, func(), error) {
+	dataData, cleanup, err := data.NewData(bootstrap, logger)
 	if err != nil {
 		return nil, nil, err
 	}
-	clusterRepo := data.NewClusterRepo(dataData, logger, confLog)
-	clusterUsecase := biz.NewClusterUseCase(confServer, resource, clusterRepo, logger)
-	projectRepo := data.NewProjectRepo(dataData, logger, confServer)
+	clusterRepo := data.NewClusterRepo(dataData, bootstrap, logger)
+	clusterUsecase := biz.NewClusterUseCase(bootstrap, clusterRepo, logger)
+	projectRepo := data.NewProjectRepo(dataData, bootstrap, logger)
 	projectUsecase := biz.NewProjectUseCase(projectRepo, logger)
 	appRepo := data.NewAppRepo(dataData, logger)
-	appUsecase := biz.NewAppUsecase(appRepo, logger, resource, clusterRepo, projectRepo)
-	clusterInterface, err := interfaces.NewClusterInterface(clusterUsecase, projectUsecase, appUsecase, resource, logger)
+	appUsecase := biz.NewAppUsecase(appRepo, logger, bootstrap, clusterRepo, projectRepo)
+	clusterInterface, err := interfaces.NewClusterInterface(clusterUsecase, projectUsecase, appUsecase, bootstrap, logger)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
 	}
 	userRepo := data.NewUserRepo(dataData, logger)
-	userUseCase := biz.NewUseUser(userRepo, logger, auth)
-	appInterface := interfaces.NewAppInterface(appUsecase, userUseCase, resource, logger)
+	userUseCase := biz.NewUseUser(userRepo, logger, bootstrap)
+	appInterface := interfaces.NewAppInterface(appUsecase, userUseCase, bootstrap, logger)
 	servicesRepo := data.NewServicesRepo(dataData, logger)
 	servicesUseCase := biz.NewServicesUseCase(servicesRepo, logger)
 	servicesInterface := interfaces.NewServicesInterface(servicesUseCase)
-	userInterface := interfaces.NewUserInterface(userUseCase, auth)
+	userInterface := interfaces.NewUserInterface(userUseCase, bootstrap)
 	projectInterface := interfaces.NewProjectInterface(projectUsecase, logger)
-	grpcServer := server.NewGRPCServer(confServer, clusterInterface, appInterface, servicesInterface, userInterface, projectInterface, logger)
-	httpServer := server.NewHTTPServer(confServer, clusterInterface, appInterface, servicesInterface, userInterface, projectInterface, logger)
+	grpcServer := server.NewGRPCServer(bootstrap, clusterInterface, appInterface, servicesInterface, userInterface, projectInterface, logger)
+	httpServer := server.NewHTTPServer(bootstrap, clusterInterface, appInterface, servicesInterface, userInterface, projectInterface, logger)
 	app := newApp(logger, grpcServer, httpServer)
 	return app, func() {
 		cleanup()

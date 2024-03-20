@@ -67,24 +67,22 @@ func main() {
 	if err := c.Scan(&bc); err != nil {
 		panic(err)
 	}
+	oceanConf := bc.Ocean
+	logConf := oceanConf.Log
 
 	logger := log.With(log.NewStdLogger(&lumberjack.Logger{
-		Filename:   fmt.Sprintf("%s/%s", bc.Log.Path, bc.Log.Filename),
-		MaxSize:    int(bc.Log.MaxSize), // megabytes
-		MaxBackups: int(bc.Log.MaxBackups),
-		MaxAge:     int(bc.Log.MaxAge), //days
-		Compress:   bc.Log.Compress,    // disabled by default
-		LocalTime:  bc.Log.LocalTime,
+		Filename:   fmt.Sprintf("%s/%s", logConf.Path, logConf.Filename),
+		MaxSize:    int(logConf.MaxSize), // megabytes
+		MaxBackups: int(logConf.MaxBackups),
+		MaxAge:     int(logConf.MaxAge), //days
+		Compress:   logConf.Compress,    // disabled by default
+		LocalTime:  logConf.LocalTime,
 	}),
 		"ts", log.DefaultTimestamp,
 		"caller", log.DefaultCaller,
 	)
 	app, cleanup, err := wireApp(
-		&bc.Server,
-		&bc.Data,
-		&bc.Auth,
-		&bc.Resource,
-		&bc.Log,
+		&bc,
 		logger,
 	)
 	if err != nil {

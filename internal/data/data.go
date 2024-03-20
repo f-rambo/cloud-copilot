@@ -23,16 +23,17 @@ type Data struct {
 	db     *gorm.DB
 }
 
-func NewData(c *conf.Data, logger log.Logger) (*Data, func(), error) {
+func NewData(c *conf.Bootstrap, logger log.Logger) (*Data, func(), error) {
 	var err error
+	cdata := c.GetOceanData()
 	data := &Data{
-		c:      c,
+		c:      &cdata,
 		logger: logger,
 	}
 	cleanup := func() {
 		log.NewHelper(logger).Info("closing the data resources")
 	}
-	data.db, err = newDB(c.Database)
+	data.db, err = newDB(cdata.Database)
 	if err != nil {
 		log.NewHelper(logger).Info("database client error, check whether the database has been deployed. If the database is not deployed, ignore this error")
 	}

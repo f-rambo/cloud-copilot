@@ -19,7 +19,7 @@ import (
 )
 
 // NewHTTPServer new an HTTP server.
-func NewHTTPServer(c *conf.Server,
+func NewHTTPServer(c *conf.Bootstrap,
 	cluster *interfaces.ClusterInterface,
 	app *interfaces.AppInterface,
 	services *interfaces.ServicesInterface,
@@ -33,11 +33,12 @@ func NewHTTPServer(c *conf.Server,
 		),
 		http.Timeout(10 * time.Minute),
 	}
-	netWork := c.HTTP.GetNetwork()
+	cserver := c.GetOceanServer()
+	netWork := cserver.HTTP.GetNetwork()
 	if netWork != "" {
 		opts = append(opts, http.Network(netWork))
 	}
-	addr := c.HTTP.GetAddr()
+	addr := cserver.HTTP.GetAddr()
 	if addr != "" {
 		opts = append(opts, http.Address(addr))
 	}

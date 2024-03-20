@@ -15,11 +15,12 @@ type projectRepo struct {
 	confServer *conf.Server
 }
 
-func NewProjectRepo(data *Data, logger log.Logger, confServer *conf.Server) biz.ProjectRepo {
+func NewProjectRepo(data *Data, c *conf.Bootstrap, logger log.Logger) biz.ProjectRepo {
+	cserver := c.GetOceanServer()
 	return &projectRepo{
 		data:       data,
 		log:        log.NewHelper(logger),
-		confServer: confServer,
+		confServer: &cserver,
 	}
 }
 

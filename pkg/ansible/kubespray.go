@@ -86,26 +86,27 @@ docker run --rm -it --mount type=bind,source="$(pwd)"/inventory/sample,dst=/inve
 ansible-playbook -i /inventory/inventory.ini --private-key /root/.ssh/id_rsa cluster.yml
 */
 
+func (k *Kubespray) GetPackagePath() string {
+	// cmd dir
+	return k.packagePath
+}
+
 func (k *Kubespray) GetResetPath() string {
-	return k.packagePath + "/reset.yml"
+	return "reset.yml"
 }
 
 func (k *Kubespray) GetClusterPath() string {
-	return k.packagePath + "/cluster.yml"
+	return "cluster.yml"
 }
 
 func (k *Kubespray) GetUpgradePath() string {
-	return k.packagePath + "/upgrade-cluster.yml"
+	return "upgrade-cluster.yml"
 }
 
 func (k *Kubespray) GetRemoveNodePath() string {
-	return k.packagePath + "/remove-node.yml"
+	return "remove-node.yml"
 }
 
 func (k *Kubespray) GetScalePath() string {
-	return k.packagePath + "/scale.yml"
-}
-
-func (k *Kubespray) GetPackagePath() string {
-	return k.packagePath
+	return "scale.yml"
 }

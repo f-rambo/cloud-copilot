@@ -21,12 +21,12 @@ type AppInterface struct {
 	v1alpha1.UnimplementedAppInterfaceServer
 	uc   *biz.AppUsecase
 	user *biz.UserUseCase
-	res  *conf.Resource
+	c    *conf.Bootstrap
 	log  *log.Helper
 }
 
-func NewAppInterface(uc *biz.AppUsecase, user *biz.UserUseCase, res *conf.Resource, logger log.Logger) *AppInterface {
-	return &AppInterface{uc: uc, res: res, user: user, log: log.NewHelper(logger)}
+func NewAppInterface(uc *biz.AppUsecase, user *biz.UserUseCase, c *conf.Bootstrap, logger log.Logger) *AppInterface {
+	return &AppInterface{uc: uc, c: c, user: user, log: log.NewHelper(logger)}
 }
 
 func (a *AppInterface) Ping(ctx context.Context, _ *emptypb.Empty) (*v1alpha1.Msg, error) {
@@ -129,12 +129,13 @@ func (a *AppInterface) UploadApp(ctx context.Context, req *v1alpha1.FileUploadRe
 	if filepath.Ext(req.GetFileName()) != ".tgz" {
 		return nil, errors.New("file type is not supported")
 	}
-	filePathName, err := a.upload(ctx, a.res.GetAppPath(), req.GetFileName(), req.GetChunk())
+	cresource := a.c.GetOceanResource()
+	filePathName, err := a.upload(cresource.GetAppPath(), req.GetFileName(), req.GetChunk())
 	if err != nil {
 		return nil, err
 	}
 	appVersion := &biz.AppVersion{Chart: filePathName, State: biz.AppUntested}
-	err = appVersion.GetChartInfo(a.res.GetAppPath())
+	err = appVersion.GetChartInfo(cresource.GetAppPath())
 	if err != nil {
 		return nil, err
 	}
@@ -157,7 +158,7 @@ func (a *AppInterface) UploadApp(ctx context.Context, req *v1alpha1.FileUploadRe
 }
 
 // 上传文件
-func (a *AppInterface) upload(ctx context.Context, path, filename, chunk string) (string, error) {
+func (a *AppInterface) upload(path, filename, chunk string) (string, error) {
 	// 从base64转换为文件 []byte
 	data, err := base64.StdEncoding.DecodeString(chunk[strings.IndexByte(chunk, ',')+1:])
 	if err != nil {

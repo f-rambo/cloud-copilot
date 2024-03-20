@@ -311,7 +311,7 @@ func GetRandomString() string {
 	str := "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 	bytes := []byte(str)
 	result := []byte{}
-	rand.Seed(time.Now().UnixNano())
+	rand.NewSource(time.Now().UnixNano())
 	for i := 0; i < 12; i++ {
 		result = append(result, bytes[rand.Intn(len(bytes))])
 	}

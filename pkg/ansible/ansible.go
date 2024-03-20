@@ -2,15 +2,21 @@ package ansible
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/apenella/go-ansible/pkg/execute"
 	"github.com/apenella/go-ansible/pkg/options"
 	"github.com/apenella/go-ansible/pkg/playbook"
 	"github.com/apenella/go-ansible/pkg/stdoutcallback/results"
+	"github.com/f-rambo/ocean/internal/conf"
+	"github.com/spf13/cast"
+	"gopkg.in/yaml.v3"
 )
 
 type GoAnsiblePkg struct {
+	c                     *conf.Bootstrap
 	logPrefix             string
 	ansiblePlaybookBinary string
 	LogChan               chan string
@@ -20,8 +26,9 @@ type GoAnsiblePkg struct {
 	env                   map[string]string
 }
 
-func NewGoAnsiblePkg() *GoAnsiblePkg {
+func NewGoAnsiblePkg(c *conf.Bootstrap) *GoAnsiblePkg {
 	return &GoAnsiblePkg{
+		c:                     c,
 		ansiblePlaybookBinary: playbook.DefaultAnsiblePlaybookBinary,
 	}
 }
@@ -189,4 +196,93 @@ kube_node
 calico_rr
 `
 	return inventory
+}
+
+type ServerInit struct {
+	Tasks []ServerInitTask `yaml:"tasks"`
+}
+
+type ServerInitTask struct {
+	Name     string `yaml:"name,omitempty"`
+	Shell    string `yaml:"shell,omitempty"`
+	Register string `yaml:"register,omitempty"`
+	When     string `yaml:"when,omitempty"`
+	IgnErr   string `yaml:"ignore_errors,omitempty"`
+	Command  string `yaml:"command,omitempty"`
+}
+
+func (a *GoAnsiblePkg) GenerateServerInitPlaybook() (string, error) {
+	serverInitPlaybookContent := `---
+`
+	serverInit := ServerInit{}
+	yamlStr, err := yaml.Marshal(a.c.Serverinit)
+	if err != nil {
+		return "", err
+	}
+	err = yaml.Unmarshal(yamlStr, &serverInit)
+	if err != nil {
+		return "", err
+	}
+	data := []map[string]any{
+		{
+			"hosts": "all",
+			"tasks": serverInit.Tasks,
+		},
+	}
+	yamlStr, err = yaml.Marshal(data)
+	if err != nil {
+		return "", err
+	}
+	serverInitPlaybookContent = serverInitPlaybookContent + string(yamlStr)
+	return serverInitPlaybookContent, nil
+}
+
+type AnsibleCfg struct {
+	SSHConnection map[string]any `json:"ssh_connection"`
+	Defaults      map[string]any `json:"defaults"`
+	Inventory     map[string]any `json:"inventory"`
+}
+
+func (a *GoAnsiblePkg) GenerateAnsibleCfg() (string, error) {
+	fString := func(k string, v any) string {
+		val := cast.ToString(v)
+		if val == "" {
+			return ""
+		}
+		val2 := strings.ToUpper(val[:1]) + val[1:]
+		if val2 == "False" || val2 == "True" {
+			return fmt.Sprintf("\n%s=%s", k, val2)
+		}
+		return fmt.Sprintf("\n%s = %s", k, cast.ToString(v))
+	}
+
+	ansibleCfg := AnsibleCfg{}
+	ansibleCfgJson, err := json.Marshal(a.c.Ansible)
+	if err != nil {
+		return "", err
+	}
+	err = json.Unmarshal(ansibleCfgJson, &ansibleCfg)
+	if err != nil {
+		return "", err
+	}
+	ansibleCfgContent := `
+[ssh_connection]`
+
+	for k, v := range ansibleCfg.SSHConnection {
+		ansibleCfgContent += fString(k, v)
+	}
+	ansibleCfgContent += `
+
+[defaults]`
+	for k, v := range ansibleCfg.Defaults {
+		ansibleCfgContent += fString(k, v)
+	}
+
+	ansibleCfgContent += `
+
+[inventory]`
+	for k, v := range ansibleCfg.Inventory {
+		ansibleCfgContent += fString(k, v)
+	}
+	return ansibleCfgContent, nil
 }

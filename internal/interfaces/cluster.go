@@ -19,11 +19,11 @@ type ClusterInterface struct {
 	clusterUc *biz.ClusterUsecase
 	projectUc *biz.ProjectUsecase
 	appUc     *biz.AppUsecase
-	c         *conf.Resource
+	c         *conf.Bootstrap
 	log       *log.Helper
 }
 
-func NewClusterInterface(clusterUc *biz.ClusterUsecase, projectUc *biz.ProjectUsecase, appUc *biz.AppUsecase, c *conf.Resource, logger log.Logger) (*ClusterInterface, error) {
+func NewClusterInterface(clusterUc *biz.ClusterUsecase, projectUc *biz.ProjectUsecase, appUc *biz.AppUsecase, c *conf.Bootstrap, logger log.Logger) (*ClusterInterface, error) {
 	cluster := &ClusterInterface{
 		clusterUc: clusterUc,
 		projectUc: projectUc,
@@ -240,7 +240,8 @@ func (c *ClusterInterface) DeleteNode(ctx context.Context, clusterParam *v1alpha
 }
 
 func (c *ClusterInterface) GetClusterMockData(ctx context.Context, _ *emptypb.Empty) (*v1alpha1.Cluster, error) {
-	k, err := ansible.NewKubespray(c.c)
+	cresource := c.c.GetOceanResource()
+	k, err := ansible.NewKubespray(&cresource)
 	if err != nil {
 		return nil, err
 	}
