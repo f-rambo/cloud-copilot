@@ -8,10 +8,12 @@ import (
 	"github.com/f-rambo/ocean/internal/conf"
 	"github.com/f-rambo/ocean/pkg/helm"
 	"github.com/f-rambo/ocean/pkg/kubeclient"
+	"github.com/f-rambo/ocean/pkg/sailor"
 	"github.com/f-rambo/ocean/utils"
 	"github.com/pkg/errors"
 	"github.com/spf13/cast"
 
+	sailorV1alpha1 "github.com/f-rambo/sailor/api/v1alpha1"
 	"github.com/go-kratos/kratos/v2/log"
 	"gorm.io/gorm"
 	pkgChart "helm.sh/helm/v3/pkg/chart"
@@ -98,7 +100,7 @@ type DeployApp struct {
 	Config      string `json:"config,omitempty" gorm:"column:config; default:''; NOT NULL"`
 	State       string `json:"state,omitempty" gorm:"column:state; default:''; NOT NULL"`
 	IsTest      bool   `json:"is_test,omitempty" gorm:"column:is_test; default:false; NOT NULL"`
-	Manifest    string `json:"manifest,omitempty" gorm:"column:manifest; default:''; NOT NULL"`
+	Manifest    string `json:"manifest,omitempty" gorm:"column:manifest; default:''; NOT NULL"` // also template | yaml
 	Notes       string `json:"notes,omitempty" gorm:"column:notes; default:''; NOT NULL"`
 	Logs        string `json:"logs,omitempty" gorm:"column:logs; default:''; NOT NULL"`
 	gorm.Model
@@ -315,6 +317,24 @@ func (uc *AppUsecase) DeployAppList(ctx context.Context, appDeployedReq DeployAp
 	return uc.repo.DeployAppList(ctx, appDeployedReq, page, pageSize)
 }
 
+func (uc *AppUsecase) AppOperation(ctx context.Context, deployedApp *DeployApp) error {
+	restConfig, err := kubeclient.GetKubeConfig()
+	if err != nil {
+		return err
+	}
+	sailorApp, err := sailor.NewForConfig(restConfig)
+	if err != nil {
+		return err
+	}
+	app := sailor.BuildAppResource(deployedApp.Namespace, deployedApp.ReleaseName,
+		sailorV1alpha1.AppSpec{Manifest: deployedApp.Manifest})
+	_, err = sailorApp.Apps(deployedApp.Namespace).Create(ctx, &app)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (uc *AppUsecase) AppTest(ctx context.Context, appID, versionID int64) (*DeployApp, error) {
 	app, err := uc.Get(ctx, appID, versionID)
 	if err != nil {
@@ -507,7 +527,7 @@ func (uc *AppUsecase) deployApp(ctx context.Context, appDeployed *DeployApp) err
 	}
 	if release != nil {
 		appDeployed.ReleaseName = release.Name
-		appDeployed.Manifest = release.Manifest
+		appDeployed.Manifest = strings.TrimSpace(release.Manifest)
 		if release.Info != nil {
 			appDeployed.State = string(release.Info.Status)
 			appDeployed.Notes = release.Info.Notes

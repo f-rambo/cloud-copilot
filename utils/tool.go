@@ -15,7 +15,7 @@ import (
 	"strings"
 	"time"
 
-	"gopkg.in/yaml.v3"
+	"gopkg.in/yaml.v2"
 )
 
 type File struct {
@@ -316,4 +316,23 @@ func GetRandomString() string {
 		result = append(result, bytes[rand.Intn(len(bytes))])
 	}
 	return string(result)
+}
+
+func GetValueFromNestedMap(m map[string]interface{}, key string) (interface{}, bool) {
+	keys := strings.Split(key, ".")
+	var current interface{} = m
+
+	for _, k := range keys {
+		switch typed := current.(type) {
+		case map[string]interface{}:
+			var ok bool
+			if current, ok = typed[k]; !ok {
+				return nil, false
+			}
+		default:
+			return nil, false
+		}
+	}
+
+	return current, true
 }

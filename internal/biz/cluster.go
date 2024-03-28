@@ -107,7 +107,7 @@ func NewClusterUseCase(c *conf.Bootstrap, repo ClusterRepo, logger log.Logger) *
 	}
 }
 
-func (uc *ClusterUsecase) CurrentCluster(ctx context.Context) (*Cluster, error) {
+func (uc *ClusterUsecase) CurrentCluster() (*Cluster, error) {
 	clientSet, err := kubeclient.GetKubeClientSet()
 	if err != nil {
 		return nil, err

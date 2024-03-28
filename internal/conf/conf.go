@@ -34,6 +34,15 @@ func (b *Bootstrap) GetOceanLog() Log {
 	return b.Ocean.Log
 }
 
+func (b *Bootstrap) GetOceanOpenebs() map[string]interface{} {
+	openebsConfig := make(map[string]interface{})
+	openebsData, ok := b.OpenEBS.(map[string]interface{})
+	if b.OpenEBS != nil && openebsData != nil && ok {
+		openebsConfig = openebsData
+	}
+	return openebsConfig
+}
+
 type Ocean struct {
 	Server   Server   `json:"server,omitempty"`
 	Data     Data     `json:"data,omitempty"`

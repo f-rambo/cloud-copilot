@@ -120,7 +120,7 @@ metadata:
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: operatorapp
+  name: sailor
   namespace: ocean
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -147,7 +147,7 @@ rules:
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: operatorapp
+  name: sailor
   namespace: ocean
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -293,7 +293,7 @@ roleRef:
   name: operator-admin
 subjects:
 - kind: ServiceAccount
-  name: operatorapp
+  name: sailor
   namespace: ocean
 ---
 apiVersion: v1
@@ -537,13 +537,13 @@ kind: Deployment
 metadata:
   labels:
     app.kubernetes.io/component: manager
-    app.kubernetes.io/created-by: operatorapp
+    app.kubernetes.io/created-by: sailor
     app.kubernetes.io/instance: controller-manager
     app.kubernetes.io/managed-by: kustomize
     app.kubernetes.io/name: deployment
-    app.kubernetes.io/part-of: operatorapp
+    app.kubernetes.io/part-of: sailor
     control-plane: controller-manager
-  name: operatorapp
+  name: sailor
   namespace: ocean
 spec:
   replicas: 1
@@ -580,7 +580,7 @@ spec:
         - --leader-elect
         command:
         - /manager
-        image: frambos/operatorapp:0.0.1
+        image: frambos/sailor:0.0.1
         livenessProbe:
           httpGet:
             path: /healthz
@@ -608,7 +608,7 @@ spec:
             - ALL
       securityContext:
         runAsNonRoot: true
-      serviceAccountName: operatorapp
+      serviceAccountName: sailor
       terminationGracePeriodSeconds: 10
 ---
 apiVersion: v1

@@ -6,7 +6,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
-func getKubeConfig() (config *rest.Config, err error) {
+func GetKubeConfig() (config *rest.Config, err error) {
 	config, err = rest.InClusterConfig()
 	if err != nil {
 		config, err = clientcmd.BuildConfigFromFlags("", clientcmd.RecommendedHomeFile)
@@ -18,7 +18,7 @@ func getKubeConfig() (config *rest.Config, err error) {
 }
 
 func GetKubeClientSet() (clientset *kubernetes.Clientset, err error) {
-	config, err := getKubeConfig()
+	config, err := GetKubeConfig()
 	if err != nil {
 		return nil, err
 	}

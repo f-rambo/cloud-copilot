@@ -12,7 +12,7 @@ import (
 	"github.com/apenella/go-ansible/pkg/stdoutcallback/results"
 	"github.com/f-rambo/ocean/internal/conf"
 	"github.com/spf13/cast"
-	"gopkg.in/yaml.v3"
+	"gopkg.in/yaml.v2"
 )
 
 type GoAnsiblePkg struct {

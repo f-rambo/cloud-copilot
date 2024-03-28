@@ -1,9 +1,9 @@
-package operatorapp
+package sailor
 
 import (
 	"context"
 
-	operatoroceaniov1alpha1 "github.com/f-rambo/operatorapp/api/v1alpha1"
+	sailorV1alpha1 "github.com/f-rambo/sailor/api/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -15,12 +15,12 @@ var (
 )
 
 type AppInterface interface {
-	List(ctx context.Context, opts metav1.ListOptions) (*operatoroceaniov1alpha1.AppList, error)
-	Get(ctx context.Context, name string, options metav1.GetOptions) (*operatoroceaniov1alpha1.App, error)
-	Create(context.Context, *operatoroceaniov1alpha1.App) (*operatoroceaniov1alpha1.App, error)
+	List(ctx context.Context, opts metav1.ListOptions) (*sailorV1alpha1.AppList, error)
+	Get(ctx context.Context, name string, options metav1.GetOptions) (*sailorV1alpha1.App, error)
+	Create(context.Context, *sailorV1alpha1.App) (*sailorV1alpha1.App, error)
 	Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error)
 	Delete(ctx context.Context, name string) error
-	Update(ctx context.Context, app *operatoroceaniov1alpha1.App) (*operatoroceaniov1alpha1.App, error)
+	Update(ctx context.Context, app *sailorV1alpha1.App) (*sailorV1alpha1.App, error)
 	// ...
 }
 
@@ -29,8 +29,8 @@ type appClient struct {
 	ns         string
 }
 
-func (c *appClient) List(ctx context.Context, opts metav1.ListOptions) (*operatoroceaniov1alpha1.AppList, error) {
-	result := operatoroceaniov1alpha1.AppList{}
+func (c *appClient) List(ctx context.Context, opts metav1.ListOptions) (*sailorV1alpha1.AppList, error) {
+	result := sailorV1alpha1.AppList{}
 	err := c.restClient.
 		Get().
 		Namespace(c.ns).
@@ -41,8 +41,8 @@ func (c *appClient) List(ctx context.Context, opts metav1.ListOptions) (*operato
 	return &result, err
 }
 
-func (c *appClient) Get(ctx context.Context, name string, opts metav1.GetOptions) (*operatoroceaniov1alpha1.App, error) {
-	result := operatoroceaniov1alpha1.App{}
+func (c *appClient) Get(ctx context.Context, name string, opts metav1.GetOptions) (*sailorV1alpha1.App, error) {
+	result := sailorV1alpha1.App{}
 	err := c.restClient.
 		Get().
 		Namespace(c.ns).
@@ -55,8 +55,8 @@ func (c *appClient) Get(ctx context.Context, name string, opts metav1.GetOptions
 	return &result, err
 }
 
-func (c *appClient) Create(ctx context.Context, app *operatoroceaniov1alpha1.App) (*operatoroceaniov1alpha1.App, error) {
-	result := operatoroceaniov1alpha1.App{}
+func (c *appClient) Create(ctx context.Context, app *sailorV1alpha1.App) (*sailorV1alpha1.App, error) {
+	result := sailorV1alpha1.App{}
 	err := c.restClient.
 		Post().
 		Namespace(c.ns).
@@ -88,9 +88,9 @@ func (c *appClient) Delete(ctx context.Context, name string) error {
 		Error()
 }
 
-func (c *appClient) Update(ctx context.Context, app *operatoroceaniov1alpha1.App) (*operatoroceaniov1alpha1.App, error) {
+func (c *appClient) Update(ctx context.Context, app *sailorV1alpha1.App) (*sailorV1alpha1.App, error) {
 	// app.ResourceVersion = utils.GetUUID()
-	result := &operatoroceaniov1alpha1.App{}
+	result := &sailorV1alpha1.App{}
 	err := c.restClient.
 		Put().Namespace(c.ns).
 		Resource(resourceName).

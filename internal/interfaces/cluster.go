@@ -7,11 +7,12 @@ import (
 	"github.com/f-rambo/ocean/internal/biz"
 	"github.com/f-rambo/ocean/internal/conf"
 	"github.com/f-rambo/ocean/pkg/ansible"
+	"github.com/f-rambo/ocean/utils"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/pkg/errors"
+	"github.com/spf13/cast"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"gopkg.in/yaml.v2"
-	"helm.sh/helm/v3/pkg/release"
 )
 
 type ClusterInterface struct {
@@ -31,28 +32,20 @@ func NewClusterInterface(clusterUc *biz.ClusterUsecase, projectUc *biz.ProjectUs
 		c:         c,
 		log:       log.NewHelper(logger),
 	}
-	ctx := context.Background()
-	bizCluster, err := cluster.clusterInit(ctx)
-	if err != nil {
-		cluster.log.Errorf("not cluster error: %v", err)
-		return cluster, nil
-	}
-	bizProject, err := cluster.ProjectInit(ctx, bizCluster)
-	if err != nil {
-		return nil, err
-	}
-	err = cluster.AppInit(ctx, bizCluster, bizProject)
+	err := cluster.clusterInit()
 	return cluster, err
 }
 
-func (c *ClusterInterface) clusterInit(ctx context.Context) (*biz.Cluster, error) {
-	cluster, err := c.clusterUc.CurrentCluster(ctx)
+// 集群初始化
+func (c *ClusterInterface) clusterInit() error {
+	cluster, err := c.clusterUc.CurrentCluster()
 	if err != nil {
-		return nil, err
+		return err
 	}
+	ctx := context.TODO()
 	clusters, err := c.clusterUc.List(ctx)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	for _, v := range clusters {
 		if v.Name == cluster.Name {
@@ -62,35 +55,18 @@ func (c *ClusterInterface) clusterInit(ctx context.Context) (*biz.Cluster, error
 	}
 	err = c.clusterUc.Save(ctx, cluster)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return cluster, nil
+	return c.clusterAppInit(ctx, cluster)
 }
 
-func (c *ClusterInterface) ProjectInit(ctx context.Context, cluster *biz.Cluster) (*biz.Project, error) {
-	projects, err := c.projectUc.List(ctx, cluster.ID)
-	if err != nil {
-		return nil, err
-	}
-	for _, v := range projects {
-		if v.Name == cluster.Name {
-			return v, nil
-		}
-	}
-	project := &biz.Project{
-		Name:      cluster.Name,
-		Namespace: cluster.Name,
-		ClusterID: cluster.ID,
-	}
-	err = c.projectUc.Save(ctx, project)
-	if err != nil {
-		return nil, err
-	}
-	return project, nil
-}
-
-func (c *ClusterInterface) AppInit(ctx context.Context, cluster *biz.Cluster, project *biz.Project) error {
-	appinstallfuncs := []func(ctx context.Context, cluster *biz.Cluster, project *biz.Project) error{
+// 项目级别的app初始化
+func (c *ClusterInterface) clusterAppInit(ctx context.Context, cluster *biz.Cluster) error {
+	// gitlab
+	// clickhouse
+	// nacos
+	// volcano
+	appinstallfuncs := []func(ctx context.Context, cluster *biz.Cluster) error{
 		c.installOpenEBS,
 		c.installPrometheus,
 		c.installGrafana,
@@ -99,7 +75,7 @@ func (c *ClusterInterface) AppInit(ctx context.Context, cluster *biz.Cluster, pr
 		c.installIstio,
 	}
 	for _, appinstallfunc := range appinstallfuncs {
-		err := appinstallfunc(ctx, cluster, project)
+		err := appinstallfunc(ctx, cluster)
 		if err != nil {
 			return err
 		}
@@ -107,41 +83,45 @@ func (c *ClusterInterface) AppInit(ctx context.Context, cluster *biz.Cluster, pr
 	return nil
 }
 
-func (c *ClusterInterface) installOpenEBS(ctx context.Context, cluster *biz.Cluster, project *biz.Project) error {
-	repo := &biz.AppHelmRepo{
-		Name: "openebs",
-		Url:  "https://openebs.github.io/charts",
+func (c *ClusterInterface) installOpenEBS(ctx context.Context, cluster *biz.Cluster) error {
+	openebsConfig := c.c.GetOceanOpenebs()
+	repoUrl, repoUrlOk := utils.GetValueFromNestedMap(openebsConfig, "base.repo_url")
+	if !repoUrlOk {
+		return errors.New("repo address is required")
 	}
+	repoName, repoNameOK := utils.GetValueFromNestedMap(openebsConfig, "base.repo_name")
+	if !repoNameOK {
+		return errors.New("repo name is required")
+	}
+	appVersion, appVersionOK := utils.GetValueFromNestedMap(openebsConfig, "base.version")
+	if !appVersionOK {
+		return errors.New("app version is required")
+	}
+	repo := &biz.AppHelmRepo{Name: cast.ToString(repoName), Url: cast.ToString(repoUrl)}
 	err := c.appUc.SaveRepo(ctx, repo)
 	if err != nil {
 		return err
 	}
-	var appName string = "openebs"
-	var version string = "3.10.0"
-	deployApps, _, err := c.appUc.DeployAppList(ctx,
-		biz.DeployApp{
-			RepoID: repo.ID, AppName: appName, Version: version, AppTypeID: biz.AppTypeRepo, ClusterID: cluster.ID, ProjectID: project.ID,
-		},
+	appName := cast.ToString(repoName)
+	version := cast.ToString(appVersion)
+	deployApps, _, err := c.appUc.DeployAppList(ctx, biz.DeployApp{
+		RepoID:    repo.ID,
+		AppName:   appName,
+		Version:   version,
+		AppTypeID: biz.AppTypeRepo,
+		ClusterID: cluster.ID,
+	},
 		1, 1)
-	if err != nil {
+	if err != nil || len(deployApps) > 0 {
 		return err
 	}
-	var deployAppID int64 = 0
-	for _, deployApp := range deployApps {
-		deployAppID = deployApp.ID
-		if deployApp.State == release.StatusDeployed.String() {
-			return nil
-		}
-	}
-	configmap := map[string]interface{}{}
-	yamlByte, err := yaml.Marshal(configmap)
+	delete(openebsConfig, "base")
+	yamlByte, err := yaml.Marshal(openebsConfig)
 	if err != nil {
 		return err
 	}
 	deployApp := &biz.DeployApp{
-		ID:        deployAppID,
 		ClusterID: cluster.ID,
-		ProjectID: project.ID,
 		AppName:   appName,
 		AppTypeID: biz.AppTypeRepo,
 		RepoID:    repo.ID,
@@ -153,26 +133,30 @@ func (c *ClusterInterface) installOpenEBS(ctx context.Context, cluster *biz.Clus
 	if err != nil {
 		return err
 	}
+	err = c.appUc.AppOperation(ctx, deployApp)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
-func (c *ClusterInterface) installPrometheus(ctx context.Context, cluster *biz.Cluster, project *biz.Project) error {
+func (c *ClusterInterface) installPrometheus(ctx context.Context, cluster *biz.Cluster) error {
 	return nil
 }
 
-func (c *ClusterInterface) installGrafana(ctx context.Context, cluster *biz.Cluster, project *biz.Project) error {
+func (c *ClusterInterface) installGrafana(ctx context.Context, cluster *biz.Cluster) error {
 	return nil
 }
 
-func (c *ClusterInterface) installHarbor(ctx context.Context, cluster *biz.Cluster, project *biz.Project) error {
+func (c *ClusterInterface) installHarbor(ctx context.Context, cluster *biz.Cluster) error {
 	return nil
 }
 
-func (c *ClusterInterface) installTraefik(ctx context.Context, cluster *biz.Cluster, project *biz.Project) error {
+func (c *ClusterInterface) installTraefik(ctx context.Context, cluster *biz.Cluster) error {
 	return nil
 }
 
-func (c *ClusterInterface) installIstio(ctx context.Context, cluster *biz.Cluster, project *biz.Project) error {
+func (c *ClusterInterface) installIstio(ctx context.Context, cluster *biz.Cluster) error {
 	return nil
 }
 
