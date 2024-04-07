@@ -47,4 +47,18 @@ service ProjectService {
                   get: "/api/v1alpha1/project/mock"
             };
       }
+
+      rpc Enable(project.v1alpha1.ProjectReq) returns (project.v1alpha1.Msg) {
+            option (google.api.http) = {
+                  post: "/api/v1alpha1/project/enable"
+                  body: "*"
+            };
+      }
+
+      rpc Disable(project.v1alpha1.ProjectReq) returns (project.v1alpha1.Msg) {
+            option (google.api.http) = {
+                  post: "/api/v1alpha1/project/disable"
+                  body: "*"
+            };
+      }
 }

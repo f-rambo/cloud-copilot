@@ -21,19 +21,15 @@ message Project {
       int64 cluster_id = 4 [json_name="cluster_id"];
       string namespace = 5 [json_name="namespace"];
       string state = 6 [json_name="state"];
-      repeated BusinessType business_types = 7 [json_name="business_types"];
+      repeated Business business = 7 [json_name="business"];
       string business_technology = 8 [json_name="business_technology"];
 }
 
-message BusinessType {
-      int64 id = 1 [json_name="id"];
+message Business {
       string name = 2 [json_name="name"];
-      repeated TechnologyType technology_types = 3 [json_name="technology_types"];
-      int64 project_id = 4 [json_name="project_id"];
+      repeated Technology technologys = 3 [json_name="technologys"];
 }
 
-message TechnologyType {
-      int64 id = 1 [json_name="id"];
+message Technology {
       string name = 2 [json_name="name"];
-      int64 business_type_id = 3 [json_name="business_type_id"];
 }

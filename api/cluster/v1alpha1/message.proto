@@ -25,6 +25,7 @@ message Cluster {
     string state = 8 [json_name = "state"];
     repeated Node nodes = 9;
     string logs = 10 [json_name = "logs"];
+    bool is_current_cluster = 11 [json_name = "is_current_cluster"]; // 是否是当前集群状态
 }
 
 message Node {

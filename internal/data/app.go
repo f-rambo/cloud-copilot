@@ -6,6 +6,7 @@ import (
 
 	"github.com/f-rambo/ocean/internal/biz"
 	"github.com/go-kratos/kratos/v2/log"
+	"gorm.io/gorm"
 )
 
 type appRepo struct {
@@ -111,6 +112,25 @@ func (a *appRepo) Get(ctx context.Context, appID int64) (*biz.App, error) {
 	app.Versions = appVersions
 	return app, nil
 }
+
+func (a *appRepo) GetByName(ctx context.Context, appName string) (*biz.App, error) {
+	app := &biz.App{}
+	err := a.data.db.Where("name = ?", appName).First(app).Error
+	if err != nil && err != gorm.ErrRecordNotFound {
+		return nil, err
+	}
+	if app.ID == 0 {
+		return nil, nil
+	}
+	appVersions := make([]*biz.AppVersion, 0)
+	err = a.data.db.Model(&biz.AppVersion{}).Where("app_id = ?", app.ID).Find(&appVersions).Error
+	if err != nil {
+		return nil, err
+	}
+	app.Versions = appVersions
+	return app, nil
+}
+
 func (a *appRepo) Delete(ctx context.Context, appID, versionID int64) error {
 	if versionID == 0 {
 		err := a.data.db.Delete(&biz.App{}, appID).Error
@@ -218,4 +238,13 @@ func (a *appRepo) GetRepo(ctx context.Context, helmRepoID int64) (*biz.AppHelmRe
 
 func (a *appRepo) DeleteRepo(ctx context.Context, helmRepoID int64) error {
 	return a.data.db.Delete(&biz.AppHelmRepo{}, helmRepoID).Error
+}
+
+func (a *appRepo) GetRepoByName(ctx context.Context, repoName string) (*biz.AppHelmRepo, error) {
+	helmRepo := &biz.AppHelmRepo{}
+	err := a.data.db.Where("name = ?", repoName).First(helmRepo).Error
+	if err != nil && err != gorm.ErrRecordNotFound {
+		return nil, err
+	}
+	return helmRepo, nil
 }

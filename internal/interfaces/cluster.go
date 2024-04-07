@@ -7,12 +7,9 @@ import (
 	"github.com/f-rambo/ocean/internal/biz"
 	"github.com/f-rambo/ocean/internal/conf"
 	"github.com/f-rambo/ocean/pkg/ansible"
-	"github.com/f-rambo/ocean/utils"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/pkg/errors"
-	"github.com/spf13/cast"
 	"google.golang.org/protobuf/types/known/emptypb"
-	"gopkg.in/yaml.v2"
 )
 
 type ClusterInterface struct {
@@ -24,140 +21,14 @@ type ClusterInterface struct {
 	log       *log.Helper
 }
 
-func NewClusterInterface(clusterUc *biz.ClusterUsecase, projectUc *biz.ProjectUsecase, appUc *biz.AppUsecase, c *conf.Bootstrap, logger log.Logger) (*ClusterInterface, error) {
-	cluster := &ClusterInterface{
+func NewClusterInterface(clusterUc *biz.ClusterUsecase, projectUc *biz.ProjectUsecase, appUc *biz.AppUsecase, c *conf.Bootstrap, logger log.Logger) *ClusterInterface {
+	return &ClusterInterface{
 		clusterUc: clusterUc,
 		projectUc: projectUc,
 		appUc:     appUc,
 		c:         c,
 		log:       log.NewHelper(logger),
 	}
-	err := cluster.clusterInit()
-	return cluster, err
-}
-
-// 集群初始化
-func (c *ClusterInterface) clusterInit() error {
-	cluster, err := c.clusterUc.CurrentCluster()
-	if err != nil {
-		return err
-	}
-	ctx := context.TODO()
-	clusters, err := c.clusterUc.List(ctx)
-	if err != nil {
-		return err
-	}
-	for _, v := range clusters {
-		if v.Name == cluster.Name {
-			cluster.ID = v.ID
-			break
-		}
-	}
-	err = c.clusterUc.Save(ctx, cluster)
-	if err != nil {
-		return err
-	}
-	return c.clusterAppInit(ctx, cluster)
-}
-
-// 项目级别的app初始化
-func (c *ClusterInterface) clusterAppInit(ctx context.Context, cluster *biz.Cluster) error {
-	// gitlab
-	// clickhouse
-	// nacos
-	// volcano
-	appinstallfuncs := []func(ctx context.Context, cluster *biz.Cluster) error{
-		c.installOpenEBS,
-		c.installPrometheus,
-		c.installGrafana,
-		c.installHarbor,
-		c.installTraefik,
-		c.installIstio,
-	}
-	for _, appinstallfunc := range appinstallfuncs {
-		err := appinstallfunc(ctx, cluster)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (c *ClusterInterface) installOpenEBS(ctx context.Context, cluster *biz.Cluster) error {
-	openebsConfig := c.c.GetOceanOpenebs()
-	repoUrl, repoUrlOk := utils.GetValueFromNestedMap(openebsConfig, "base.repo_url")
-	if !repoUrlOk {
-		return errors.New("repo address is required")
-	}
-	repoName, repoNameOK := utils.GetValueFromNestedMap(openebsConfig, "base.repo_name")
-	if !repoNameOK {
-		return errors.New("repo name is required")
-	}
-	appVersion, appVersionOK := utils.GetValueFromNestedMap(openebsConfig, "base.version")
-	if !appVersionOK {
-		return errors.New("app version is required")
-	}
-	repo := &biz.AppHelmRepo{Name: cast.ToString(repoName), Url: cast.ToString(repoUrl)}
-	err := c.appUc.SaveRepo(ctx, repo)
-	if err != nil {
-		return err
-	}
-	appName := cast.ToString(repoName)
-	version := cast.ToString(appVersion)
-	deployApps, _, err := c.appUc.DeployAppList(ctx, biz.DeployApp{
-		RepoID:    repo.ID,
-		AppName:   appName,
-		Version:   version,
-		AppTypeID: biz.AppTypeRepo,
-		ClusterID: cluster.ID,
-	},
-		1, 1)
-	if err != nil || len(deployApps) > 0 {
-		return err
-	}
-	delete(openebsConfig, "base")
-	yamlByte, err := yaml.Marshal(openebsConfig)
-	if err != nil {
-		return err
-	}
-	deployApp := &biz.DeployApp{
-		ClusterID: cluster.ID,
-		AppName:   appName,
-		AppTypeID: biz.AppTypeRepo,
-		RepoID:    repo.ID,
-		Version:   version,
-		UserID:    biz.AdminID,
-		Config:    string(yamlByte),
-	}
-	_, err = c.appUc.DeployApp(ctx, deployApp)
-	if err != nil {
-		return err
-	}
-	err = c.appUc.AppOperation(ctx, deployApp)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (c *ClusterInterface) installPrometheus(ctx context.Context, cluster *biz.Cluster) error {
-	return nil
-}
-
-func (c *ClusterInterface) installGrafana(ctx context.Context, cluster *biz.Cluster) error {
-	return nil
-}
-
-func (c *ClusterInterface) installHarbor(ctx context.Context, cluster *biz.Cluster) error {
-	return nil
-}
-
-func (c *ClusterInterface) installTraefik(ctx context.Context, cluster *biz.Cluster) error {
-	return nil
-}
-
-func (c *ClusterInterface) installIstio(ctx context.Context, cluster *biz.Cluster) error {
-	return nil
 }
 
 func (c *ClusterInterface) Ping(ctx context.Context, _ *emptypb.Empty) (*v1alpha1.Msg, error) {
@@ -190,14 +61,39 @@ func (c *ClusterInterface) Save(ctx context.Context, cluster *v1alpha1.Cluster) 
 }
 
 func (c *ClusterInterface) List(ctx context.Context, _ *emptypb.Empty) (*v1alpha1.ClusterList, error) {
+	data := &v1alpha1.ClusterList{}
 	clusters, err := c.clusterUc.List(ctx)
 	if err != nil {
 		return nil, err
 	}
-	data := &v1alpha1.ClusterList{}
-	for _, v := range clusters {
-		data.Clusters = append(data.Clusters, c.bizCLusterToCluster(v))
+	if len(clusters) == 0 {
+		return data, nil
 	}
+	currentCluster, err := c.clusterUc.CurrentCluster()
+	if err != nil {
+		return nil, err
+	}
+	for _, v := range clusters {
+		cluster := c.bizCLusterToCluster(v)
+		if v.ApiServerAddress != "" && v.ApiServerAddress == currentCluster.ApiServerAddress {
+			cluster.IsCurrentCluster = true
+		}
+		data.Clusters = append(data.Clusters, cluster)
+	}
+	return data, nil
+}
+
+func (c *ClusterInterface) GetCurrentCluster(ctx context.Context, _ *emptypb.Empty) (*v1alpha1.Cluster, error) {
+	currentCluster, err := c.clusterUc.CurrentCluster()
+	if err != nil {
+		return nil, err
+	}
+	data := &v1alpha1.Cluster{}
+	if currentCluster == nil {
+		return data, nil
+	}
+	currentCluster.State = biz.ClusterStateRunning
+	data = c.bizCLusterToCluster(currentCluster)
 	return data, nil
 }
 
@@ -217,6 +113,77 @@ func (c *ClusterInterface) DeleteNode(ctx context.Context, clusterParam *v1alpha
 		return nil, errors.New("cluster id is required and node id is required")
 	}
 	err := c.clusterUc.DeleteNode(ctx, clusterParam.Id, clusterParam.NodeId)
+	if err != nil {
+		return nil, err
+	}
+	return &v1alpha1.Msg{}, nil
+}
+
+func (c *ClusterInterface) CheckClusterConfig(ctx context.Context, clusterId *v1alpha1.ClusterID) (*v1alpha1.Cluster, error) {
+	if clusterId.Id == 0 {
+		return nil, errors.New("cluster id is required")
+	}
+	cluster, err := c.clusterUc.CheckConfig(ctx, clusterId.Id)
+	if err != nil {
+		return nil, err
+	}
+	data := &v1alpha1.Cluster{}
+	if cluster == nil {
+		return data, nil
+	}
+	data = c.bizCLusterToCluster(cluster)
+	return data, nil
+}
+
+func (c *ClusterInterface) SetUpCluster(ctx context.Context, clusterIdParam *v1alpha1.ClusterID) (*v1alpha1.Msg, error) {
+	if clusterIdParam.Id == 0 {
+		return nil, errors.New("cluster id is required")
+	}
+	err := c.clusterUc.SetUpCluster(ctx, clusterIdParam.Id)
+	if err != nil {
+		return nil, err
+	}
+	cluster, err := c.clusterUc.Get(ctx, clusterIdParam.Id)
+	if err != nil {
+		return nil, err
+	}
+	err = c.appUc.BaseInstallation(ctx, cluster, nil)
+	if err != nil {
+		return nil, err
+	}
+	return &v1alpha1.Msg{}, nil
+}
+
+// UninstallCluster
+func (c *ClusterInterface) UninstallCluster(ctx context.Context, cluster *v1alpha1.ClusterID) (*v1alpha1.Msg, error) {
+	if cluster.Id == 0 {
+		return nil, errors.New("cluster id is required")
+	}
+	err := c.clusterUc.UninstallCluster(ctx, cluster.Id)
+	if err != nil {
+		return nil, err
+	}
+	return &v1alpha1.Msg{}, nil
+}
+
+// AddNode
+func (c *ClusterInterface) AddNode(ctx context.Context, clusterParam *v1alpha1.ClusterID) (*v1alpha1.Msg, error) {
+	if clusterParam.Id == 0 || clusterParam.NodeId == 0 {
+		return nil, errors.New("cluster id is required and node id is required")
+	}
+	err := c.clusterUc.AddNode(ctx, clusterParam.Id, clusterParam.NodeId)
+	if err != nil {
+		return nil, err
+	}
+	return &v1alpha1.Msg{}, nil
+}
+
+// RemoveNode
+func (c *ClusterInterface) RemoveNode(ctx context.Context, clusterParam *v1alpha1.ClusterID) (*v1alpha1.Msg, error) {
+	if clusterParam.Id == 0 || clusterParam.NodeId == 0 {
+		return nil, errors.New("cluster id is required and node id is required")
+	}
+	err := c.clusterUc.RemoveNode(ctx, clusterParam.Id, clusterParam.NodeId)
 	if err != nil {
 		return nil, err
 	}
@@ -271,69 +238,6 @@ func (c *ClusterInterface) GetClusterMockData(ctx context.Context, _ *emptypb.Em
 		},
 	}
 	return cluster, nil
-}
-
-func (c *ClusterInterface) CheckClusterConfig(ctx context.Context, clusterId *v1alpha1.ClusterID) (*v1alpha1.Cluster, error) {
-	if clusterId.Id == 0 {
-		return nil, errors.New("cluster id is required")
-	}
-	cluster, err := c.clusterUc.CheckConfig(ctx, clusterId.Id)
-	if err != nil {
-		return nil, err
-	}
-	data := &v1alpha1.Cluster{}
-	if cluster == nil {
-		return data, nil
-	}
-	data = c.bizCLusterToCluster(cluster)
-	return data, nil
-}
-
-func (c *ClusterInterface) SetUpCluster(ctx context.Context, cluster *v1alpha1.ClusterID) (*v1alpha1.Msg, error) {
-	if cluster.Id == 0 {
-		return nil, errors.New("cluster id is required")
-	}
-	err := c.clusterUc.SetUpCluster(ctx, cluster.Id)
-	if err != nil {
-		return nil, err
-	}
-	return &v1alpha1.Msg{}, nil
-}
-
-// UninstallCluster
-func (c *ClusterInterface) UninstallCluster(ctx context.Context, cluster *v1alpha1.ClusterID) (*v1alpha1.Msg, error) {
-	if cluster.Id == 0 {
-		return nil, errors.New("cluster id is required")
-	}
-	err := c.clusterUc.UninstallCluster(ctx, cluster.Id)
-	if err != nil {
-		return nil, err
-	}
-	return &v1alpha1.Msg{}, nil
-}
-
-// AddNode
-func (c *ClusterInterface) AddNode(ctx context.Context, clusterParam *v1alpha1.ClusterID) (*v1alpha1.Msg, error) {
-	if clusterParam.Id == 0 || clusterParam.NodeId == 0 {
-		return nil, errors.New("cluster id is required and node id is required")
-	}
-	err := c.clusterUc.AddNode(ctx, clusterParam.Id, clusterParam.NodeId)
-	if err != nil {
-		return nil, err
-	}
-	return &v1alpha1.Msg{}, nil
-}
-
-// RemoveNode
-func (c *ClusterInterface) RemoveNode(ctx context.Context, clusterParam *v1alpha1.ClusterID) (*v1alpha1.Msg, error) {
-	if clusterParam.Id == 0 || clusterParam.NodeId == 0 {
-		return nil, errors.New("cluster id is required and node id is required")
-	}
-	err := c.clusterUc.RemoveNode(ctx, clusterParam.Id, clusterParam.NodeId)
-	if err != nil {
-		return nil, err
-	}
-	return &v1alpha1.Msg{}, nil
 }
 
 func (c *ClusterInterface) bizCLusterToCluster(bizCluster *biz.Cluster) *v1alpha1.Cluster {

@@ -29,6 +29,7 @@ type Cluster struct {
 	State            string  `json:"state" gorm:"column:state; default:''; NOT NULL;"`
 	Nodes            []*Node `json:"nodes" gorm:"-"`
 	Logs             string  `json:"logs" gorm:"-"` // logs data from localfile
+
 	gorm.Model
 }
 
@@ -117,11 +118,20 @@ func (uc *ClusterUsecase) CurrentCluster() (*Cluster, error) {
 		return nil, err
 	}
 	serverAddress := clientSet.Discovery().RESTClient().Get().URL().Host
-	cserver := uc.c.GetOceanServer()
-	cluster := &Cluster{Name: cserver.Name, ServerVersion: versionInfo.String(), ApiServerAddress: serverAddress}
+	cluster := &Cluster{
+		ServerVersion:    versionInfo.String(),
+		ApiServerAddress: serverAddress,
+		State:            ClusterStateRunning,
+	}
 	err = uc.getNodes(cluster)
 	if err != nil {
 		return nil, err
+	}
+	for _, node := range cluster.Nodes {
+		if node.Role == ClusterRoleMaster {
+			cluster.Name = node.Name
+			break
+		}
 	}
 	return cluster, nil
 }
@@ -146,19 +156,19 @@ func (uc *ClusterUsecase) getNodes(cluster *Cluster) error {
 		}
 		roles := make([]string, 0)
 		if _, ok := node.Labels["node-role.kubernetes.io/master"]; ok {
-			roles = append(roles, "master")
+			roles = append(roles, ClusterRoleMaster)
 		}
 		if _, ok := node.Labels["node-role.kubernetes.io/control-plane"]; ok {
-			roles = append(roles, "master")
+			roles = append(roles, ClusterRoleMaster)
 		}
 		if _, ok := node.Labels["node-role.kubernetes.io/edge"]; ok {
-			roles = append(roles, "edge")
+			roles = append(roles, ClusterRoleEdge)
 		}
 		if _, ok := node.Labels["node-role.kubernetes.io/worker"]; ok {
-			roles = append(roles, "worker")
+			roles = append(roles, ClusterRoleWorker)
 		}
 		if len(roles) == 0 {
-			roles = append(roles, "worker")
+			roles = append(roles, ClusterRoleWorker)
 		}
 		roleJson, err := json.Marshal(roles)
 		if err != nil {
@@ -203,7 +213,15 @@ func (uc *ClusterUsecase) Save(ctx context.Context, cluster *Cluster) error {
 	if len(clusters) > 0 {
 		return errors.New("cluster name already exists")
 	}
-	cluster.State = ClusterStateInit
+	currentCluster, err := uc.CurrentCluster()
+	if err != nil {
+		return err
+	}
+	if currentCluster.ApiServerAddress == cluster.ApiServerAddress {
+		cluster.State = ClusterStateRunning
+	} else {
+		cluster.State = ClusterStateInit
+	}
 	return uc.repo.Save(ctx, cluster)
 }
 

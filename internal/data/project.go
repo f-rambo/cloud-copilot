@@ -25,8 +25,8 @@ func NewProjectRepo(data *Data, c *conf.Bootstrap, logger log.Logger) biz.Projec
 }
 
 func (p *projectRepo) Save(ctx context.Context, project *biz.Project) (err error) {
-	if len(project.BusinessTypes) > 0 {
-		project.BusinessTypeJson, err = json.Marshal(project.BusinessTypes)
+	if len(project.Business) > 0 {
+		project.BusinessJson, err = json.Marshal(project.Business)
 		if err != nil {
 			return err
 		}
@@ -40,8 +40,8 @@ func (p *projectRepo) Get(ctx context.Context, id int64) (*biz.Project, error) {
 	if err != nil {
 		return nil, err
 	}
-	if len(project.BusinessTypeJson) > 0 {
-		err = json.Unmarshal(project.BusinessTypeJson, &project.BusinessTypes)
+	if len(project.BusinessJson) > 0 {
+		err = json.Unmarshal(project.BusinessJson, &project.Business)
 		if err != nil {
 			return nil, err
 		}
@@ -56,8 +56,8 @@ func (p *projectRepo) List(ctx context.Context, clusterID int64) ([]*biz.Project
 		return nil, err
 	}
 	for _, project := range projects {
-		if len(project.BusinessTypeJson) > 0 {
-			err = json.Unmarshal(project.BusinessTypeJson, &project.BusinessTypes)
+		if len(project.BusinessJson) > 0 {
+			err = json.Unmarshal(project.BusinessJson, &project.Business)
 			if err != nil {
 				return nil, err
 			}

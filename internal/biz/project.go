@@ -3,19 +3,22 @@ package biz
 import (
 	"context"
 
+	"github.com/f-rambo/ocean/internal/conf"
+	"github.com/f-rambo/ocean/pkg/kubeclient"
 	"github.com/go-kratos/kratos/v2/log"
+	"github.com/pkg/errors"
 	"gorm.io/gorm"
 )
 
 type Project struct {
-	ID               int64          `json:"id" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
-	Name             string         `json:"name" gorm:"column:name; default:''; NOT NULL"`
-	Namespace        string         `json:"namespace" gorm:"column:namespace; default:''; NOT NULL"`
-	State            string         `json:"state" gorm:"column:state; default:''; NOT NULL"`
-	Description      string         `json:"description" gorm:"column:description; default:''; NOT NULL"`
-	ClusterID        int64          `json:"cluster_id" gorm:"column:cluster_id; default:0; NOT NULL"`
-	BusinessTypes    []BusinessType `json:"business_types" gorm:"-"`
-	BusinessTypeJson []byte         `json:"business_type_json" gorm:"column:business_type_json; type:json"`
+	ID           int64      `json:"id" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
+	Name         string     `json:"name" gorm:"column:name; default:''; NOT NULL"`
+	Namespace    string     `json:"namespace" gorm:"column:namespace; default:''; NOT NULL"`
+	State        string     `json:"state" gorm:"column:state; default:''; NOT NULL"`
+	Description  string     `json:"description" gorm:"column:description; default:''; NOT NULL"`
+	ClusterID    int64      `json:"cluster_id" gorm:"column:cluster_id; default:0; NOT NULL"`
+	Business     []Business `json:"business" gorm:"-"`
+	BusinessJson []byte     `json:"business_json" gorm:"column:business_json; type:json"`
 	gorm.Model
 }
 
@@ -25,106 +28,18 @@ const (
 	ProjectStateStopped = "stopped"
 )
 
-type BusinessType struct {
-	ID              int64            `json:"id" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
-	Name            string           `json:"name" gorm:"column:name; default:''; NOT NULL"`
-	ProjectID       int64            `json:"project_id" gorm:"column:project_id; default:0; NOT NULL"`
-	TechnologyTypes []TechnologyType `json:"technology_types" gorm:"-"`
+type Business struct {
+	Name        string       `json:"name" gorm:"column:name; default:''; NOT NULL"`
+	Technologys []Technology `json:"technologys" gorm:"-"`
 }
 
-type TechnologyType struct {
-	ID             int64  `json:"id" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
-	Name           string `json:"name" gorm:"column:name; default:''; NOT NULL"`
-	BusinessTypeID int64  `json:"business_type_id" gorm:"column:business_type_id; default:0; NOT NULL"`
+type Technology struct {
+	Name string `json:"name" gorm:"column:name; default:''; NOT NULL"`
 }
 
-const (
-	BusinessTypeBackend  = 1
-	BusinessTypeFrontend = 2
-	BusinessTypeBigData  = 3
-	BusinessTypeAI       = 4
-	BusinessTypeOther    = 5
-)
-
-const (
-	TechnologyTypeGolang     = 1
-	TechnologyTypeJava       = 2
-	TechnologyTypePython     = 3
-	TechnologyTypeVue        = 4
-	TechnologyTypeReact      = 5
-	TechnologyTypeOther      = 6
-	TechnologyTypeHadoop     = 7
-	TechnologyTypeSpark      = 8
-	TechnologyTypeTensorflow = 9
-	TechnologyTypePytorch    = 10
-)
-
-func (p *Project) GetBusinessTypes() {
-	p.BusinessTypes = []BusinessType{
-		{
-			ID:   BusinessTypeBackend,
-			Name: "Backend",
-			TechnologyTypes: []TechnologyType{
-				{
-					ID:   TechnologyTypeGolang,
-					Name: "golang",
-				}, {
-					ID:   TechnologyTypeJava,
-					Name: "java",
-				}, {
-					ID:   TechnologyTypePython,
-					Name: "python",
-				},
-			},
-		}, {
-			ID:   BusinessTypeFrontend,
-			Name: "Frontend",
-			TechnologyTypes: []TechnologyType{
-				{
-					ID:   TechnologyTypeVue,
-					Name: "vue",
-				}, {
-					ID:   TechnologyTypeReact,
-					Name: "react",
-				},
-			},
-		}, {
-			ID:   BusinessTypeBigData,
-			Name: "Big Data",
-			TechnologyTypes: []TechnologyType{
-				{
-					ID:   TechnologyTypeHadoop,
-					Name: "hadoop",
-				}, {
-					ID:   TechnologyTypeSpark,
-					Name: "spark",
-				},
-			},
-		},
-		{
-			ID:   BusinessTypeAI,
-			Name: "AI",
-			TechnologyTypes: []TechnologyType{
-				{
-					ID:   TechnologyTypeTensorflow,
-					Name: "tensorflow",
-				}, {
-					ID:   TechnologyTypePytorch,
-					Name: "pytorch",
-				},
-			},
-		},
-		{
-			ID:   BusinessTypeOther,
-			Name: "Other",
-			TechnologyTypes: []TechnologyType{
-				{
-					ID:   TechnologyTypeOther,
-					Name: "other",
-				},
-			},
-		},
-	}
+func (p *Project) initPorject() {
+	p.State = ProjectStateInit
+	p.Namespace = p.Name
 }
 
 type ProjectRepo interface {
@@ -137,17 +52,47 @@ type ProjectRepo interface {
 type ProjectUsecase struct {
 	repo ProjectRepo
 	log  *log.Helper
+	c    *conf.Bootstrap
 }
 
-func NewProjectUseCase(repo ProjectRepo, logger log.Logger) *ProjectUsecase {
-	return &ProjectUsecase{repo: repo, log: log.NewHelper(logger)}
+func NewProjectUseCase(repo ProjectRepo, logger log.Logger, c *conf.Bootstrap) *ProjectUsecase {
+	return &ProjectUsecase{repo: repo, log: log.NewHelper(logger), c: c}
 }
 
-func (uc *ProjectUsecase) Save(ctx context.Context, project *Project) error {
-	if project.ID == 0 {
-		project.State = ProjectStateInit
+func (uc *ProjectUsecase) Save(ctx context.Context, projectParam *Project) error {
+	if projectParam.ID == 0 {
+		// check name exists
+		projects, err := uc.List(ctx, projectParam.ClusterID)
+		if err != nil {
+			return err
+		}
+		for _, v := range projects {
+			if v.Name == projectParam.Name {
+				return errors.New("name exists")
+			}
+		}
+		projectParam.initPorject()
+		kubeClientSet, err := kubeclient.GetKubeClientSet()
+		if err != nil {
+			return err
+		}
+		namespaceOk, err := kubeclient.NamespaceExists(ctx, kubeClientSet, projectParam.Namespace)
+		if err != nil {
+			return err
+		}
+		if namespaceOk {
+			return errors.New("namespace exists")
+		}
+		return uc.repo.Save(ctx, projectParam)
 	}
-	return uc.repo.Save(ctx, project)
+	project, err := uc.Get(ctx, projectParam.ID)
+	if err != nil {
+		return err
+	}
+	projectParam.Namespace = project.Namespace
+	projectParam.State = project.State
+	projectParam.ClusterID = project.ClusterID
+	return uc.repo.Save(ctx, projectParam)
 }
 
 func (uc *ProjectUsecase) Get(ctx context.Context, id int64) (*Project, error) {
@@ -160,4 +105,31 @@ func (uc *ProjectUsecase) List(ctx context.Context, clusterID int64) ([]*Project
 
 func (uc *ProjectUsecase) Delete(ctx context.Context, id int64) error {
 	return uc.repo.Delete(ctx, id)
+}
+
+func (uc *ProjectUsecase) Enable(ctx context.Context, project *Project, cluster *Cluster, baseAppInstallation func(context.Context, *Cluster, *Project) error) error {
+	// crate namespace
+	kubeClientSet, err := kubeclient.GetKubeClientSet()
+	if err != nil {
+		return err
+	}
+	namespaceOk, err := kubeclient.NamespaceExists(ctx, kubeClientSet, project.Namespace)
+	if err != nil {
+		return err
+	}
+	if !namespaceOk {
+		err = kubeclient.CreateNamespace(ctx, kubeClientSet, project.Namespace)
+		if err != nil {
+			return err
+		}
+	}
+	// todo create service account
+	// todo create role
+	// todo create rolebinding
+	err = baseAppInstallation(ctx, cluster, project)
+	if err != nil {
+		return err
+	}
+	project.State = ProjectStateRunning
+	return uc.Save(ctx, project)
 }

@@ -32,14 +32,10 @@ func wireApp(bootstrap *conf.Bootstrap, logger log.Logger) (*kratos.App, func(),
 	clusterRepo := data.NewClusterRepo(dataData, bootstrap, logger)
 	clusterUsecase := biz.NewClusterUseCase(bootstrap, clusterRepo, logger)
 	projectRepo := data.NewProjectRepo(dataData, bootstrap, logger)
-	projectUsecase := biz.NewProjectUseCase(projectRepo, logger)
+	projectUsecase := biz.NewProjectUseCase(projectRepo, logger, bootstrap)
 	appRepo := data.NewAppRepo(dataData, logger)
 	appUsecase := biz.NewAppUsecase(appRepo, logger, bootstrap, clusterRepo, projectRepo)
-	clusterInterface, err := interfaces.NewClusterInterface(clusterUsecase, projectUsecase, appUsecase, bootstrap, logger)
-	if err != nil {
-		cleanup()
-		return nil, nil, err
-	}
+	clusterInterface := interfaces.NewClusterInterface(clusterUsecase, projectUsecase, appUsecase, bootstrap, logger)
 	userRepo := data.NewUserRepo(dataData, logger)
 	userUseCase := biz.NewUseUser(userRepo, logger, bootstrap)
 	appInterface := interfaces.NewAppInterface(appUsecase, userUseCase, bootstrap, logger)
@@ -47,7 +43,7 @@ func wireApp(bootstrap *conf.Bootstrap, logger log.Logger) (*kratos.App, func(),
 	servicesUseCase := biz.NewServicesUseCase(servicesRepo, logger)
 	servicesInterface := interfaces.NewServicesInterface(servicesUseCase)
 	userInterface := interfaces.NewUserInterface(userUseCase, bootstrap)
-	projectInterface := interfaces.NewProjectInterface(projectUsecase, logger)
+	projectInterface := interfaces.NewProjectInterface(projectUsecase, appUsecase, clusterUsecase, bootstrap, logger)
 	grpcServer := server.NewGRPCServer(bootstrap, clusterInterface, appInterface, servicesInterface, userInterface, projectInterface, logger)
 	httpServer := server.NewHTTPServer(bootstrap, clusterInterface, appInterface, servicesInterface, userInterface, projectInterface, logger)
 	app := newApp(logger, grpcServer, httpServer)

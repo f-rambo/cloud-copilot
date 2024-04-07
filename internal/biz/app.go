@@ -3,6 +3,7 @@ package biz
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"strings"
 
 	"github.com/f-rambo/ocean/internal/conf"
@@ -12,6 +13,7 @@ import (
 	"github.com/f-rambo/ocean/utils"
 	"github.com/pkg/errors"
 	"github.com/spf13/cast"
+	"gopkg.in/yaml.v2"
 
 	sailorV1alpha1 "github.com/f-rambo/sailor/api/v1alpha1"
 	"github.com/go-kratos/kratos/v2/log"
@@ -22,6 +24,16 @@ import (
 	releasePkg "helm.sh/helm/v3/pkg/release"
 	"helm.sh/helm/v3/pkg/repo"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
+
+const (
+	openebs       = "openebs"
+	prometheus    = "prometheus"
+	grafana       = "grafana"
+	traefik       = "traefik"
+	istiod        = "istiod"
+	istiobase     = "istio-base"
+	argoworkflows = "argo-workflows"
 )
 
 type AppType struct {
@@ -202,6 +214,7 @@ type AppRepo interface {
 	Save(context.Context, *App) error
 	List(ctx context.Context, appReq *App, page, pageSize int32) ([]*App, int32, error)
 	Get(ctx context.Context, appID int64) (*App, error)
+	GetByName(ctx context.Context, name string) (*App, error)
 	Delete(ctx context.Context, appID, versionID int64) error
 	CreateAppType(ctx context.Context, appType *AppType) error
 	ListAppType(ctx context.Context) ([]*AppType, error)
@@ -213,6 +226,7 @@ type AppRepo interface {
 	SaveRepo(ctx context.Context, helmRepo *AppHelmRepo) error
 	ListRepo(ctx context.Context) ([]*AppHelmRepo, error)
 	GetRepo(ctx context.Context, helmRepoID int64) (*AppHelmRepo, error)
+	GetRepoByName(ctx context.Context, repoName string) (*AppHelmRepo, error)
 	DeleteRepo(ctx context.Context, helmRepoID int64) error
 }
 
@@ -229,14 +243,7 @@ func NewAppUsecase(repo AppRepo, logger log.Logger, c *conf.Bootstrap, clusterRe
 }
 
 func (uc *AppUsecase) GetAppByName(ctx context.Context, name string) (app *App, err error) {
-	apps, _, err := uc.repo.List(ctx, &App{Name: name}, 1, 1)
-	if err != nil {
-		return nil, err
-	}
-	for _, v := range apps {
-		return v, nil
-	}
-	return nil, nil
+	return uc.repo.GetByName(ctx, name)
 }
 
 func (uc *AppUsecase) List(ctx context.Context, appReq *App, page, pageSize int32) ([]*App, int32, error) {
@@ -379,17 +386,13 @@ func (uc *AppUsecase) DeployApp(ctx context.Context, deployAppReq *DeployApp) (*
 		}
 		appVersion = app.GetVersionById(deployAppReq.VersionID)
 	}
-	project, err := uc.projectRepo.Get(ctx, deployAppReq.ProjectID)
-	if err != nil {
-		return nil, err
-	}
 	appDeployed := appVersion.GetAppDeployed()
 	appDeployed.ID = deployAppReq.ID
 	appDeployed.RepoID = deployAppReq.RepoID
 	appDeployed.AppTypeID = app.AppTypeID
 	appDeployed.ClusterID = deployAppReq.ClusterID
 	appDeployed.ProjectID = deployAppReq.ProjectID
-	appDeployed.Namespace = project.Namespace
+	appDeployed.Namespace = deployAppReq.Namespace
 	appDeployed.Config = deployAppReq.Config
 	appDeployed.UserID = deployAppReq.UserID
 	if deployAppReq.ID != 0 {
@@ -589,6 +592,93 @@ func (uc *AppUsecase) GetDeployedResources(ctx context.Context, appDeployID int6
 		resources = append(resources, res...)
 	}
 	return resources, nil
+}
+
+// 默认app安装
+func (uc *AppUsecase) BaseInstallation(ctx context.Context, cluster *Cluster, project *Project) error {
+	configMaps := make([]map[string]interface{}, 0)
+	conf := reflect.ValueOf(uc.c)
+	for i := 0; i < conf.NumField(); i++ {
+		filed := conf.Field(i)
+		if filed.Kind() != reflect.Map {
+			continue
+		}
+		if configMap, ok := filed.Interface().(map[string]interface{}); ok {
+			configMaps = append(configMaps, configMap)
+		}
+	}
+	for _, configMap := range configMaps {
+		enable, enableOk := utils.GetValueFromNestedMap(configMap, "base.enable")
+		if !enableOk || !cast.ToBool(enable) {
+			continue
+		}
+		repoUrl, repoUrlOk := utils.GetValueFromNestedMap(configMap, "base.repo_url")
+		if !repoUrlOk {
+			continue
+		}
+		repoName, repoNameOK := utils.GetValueFromNestedMap(configMap, "base.repo_name")
+		if !repoNameOK {
+			continue
+		}
+		appVersion, appVersionOK := utils.GetValueFromNestedMap(configMap, "base.version")
+		if !appVersionOK {
+			continue
+		}
+		chartName, chartNameOK := utils.GetValueFromNestedMap(configMap, "base.chart_name")
+		if !chartNameOK {
+			continue
+		}
+		namespace, namespaceOK := utils.GetValueFromNestedMap(configMap, "base.namespace")
+		if !namespaceOK {
+			namespace = "default"
+		}
+		repo, err := uc.repo.GetRepoByName(ctx, cast.ToString(repoName))
+		if err != nil {
+			return err
+		}
+		if repo == nil || repo.ID == 0 {
+			repo = &AppHelmRepo{Name: cast.ToString(repoName), Url: cast.ToString(repoUrl)}
+			err = uc.SaveRepo(ctx, repo)
+			if err != nil {
+				return err
+			}
+		}
+		app, err := uc.GetAppByName(ctx, cast.ToString(chartName))
+		if err != nil {
+			return err
+		}
+		if app != nil && app.ID > 0 {
+			continue
+		}
+		delete(configMap, "base")
+		appConfigYamlByte, err := yaml.Marshal(configMap)
+		if err != nil {
+			return err
+		}
+		deployApp := &DeployApp{
+			ClusterID: cluster.ID,
+			AppName:   cast.ToString(chartName),
+			AppTypeID: AppTypeRepo,
+			RepoID:    repo.ID,
+			Version:   cast.ToString(appVersion),
+			UserID:    AdminID,
+			Config:    string(appConfigYamlByte),
+			Namespace: cast.ToString(namespace),
+		}
+		if project != nil {
+			deployApp.ProjectID = project.ID
+			deployApp.Namespace = project.Namespace
+		}
+		_, err = uc.DeployApp(ctx, deployApp)
+		if err != nil {
+			return err
+		}
+		err = uc.AppOperation(ctx, deployApp)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (uc *AppUsecase) getPodResources(ctx context.Context, appDeployed *DeployApp) (resources []*AppDeployedResource, err error) {

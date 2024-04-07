@@ -6,19 +6,24 @@ import (
 
 	"github.com/f-rambo/ocean/api/project/v1alpha1"
 	"github.com/f-rambo/ocean/internal/biz"
+	"github.com/f-rambo/ocean/internal/conf"
 	"github.com/f-rambo/ocean/utils"
 	"github.com/go-kratos/kratos/v2/log"
 	"google.golang.org/protobuf/types/known/emptypb"
+	"gopkg.in/yaml.v2"
 )
 
 type ProjectInterface struct {
 	v1alpha1.UnimplementedProjectServiceServer
-	uc  *biz.ProjectUsecase
-	log *log.Helper
+	projectUc *biz.ProjectUsecase
+	appUc     *biz.AppUsecase
+	clusterUc *biz.ClusterUsecase
+	c         *conf.Bootstrap
+	log       *log.Helper
 }
 
-func NewProjectInterface(uc *biz.ProjectUsecase, logger log.Logger) *ProjectInterface {
-	return &ProjectInterface{uc: uc, log: log.NewHelper(logger)}
+func NewProjectInterface(uc *biz.ProjectUsecase, appUc *biz.AppUsecase, clusterUc *biz.ClusterUsecase, c *conf.Bootstrap, logger log.Logger) *ProjectInterface {
+	return &ProjectInterface{projectUc: uc, appUc: appUc, clusterUc: clusterUc, c: c, log: log.NewHelper(logger)}
 }
 
 func (p *ProjectInterface) Ping(ctx context.Context, _ *emptypb.Empty) (*v1alpha1.Msg, error) {
@@ -29,11 +34,23 @@ func (p *ProjectInterface) Save(ctx context.Context, project *v1alpha1.Project) 
 	if project.Name == "" {
 		return nil, errors.New("project name is required")
 	}
+	if len(project.Business) == 0 {
+		return nil, errors.New("business technology is required")
+	}
+	for _, v := range project.Business {
+		if len(v.Technologys) == 0 {
+			return nil, errors.New("technology type is required")
+		}
+	}
+	notProjectNames := []string{"admin", "system", "public", "default", "kube", "kubernetes", "kube-public", "kube-system", "ocean"}
+	if utils.Contains(notProjectNames, project.Name) {
+		return nil, errors.New("project name is not allowed")
+	}
 	bizProject, err := p.projectTobizProject(project)
 	if err != nil {
 		return nil, err
 	}
-	err = p.uc.Save(ctx, bizProject)
+	err = p.projectUc.Save(ctx, bizProject)
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +61,7 @@ func (p *ProjectInterface) Get(ctx context.Context, projectReq *v1alpha1.Project
 	if projectReq.Id == 0 {
 		return nil, errors.New("project id is required")
 	}
-	bizProject, err := p.uc.Get(ctx, projectReq.Id)
+	bizProject, err := p.projectUc.Get(ctx, projectReq.Id)
 	if err != nil {
 		return nil, err
 	}
@@ -62,7 +79,7 @@ func (p *ProjectInterface) List(ctx context.Context, projectReq *v1alpha1.Projec
 	if projectReq.ClusterId == 0 {
 		return nil, errors.New("cluster id is required")
 	}
-	bizProjects, err := p.uc.List(ctx, projectReq.ClusterId)
+	bizProjects, err := p.projectUc.List(ctx, projectReq.ClusterId)
 	if err != nil {
 		return nil, err
 	}
@@ -82,7 +99,7 @@ func (p *ProjectInterface) Delete(ctx context.Context, projectReq *v1alpha1.Proj
 	if projectReq.Id == 0 {
 		return nil, errors.New("project id is required")
 	}
-	err := p.uc.Delete(ctx, projectReq.Id)
+	err := p.projectUc.Delete(ctx, projectReq.Id)
 	if err != nil {
 		return nil, err
 	}
@@ -91,15 +108,50 @@ func (p *ProjectInterface) Delete(ctx context.Context, projectReq *v1alpha1.Proj
 
 func (p *ProjectInterface) GetProjectMockData(ctx context.Context, _ *emptypb.Empty) (*v1alpha1.Project, error) {
 	bizProject := &biz.Project{
-		ID:          0,
 		Name:        "project name",
 		Namespace:   "projectNamespace",
-		ClusterID:   0,
 		Description: "project description",
 		State:       biz.ProjectStateInit,
 	}
-	bizProject.GetBusinessTypes()
+	business := p.c.Ocean.Business
+	if business == nil {
+		return nil, errors.New("business technology is required")
+	}
+	businessYamlByte, err := yaml.Marshal(business)
+	if err != nil {
+		return nil, err
+	}
+	err = yaml.Unmarshal(businessYamlByte, &bizProject.Business)
+	if err != nil {
+		return nil, err
+	}
 	return p.bizProjectToProject(bizProject)
+}
+
+func (p *ProjectInterface) Enable(ctx context.Context, projectReq *v1alpha1.ProjectReq) (*v1alpha1.Msg, error) {
+	if projectReq.Id == 0 {
+		return nil, errors.New("project id is required")
+	}
+	project, err := p.projectUc.Get(ctx, projectReq.Id)
+	if err != nil {
+		return nil, err
+	}
+	cluster, err := p.clusterUc.Get(ctx, project.ClusterID)
+	if err != nil {
+		return nil, err
+	}
+	err = p.projectUc.Enable(ctx, project, cluster, p.appUc.BaseInstallation)
+	if err != nil {
+		return nil, err
+	}
+	return &v1alpha1.Msg{}, nil
+}
+
+func (p *ProjectInterface) Disable(ctx context.Context, projectReq *v1alpha1.ProjectReq) (*v1alpha1.Msg, error) {
+	if projectReq.Id == 0 {
+		return nil, errors.New("project id is required")
+	}
+	return &v1alpha1.Msg{}, nil
 }
 
 func (p *ProjectInterface) projectTobizProject(project *v1alpha1.Project) (*biz.Project, error) {
@@ -118,13 +170,22 @@ func (p *ProjectInterface) bizProjectToProject(bizProject *biz.Project) (*v1alph
 	if err != nil {
 		return nil, err
 	}
-	businessTechnology := ""
-	for _, v := range bizProject.BusinessTypes {
-		businessTechnology += v.Name + "/"
-		for _, v2 := range v.TechnologyTypes {
-			businessTechnology += v2.Name
-			break
+	businessTechnologyMap := make(map[string][]string)
+	for _, v := range bizProject.Business {
+		technologyTypeArr := make([]string, 0)
+		for _, v2 := range v.Technologys {
+			technologyTypeArr = append(technologyTypeArr, v2.Name)
 		}
+		businessTechnologyMap[v.Name] = technologyTypeArr
+	}
+	businessTechnology := ""
+	for name, technologyTypes := range businessTechnologyMap {
+		businessTechnology += name + ":"
+		for _, technologyType := range technologyTypes {
+			businessTechnology += technologyType + ","
+		}
+		businessTechnology = businessTechnology[:len(businessTechnology)-1]
+		businessTechnology += ";\n"
 	}
 	project.Id = bizProject.ID
 	project.BusinessTechnology = businessTechnology

@@ -766,6 +766,18 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/cluster.v1alpha1.Cluster'
+    /api/v1alpha1/cluster/current:
+        get:
+            tags:
+                - ClusterInterface
+            operationId: ClusterInterface_GetCurrentCluster
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/cluster.v1alpha1.Cluster'
     /api/v1alpha1/cluster/list:
         get:
             tags:
@@ -959,6 +971,42 @@ paths:
                   in: query
                   schema:
                     type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/project.v1alpha1.Msg'
+    /api/v1alpha1/project/disable:
+        post:
+            tags:
+                - ProjectService
+            operationId: ProjectService_Disable
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/project.v1alpha1.ProjectReq'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/project.v1alpha1.Msg'
+    /api/v1alpha1/project/enable:
+        post:
+            tags:
+                - ProjectService
+            operationId: ProjectService_Enable
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/project.v1alpha1.ProjectReq'
+                required: true
             responses:
                 "200":
                     description: OK
@@ -1395,6 +1443,8 @@ components:
                         $ref: '#/components/schemas/cluster.v1alpha1.Node'
                 logs:
                     type: string
+                is_current_cluster:
+                    type: boolean
         cluster.v1alpha1.ClusterID:
             type: object
             properties:
@@ -1454,19 +1504,15 @@ components:
                     type: string
                 cluster_id:
                     type: string
-        project.v1alpha1.BusinessType:
+        project.v1alpha1.Business:
             type: object
             properties:
-                id:
-                    type: string
                 name:
                     type: string
-                technology_types:
+                technologys:
                     type: array
                     items:
-                        $ref: '#/components/schemas/project.v1alpha1.TechnologyType'
-                project_id:
-                    type: string
+                        $ref: '#/components/schemas/project.v1alpha1.Technology'
         project.v1alpha1.Msg:
             type: object
             properties:
@@ -1490,10 +1536,10 @@ components:
                     type: string
                 state:
                     type: string
-                business_types:
+                business:
                     type: array
                     items:
-                        $ref: '#/components/schemas/project.v1alpha1.BusinessType'
+                        $ref: '#/components/schemas/project.v1alpha1.Business'
                 business_technology:
                     type: string
         project.v1alpha1.ProjectList:
@@ -1503,14 +1549,19 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/project.v1alpha1.Project'
-        project.v1alpha1.TechnologyType:
+        project.v1alpha1.ProjectReq:
             type: object
             properties:
-                id:
-                    type: string
                 name:
                     type: string
-                business_type_id:
+                cluster_id:
+                    type: string
+                id:
+                    type: string
+        project.v1alpha1.Technology:
+            type: object
+            properties:
+                name:
                     type: string
         service.v1alpha1.Msg:
             type: object
