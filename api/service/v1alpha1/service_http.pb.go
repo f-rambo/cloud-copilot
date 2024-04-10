@@ -20,15 +20,21 @@ var _ = binding.EncodeURL
 
 const _ = http.SupportPackageIsVersion1
 
+const OperationServiceInterfaceList = "/service.v1alpha1.ServiceInterface/List"
 const OperationServiceInterfacePing = "/service.v1alpha1.ServiceInterface/Ping"
+const OperationServiceInterfaceSave = "/service.v1alpha1.ServiceInterface/Save"
 
 type ServiceInterfaceHTTPServer interface {
+	List(context.Context, *ServiceRequest) (*Services, error)
 	Ping(context.Context, *emptypb.Empty) (*Msg, error)
+	Save(context.Context, *Service) (*Msg, error)
 }
 
 func RegisterServiceInterfaceHTTPServer(s *http.Server, srv ServiceInterfaceHTTPServer) {
 	r := s.Route("/")
 	r.GET("/api/v1alpha1/service/ping", _ServiceInterface_Ping3_HTTP_Handler(srv))
+	r.GET("/api/v1alpha1/service/list", _ServiceInterface_List3_HTTP_Handler(srv))
+	r.POST("/api/v1alpha1/service/save", _ServiceInterface_Save3_HTTP_Handler(srv))
 }
 
 func _ServiceInterface_Ping3_HTTP_Handler(srv ServiceInterfaceHTTPServer) func(ctx http.Context) error {
@@ -50,8 +56,51 @@ func _ServiceInterface_Ping3_HTTP_Handler(srv ServiceInterfaceHTTPServer) func(c
 	}
 }
 
+func _ServiceInterface_List3_HTTP_Handler(srv ServiceInterfaceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in ServiceRequest
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationServiceInterfaceList)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.List(ctx, req.(*ServiceRequest))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*Services)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _ServiceInterface_Save3_HTTP_Handler(srv ServiceInterfaceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in Service
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationServiceInterfaceSave)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.Save(ctx, req.(*Service))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*Msg)
+		return ctx.Result(200, reply)
+	}
+}
+
 type ServiceInterfaceHTTPClient interface {
+	List(ctx context.Context, req *ServiceRequest, opts ...http.CallOption) (rsp *Services, err error)
 	Ping(ctx context.Context, req *emptypb.Empty, opts ...http.CallOption) (rsp *Msg, err error)
+	Save(ctx context.Context, req *Service, opts ...http.CallOption) (rsp *Msg, err error)
 }
 
 type ServiceInterfaceHTTPClientImpl struct {
@@ -62,6 +111,19 @@ func NewServiceInterfaceHTTPClient(client *http.Client) ServiceInterfaceHTTPClie
 	return &ServiceInterfaceHTTPClientImpl{client}
 }
 
+func (c *ServiceInterfaceHTTPClientImpl) List(ctx context.Context, in *ServiceRequest, opts ...http.CallOption) (*Services, error) {
+	var out Services
+	pattern := "/api/v1alpha1/service/list"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationServiceInterfaceList))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, err
+}
+
 func (c *ServiceInterfaceHTTPClientImpl) Ping(ctx context.Context, in *emptypb.Empty, opts ...http.CallOption) (*Msg, error) {
 	var out Msg
 	pattern := "/api/v1alpha1/service/ping"
@@ -69,6 +131,19 @@ func (c *ServiceInterfaceHTTPClientImpl) Ping(ctx context.Context, in *emptypb.E
 	opts = append(opts, http.Operation(OperationServiceInterfacePing))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, err
+}
+
+func (c *ServiceInterfaceHTTPClientImpl) Save(ctx context.Context, in *Service, opts ...http.CallOption) (*Msg, error) {
+	var out Msg
+	pattern := "/api/v1alpha1/service/save"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationServiceInterfaceSave))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
 	if err != nil {
 		return nil, err
 	}

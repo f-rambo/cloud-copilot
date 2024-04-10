@@ -1063,11 +1063,61 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/project.v1alpha1.Msg'
+    /api/v1alpha1/service/list:
+        get:
+            tags:
+                - ServiceInterface
+            operationId: ServiceInterface_List
+            parameters:
+                - name: name
+                  in: query
+                  schema:
+                    type: string
+                - name: page
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: page_size
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: project_id
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/service.v1alpha1.Services'
     /api/v1alpha1/service/ping:
         get:
             tags:
                 - ServiceInterface
             operationId: ServiceInterface_Ping
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/service.v1alpha1.Msg'
+    /api/v1alpha1/service/save:
+        post:
+            tags:
+                - ServiceInterface
+            operationId: ServiceInterface_Save
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/service.v1alpha1.Service'
+                required: true
             responses:
                 "200":
                     description: OK
@@ -1571,6 +1621,82 @@ components:
                     format: enum
                 Message:
                     type: string
+        service.v1alpha1.Port:
+            type: object
+            properties:
+                id:
+                    type: integer
+                    format: int32
+                ingress_path:
+                    type: string
+                container_port:
+                    type: integer
+                    format: int32
+                protocol:
+                    type: string
+        service.v1alpha1.Service:
+            type: object
+            properties:
+                id:
+                    type: integer
+                    format: int32
+                name:
+                    type: string
+                code_repo:
+                    type: string
+                registry:
+                    type: string
+                registry_user:
+                    type: string
+                registry_pwd:
+                    type: string
+                replicas:
+                    type: integer
+                    format: int32
+                cpu:
+                    type: number
+                    format: float
+                limit_cpu:
+                    type: number
+                    format: float
+                gpu:
+                    type: number
+                    format: float
+                limit_gpu:
+                    type: number
+                    format: float
+                memory:
+                    type: number
+                    format: float
+                limit_memory:
+                    type: number
+                    format: float
+                disk:
+                    type: number
+                    format: float
+                limit_disk:
+                    type: number
+                    format: float
+                workflow_id:
+                    type: integer
+                    format: int32
+                ports:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/service.v1alpha1.Port'
+                project_id:
+                    type: integer
+                    format: int32
+        service.v1alpha1.Services:
+            type: object
+            properties:
+                services:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/service.v1alpha1.Service'
+                total:
+                    type: integer
+                    format: int32
         user.v1alpha1.Msg:
             type: object
             properties:

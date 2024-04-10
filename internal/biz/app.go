@@ -26,16 +26,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-const (
-	openebs       = "openebs"
-	prometheus    = "prometheus"
-	grafana       = "grafana"
-	traefik       = "traefik"
-	istiod        = "istiod"
-	istiobase     = "istio-base"
-	argoworkflows = "argo-workflows"
-)
-
 type AppType struct {
 	ID   int64  `json:"id" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
 	Name string `json:"name" gorm:"column:name; default:''; NOT NULL"`

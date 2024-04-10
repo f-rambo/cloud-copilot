@@ -48,7 +48,7 @@ func NewUseUser(repo UserRepo, logger log.Logger, conf *conf.Bootstrap) *UserUse
 
 func (u *UserUseCase) SignIn(ctx context.Context, email string, password string) (token string, err error) {
 	if email == u.authConf.Email && password == utils.Md5(u.authConf.PassWord) {
-		return u.userToken(ctx, u.getAdmin())
+		return u.userToken(u.getAdmin())
 	}
 	userInfo, err := u.repo.GetUserInfoByEmail(ctx, email)
 	if err != nil {
@@ -57,7 +57,7 @@ func (u *UserUseCase) SignIn(ctx context.Context, email string, password string)
 	if userInfo.PassWord != password {
 		return token, errors.New("password error")
 	}
-	return u.userToken(ctx, userInfo)
+	return u.userToken(userInfo)
 }
 
 func (u *UserUseCase) SignUp(ctx context.Context, email, name, password string) (token string, err error) {
@@ -70,7 +70,7 @@ func (u *UserUseCase) SignUp(ctx context.Context, email, name, password string) 
 	if err := u.repo.Save(ctx, user); err != nil {
 		return "", err
 	}
-	return u.userToken(ctx, user)
+	return u.userToken(user)
 }
 
 // 通过token获取用户信息
@@ -83,7 +83,7 @@ func (u *UserUseCase) GetUserInfo(ctx context.Context) (*User, error) {
 	if err != nil {
 		return nil, err
 	}
-	newToken, err := u.userToken(ctx, user)
+	newToken, err := u.userToken(user)
 	if err != nil {
 		return nil, err
 	}
@@ -130,7 +130,7 @@ func (u *UserUseCase) CheckJWT(ctx context.Context, tokenString string) (*User, 
 }
 
 // 获取jwt token
-func (u *UserUseCase) userToken(ctx context.Context, user *User) (token string, err error) {
+func (u *UserUseCase) userToken(user *User) (token string, err error) {
 	claims := jwtv5.MapClaims{
 		"id":    user.ID,
 		"email": user.Email,

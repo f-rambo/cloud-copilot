@@ -13,4 +13,4 @@ message Msg {
       ErrorReason Reason = 1;
       string Message = 2;
 }
-    
+

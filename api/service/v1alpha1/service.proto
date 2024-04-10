@@ -5,7 +5,7 @@ package service.v1alpha1;
 import "google/api/annotations.proto";
 import "google/protobuf/empty.proto";
 import "api/service/v1alpha1/error_reason.proto";
-// import "api/service/v1alpha1/message.proto";
+import "api/service/v1alpha1/message.proto";
 
 option go_package = "api/service/v1alpha1;v1alpha1";
 
@@ -13,6 +13,19 @@ service ServiceInterface {
       rpc Ping(google.protobuf.Empty) returns (service.v1alpha1.Msg) {
             option (google.api.http) = {
               get: "/api/v1alpha1/service/ping"
+            };
+      }
+
+      rpc List(service.v1alpha1.ServiceRequest) returns (service.v1alpha1.Services) {
+            option (google.api.http) = {
+              get: "/api/v1alpha1/service/list"
+            };
+      }
+
+      rpc Save(service.v1alpha1.Service) returns (service.v1alpha1.Msg) {
+            option (google.api.http) = {
+              post: "/api/v1alpha1/service/save"
+              body: "*"
             };
       }
 }
