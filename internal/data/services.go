@@ -23,14 +23,21 @@ func NewServicesRepo(data *Data, logger log.Logger) biz.ServicesRepo {
 func (s *servicesRepo) List(ctx context.Context, serviceParam *biz.Service, page, pageSize int) ([]*biz.Service, int64, error) {
 	var itemCount int64 = 0
 	services := make([]*biz.Service, 0)
-	err := s.data.db.Model(&biz.Service{}).Where(serviceParam).Count(&itemCount).Error
+	serviceModel := s.data.db.Model(&biz.Service{})
+	if serviceParam.ProjectID != 0 {
+		serviceModel = serviceModel.Where("project_id = ?", serviceParam.ProjectID)
+	}
+	if serviceParam.Name != "" {
+		serviceModel = serviceModel.Where("name like ?", "%"+serviceParam.Name+"%")
+	}
+	err := serviceModel.Count(&itemCount).Error
 	if err != nil {
 		return nil, 0, err
 	}
 	if itemCount == 0 {
 		return services, 0, nil
 	}
-	err = s.data.db.Where(serviceParam).Offset((page - 1) * pageSize).Limit(pageSize).Find(&services).Error
+	err = serviceModel.Offset((page - 1) * pageSize).Limit(pageSize).Find(&services).Error
 	if err != nil {
 		return nil, 0, err
 	}

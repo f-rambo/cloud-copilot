@@ -66,6 +66,23 @@ func (p *projectRepo) List(ctx context.Context, clusterID int64) ([]*biz.Project
 	return projects, nil
 }
 
+func (p *projectRepo) ListByIds(ctx context.Context, ids []int64) ([]*biz.Project, error) {
+	projects := make([]*biz.Project, 0)
+	err := p.data.db.Where("id in (?)", ids).Find(&projects).Error
+	if err != nil {
+		return nil, err
+	}
+	for _, project := range projects {
+		if len(project.BusinessJson) > 0 {
+			err = json.Unmarshal(project.BusinessJson, &project.Business)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+	return projects, nil
+}
+
 func (p *projectRepo) Delete(ctx context.Context, id int64) error {
 	return p.data.db.Where("id = ?", id).Delete(&biz.Project{}).Error
 }

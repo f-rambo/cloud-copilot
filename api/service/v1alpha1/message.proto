@@ -6,23 +6,20 @@ option go_package = "api/service/v1alpha1;v1alpha1";
 
 message ServiceRequest {
       string Name = 1 [json_name = "name"];
-      int32 page = 2 [json_name = "page"];
-      int32 pageSize = 3 [json_name = "page_size"];
-      int32 projectId = 4 [json_name = "project_id"];
+      int64 page = 2 [json_name = "page"];
+      int64 pageSize = 3 [json_name = "page_size"];
+      int64 projectId = 4 [json_name = "project_id"];
 }
 
 message Services {
       repeated Service Services = 1 [json_name = "services"];
-      int32 Total = 2 [json_name = "total"];
+      int64 Total = 2 [json_name = "total"];
 }
 
 message Service {
-      int32 ID = 1 [json_name = "id"];
+      int64 ID = 1 [json_name = "id"];
       string Name = 2 [json_name = "name"];
       string CodeRepo = 3 [json_name = "code_repo"];
-      string Registry = 4 [json_name = "registry"];
-      string RegistryUser = 5 [json_name = "registry_user"];
-      string RegistryPwd = 6 [json_name = "registry_pwd"];
       int32 Replicas = 7 [json_name = "replicas"];
       float CPU = 8 [json_name = "cpu"];
       float LimitCpu = 9 [json_name = "limit_cpu"];
@@ -32,36 +29,39 @@ message Service {
       float LimitMemory = 13 [json_name = "limit_memory"];
       float Disk = 14 [json_name = "disk"];
       float LimitDisk = 15 [json_name = "limit_disk"];
-      int32 WorkflowID = 16 [json_name = "workflow_id"];
+      int64 WorkflowID = 16 [json_name = "workflow_id"];
       repeated Port Ports = 17 [json_name = "ports"];
-      int32 ProjectID = 20 [json_name = "project_id"];
+      int64 ProjectID = 20 [json_name = "project_id"];
+      string Business = 21 [json_name = "business"];
+      string Technology = 22 [json_name = "technology"];
+      string project_name = 23 [json_name = "project_name"];
 }
 
 message Port {
-      int32 ID = 1 [json_name = "id"];
+      int64 ID = 1 [json_name = "id"];
       string IngressPath = 2 [json_name = "ingress_path"];
       int32 ContainerPort = 3 [json_name = "container_port"];
       string Protocol = 4 [json_name = "protocol"];
 }
 
 message CI {
-      int32 ID = 1 [json_name = "id"];
+      int64 ID = 1 [json_name = "id"];
       string Version = 2 [json_name = "version"];
       string Branch = 3 [json_name = "branch"];
       string Tag = 4 [json_name = "tag"];
       string Args = 5 [json_name = "args"];
       string Description = 6 [json_name = "description"];
       string WorkflowName = 7 [json_name = "workflow_name"];
-      int32 ServiceID = 8 [json_name = "service_id"];
+      int64 ServiceID = 8 [json_name = "service_id"];
 }
 
 message CD {
-      int32 ID = 1 [json_name = "id"];
-      int32 ServiceID = 2 [json_name = "service_id"];
+      int64 ID = 1 [json_name = "id"];
+      int64 ServiceID = 2 [json_name = "service_id"];
 }
 
 message Worklfow {
-      int32 ID = 1 [json_name = "id"];
+      int64 ID = 1 [json_name = "id"];
       string Name = 2 [json_name = "name"];
       bytes Worklfow = 3 [json_name = "workflow"];
 }

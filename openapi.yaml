@@ -1076,18 +1076,15 @@ paths:
                 - name: page
                   in: query
                   schema:
-                    type: integer
-                    format: int32
+                    type: string
                 - name: page_size
                   in: query
                   schema:
-                    type: integer
-                    format: int32
+                    type: string
                 - name: project_id
                   in: query
                   schema:
-                    type: integer
-                    format: int32
+                    type: string
             responses:
                 "200":
                     description: OK
@@ -1625,8 +1622,7 @@ components:
             type: object
             properties:
                 id:
-                    type: integer
-                    format: int32
+                    type: string
                 ingress_path:
                     type: string
                 container_port:
@@ -1638,17 +1634,10 @@ components:
             type: object
             properties:
                 id:
-                    type: integer
-                    format: int32
+                    type: string
                 name:
                     type: string
                 code_repo:
-                    type: string
-                registry:
-                    type: string
-                registry_user:
-                    type: string
-                registry_pwd:
                     type: string
                 replicas:
                     type: integer
@@ -1678,15 +1667,19 @@ components:
                     type: number
                     format: float
                 workflow_id:
-                    type: integer
-                    format: int32
+                    type: string
                 ports:
                     type: array
                     items:
                         $ref: '#/components/schemas/service.v1alpha1.Port'
                 project_id:
-                    type: integer
-                    format: int32
+                    type: string
+                business:
+                    type: string
+                technology:
+                    type: string
+                project_name:
+                    type: string
         service.v1alpha1.Services:
             type: object
             properties:
@@ -1695,8 +1688,7 @@ components:
                     items:
                         $ref: '#/components/schemas/service.v1alpha1.Service'
                 total:
-                    type: integer
-                    format: int32
+                    type: string
         user.v1alpha1.Msg:
             type: object
             properties:

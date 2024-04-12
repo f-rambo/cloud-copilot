@@ -41,7 +41,7 @@ func wireApp(bootstrap *conf.Bootstrap, logger log.Logger) (*kratos.App, func(),
 	appInterface := interfaces.NewAppInterface(appUsecase, userUseCase, bootstrap, logger)
 	servicesRepo := data.NewServicesRepo(dataData, logger)
 	servicesUseCase := biz.NewServicesUseCase(servicesRepo, logger)
-	servicesInterface := interfaces.NewServicesInterface(servicesUseCase)
+	servicesInterface := interfaces.NewServicesInterface(servicesUseCase, projectUsecase)
 	userInterface := interfaces.NewUserInterface(userUseCase, bootstrap)
 	projectInterface := interfaces.NewProjectInterface(projectUsecase, appUsecase, clusterUsecase, bootstrap, logger)
 	grpcServer := server.NewGRPCServer(bootstrap, clusterInterface, appInterface, servicesInterface, userInterface, projectInterface, logger)

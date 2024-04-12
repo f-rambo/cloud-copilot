@@ -69,10 +69,8 @@ func (c *ClusterInterface) List(ctx context.Context, _ *emptypb.Empty) (*v1alpha
 	if len(clusters) == 0 {
 		return data, nil
 	}
-	currentCluster, err := c.clusterUc.CurrentCluster()
-	if err != nil {
-		return nil, err
-	}
+	currentCluster := &biz.Cluster{}
+	currentCluster, _ = c.clusterUc.CurrentCluster()
 	for _, v := range clusters {
 		cluster := c.bizCLusterToCluster(v)
 		if v.ApiServerAddress != "" && v.ApiServerAddress == currentCluster.ApiServerAddress {

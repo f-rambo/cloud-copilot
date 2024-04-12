@@ -46,6 +46,7 @@ type ProjectRepo interface {
 	Save(context.Context, *Project) error
 	Get(context.Context, int64) (*Project, error)
 	List(context.Context, int64) ([]*Project, error)
+	ListByIds(context.Context, []int64) ([]*Project, error)
 	Delete(context.Context, int64) error
 }
 
@@ -101,6 +102,10 @@ func (uc *ProjectUsecase) Get(ctx context.Context, id int64) (*Project, error) {
 
 func (uc *ProjectUsecase) List(ctx context.Context, clusterID int64) ([]*Project, error) {
 	return uc.repo.List(ctx, clusterID)
+}
+
+func (uc *ProjectUsecase) ListByIds(ctx context.Context, ids []int64) ([]*Project, error) {
+	return uc.repo.ListByIds(ctx, ids)
 }
 
 func (uc *ProjectUsecase) Delete(ctx context.Context, id int64) error {
