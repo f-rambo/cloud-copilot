@@ -57,3 +57,20 @@ func (s *servicesRepo) Save(ctx context.Context, service *biz.Service) (err erro
 	}
 	return s.data.db.Save(service).Error
 }
+
+func (s *servicesRepo) Get(ctx context.Context, id int64) (*biz.Service, error) {
+	service := &biz.Service{}
+	err := s.data.db.Where("id = ?", id).First(service).Error
+	if err != nil {
+		return nil, err
+	}
+	err = json.Unmarshal(service.PortsJson, &service.Ports)
+	if err != nil {
+		return nil, err
+	}
+	return service, nil
+}
+
+func (s *servicesRepo) Delete(ctx context.Context, id int64) error {
+	return s.data.db.Delete(&biz.Service{}, id).Error
+}

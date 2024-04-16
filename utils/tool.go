@@ -135,6 +135,12 @@ func (f *File) deleteFile() error {
 	return os.Remove(f.path + f.name)
 }
 
+func GetFilePathAndName(path string) (string, string) {
+	fileName := filepath.Base(path)
+	filePath := path[:len(path)-len(fileName)]
+	return filePath, fileName
+}
+
 // 判断切片中是否包含查所要的元素
 func Contains(slice []string, item string) bool {
 	for _, s := range slice {
@@ -306,7 +312,6 @@ func Decompress(tarball, target string) error {
 	}
 }
 
-// 生成一个随机字符串
 func GetRandomString() string {
 	str := "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 	bytes := []byte(str)

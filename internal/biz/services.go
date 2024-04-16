@@ -65,6 +65,8 @@ type Worklfow struct {
 type ServicesRepo interface {
 	List(ctx context.Context, serviceParam *Service, page, pageSize int) ([]*Service, int64, error)
 	Save(ctx context.Context, service *Service) error
+	Get(ctx context.Context, id int64) (*Service, error)
+	Delete(ctx context.Context, id int64) error
 }
 
 type ServicesUseCase struct {
@@ -82,4 +84,12 @@ func (uc *ServicesUseCase) List(ctx context.Context, serviceParam *Service, page
 
 func (uc *ServicesUseCase) Save(ctx context.Context, service *Service) error {
 	return uc.repo.Save(ctx, service)
+}
+
+func (uc *ServicesUseCase) Get(ctx context.Context, id int64) (*Service, error) {
+	return uc.repo.Get(ctx, id)
+}
+
+func (uc *ServicesUseCase) Delete(ctx context.Context, id int64) error {
+	return uc.repo.Delete(ctx, id)
 }

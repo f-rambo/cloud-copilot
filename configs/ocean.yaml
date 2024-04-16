@@ -11,14 +11,13 @@ ocean:
       network: tcp
       addr: 0.0.0.0:9000
   data:
-    database:
-      driver: 
-      host: localhost
-      port: 3306
-      username: root
-      password: '123456'
-      database: ocean
-      dbfilepath: '/tmp/gorm.db'
+    driver: sqlite
+    host: localhost
+    port: 3306
+    username: root
+    password: '123456'
+    database: ocean
+    dbfilepath: 'resource/db/gorm.db'
   log:
     path: logs
     filename: log.log

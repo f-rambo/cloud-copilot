@@ -28,4 +28,16 @@ service ServiceInterface {
               body: "*"
             };
       }
+
+      rpc Get(service.v1alpha1.ServiceRequest) returns (service.v1alpha1.Service) {
+            option (google.api.http) = {
+              get: "/api/v1alpha1/service/get"
+            };
+      }
+
+      rpc Delete(service.v1alpha1.ServiceRequest) returns (service.v1alpha1.Msg) {
+            option (google.api.http) = {
+              delete: "/api/v1alpha1/service/delete"
+            };
+      }
 }

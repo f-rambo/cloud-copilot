@@ -1063,6 +1063,39 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/project.v1alpha1.Msg'
+    /api/v1alpha1/service/get:
+        get:
+            tags:
+                - ServiceInterface
+            operationId: ServiceInterface_Get
+            parameters:
+                - name: name
+                  in: query
+                  schema:
+                    type: string
+                - name: page
+                  in: query
+                  schema:
+                    type: string
+                - name: page_size
+                  in: query
+                  schema:
+                    type: string
+                - name: project_id
+                  in: query
+                  schema:
+                    type: string
+                - name: id
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/service.v1alpha1.Service'
     /api/v1alpha1/service/list:
         get:
             tags:
@@ -1082,6 +1115,10 @@ paths:
                   schema:
                     type: string
                 - name: project_id
+                  in: query
+                  schema:
+                    type: string
+                - name: id
                   in: query
                   schema:
                     type: string

@@ -242,10 +242,6 @@ func (s STATIC) GetAddr() string {
 }
 
 type Data struct {
-	Database Database `json:"database,omitempty"`
-}
-
-type Database struct {
 	Driver     string `json:"driver,omitempty"`
 	Username   string `json:"username,omitempty"`
 	Password   string `json:"password,omitempty"`
@@ -255,7 +251,7 @@ type Database struct {
 	DBFilePath string `json:"dbfilepath,omitempty"`
 }
 
-func (d Database) GetDriver() string {
+func (d Data) GetDriver() string {
 	driver := os.Getenv("DATABASE_DRIVER")
 	if driver != "" {
 		return driver
@@ -263,7 +259,7 @@ func (d Database) GetDriver() string {
 	return d.Driver
 }
 
-func (d Database) GetUsername() string {
+func (d Data) GetUsername() string {
 	username := os.Getenv("DATABASE_USERNAME")
 	if username != "" {
 		return username
@@ -271,7 +267,7 @@ func (d Database) GetUsername() string {
 	return d.Username
 }
 
-func (d Database) GetPassword() string {
+func (d Data) GetPassword() string {
 	password := os.Getenv("DATABASE_PASSWORD")
 	if password != "" {
 		return password
@@ -279,7 +275,7 @@ func (d Database) GetPassword() string {
 	return d.Password
 }
 
-func (d Database) GetHost() string {
+func (d Data) GetHost() string {
 	host := os.Getenv("DATABASE_HOST")
 	if host != "" {
 		return host
@@ -287,7 +283,7 @@ func (d Database) GetHost() string {
 	return d.Host
 }
 
-func (d Database) GetPort() int32 {
+func (d Data) GetPort() int32 {
 	port := os.Getenv("DATABASE_PORT")
 	if port != "" {
 		portInt, _ := strconv.Atoi(port)
@@ -296,7 +292,7 @@ func (d Database) GetPort() int32 {
 	return d.Port
 }
 
-func (d Database) GetDatabase() string {
+func (d Data) GetDatabase() string {
 	database := os.Getenv("DATABASE_DATABASE")
 	if database != "" {
 		return database
@@ -304,7 +300,7 @@ func (d Database) GetDatabase() string {
 	return d.Database
 }
 
-func (d Database) GetDBFilePath() string {
+func (d Data) GetDBFilePath() string {
 	dbFilePath := os.Getenv("DATABASE_DBFILEPATH")
 	if dbFilePath != "" {
 		return dbFilePath

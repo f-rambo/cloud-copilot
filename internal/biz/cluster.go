@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/f-rambo/ocean/internal/conf"
@@ -128,7 +129,7 @@ func (uc *ClusterUsecase) CurrentCluster() (*Cluster, error) {
 		return nil, err
 	}
 	for _, node := range cluster.Nodes {
-		if node.Role == ClusterRoleMaster {
+		if strings.Contains(node.Role, ClusterRoleMaster) {
 			cluster.Name = node.Name
 			break
 		}

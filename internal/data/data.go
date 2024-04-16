@@ -5,6 +5,7 @@ import (
 
 	"github.com/f-rambo/ocean/internal/biz"
 	"github.com/f-rambo/ocean/internal/conf"
+	"github.com/f-rambo/ocean/utils"
 
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/wire"
@@ -33,14 +34,14 @@ func NewData(c *conf.Bootstrap, logger log.Logger) (*Data, func(), error) {
 	cleanup := func() {
 		log.NewHelper(logger).Info("closing the data resources")
 	}
-	data.db, err = newDB(cdata.Database)
+	data.db, err = newDB(cdata)
 	if err != nil {
-		log.NewHelper(logger).Info("database client error, check whether the database has been deployed. If the database is not deployed, ignore this error")
+		return nil, nil, err
 	}
 	return data, cleanup, nil
 }
 
-func newDB(c conf.Database) (*gorm.DB, error) {
+func newDB(c conf.Data) (*gorm.DB, error) {
 	var client *gorm.DB
 	var err error
 	if c.GetDriver() == "mysql" {
@@ -60,8 +61,16 @@ func newDB(c conf.Database) (*gorm.DB, error) {
 			return nil, err
 		}
 	}
-	if c.GetDriver() != "mysql" && c.GetDriver() != "postgres" {
+	if (c.GetDriver() != "mysql" && c.GetDriver() != "postgres") || c.GetDriver() == "sqlite" {
 		dbFilePath := c.GetDBFilePath()
+		if dbFilePath != "" && !utils.IsFileExist(dbFilePath) {
+			path, filename := utils.GetFilePathAndName(dbFilePath)
+			file, err := utils.NewFile(path, filename, true)
+			if err != nil {
+				return nil, err
+			}
+			file.Close()
+		}
 		if dbFilePath == "" {
 			dbFilePath = "file::memory:?cache=shared"
 		}

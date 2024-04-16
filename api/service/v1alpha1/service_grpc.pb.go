@@ -23,6 +23,7 @@ const (
 	ServiceInterface_Ping_FullMethodName = "/service.v1alpha1.ServiceInterface/Ping"
 	ServiceInterface_List_FullMethodName = "/service.v1alpha1.ServiceInterface/List"
 	ServiceInterface_Save_FullMethodName = "/service.v1alpha1.ServiceInterface/Save"
+	ServiceInterface_Get_FullMethodName  = "/service.v1alpha1.ServiceInterface/Get"
 )
 
 // ServiceInterfaceClient is the client API for ServiceInterface service.
@@ -32,6 +33,7 @@ type ServiceInterfaceClient interface {
 	Ping(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*Msg, error)
 	List(ctx context.Context, in *ServiceRequest, opts ...grpc.CallOption) (*Services, error)
 	Save(ctx context.Context, in *Service, opts ...grpc.CallOption) (*Msg, error)
+	Get(ctx context.Context, in *ServiceRequest, opts ...grpc.CallOption) (*Service, error)
 }
 
 type serviceInterfaceClient struct {
@@ -69,6 +71,15 @@ func (c *serviceInterfaceClient) Save(ctx context.Context, in *Service, opts ...
 	return out, nil
 }
 
+func (c *serviceInterfaceClient) Get(ctx context.Context, in *ServiceRequest, opts ...grpc.CallOption) (*Service, error) {
+	out := new(Service)
+	err := c.cc.Invoke(ctx, ServiceInterface_Get_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ServiceInterfaceServer is the server API for ServiceInterface service.
 // All implementations must embed UnimplementedServiceInterfaceServer
 // for forward compatibility
@@ -76,6 +87,7 @@ type ServiceInterfaceServer interface {
 	Ping(context.Context, *emptypb.Empty) (*Msg, error)
 	List(context.Context, *ServiceRequest) (*Services, error)
 	Save(context.Context, *Service) (*Msg, error)
+	Get(context.Context, *ServiceRequest) (*Service, error)
 	mustEmbedUnimplementedServiceInterfaceServer()
 }
 
@@ -91,6 +103,9 @@ func (UnimplementedServiceInterfaceServer) List(context.Context, *ServiceRequest
 }
 func (UnimplementedServiceInterfaceServer) Save(context.Context, *Service) (*Msg, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Save not implemented")
+}
+func (UnimplementedServiceInterfaceServer) Get(context.Context, *ServiceRequest) (*Service, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Get not implemented")
 }
 func (UnimplementedServiceInterfaceServer) mustEmbedUnimplementedServiceInterfaceServer() {}
 
@@ -159,6 +174,24 @@ func _ServiceInterface_Save_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ServiceInterface_Get_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ServiceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ServiceInterfaceServer).Get(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ServiceInterface_Get_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ServiceInterfaceServer).Get(ctx, req.(*ServiceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ServiceInterface_ServiceDesc is the grpc.ServiceDesc for ServiceInterface service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -177,6 +210,10 @@ var ServiceInterface_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Save",
 			Handler:    _ServiceInterface_Save_Handler,
+		},
+		{
+			MethodName: "Get",
+			Handler:    _ServiceInterface_Get_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

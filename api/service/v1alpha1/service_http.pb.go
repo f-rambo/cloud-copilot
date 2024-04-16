@@ -20,11 +20,13 @@ var _ = binding.EncodeURL
 
 const _ = http.SupportPackageIsVersion1
 
+const OperationServiceInterfaceGet = "/service.v1alpha1.ServiceInterface/Get"
 const OperationServiceInterfaceList = "/service.v1alpha1.ServiceInterface/List"
 const OperationServiceInterfacePing = "/service.v1alpha1.ServiceInterface/Ping"
 const OperationServiceInterfaceSave = "/service.v1alpha1.ServiceInterface/Save"
 
 type ServiceInterfaceHTTPServer interface {
+	Get(context.Context, *ServiceRequest) (*Service, error)
 	List(context.Context, *ServiceRequest) (*Services, error)
 	Ping(context.Context, *emptypb.Empty) (*Msg, error)
 	Save(context.Context, *Service) (*Msg, error)
@@ -35,6 +37,7 @@ func RegisterServiceInterfaceHTTPServer(s *http.Server, srv ServiceInterfaceHTTP
 	r.GET("/api/v1alpha1/service/ping", _ServiceInterface_Ping3_HTTP_Handler(srv))
 	r.GET("/api/v1alpha1/service/list", _ServiceInterface_List3_HTTP_Handler(srv))
 	r.POST("/api/v1alpha1/service/save", _ServiceInterface_Save3_HTTP_Handler(srv))
+	r.GET("/api/v1alpha1/service/get", _ServiceInterface_Get3_HTTP_Handler(srv))
 }
 
 func _ServiceInterface_Ping3_HTTP_Handler(srv ServiceInterfaceHTTPServer) func(ctx http.Context) error {
@@ -97,7 +100,27 @@ func _ServiceInterface_Save3_HTTP_Handler(srv ServiceInterfaceHTTPServer) func(c
 	}
 }
 
+func _ServiceInterface_Get3_HTTP_Handler(srv ServiceInterfaceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in ServiceRequest
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationServiceInterfaceGet)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.Get(ctx, req.(*ServiceRequest))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*Service)
+		return ctx.Result(200, reply)
+	}
+}
+
 type ServiceInterfaceHTTPClient interface {
+	Get(ctx context.Context, req *ServiceRequest, opts ...http.CallOption) (rsp *Service, err error)
 	List(ctx context.Context, req *ServiceRequest, opts ...http.CallOption) (rsp *Services, err error)
 	Ping(ctx context.Context, req *emptypb.Empty, opts ...http.CallOption) (rsp *Msg, err error)
 	Save(ctx context.Context, req *Service, opts ...http.CallOption) (rsp *Msg, err error)
@@ -109,6 +132,19 @@ type ServiceInterfaceHTTPClientImpl struct {
 
 func NewServiceInterfaceHTTPClient(client *http.Client) ServiceInterfaceHTTPClient {
 	return &ServiceInterfaceHTTPClientImpl{client}
+}
+
+func (c *ServiceInterfaceHTTPClientImpl) Get(ctx context.Context, in *ServiceRequest, opts ...http.CallOption) (*Service, error) {
+	var out Service
+	pattern := "/api/v1alpha1/service/get"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationServiceInterfaceGet))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, err
 }
 
 func (c *ServiceInterfaceHTTPClientImpl) List(ctx context.Context, in *ServiceRequest, opts ...http.CallOption) (*Services, error) {
