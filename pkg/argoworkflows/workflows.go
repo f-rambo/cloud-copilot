@@ -11,6 +11,43 @@ import (
 	"k8s.io/client-go/rest"
 )
 
+/*
+	argo workflow 资源
+	customresourcedefinition.apiextensions.k8s.io/clusterworkflowtemplates.argoproj.io created
+	customresourcedefinition.apiextensions.k8s.io/cronworkflows.argoproj.io created
+	customresourcedefinition.apiextensions.k8s.io/workflowartifactgctasks.argoproj.io created
+	customresourcedefinition.apiextensions.k8s.io/workfloweventbindings.argoproj.io created
+	customresourcedefinition.apiextensions.k8s.io/workflows.argoproj.io created
+	customresourcedefinition.apiextensions.k8s.io/workflowtaskresults.argoproj.io created
+	customresourcedefinition.apiextensions.k8s.io/workflowtasksets.argoproj.io created
+	customresourcedefinition.apiextensions.k8s.io/workflowtemplates.argoproj.io created
+	serviceaccount/argo created
+	serviceaccount/argo-server created
+	role.rbac.authorization.k8s.io/argo-role created
+	clusterrole.rbac.authorization.k8s.io/argo-aggregate-to-admin created
+	clusterrole.rbac.authorization.k8s.io/argo-aggregate-to-edit created
+	clusterrole.rbac.authorization.k8s.io/argo-aggregate-to-view created
+	clusterrole.rbac.authorization.k8s.io/argo-cluster-role created
+	clusterrole.rbac.authorization.k8s.io/argo-server-cluster-role created
+	rolebinding.rbac.authorization.k8s.io/argo-binding created
+	clusterrolebinding.rbac.authorization.k8s.io/argo-binding created
+	clusterrolebinding.rbac.authorization.k8s.io/argo-server-binding created
+	configmap/workflow-controller-configmap created
+	service/argo-server created
+	priorityclass.scheduling.k8s.io/workflow-controller created
+	deployment.apps/argo-server created
+	deployment.apps/workflow-controller created
+*/
+
+/*
+	argo cli
+	kubectl create -n argo -f https://raw.githubusercontent.com/argoproj/argo-workflows/main/examples/hello-world.yaml
+	kubectl get wf -n argo
+	kubectl get wf hello-world-xxx -n argo
+	kubectl get po -n argo --selector=workflows.argoproj.io/workflow=hello-world-xxx
+	kubectl logs hello-world-yyy -c main -n argo
+*/
+
 var (
 	resourceName = "workflows"
 )

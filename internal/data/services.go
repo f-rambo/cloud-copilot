@@ -74,3 +74,21 @@ func (s *servicesRepo) Get(ctx context.Context, id int64) (*biz.Service, error) 
 func (s *servicesRepo) Delete(ctx context.Context, id int64) error {
 	return s.data.db.Delete(&biz.Service{}, id).Error
 }
+
+func (s *servicesRepo) GetWorkflow(ctx context.Context, id int64) (*biz.Workflow, error) {
+	workflow := &biz.Workflow{}
+	err := s.data.db.Where("id = ?", id).First(workflow).Error
+	if err != nil {
+		return nil, err
+	}
+	return workflow, nil
+}
+
+func (s *servicesRepo) SaveWrkflow(ctx context.Context, workflow *biz.Workflow) error {
+	return s.data.db.Save(workflow).Error
+}
+
+func (s *servicesRepo) DeleteWrkflow(ctx context.Context, id int64) error {
+	return s.data.db.Delete(&biz.Workflow{}, id).Error
+
+}

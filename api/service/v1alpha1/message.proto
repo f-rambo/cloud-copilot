@@ -10,6 +10,9 @@ message ServiceRequest {
       int64 pageSize = 3 [json_name = "page_size"];
       int64 projectId = 4 [json_name = "project_id"];
       int64 id = 5 [json_name = "id"];
+      string wfArgs = 8 [json_name = "wf_args"];
+      Worklfow workflow = 9 [json_name = "workflow"];
+      string wfType = 10 [json_name = "wf_type"];
 }
 
 message Services {
@@ -64,6 +67,29 @@ message CD {
 message Worklfow {
       int64 ID = 1 [json_name = "id"];
       string Name = 2 [json_name = "name"];
-      bytes Worklfow = 3 [json_name = "workflow"];
+      string Description = 3 [json_name = "description"];
+      repeated WfStep Steps = 4 [json_name = "steps"];
+      repeated WfTemplate Templates = 5 [json_name = "templates"];
+}
+
+message WfStep {
+      string name = 1 [json_name = "name"];
+      repeated WfTask Tasks = 2 [json_name = "tasks"];
+      bool default = 3 [json_name = "default"];
+}
+
+message WfTask {
+      string name = 1 [json_name = "name"];
+      string templateName = 2 [json_name = "template_name"];
+      bool default = 3 [json_name = "default"];
+}
+
+message WfTemplate {
+      string name = 1;
+      string image = 2;
+      repeated string command = 3;
+      repeated string args = 4;
+      string source = 5;
+      bool IsScript = 6 [json_name = "is_script"];
 }
 

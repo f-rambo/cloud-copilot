@@ -1063,6 +1063,59 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/project.v1alpha1.Msg'
+    /api/v1alpha1/service/delete:
+        delete:
+            tags:
+                - ServiceInterface
+            operationId: ServiceInterface_Delete
+            parameters:
+                - name: name
+                  in: query
+                  schema:
+                    type: string
+                - name: page
+                  in: query
+                  schema:
+                    type: string
+                - name: page_size
+                  in: query
+                  schema:
+                    type: string
+                - name: project_id
+                  in: query
+                  schema:
+                    type: string
+                - name: id
+                  in: query
+                  schema:
+                    type: string
+                - name: wf_args
+                  in: query
+                  schema:
+                    type: string
+                - name: workflow.id
+                  in: query
+                  schema:
+                    type: string
+                - name: workflow.name
+                  in: query
+                  schema:
+                    type: string
+                - name: workflow.description
+                  in: query
+                  schema:
+                    type: string
+                - name: wf_type
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/service.v1alpha1.Msg'
     /api/v1alpha1/service/get:
         get:
             tags:
@@ -1086,6 +1139,26 @@ paths:
                   schema:
                     type: string
                 - name: id
+                  in: query
+                  schema:
+                    type: string
+                - name: wf_args
+                  in: query
+                  schema:
+                    type: string
+                - name: workflow.id
+                  in: query
+                  schema:
+                    type: string
+                - name: workflow.name
+                  in: query
+                  schema:
+                    type: string
+                - name: workflow.description
+                  in: query
+                  schema:
+                    type: string
+                - name: wf_type
                   in: query
                   schema:
                     type: string
@@ -1122,6 +1195,26 @@ paths:
                   in: query
                   schema:
                     type: string
+                - name: wf_args
+                  in: query
+                  schema:
+                    type: string
+                - name: workflow.id
+                  in: query
+                  schema:
+                    type: string
+                - name: workflow.name
+                  in: query
+                  schema:
+                    type: string
+                - name: workflow.description
+                  in: query
+                  schema:
+                    type: string
+                - name: wf_type
+                  in: query
+                  schema:
+                    type: string
             responses:
                 "200":
                     description: OK
@@ -1151,6 +1244,76 @@ paths:
                     application/json:
                         schema:
                             $ref: '#/components/schemas/service.v1alpha1.Service'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/service.v1alpha1.Msg'
+    /api/v1alpha1/service/workflow:
+        get:
+            tags:
+                - ServiceInterface
+            operationId: ServiceInterface_GetWorkflow
+            parameters:
+                - name: name
+                  in: query
+                  schema:
+                    type: string
+                - name: page
+                  in: query
+                  schema:
+                    type: string
+                - name: page_size
+                  in: query
+                  schema:
+                    type: string
+                - name: project_id
+                  in: query
+                  schema:
+                    type: string
+                - name: id
+                  in: query
+                  schema:
+                    type: string
+                - name: wf_args
+                  in: query
+                  schema:
+                    type: string
+                - name: workflow.id
+                  in: query
+                  schema:
+                    type: string
+                - name: workflow.name
+                  in: query
+                  schema:
+                    type: string
+                - name: workflow.description
+                  in: query
+                  schema:
+                    type: string
+                - name: wf_type
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/service.v1alpha1.Worklfow'
+        post:
+            tags:
+                - ServiceInterface
+            operationId: ServiceInterface_SaveWorkflow
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/service.v1alpha1.ServiceRequest'
                 required: true
             responses:
                 "200":
@@ -1717,6 +1880,25 @@ components:
                     type: string
                 project_name:
                     type: string
+        service.v1alpha1.ServiceRequest:
+            type: object
+            properties:
+                name:
+                    type: string
+                page:
+                    type: string
+                page_size:
+                    type: string
+                project_id:
+                    type: string
+                id:
+                    type: string
+                wf_args:
+                    type: string
+                workflow:
+                    $ref: '#/components/schemas/service.v1alpha1.Worklfow'
+                wf_type:
+                    type: string
         service.v1alpha1.Services:
             type: object
             properties:
@@ -1726,6 +1908,62 @@ components:
                         $ref: '#/components/schemas/service.v1alpha1.Service'
                 total:
                     type: string
+        service.v1alpha1.WfStep:
+            type: object
+            properties:
+                name:
+                    type: string
+                tasks:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/service.v1alpha1.WfTask'
+                default:
+                    type: boolean
+        service.v1alpha1.WfTask:
+            type: object
+            properties:
+                name:
+                    type: string
+                template_name:
+                    type: string
+                default:
+                    type: boolean
+        service.v1alpha1.WfTemplate:
+            type: object
+            properties:
+                name:
+                    type: string
+                image:
+                    type: string
+                command:
+                    type: array
+                    items:
+                        type: string
+                args:
+                    type: array
+                    items:
+                        type: string
+                source:
+                    type: string
+                is_script:
+                    type: boolean
+        service.v1alpha1.Worklfow:
+            type: object
+            properties:
+                id:
+                    type: string
+                name:
+                    type: string
+                description:
+                    type: string
+                steps:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/service.v1alpha1.WfStep'
+                templates:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/service.v1alpha1.WfTemplate'
         user.v1alpha1.Msg:
             type: object
             properties:

@@ -20,16 +20,22 @@ var _ = binding.EncodeURL
 
 const _ = http.SupportPackageIsVersion1
 
+const OperationServiceInterfaceDelete = "/service.v1alpha1.ServiceInterface/Delete"
 const OperationServiceInterfaceGet = "/service.v1alpha1.ServiceInterface/Get"
+const OperationServiceInterfaceGetWorkflow = "/service.v1alpha1.ServiceInterface/GetWorkflow"
 const OperationServiceInterfaceList = "/service.v1alpha1.ServiceInterface/List"
 const OperationServiceInterfacePing = "/service.v1alpha1.ServiceInterface/Ping"
 const OperationServiceInterfaceSave = "/service.v1alpha1.ServiceInterface/Save"
+const OperationServiceInterfaceSaveWorkflow = "/service.v1alpha1.ServiceInterface/SaveWorkflow"
 
 type ServiceInterfaceHTTPServer interface {
+	Delete(context.Context, *ServiceRequest) (*Msg, error)
 	Get(context.Context, *ServiceRequest) (*Service, error)
+	GetWorkflow(context.Context, *ServiceRequest) (*Worklfow, error)
 	List(context.Context, *ServiceRequest) (*Services, error)
 	Ping(context.Context, *emptypb.Empty) (*Msg, error)
 	Save(context.Context, *Service) (*Msg, error)
+	SaveWorkflow(context.Context, *ServiceRequest) (*Msg, error)
 }
 
 func RegisterServiceInterfaceHTTPServer(s *http.Server, srv ServiceInterfaceHTTPServer) {
@@ -38,6 +44,9 @@ func RegisterServiceInterfaceHTTPServer(s *http.Server, srv ServiceInterfaceHTTP
 	r.GET("/api/v1alpha1/service/list", _ServiceInterface_List3_HTTP_Handler(srv))
 	r.POST("/api/v1alpha1/service/save", _ServiceInterface_Save3_HTTP_Handler(srv))
 	r.GET("/api/v1alpha1/service/get", _ServiceInterface_Get3_HTTP_Handler(srv))
+	r.DELETE("/api/v1alpha1/service/delete", _ServiceInterface_Delete3_HTTP_Handler(srv))
+	r.GET("/api/v1alpha1/service/workflow", _ServiceInterface_GetWorkflow0_HTTP_Handler(srv))
+	r.POST("/api/v1alpha1/service/workflow", _ServiceInterface_SaveWorkflow0_HTTP_Handler(srv))
 }
 
 func _ServiceInterface_Ping3_HTTP_Handler(srv ServiceInterfaceHTTPServer) func(ctx http.Context) error {
@@ -119,11 +128,74 @@ func _ServiceInterface_Get3_HTTP_Handler(srv ServiceInterfaceHTTPServer) func(ct
 	}
 }
 
+func _ServiceInterface_Delete3_HTTP_Handler(srv ServiceInterfaceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in ServiceRequest
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationServiceInterfaceDelete)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.Delete(ctx, req.(*ServiceRequest))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*Msg)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _ServiceInterface_GetWorkflow0_HTTP_Handler(srv ServiceInterfaceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in ServiceRequest
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationServiceInterfaceGetWorkflow)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.GetWorkflow(ctx, req.(*ServiceRequest))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*Worklfow)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _ServiceInterface_SaveWorkflow0_HTTP_Handler(srv ServiceInterfaceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in ServiceRequest
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationServiceInterfaceSaveWorkflow)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.SaveWorkflow(ctx, req.(*ServiceRequest))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*Msg)
+		return ctx.Result(200, reply)
+	}
+}
+
 type ServiceInterfaceHTTPClient interface {
+	Delete(ctx context.Context, req *ServiceRequest, opts ...http.CallOption) (rsp *Msg, err error)
 	Get(ctx context.Context, req *ServiceRequest, opts ...http.CallOption) (rsp *Service, err error)
+	GetWorkflow(ctx context.Context, req *ServiceRequest, opts ...http.CallOption) (rsp *Worklfow, err error)
 	List(ctx context.Context, req *ServiceRequest, opts ...http.CallOption) (rsp *Services, err error)
 	Ping(ctx context.Context, req *emptypb.Empty, opts ...http.CallOption) (rsp *Msg, err error)
 	Save(ctx context.Context, req *Service, opts ...http.CallOption) (rsp *Msg, err error)
+	SaveWorkflow(ctx context.Context, req *ServiceRequest, opts ...http.CallOption) (rsp *Msg, err error)
 }
 
 type ServiceInterfaceHTTPClientImpl struct {
@@ -134,11 +206,37 @@ func NewServiceInterfaceHTTPClient(client *http.Client) ServiceInterfaceHTTPClie
 	return &ServiceInterfaceHTTPClientImpl{client}
 }
 
+func (c *ServiceInterfaceHTTPClientImpl) Delete(ctx context.Context, in *ServiceRequest, opts ...http.CallOption) (*Msg, error) {
+	var out Msg
+	pattern := "/api/v1alpha1/service/delete"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationServiceInterfaceDelete))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "DELETE", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, err
+}
+
 func (c *ServiceInterfaceHTTPClientImpl) Get(ctx context.Context, in *ServiceRequest, opts ...http.CallOption) (*Service, error) {
 	var out Service
 	pattern := "/api/v1alpha1/service/get"
 	path := binding.EncodeURL(pattern, in, true)
 	opts = append(opts, http.Operation(OperationServiceInterfaceGet))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, err
+}
+
+func (c *ServiceInterfaceHTTPClientImpl) GetWorkflow(ctx context.Context, in *ServiceRequest, opts ...http.CallOption) (*Worklfow, error) {
+	var out Worklfow
+	pattern := "/api/v1alpha1/service/workflow"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationServiceInterfaceGetWorkflow))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
 	if err != nil {
@@ -178,6 +276,19 @@ func (c *ServiceInterfaceHTTPClientImpl) Save(ctx context.Context, in *Service, 
 	pattern := "/api/v1alpha1/service/save"
 	path := binding.EncodeURL(pattern, in, false)
 	opts = append(opts, http.Operation(OperationServiceInterfaceSave))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, err
+}
+
+func (c *ServiceInterfaceHTTPClientImpl) SaveWorkflow(ctx context.Context, in *ServiceRequest, opts ...http.CallOption) (*Msg, error) {
+	var out Msg
+	pattern := "/api/v1alpha1/service/workflow"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationServiceInterfaceSaveWorkflow))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
 	if err != nil {

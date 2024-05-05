@@ -20,10 +20,13 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	ServiceInterface_Ping_FullMethodName = "/service.v1alpha1.ServiceInterface/Ping"
-	ServiceInterface_List_FullMethodName = "/service.v1alpha1.ServiceInterface/List"
-	ServiceInterface_Save_FullMethodName = "/service.v1alpha1.ServiceInterface/Save"
-	ServiceInterface_Get_FullMethodName  = "/service.v1alpha1.ServiceInterface/Get"
+	ServiceInterface_Ping_FullMethodName         = "/service.v1alpha1.ServiceInterface/Ping"
+	ServiceInterface_List_FullMethodName         = "/service.v1alpha1.ServiceInterface/List"
+	ServiceInterface_Save_FullMethodName         = "/service.v1alpha1.ServiceInterface/Save"
+	ServiceInterface_Get_FullMethodName          = "/service.v1alpha1.ServiceInterface/Get"
+	ServiceInterface_Delete_FullMethodName       = "/service.v1alpha1.ServiceInterface/Delete"
+	ServiceInterface_GetWorkflow_FullMethodName  = "/service.v1alpha1.ServiceInterface/GetWorkflow"
+	ServiceInterface_SaveWorkflow_FullMethodName = "/service.v1alpha1.ServiceInterface/SaveWorkflow"
 )
 
 // ServiceInterfaceClient is the client API for ServiceInterface service.
@@ -34,6 +37,9 @@ type ServiceInterfaceClient interface {
 	List(ctx context.Context, in *ServiceRequest, opts ...grpc.CallOption) (*Services, error)
 	Save(ctx context.Context, in *Service, opts ...grpc.CallOption) (*Msg, error)
 	Get(ctx context.Context, in *ServiceRequest, opts ...grpc.CallOption) (*Service, error)
+	Delete(ctx context.Context, in *ServiceRequest, opts ...grpc.CallOption) (*Msg, error)
+	GetWorkflow(ctx context.Context, in *ServiceRequest, opts ...grpc.CallOption) (*Worklfow, error)
+	SaveWorkflow(ctx context.Context, in *ServiceRequest, opts ...grpc.CallOption) (*Msg, error)
 }
 
 type serviceInterfaceClient struct {
@@ -80,6 +86,33 @@ func (c *serviceInterfaceClient) Get(ctx context.Context, in *ServiceRequest, op
 	return out, nil
 }
 
+func (c *serviceInterfaceClient) Delete(ctx context.Context, in *ServiceRequest, opts ...grpc.CallOption) (*Msg, error) {
+	out := new(Msg)
+	err := c.cc.Invoke(ctx, ServiceInterface_Delete_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *serviceInterfaceClient) GetWorkflow(ctx context.Context, in *ServiceRequest, opts ...grpc.CallOption) (*Worklfow, error) {
+	out := new(Worklfow)
+	err := c.cc.Invoke(ctx, ServiceInterface_GetWorkflow_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *serviceInterfaceClient) SaveWorkflow(ctx context.Context, in *ServiceRequest, opts ...grpc.CallOption) (*Msg, error) {
+	out := new(Msg)
+	err := c.cc.Invoke(ctx, ServiceInterface_SaveWorkflow_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ServiceInterfaceServer is the server API for ServiceInterface service.
 // All implementations must embed UnimplementedServiceInterfaceServer
 // for forward compatibility
@@ -88,6 +121,9 @@ type ServiceInterfaceServer interface {
 	List(context.Context, *ServiceRequest) (*Services, error)
 	Save(context.Context, *Service) (*Msg, error)
 	Get(context.Context, *ServiceRequest) (*Service, error)
+	Delete(context.Context, *ServiceRequest) (*Msg, error)
+	GetWorkflow(context.Context, *ServiceRequest) (*Worklfow, error)
+	SaveWorkflow(context.Context, *ServiceRequest) (*Msg, error)
 	mustEmbedUnimplementedServiceInterfaceServer()
 }
 
@@ -106,6 +142,15 @@ func (UnimplementedServiceInterfaceServer) Save(context.Context, *Service) (*Msg
 }
 func (UnimplementedServiceInterfaceServer) Get(context.Context, *ServiceRequest) (*Service, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Get not implemented")
+}
+func (UnimplementedServiceInterfaceServer) Delete(context.Context, *ServiceRequest) (*Msg, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Delete not implemented")
+}
+func (UnimplementedServiceInterfaceServer) GetWorkflow(context.Context, *ServiceRequest) (*Worklfow, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetWorkflow not implemented")
+}
+func (UnimplementedServiceInterfaceServer) SaveWorkflow(context.Context, *ServiceRequest) (*Msg, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SaveWorkflow not implemented")
 }
 func (UnimplementedServiceInterfaceServer) mustEmbedUnimplementedServiceInterfaceServer() {}
 
@@ -192,6 +237,60 @@ func _ServiceInterface_Get_Handler(srv interface{}, ctx context.Context, dec fun
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ServiceInterface_Delete_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ServiceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ServiceInterfaceServer).Delete(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ServiceInterface_Delete_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ServiceInterfaceServer).Delete(ctx, req.(*ServiceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ServiceInterface_GetWorkflow_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ServiceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ServiceInterfaceServer).GetWorkflow(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ServiceInterface_GetWorkflow_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ServiceInterfaceServer).GetWorkflow(ctx, req.(*ServiceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ServiceInterface_SaveWorkflow_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ServiceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ServiceInterfaceServer).SaveWorkflow(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ServiceInterface_SaveWorkflow_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ServiceInterfaceServer).SaveWorkflow(ctx, req.(*ServiceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ServiceInterface_ServiceDesc is the grpc.ServiceDesc for ServiceInterface service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -214,6 +313,18 @@ var ServiceInterface_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Get",
 			Handler:    _ServiceInterface_Get_Handler,
+		},
+		{
+			MethodName: "Delete",
+			Handler:    _ServiceInterface_Delete_Handler,
+		},
+		{
+			MethodName: "GetWorkflow",
+			Handler:    _ServiceInterface_GetWorkflow_Handler,
+		},
+		{
+			MethodName: "SaveWorkflow",
+			Handler:    _ServiceInterface_SaveWorkflow_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

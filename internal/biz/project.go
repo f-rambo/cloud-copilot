@@ -28,6 +28,20 @@ const (
 	ProjectStateStopped = "stopped"
 )
 
+const (
+	BackendBusiness  = "backend"
+	FrontendBusiness = "frontend"
+	BigDataBusiness  = "bigdata"
+	MLBusiness       = "ml"
+)
+
+const (
+	GolangTechnology = "golang"
+	PythonTechnology = "python"
+	JavaTechnology   = "java"
+	NodejsTechnology = "nodejs"
+)
+
 type Business struct {
 	Name        string       `json:"name" gorm:"column:name; default:''; NOT NULL"`
 	Technologys []Technology `json:"technologys" gorm:"-"`

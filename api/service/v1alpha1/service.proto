@@ -40,4 +40,18 @@ service ServiceInterface {
               delete: "/api/v1alpha1/service/delete"
             };
       }
+
+      rpc GetWorkflow(service.v1alpha1.ServiceRequest) returns (service.v1alpha1.Worklfow) {
+            option (google.api.http) = {
+              get: "/api/v1alpha1/service/workflow"
+            };
+      }
+
+
+      rpc SaveWorkflow(service.v1alpha1.ServiceRequest) returns (service.v1alpha1.Msg) {
+            option (google.api.http) = {
+              post: "/api/v1alpha1/service/workflow"
+              body: "*"
+            };
+      }
 }
