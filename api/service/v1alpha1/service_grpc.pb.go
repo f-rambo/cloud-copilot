@@ -20,13 +20,14 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	ServiceInterface_Ping_FullMethodName         = "/service.v1alpha1.ServiceInterface/Ping"
-	ServiceInterface_List_FullMethodName         = "/service.v1alpha1.ServiceInterface/List"
-	ServiceInterface_Save_FullMethodName         = "/service.v1alpha1.ServiceInterface/Save"
-	ServiceInterface_Get_FullMethodName          = "/service.v1alpha1.ServiceInterface/Get"
-	ServiceInterface_Delete_FullMethodName       = "/service.v1alpha1.ServiceInterface/Delete"
-	ServiceInterface_GetWorkflow_FullMethodName  = "/service.v1alpha1.ServiceInterface/GetWorkflow"
-	ServiceInterface_SaveWorkflow_FullMethodName = "/service.v1alpha1.ServiceInterface/SaveWorkflow"
+	ServiceInterface_Ping_FullMethodName           = "/service.v1alpha1.ServiceInterface/Ping"
+	ServiceInterface_List_FullMethodName           = "/service.v1alpha1.ServiceInterface/List"
+	ServiceInterface_Save_FullMethodName           = "/service.v1alpha1.ServiceInterface/Save"
+	ServiceInterface_Get_FullMethodName            = "/service.v1alpha1.ServiceInterface/Get"
+	ServiceInterface_Delete_FullMethodName         = "/service.v1alpha1.ServiceInterface/Delete"
+	ServiceInterface_GetWorkflow_FullMethodName    = "/service.v1alpha1.ServiceInterface/GetWorkflow"
+	ServiceInterface_SaveWorkflow_FullMethodName   = "/service.v1alpha1.ServiceInterface/SaveWorkflow"
+	ServiceInterface_CommitWorklfow_FullMethodName = "/service.v1alpha1.ServiceInterface/CommitWorklfow"
 )
 
 // ServiceInterfaceClient is the client API for ServiceInterface service.
@@ -40,6 +41,7 @@ type ServiceInterfaceClient interface {
 	Delete(ctx context.Context, in *ServiceRequest, opts ...grpc.CallOption) (*Msg, error)
 	GetWorkflow(ctx context.Context, in *ServiceRequest, opts ...grpc.CallOption) (*Worklfow, error)
 	SaveWorkflow(ctx context.Context, in *ServiceRequest, opts ...grpc.CallOption) (*Msg, error)
+	CommitWorklfow(ctx context.Context, in *ServiceRequest, opts ...grpc.CallOption) (*Msg, error)
 }
 
 type serviceInterfaceClient struct {
@@ -113,6 +115,15 @@ func (c *serviceInterfaceClient) SaveWorkflow(ctx context.Context, in *ServiceRe
 	return out, nil
 }
 
+func (c *serviceInterfaceClient) CommitWorklfow(ctx context.Context, in *ServiceRequest, opts ...grpc.CallOption) (*Msg, error) {
+	out := new(Msg)
+	err := c.cc.Invoke(ctx, ServiceInterface_CommitWorklfow_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ServiceInterfaceServer is the server API for ServiceInterface service.
 // All implementations must embed UnimplementedServiceInterfaceServer
 // for forward compatibility
@@ -124,6 +135,7 @@ type ServiceInterfaceServer interface {
 	Delete(context.Context, *ServiceRequest) (*Msg, error)
 	GetWorkflow(context.Context, *ServiceRequest) (*Worklfow, error)
 	SaveWorkflow(context.Context, *ServiceRequest) (*Msg, error)
+	CommitWorklfow(context.Context, *ServiceRequest) (*Msg, error)
 	mustEmbedUnimplementedServiceInterfaceServer()
 }
 
@@ -151,6 +163,9 @@ func (UnimplementedServiceInterfaceServer) GetWorkflow(context.Context, *Service
 }
 func (UnimplementedServiceInterfaceServer) SaveWorkflow(context.Context, *ServiceRequest) (*Msg, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SaveWorkflow not implemented")
+}
+func (UnimplementedServiceInterfaceServer) CommitWorklfow(context.Context, *ServiceRequest) (*Msg, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CommitWorklfow not implemented")
 }
 func (UnimplementedServiceInterfaceServer) mustEmbedUnimplementedServiceInterfaceServer() {}
 
@@ -291,6 +306,24 @@ func _ServiceInterface_SaveWorkflow_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ServiceInterface_CommitWorklfow_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ServiceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ServiceInterfaceServer).CommitWorklfow(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ServiceInterface_CommitWorklfow_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ServiceInterfaceServer).CommitWorklfow(ctx, req.(*ServiceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ServiceInterface_ServiceDesc is the grpc.ServiceDesc for ServiceInterface service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -325,6 +358,10 @@ var ServiceInterface_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SaveWorkflow",
 			Handler:    _ServiceInterface_SaveWorkflow_Handler,
+		},
+		{
+			MethodName: "CommitWorklfow",
+			Handler:    _ServiceInterface_CommitWorklfow_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

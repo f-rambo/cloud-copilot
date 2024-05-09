@@ -1063,6 +1063,24 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/project.v1alpha1.Msg'
+    /api/v1alpha1/service/commit:
+        post:
+            tags:
+                - ServiceInterface
+            operationId: ServiceInterface_CommitWorklfow
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/service.v1alpha1.ServiceRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/service.v1alpha1.Msg'
     /api/v1alpha1/service/delete:
         delete:
             tags:
@@ -1106,6 +1124,10 @@ paths:
                   schema:
                     type: string
                 - name: wf_type
+                  in: query
+                  schema:
+                    type: string
+                - name: workflow_id
                   in: query
                   schema:
                     type: string
@@ -1162,6 +1184,10 @@ paths:
                   in: query
                   schema:
                     type: string
+                - name: workflow_id
+                  in: query
+                  schema:
+                    type: string
             responses:
                 "200":
                     description: OK
@@ -1212,6 +1238,10 @@ paths:
                   schema:
                     type: string
                 - name: wf_type
+                  in: query
+                  schema:
+                    type: string
+                - name: workflow_id
                   in: query
                   schema:
                     type: string
@@ -1295,6 +1325,10 @@ paths:
                   schema:
                     type: string
                 - name: wf_type
+                  in: query
+                  schema:
+                    type: string
+                - name: workflow_id
                   in: query
                   schema:
                     type: string
@@ -1898,6 +1932,8 @@ components:
                 workflow:
                     $ref: '#/components/schemas/service.v1alpha1.Worklfow'
                 wf_type:
+                    type: string
+                workflow_id:
                     type: string
         service.v1alpha1.Services:
             type: object

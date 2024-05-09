@@ -54,4 +54,11 @@ service ServiceInterface {
               body: "*"
             };
       }
+
+      rpc CommitWorklfow(service.v1alpha1.ServiceRequest) returns (service.v1alpha1.Msg) {
+            option (google.api.http) = {
+              post: "/api/v1alpha1/service/commit"
+              body: "*"
+            };
+      }
 }

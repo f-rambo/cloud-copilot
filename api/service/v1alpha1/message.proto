@@ -13,6 +13,7 @@ message ServiceRequest {
       string wfArgs = 8 [json_name = "wf_args"];
       Worklfow workflow = 9 [json_name = "workflow"];
       string wfType = 10 [json_name = "wf_type"];
+      int64 workflowId = 11 [json_name = "workflow_id"];
 }
 
 message Services {

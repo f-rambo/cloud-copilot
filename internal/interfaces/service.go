@@ -191,6 +191,31 @@ func (s *ServicesInterface) SaveWorkflow(ctx context.Context, request *v1alpha1.
 	return &v1alpha1.Msg{}, nil
 }
 
+func (s *ServicesInterface) CommitWorklfow(ctx context.Context, request *v1alpha1.ServiceRequest) (*v1alpha1.Msg, error) {
+	if request.Id == 0 {
+		return nil, errors.New("service id is required")
+	}
+	if request.WorkflowId == 0 {
+		return nil, errors.New("workflow id is required")
+	}
+	if request.WfType == "" {
+		return nil, errors.New("workflow type is required")
+	}
+	service, err := s.serviceUc.Get(ctx, request.Id)
+	if err != nil {
+		return nil, err
+	}
+	project, err := s.projectUc.Get(ctx, service.ProjectID)
+	if err != nil {
+		return nil, err
+	}
+	err = s.serviceUc.CommitWorklfow(ctx, project, service, request.WfType, request.WorkflowId)
+	if err != nil {
+		return nil, err
+	}
+	return &v1alpha1.Msg{}, nil
+}
+
 func (s *ServicesInterface) bizToInterface(service *biz.Service) *v1alpha1.Service {
 	servicesInterface := &v1alpha1.Service{
 		ID:          service.ID,

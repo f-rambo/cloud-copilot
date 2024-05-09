@@ -2,10 +2,13 @@ package biz
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/f-rambo/ocean/pkg/argoworkflows"
+	"github.com/f-rambo/ocean/pkg/kubeclient"
 	"github.com/go-kratos/kratos/v2/log"
 	"gorm.io/gorm"
 )
@@ -150,4 +153,35 @@ func (uc *ServicesUseCase) SaveWorkflow(ctx context.Context, serviceId int64, wf
 		service.CDWorklfowID = wf.ID
 	}
 	return uc.repo.Save(ctx, service)
+}
+
+func (uc *ServicesUseCase) CommitWorklfow(ctx context.Context, project *Project, service *Service, wfType string, workflowsId int64) error {
+	if wfType == ci && service.CIWorklfowID != workflowsId {
+		return fmt.Errorf("ci workflow not match")
+	}
+	if wfType == cd && service.CDWorklfowID != workflowsId {
+		return fmt.Errorf("cd workflow not match")
+	}
+	wf, err := uc.repo.GetWorkflow(ctx, workflowsId)
+	if err != nil {
+		return err
+	}
+	kubeConf, err := kubeclient.GetKubeConfig()
+	if err != nil {
+		return err
+	}
+	argoClient, err := argoworkflows.NewForConfig(kubeConf)
+	if err != nil {
+		return err
+	}
+	argoWf := &wfv1.Workflow{}
+	err = json.Unmarshal(wf.Workflow, argoWf)
+	if err != nil {
+		return err
+	}
+	_, err = argoClient.Workflows(project.Namespace).Create(ctx, argoWf)
+	if err != nil {
+		return err
+	}
+	return nil
 }
