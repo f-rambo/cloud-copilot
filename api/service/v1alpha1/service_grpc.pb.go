@@ -28,6 +28,7 @@ const (
 	ServiceInterface_GetWorkflow_FullMethodName    = "/service.v1alpha1.ServiceInterface/GetWorkflow"
 	ServiceInterface_SaveWorkflow_FullMethodName   = "/service.v1alpha1.ServiceInterface/SaveWorkflow"
 	ServiceInterface_CommitWorklfow_FullMethodName = "/service.v1alpha1.ServiceInterface/CommitWorklfow"
+	ServiceInterface_GetServiceCis_FullMethodName  = "/service.v1alpha1.ServiceInterface/GetServiceCis"
 )
 
 // ServiceInterfaceClient is the client API for ServiceInterface service.
@@ -42,6 +43,7 @@ type ServiceInterfaceClient interface {
 	GetWorkflow(ctx context.Context, in *ServiceRequest, opts ...grpc.CallOption) (*Worklfow, error)
 	SaveWorkflow(ctx context.Context, in *ServiceRequest, opts ...grpc.CallOption) (*Msg, error)
 	CommitWorklfow(ctx context.Context, in *ServiceRequest, opts ...grpc.CallOption) (*Msg, error)
+	GetServiceCis(ctx context.Context, in *CIsRequest, opts ...grpc.CallOption) (*CIsResult, error)
 }
 
 type serviceInterfaceClient struct {
@@ -124,6 +126,15 @@ func (c *serviceInterfaceClient) CommitWorklfow(ctx context.Context, in *Service
 	return out, nil
 }
 
+func (c *serviceInterfaceClient) GetServiceCis(ctx context.Context, in *CIsRequest, opts ...grpc.CallOption) (*CIsResult, error) {
+	out := new(CIsResult)
+	err := c.cc.Invoke(ctx, ServiceInterface_GetServiceCis_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ServiceInterfaceServer is the server API for ServiceInterface service.
 // All implementations must embed UnimplementedServiceInterfaceServer
 // for forward compatibility
@@ -136,6 +147,7 @@ type ServiceInterfaceServer interface {
 	GetWorkflow(context.Context, *ServiceRequest) (*Worklfow, error)
 	SaveWorkflow(context.Context, *ServiceRequest) (*Msg, error)
 	CommitWorklfow(context.Context, *ServiceRequest) (*Msg, error)
+	GetServiceCis(context.Context, *CIsRequest) (*CIsResult, error)
 	mustEmbedUnimplementedServiceInterfaceServer()
 }
 
@@ -166,6 +178,9 @@ func (UnimplementedServiceInterfaceServer) SaveWorkflow(context.Context, *Servic
 }
 func (UnimplementedServiceInterfaceServer) CommitWorklfow(context.Context, *ServiceRequest) (*Msg, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CommitWorklfow not implemented")
+}
+func (UnimplementedServiceInterfaceServer) GetServiceCis(context.Context, *CIsRequest) (*CIsResult, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetServiceCis not implemented")
 }
 func (UnimplementedServiceInterfaceServer) mustEmbedUnimplementedServiceInterfaceServer() {}
 
@@ -324,6 +339,24 @@ func _ServiceInterface_CommitWorklfow_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ServiceInterface_GetServiceCis_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CIsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ServiceInterfaceServer).GetServiceCis(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ServiceInterface_GetServiceCis_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ServiceInterfaceServer).GetServiceCis(ctx, req.(*CIsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ServiceInterface_ServiceDesc is the grpc.ServiceDesc for ServiceInterface service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -362,6 +395,10 @@ var ServiceInterface_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CommitWorklfow",
 			Handler:    _ServiceInterface_CommitWorklfow_Handler,
+		},
+		{
+			MethodName: "GetServiceCis",
+			Handler:    _ServiceInterface_GetServiceCis_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

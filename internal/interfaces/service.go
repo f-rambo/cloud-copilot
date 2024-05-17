@@ -15,6 +15,7 @@ type ServicesInterface struct {
 	v1alpha1.UnimplementedServiceInterfaceServer
 	serviceUc *biz.ServicesUseCase
 	projectUc *biz.ProjectUsecase
+	userUc    *biz.UserUseCase
 }
 
 func NewServicesInterface(serviceUc *biz.ServicesUseCase, projectUc *biz.ProjectUsecase) *ServicesInterface {
@@ -216,6 +217,38 @@ func (s *ServicesInterface) CommitWorklfow(ctx context.Context, request *v1alpha
 	return &v1alpha1.Msg{}, nil
 }
 
+func (s *ServicesInterface) GetServiceCis(ctx context.Context, request *v1alpha1.CIsRequest) (*v1alpha1.CIsResult, error) {
+	cis, total, err := s.serviceUc.GetServiceCis(ctx, request.ServiceID, request.Page, request.PageSize)
+	if err != nil {
+		return nil, err
+	}
+	cisResult := &v1alpha1.CIsResult{
+		CIs:   make([]*v1alpha1.CI, 0),
+		Total: total,
+	}
+	userIds := make([]int64, 0)
+	for _, v := range cis {
+		userIds = append(userIds, v.UserID)
+	}
+	users, err := s.userUc.GetUserByBatchID(ctx, userIds)
+	if err != nil {
+		return nil, err
+	}
+	userMap := make(map[int64]string)
+	for _, v := range users {
+		userMap[v.ID] = v.Name
+	}
+	for _, ci := range cis {
+		data := s.bizCiTointerface(ci)
+		userName, ok := userMap[data.UserId]
+		if ok {
+			data.Username = userName
+		}
+		cisResult.CIs = append(cisResult.CIs, data)
+	}
+	return cisResult, nil
+}
+
 func (s *ServicesInterface) bizToInterface(service *biz.Service) *v1alpha1.Service {
 	servicesInterface := &v1alpha1.Service{
 		ID:          service.ID,
@@ -274,5 +307,33 @@ func (s *ServicesInterface) interfaceToBiz(service *v1alpha1.Service) *biz.Servi
 		Business:    service.Business,
 		Technology:  service.Technology,
 		Ports:       ports,
+	}
+}
+
+func (s *ServicesInterface) bizCiTointerface(ci *biz.CI) *v1alpha1.CI {
+	ciInterface := &v1alpha1.CI{
+		ID:          ci.ID,
+		Version:     ci.Version,
+		Branch:      ci.Branch,
+		Tag:         ci.Tag,
+		State:       ci.State,
+		Description: ci.Description,
+		ServiceID:   ci.ServiceID,
+		UserId:      ci.UserID,
+		Logs:        ci.Logs,
+		CreatedAt:   ci.CreatedAt.Format("2006-01-02 15:04:05"),
+	}
+	return ciInterface
+}
+
+func (s *ServicesInterface) interfaceCiToBiz(ci *v1alpha1.CI) *biz.CI {
+	return &biz.CI{
+		ID:          ci.ID,
+		Version:     ci.Version,
+		Branch:      ci.Branch,
+		Tag:         ci.Tag,
+		Description: ci.Description,
+		ServiceID:   ci.ServiceID,
+		UserID:      ci.UserId,
 	}
 }

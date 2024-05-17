@@ -41,3 +41,36 @@ func (u *UserRepo) GetUserByID(ctx context.Context, id int64) (*biz.User, error)
 	}
 	return user, nil
 }
+
+func (u *UserRepo) GetUserByBatchID(ctx context.Context, ids []int64) ([]*biz.User, error) {
+	users := make([]*biz.User, 0)
+	err := u.data.db.Where("id in (?)", ids).Find(&users).Error
+	if err != nil && err != gorm.ErrRecordNotFound {
+		return nil, err
+	}
+	return users, nil
+}
+
+func (u *UserRepo) GetUsers(ctx context.Context, username, email string, pageNum, pageSize int) (users []*biz.User, total int64, err error) {
+	users = make([]*biz.User, 0)
+	db := u.data.db.Model(&biz.User{})
+	if username != "" {
+		db = db.Where("username LIKE ?", "%"+username+"%")
+	}
+	if email != "" {
+		db = db.Where("email LIKE ?", "%"+email+"%")
+	}
+	err = db.Count(&total).Error
+	if err != nil {
+		return nil, 0, err
+	}
+	err = db.Offset((pageNum - 1) * pageSize).Limit(pageSize).Find(&users).Error
+	if err != nil {
+		return nil, 0, err
+	}
+	return users, total, nil
+}
+
+func (u *UserRepo) DeleteUser(ctx context.Context, id int64) error {
+	return u.data.db.Delete(&biz.User{}, "id = ?", id).Error
+}

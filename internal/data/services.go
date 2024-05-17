@@ -92,3 +92,22 @@ func (s *servicesRepo) DeleteWrkflow(ctx context.Context, id int64) error {
 	return s.data.db.Delete(&biz.Workflow{}, id).Error
 
 }
+
+func (s *servicesRepo) GetServiceCis(ctx context.Context, serviceId int64, page, pageSize int32) ([]*biz.CI, int64, error) {
+	var itemCount int64 = 0
+	cis := make([]*biz.CI, 0)
+	ciModel := s.data.db.Model(&biz.CI{})
+	ciModel = ciModel.Where("service_id = ?", serviceId)
+	err := ciModel.Count(&itemCount).Error
+	if err != nil {
+		return nil, 0, err
+	}
+	if itemCount == 0 {
+		return cis, 0, nil
+	}
+	err = ciModel.Offset((int(page) - 1) * int(pageSize)).Limit(int(pageSize)).Find(&cis).Error
+	if err != nil {
+		return nil, 0, err
+	}
+	return cis, itemCount, nil
+}

@@ -1063,6 +1063,37 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/project.v1alpha1.Msg'
+    /api/v1alpha1/service/cis:
+        get:
+            tags:
+                - ServiceInterface
+            operationId: ServiceInterface_GetServiceCis
+            parameters:
+                - name: service_id
+                  in: query
+                  schema:
+                    type: string
+                - name: version
+                  in: query
+                  schema:
+                    type: string
+                - name: page
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: page_size
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/service.v1alpha1.CIsResult'
     /api/v1alpha1/service/commit:
         post:
             tags:
@@ -1368,6 +1399,63 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/user.v1alpha1.User'
+        post:
+            tags:
+                - UserInterface
+            operationId: UserInterface_SaveUser
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/user.v1alpha1.User'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/user.v1alpha1.User'
+        delete:
+            tags:
+                - UserInterface
+            operationId: UserInterface_DeleteUser
+            parameters:
+                - name: id
+                  in: query
+                  schema:
+                    type: string
+                - name: username
+                  in: query
+                  schema:
+                    type: string
+                - name: email
+                  in: query
+                  schema:
+                    type: string
+                - name: access_token
+                  in: query
+                  schema:
+                    type: string
+                - name: state
+                  in: query
+                  schema:
+                    type: string
+                - name: updated_at
+                  in: query
+                  schema:
+                    type: string
+                - name: sign_type
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/user.v1alpha1.Msg'
     /api/v1alpha1/user/signin:
         post:
             tags:
@@ -1386,18 +1474,37 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/user.v1alpha1.User'
-    /api/v1alpha1/user/signout:
+    /api/v1alpha1/users:
         get:
             tags:
                 - UserInterface
-            operationId: UserInterface_SignOut
+            operationId: UserInterface_GetUsers
+            parameters:
+                - name: page_size
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: page_number
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: username
+                  in: query
+                  schema:
+                    type: string
+                - name: email
+                  in: query
+                  schema:
+                    type: string
             responses:
                 "200":
                     description: OK
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/user.v1alpha1.Msg'
+                                $ref: '#/components/schemas/user.v1alpha1.Users'
 components:
     schemas:
         app.v1alpha1.App:
@@ -1844,6 +1951,44 @@ components:
             properties:
                 name:
                     type: string
+        service.v1alpha1.CI:
+            type: object
+            properties:
+                id:
+                    type: string
+                version:
+                    type: string
+                branch:
+                    type: string
+                tag:
+                    type: string
+                args:
+                    type: string
+                description:
+                    type: string
+                workflow_name:
+                    type: string
+                service_id:
+                    type: string
+                state:
+                    type: string
+                created_at:
+                    type: string
+                username:
+                    type: string
+                user_id:
+                    type: string
+                logs:
+                    type: string
+        service.v1alpha1.CIsResult:
+            type: object
+            properties:
+                cis:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/service.v1alpha1.CI'
+                total:
+                    type: string
         service.v1alpha1.Msg:
             type: object
             properties:
@@ -2015,6 +2160,12 @@ components:
                     type: string
                 password:
                     type: string
+                access_token:
+                    type: string
+                sign_type:
+                    type: string
+                username:
+                    type: string
         user.v1alpha1.User:
             type: object
             properties:
@@ -2024,9 +2175,22 @@ components:
                     type: string
                 email:
                     type: string
-                token:
+                access_token:
                     type: string
-                expHour:
+                state:
+                    type: string
+                updated_at:
+                    type: string
+                sign_type:
+                    type: string
+        user.v1alpha1.Users:
+            type: object
+            properties:
+                users:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/user.v1alpha1.User'
+                total_count:
                     type: integer
                     format: int32
 tags:

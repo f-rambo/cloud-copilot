@@ -20,21 +20,27 @@ var _ = binding.EncodeURL
 
 const _ = http.SupportPackageIsVersion1
 
+const OperationUserInterfaceDeleteUser = "/user.v1alpha1.UserInterface/DeleteUser"
 const OperationUserInterfaceGetUserInfo = "/user.v1alpha1.UserInterface/GetUserInfo"
+const OperationUserInterfaceGetUsers = "/user.v1alpha1.UserInterface/GetUsers"
+const OperationUserInterfaceSaveUser = "/user.v1alpha1.UserInterface/SaveUser"
 const OperationUserInterfaceSignIn = "/user.v1alpha1.UserInterface/SignIn"
-const OperationUserInterfaceSignOut = "/user.v1alpha1.UserInterface/SignOut"
 
 type UserInterfaceHTTPServer interface {
+	DeleteUser(context.Context, *User) (*Msg, error)
 	GetUserInfo(context.Context, *emptypb.Empty) (*User, error)
+	GetUsers(context.Context, *UsersRequest) (*Users, error)
+	SaveUser(context.Context, *User) (*User, error)
 	SignIn(context.Context, *SignIn) (*User, error)
-	SignOut(context.Context, *emptypb.Empty) (*Msg, error)
 }
 
 func RegisterUserInterfaceHTTPServer(s *http.Server, srv UserInterfaceHTTPServer) {
 	r := s.Route("/")
 	r.POST("/api/v1alpha1/user/signin", _UserInterface_SignIn0_HTTP_Handler(srv))
-	r.GET("/api/v1alpha1/user/signout", _UserInterface_SignOut0_HTTP_Handler(srv))
 	r.GET("/api/v1alpha1/user", _UserInterface_GetUserInfo0_HTTP_Handler(srv))
+	r.GET("/api/v1alpha1/users", _UserInterface_GetUsers0_HTTP_Handler(srv))
+	r.POST("/api/v1alpha1/user", _UserInterface_SaveUser0_HTTP_Handler(srv))
+	r.DELETE("/api/v1alpha1/user", _UserInterface_DeleteUser0_HTTP_Handler(srv))
 }
 
 func _UserInterface_SignIn0_HTTP_Handler(srv UserInterfaceHTTPServer) func(ctx http.Context) error {
@@ -59,25 +65,6 @@ func _UserInterface_SignIn0_HTTP_Handler(srv UserInterfaceHTTPServer) func(ctx h
 	}
 }
 
-func _UserInterface_SignOut0_HTTP_Handler(srv UserInterfaceHTTPServer) func(ctx http.Context) error {
-	return func(ctx http.Context) error {
-		var in emptypb.Empty
-		if err := ctx.BindQuery(&in); err != nil {
-			return err
-		}
-		http.SetOperation(ctx, OperationUserInterfaceSignOut)
-		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.SignOut(ctx, req.(*emptypb.Empty))
-		})
-		out, err := h(ctx, &in)
-		if err != nil {
-			return err
-		}
-		reply := out.(*Msg)
-		return ctx.Result(200, reply)
-	}
-}
-
 func _UserInterface_GetUserInfo0_HTTP_Handler(srv UserInterfaceHTTPServer) func(ctx http.Context) error {
 	return func(ctx http.Context) error {
 		var in emptypb.Empty
@@ -97,10 +84,72 @@ func _UserInterface_GetUserInfo0_HTTP_Handler(srv UserInterfaceHTTPServer) func(
 	}
 }
 
+func _UserInterface_GetUsers0_HTTP_Handler(srv UserInterfaceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in UsersRequest
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationUserInterfaceGetUsers)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.GetUsers(ctx, req.(*UsersRequest))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*Users)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _UserInterface_SaveUser0_HTTP_Handler(srv UserInterfaceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in User
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationUserInterfaceSaveUser)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.SaveUser(ctx, req.(*User))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*User)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _UserInterface_DeleteUser0_HTTP_Handler(srv UserInterfaceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in User
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationUserInterfaceDeleteUser)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.DeleteUser(ctx, req.(*User))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*Msg)
+		return ctx.Result(200, reply)
+	}
+}
+
 type UserInterfaceHTTPClient interface {
+	DeleteUser(ctx context.Context, req *User, opts ...http.CallOption) (rsp *Msg, err error)
 	GetUserInfo(ctx context.Context, req *emptypb.Empty, opts ...http.CallOption) (rsp *User, err error)
+	GetUsers(ctx context.Context, req *UsersRequest, opts ...http.CallOption) (rsp *Users, err error)
+	SaveUser(ctx context.Context, req *User, opts ...http.CallOption) (rsp *User, err error)
 	SignIn(ctx context.Context, req *SignIn, opts ...http.CallOption) (rsp *User, err error)
-	SignOut(ctx context.Context, req *emptypb.Empty, opts ...http.CallOption) (rsp *Msg, err error)
 }
 
 type UserInterfaceHTTPClientImpl struct {
@@ -109,6 +158,19 @@ type UserInterfaceHTTPClientImpl struct {
 
 func NewUserInterfaceHTTPClient(client *http.Client) UserInterfaceHTTPClient {
 	return &UserInterfaceHTTPClientImpl{client}
+}
+
+func (c *UserInterfaceHTTPClientImpl) DeleteUser(ctx context.Context, in *User, opts ...http.CallOption) (*Msg, error) {
+	var out Msg
+	pattern := "/api/v1alpha1/user"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationUserInterfaceDeleteUser))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "DELETE", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, err
 }
 
 func (c *UserInterfaceHTTPClientImpl) GetUserInfo(ctx context.Context, in *emptypb.Empty, opts ...http.CallOption) (*User, error) {
@@ -124,11 +186,24 @@ func (c *UserInterfaceHTTPClientImpl) GetUserInfo(ctx context.Context, in *empty
 	return &out, err
 }
 
-func (c *UserInterfaceHTTPClientImpl) SignIn(ctx context.Context, in *SignIn, opts ...http.CallOption) (*User, error) {
+func (c *UserInterfaceHTTPClientImpl) GetUsers(ctx context.Context, in *UsersRequest, opts ...http.CallOption) (*Users, error) {
+	var out Users
+	pattern := "/api/v1alpha1/users"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationUserInterfaceGetUsers))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, err
+}
+
+func (c *UserInterfaceHTTPClientImpl) SaveUser(ctx context.Context, in *User, opts ...http.CallOption) (*User, error) {
 	var out User
-	pattern := "/api/v1alpha1/user/signin"
+	pattern := "/api/v1alpha1/user"
 	path := binding.EncodeURL(pattern, in, false)
-	opts = append(opts, http.Operation(OperationUserInterfaceSignIn))
+	opts = append(opts, http.Operation(OperationUserInterfaceSaveUser))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
 	if err != nil {
@@ -137,13 +212,13 @@ func (c *UserInterfaceHTTPClientImpl) SignIn(ctx context.Context, in *SignIn, op
 	return &out, err
 }
 
-func (c *UserInterfaceHTTPClientImpl) SignOut(ctx context.Context, in *emptypb.Empty, opts ...http.CallOption) (*Msg, error) {
-	var out Msg
-	pattern := "/api/v1alpha1/user/signout"
-	path := binding.EncodeURL(pattern, in, true)
-	opts = append(opts, http.Operation(OperationUserInterfaceSignOut))
+func (c *UserInterfaceHTTPClientImpl) SignIn(ctx context.Context, in *SignIn, opts ...http.CallOption) (*User, error) {
+	var out User
+	pattern := "/api/v1alpha1/user/signin"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationUserInterfaceSignIn))
 	opts = append(opts, http.PathTemplate(pattern))
-	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
 	if err != nil {
 		return nil, err
 	}

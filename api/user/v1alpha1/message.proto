@@ -5,14 +5,31 @@ package user.v1alpha1;
 option go_package = "api/user/v1alpha1;v1alpha1";
 
 message SignIn {
-      string email = 1;
-      string password = 2;
+      string email = 1 [json_name = "email"];
+      string password = 2 [json_name = "password"];
+      string access_token = 3 [json_name = "access_token"];
+      string sign_type = 4 [json_name = "sign_type"];
+      string username = 5 [json_name = "username"];
+}
+
+message UsersRequest {
+      int32 page_size = 1 [json_name = "page_size"];
+      int32 page_number = 2 [json_name = "page_number"];
+      string username = 3 [json_name = "username"];
+      string email = 4 [json_name = "email"];
+}
+
+message Users {
+      repeated User users = 1 [json_name = "users"];
+      int32 total_count = 2 [json_name = "total_count"];
 }
 
 message User {
-      int64 id = 1;
-      string username = 2;
-      string email = 3;
-      string token = 4;
-      int32 exp_hour = 5;
+      int64 id = 1 [json_name = "id"];
+      string username = 2 [json_name = "username"];
+      string email = 3 [json_name = "email"];
+      string access_token = 4 [json_name = "access_token"];
+      string state = 5 [json_name = "state"];
+      string updated_at = 6 [json_name = "updated_at"];
+      string sign_type = 7 [json_name = "sign_type"];
 }

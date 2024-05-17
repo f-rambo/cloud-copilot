@@ -48,6 +48,7 @@ type CI struct {
 	Version     string `json:"version,omitempty" gorm:"column:version; default:''; NOT NULL"`
 	Branch      string `json:"branch,omitempty" gorm:"column:branch; default:''; NOT NULL"`
 	Tag         string `json:"tag,omitempty" gorm:"column:tag; default:''; NOT NULL"`
+	State       string `json:"state,omitempty" gorm:"column:state; default:''; NOT NULL"` // pending, success, failure
 	Description string `json:"description,omitempty" gorm:"column:description; default:''; NOT NULL"`
 	ServiceID   int64  `json:"service_id,omitempty" gorm:"column:service_id; default:0; NOT NULL"`
 	UserID      int64  `json:"user_id,omitempty" gorm:"column:user_id; default:0; NOT NULL"`
@@ -78,6 +79,7 @@ type ServicesRepo interface {
 	GetWorkflow(ctx context.Context, id int64) (*Workflow, error)
 	SaveWrkflow(ctx context.Context, workflow *Workflow) error
 	DeleteWrkflow(ctx context.Context, id int64) error
+	GetServiceCis(ctx context.Context, serviceId int64, page, pageSize int32) ([]*CI, int64, error)
 }
 
 type ServicesUseCase struct {
@@ -184,4 +186,8 @@ func (uc *ServicesUseCase) CommitWorklfow(ctx context.Context, project *Project,
 		return err
 	}
 	return nil
+}
+
+func (uc *ServicesUseCase) GetServiceCis(ctx context.Context, serviceId int64, page, pageSize int32) ([]*CI, int64, error) {
+	return uc.repo.GetServiceCis(ctx, serviceId, page, pageSize)
 }

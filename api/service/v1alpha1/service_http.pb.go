@@ -23,6 +23,7 @@ const _ = http.SupportPackageIsVersion1
 const OperationServiceInterfaceCommitWorklfow = "/service.v1alpha1.ServiceInterface/CommitWorklfow"
 const OperationServiceInterfaceDelete = "/service.v1alpha1.ServiceInterface/Delete"
 const OperationServiceInterfaceGet = "/service.v1alpha1.ServiceInterface/Get"
+const OperationServiceInterfaceGetServiceCis = "/service.v1alpha1.ServiceInterface/GetServiceCis"
 const OperationServiceInterfaceGetWorkflow = "/service.v1alpha1.ServiceInterface/GetWorkflow"
 const OperationServiceInterfaceList = "/service.v1alpha1.ServiceInterface/List"
 const OperationServiceInterfacePing = "/service.v1alpha1.ServiceInterface/Ping"
@@ -33,6 +34,7 @@ type ServiceInterfaceHTTPServer interface {
 	CommitWorklfow(context.Context, *ServiceRequest) (*Msg, error)
 	Delete(context.Context, *ServiceRequest) (*Msg, error)
 	Get(context.Context, *ServiceRequest) (*Service, error)
+	GetServiceCis(context.Context, *CIsRequest) (*CIsResult, error)
 	GetWorkflow(context.Context, *ServiceRequest) (*Worklfow, error)
 	List(context.Context, *ServiceRequest) (*Services, error)
 	Ping(context.Context, *emptypb.Empty) (*Msg, error)
@@ -50,6 +52,7 @@ func RegisterServiceInterfaceHTTPServer(s *http.Server, srv ServiceInterfaceHTTP
 	r.GET("/api/v1alpha1/service/workflow", _ServiceInterface_GetWorkflow0_HTTP_Handler(srv))
 	r.POST("/api/v1alpha1/service/workflow", _ServiceInterface_SaveWorkflow0_HTTP_Handler(srv))
 	r.POST("/api/v1alpha1/service/commit", _ServiceInterface_CommitWorklfow0_HTTP_Handler(srv))
+	r.GET("/api/v1alpha1/service/cis", _ServiceInterface_GetServiceCis0_HTTP_Handler(srv))
 }
 
 func _ServiceInterface_Ping3_HTTP_Handler(srv ServiceInterfaceHTTPServer) func(ctx http.Context) error {
@@ -213,10 +216,30 @@ func _ServiceInterface_CommitWorklfow0_HTTP_Handler(srv ServiceInterfaceHTTPServ
 	}
 }
 
+func _ServiceInterface_GetServiceCis0_HTTP_Handler(srv ServiceInterfaceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in CIsRequest
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationServiceInterfaceGetServiceCis)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.GetServiceCis(ctx, req.(*CIsRequest))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*CIsResult)
+		return ctx.Result(200, reply)
+	}
+}
+
 type ServiceInterfaceHTTPClient interface {
 	CommitWorklfow(ctx context.Context, req *ServiceRequest, opts ...http.CallOption) (rsp *Msg, err error)
 	Delete(ctx context.Context, req *ServiceRequest, opts ...http.CallOption) (rsp *Msg, err error)
 	Get(ctx context.Context, req *ServiceRequest, opts ...http.CallOption) (rsp *Service, err error)
+	GetServiceCis(ctx context.Context, req *CIsRequest, opts ...http.CallOption) (rsp *CIsResult, err error)
 	GetWorkflow(ctx context.Context, req *ServiceRequest, opts ...http.CallOption) (rsp *Worklfow, err error)
 	List(ctx context.Context, req *ServiceRequest, opts ...http.CallOption) (rsp *Services, err error)
 	Ping(ctx context.Context, req *emptypb.Empty, opts ...http.CallOption) (rsp *Msg, err error)
@@ -263,6 +286,19 @@ func (c *ServiceInterfaceHTTPClientImpl) Get(ctx context.Context, in *ServiceReq
 	pattern := "/api/v1alpha1/service/get"
 	path := binding.EncodeURL(pattern, in, true)
 	opts = append(opts, http.Operation(OperationServiceInterfaceGet))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, err
+}
+
+func (c *ServiceInterfaceHTTPClientImpl) GetServiceCis(ctx context.Context, in *CIsRequest, opts ...http.CallOption) (*CIsResult, error) {
+	var out CIsResult
+	pattern := "/api/v1alpha1/service/cis"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationServiceInterfaceGetServiceCis))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
 	if err != nil {

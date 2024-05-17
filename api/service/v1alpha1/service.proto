@@ -61,4 +61,10 @@ service ServiceInterface {
               body: "*"
             };
       }
+
+      rpc GetServiceCis(service.v1alpha1.CIsRequest) returns (service.v1alpha1.CIsResult) {
+            option (google.api.http) = {
+              get: "/api/v1alpha1/service/cis"
+            };
+      }
 }

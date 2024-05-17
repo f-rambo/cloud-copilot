@@ -17,15 +17,29 @@ service UserInterface {
             };
       }
 
-      rpc SignOut(google.protobuf.Empty) returns (user.v1alpha1.Msg) {
-            option (google.api.http) = {
-              get: "/api/v1alpha1/user/signout"
-            };
-      }
-
       rpc GetUserInfo(google.protobuf.Empty) returns (user.v1alpha1.User) {
             option (google.api.http) = {
               get: "/api/v1alpha1/user"
             };
       }
+
+      rpc GetUsers(user.v1alpha1.UsersRequest) returns (user.v1alpha1.Users) {
+            option (google.api.http) = {
+              get: "/api/v1alpha1/users"
+            };
+      }
+
+      rpc SaveUser(user.v1alpha1.User) returns (user.v1alpha1.User) {
+            option (google.api.http) = {
+              post: "/api/v1alpha1/user"
+              body: "*"
+            };
+      }
+
+      rpc DeleteUser(user.v1alpha1.User) returns (user.v1alpha1.Msg) {
+            option (google.api.http) = {
+              delete: "/api/v1alpha1/user"
+            };
+      }
+
 }

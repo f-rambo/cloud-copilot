@@ -49,6 +49,18 @@ message Port {
       string Protocol = 4 [json_name = "protocol"];
 }
 
+message CIsRequest {
+      int64 ServiceID = 1 [json_name = "service_id"];
+      string version = 2 [json_name = "version"];
+      int32 page = 3 [json_name = "page"];
+      int32 pageSize = 4 [json_name = "page_size"];
+}
+
+message CIsResult {
+      repeated CI CIs = 1 [json_name = "cis"];
+      int64 Total = 2 [json_name = "total"];
+}
+
 message CI {
       int64 ID = 1 [json_name = "id"];
       string Version = 2 [json_name = "version"];
@@ -58,6 +70,11 @@ message CI {
       string Description = 6 [json_name = "description"];
       string WorkflowName = 7 [json_name = "workflow_name"];
       int64 ServiceID = 8 [json_name = "service_id"];
+      string State = 9 [json_name = "state"];
+      string CreatedAt = 10 [json_name = "created_at"];
+      string Username = 11 [json_name = "username"];
+      int64 UserId = 12 [json_name = "user_id"];
+      string Logs = 13 [json_name = "logs"];
 }
 
 message CD {

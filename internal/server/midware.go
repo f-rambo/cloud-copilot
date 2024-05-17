@@ -4,29 +4,34 @@ import (
 	"context"
 	"strings"
 
-	"github.com/pkg/errors"
-
+	"github.com/f-rambo/ocean/internal/biz"
 	"github.com/f-rambo/ocean/internal/interfaces"
-	"github.com/f-rambo/ocean/utils"
 	"github.com/go-kratos/kratos/v2/middleware"
 	"github.com/go-kratos/kratos/v2/middleware/selector"
 	"github.com/go-kratos/kratos/v2/transport"
+	"github.com/pkg/errors"
 	"google.golang.org/grpc/metadata"
-	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 func NewAuthServer(user *interfaces.UserInterface) func(handler middleware.Handler) middleware.Handler {
 	return func(handler middleware.Handler) middleware.Handler {
 		return func(ctx context.Context, req interface{}) (reply interface{}, err error) {
 			var authorization string
+			var userEmail string
 			if md, ok := metadata.FromIncomingContext(ctx); ok {
 				authorizations := md.Get("Authorization")
 				for _, v := range authorizations {
 					authorization = v
 					break
 				}
+				userEmails := md.Get("User-Email")
+				for _, v := range userEmails {
+					userEmail = v
+					break
+				}
 			} else if header, ok := transport.FromServerContext(ctx); ok {
 				authorization = header.RequestHeader().Get("Authorization")
+				userEmail = header.RequestHeader().Get("User-Email")
 			} else {
 				return nil, errors.New("authorization is null")
 			}
@@ -34,14 +39,15 @@ func NewAuthServer(user *interfaces.UserInterface) func(handler middleware.Handl
 			if len(authorizationArr) != 2 {
 				return nil, errors.New("authorization is error")
 			}
-			// 获取token
-			jwtToken := authorizationArr[1]
-			ctx = context.WithValue(ctx, utils.TokenKey, jwtToken)
-			user, err := user.GetUserInfo(ctx, &emptypb.Empty{})
-			if err != nil {
-				return nil, err
+			for index, authorization := range authorizationArr {
+				if index == 0 {
+					ctx = context.WithValue(ctx, biz.SignType, authorization)
+				}
+				if index == 1 {
+					ctx = context.WithValue(ctx, biz.TokenKey, authorization)
+				}
 			}
-			ctx = context.WithValue(ctx, utils.UserIDKey, user.Id)
+			ctx = context.WithValue(ctx, biz.UserEmailKey, userEmail)
 			reply, err = handler(ctx, req)
 			return
 		}
