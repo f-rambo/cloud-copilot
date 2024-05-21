@@ -51,11 +51,11 @@ func (u *UserRepo) GetUserByBatchID(ctx context.Context, ids []int64) ([]*biz.Us
 	return users, nil
 }
 
-func (u *UserRepo) GetUsers(ctx context.Context, username, email string, pageNum, pageSize int) (users []*biz.User, total int64, err error) {
+func (u *UserRepo) GetUsers(ctx context.Context, name, email string, pageNum, pageSize int) (users []*biz.User, total int64, err error) {
 	users = make([]*biz.User, 0)
 	db := u.data.db.Model(&biz.User{})
-	if username != "" {
-		db = db.Where("username LIKE ?", "%"+username+"%")
+	if name != "" {
+		db = db.Where("name LIKE ?", "%"+name+"%")
 	}
 	if email != "" {
 		db = db.Where("email LIKE ?", "%"+email+"%")

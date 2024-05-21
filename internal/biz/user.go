@@ -69,53 +69,12 @@ func NewUseUser(repo UserRepo, logger log.Logger, conf *conf.Bootstrap) *UserUse
 	return &UserUseCase{repo: repo, log: log.NewHelper(logger), authConf: &cAuth}
 }
 
-// add update user 注册
 func (u *UserUseCase) Save(ctx context.Context, user *User) error {
-	if user.AccessToken != "" {
-		if user.SignType == SignTypeGithub {
-			githubUser, err := githubapi.NewClient(user.AccessToken).GetCurrentUser(ctx)
-			if err != nil {
-				return err
-			}
-			user.Name = *githubUser.Name
-			user.Email = *githubUser.Email
-		}
-	}
-	if user.Email == "" {
-		return errors.New("email is null")
-	}
-	if user.ID == 0 {
-		repoUser, err := u.repo.GetUserInfoByEmail(ctx, user.Email)
-		if err != nil {
-			return err
-		}
-		if repoUser != nil {
-			user.ID = repoUser.ID
-		} else {
-			user.State = UserStateDisable
-		}
-	}
-	if user.PassWord != "" {
-		user.PassWord = utils.Md5(user.PassWord)
-	}
 	return u.repo.Save(ctx, user)
 }
 
-// 获取用户列表
-func (u *UserUseCase) GetUsers(ctx context.Context, username, email string, pageNum, pageSize int) (users []*User, total int64, err error) {
-	if username == AdminName {
-		return []*User{u.getAdmin()}, 1, nil
-	}
-	users, total, err = u.repo.GetUsers(ctx, username, email, pageNum, pageSize)
-	if err != nil {
-		return nil, 0, err
-	}
-	for _, user := range users {
-		if user.ID == AdminID {
-			user.Name = AdminName
-		}
-	}
-	return users, total, nil
+func (u *UserUseCase) GetUsers(ctx context.Context, name, email string, pageNum, pageSize int) (users []*User, total int64, err error) {
+	return u.repo.GetUsers(ctx, name, email, pageNum, pageSize)
 }
 
 func (u *UserUseCase) adminSignIn(user *User) (*User, bool, error) {
@@ -160,7 +119,7 @@ func (u *UserUseCase) thirdpartySignIn(ctx context.Context, user *User) (*User, 
 		if user.ID == 0 {
 			user.State = UserStateDisable
 		}
-		err = u.repo.Save(ctx, user)
+		err = u.Save(ctx, user)
 		if err != nil {
 			return nil, true, err
 		}
@@ -193,7 +152,7 @@ func (u *UserUseCase) SignIn(ctx context.Context, user *User) (*User, error) {
 		return nil, err
 	}
 	userInfo.SignType = SignTypeBasic
-	err = u.repo.Save(ctx, userInfo)
+	err = u.Save(ctx, userInfo)
 	if err != nil {
 		return nil, err
 	}

@@ -2,10 +2,12 @@ package interfaces
 
 import (
 	"context"
+	"strings"
 
 	"github.com/f-rambo/ocean/api/user/v1alpha1"
 	"github.com/f-rambo/ocean/internal/biz"
 	"github.com/f-rambo/ocean/internal/conf"
+	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
@@ -69,7 +71,8 @@ func (u *UserInterface) GetUsers(ctx context.Context, request *v1alpha1.UsersReq
 			Email:       user.Email,
 			Username:    user.Name,
 			AccessToken: user.AccessToken,
-			State:       user.State,
+			State:       strings.ToUpper(user.State),
+			SignType:    strings.ToUpper(user.SignType),
 			UpdatedAt:   user.UpdatedAt.Format("2006-01-02 15:04:05"),
 		})
 	}
@@ -102,6 +105,9 @@ func (u *UserInterface) SaveUser(ctx context.Context, request *v1alpha1.User) (*
 }
 
 func (u *UserInterface) DeleteUser(ctx context.Context, request *v1alpha1.User) (*v1alpha1.Msg, error) {
+	if request.Id == 0 {
+		return nil, errors.New("id is required")
+	}
 	err := u.uc.DeleteUser(ctx, request.Id)
 	if err != nil {
 		return nil, err
