@@ -341,3 +341,22 @@ func GetValueFromNestedMap(m map[string]interface{}, key string) (interface{}, b
 
 	return current, true
 }
+
+// 检查目录是否存在，如果不存在则创建
+func CheckAndCreateDir(dir string) error {
+	// 检查目录是否存在
+	_, err := os.Stat(dir)
+	if os.IsNotExist(err) {
+		// 目录不存在，创建它
+		err := os.MkdirAll(dir, 0755) // 0755 是权限设置，表示所有者可以读、写、执行，组和其他人可以读和执行
+		if err != nil {
+			return fmt.Errorf("failed to create directory: %v", err)
+		}
+		fmt.Printf("Directory created: %s\n", dir)
+	} else if err != nil {
+		return fmt.Errorf("failed to check directory: %v", err)
+	} else {
+		fmt.Printf("Directory already exists: %s\n", dir)
+	}
+	return nil
+}
