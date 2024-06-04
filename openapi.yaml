@@ -748,6 +748,24 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/cluster.v1alpha1.Msg'
+    /api/v1alpha1/cluster/aws/deploy:
+        post:
+            tags:
+                - ClusterInterface
+            operationId: ClusterInterface_AwsClusterDeploy
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/cluster.v1alpha1.AwsClusterDeployArgs'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/cluster.v1alpha1.Msg'
     /api/v1alpha1/cluster/check:
         post:
             tags:
@@ -1806,6 +1824,27 @@ components:
                     format: enum
                 Message:
                     type: string
+        cluster.v1alpha1.AwsClusterDeployArgs:
+            type: object
+            properties:
+                AWSACCESSKEYID:
+                    type: string
+                AWSSECRETACCESSKEY:
+                    type: string
+                AWSDEFAULTREGION:
+                    type: string
+                vpcId:
+                    type: string
+                clusterName:
+                    type: string
+                nodeGroupName:
+                    type: string
+                securityGroupId:
+                    type: string
+                nodeGroupOptions:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/cluster.v1alpha1.NodeGroupOptions'
         cluster.v1alpha1.Cluster:
             type: object
             properties:
@@ -1892,6 +1931,20 @@ components:
                     type: string
                 cluster_id:
                     type: string
+        cluster.v1alpha1.NodeGroupOptions:
+            type: object
+            properties:
+                instanceType:
+                    type: string
+                desiredSize:
+                    type: integer
+                    format: int32
+                maxSize:
+                    type: integer
+                    format: int32
+                minSize:
+                    type: integer
+                    format: int32
         project.v1alpha1.Business:
             type: object
             properties:

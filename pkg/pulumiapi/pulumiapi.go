@@ -10,6 +10,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/pulumi/pulumi/sdk/v3/go/auto"
 	"github.com/pulumi/pulumi/sdk/v3/go/auto/optdestroy"
+	"github.com/pulumi/pulumi/sdk/v3/go/auto/optpreview"
 	"github.com/pulumi/pulumi/sdk/v3/go/auto/optup"
 	"github.com/pulumi/pulumi/sdk/v3/go/common/tokens"
 	"github.com/pulumi/pulumi/sdk/v3/go/common/workspace"
@@ -32,10 +33,15 @@ type PulumiAPI struct {
 	stack         auto.Stack
 	pulumiCommand auto.PulumiCommand
 	env           map[string]string
+	OutPut        chan string
 }
 
-func NewPulumiAPI(ctx context.Context) *PulumiAPI {
+func NewPulumiAPI(ctx context.Context, output chan string) *PulumiAPI {
+	if output == nil {
+		return nil
+	}
 	p := &PulumiAPI{
+		OutPut: output,
 		env: map[string]string{
 			"PULUMI_CONFIG_PASSPHRASE": configPassphrase,
 		},
@@ -146,13 +152,13 @@ func (p *PulumiAPI) buildPulumiResources(ctx context.Context) (err error) {
 	return nil
 }
 
-func (p *PulumiAPI) Deploy(ctx context.Context) (outPut string, err error) {
+func (p *PulumiAPI) Up(ctx context.Context) (outPut string, err error) {
 	err = p.buildPulumiResources(ctx)
 	if err != nil {
 		return "", err
 	}
 
-	stdoutStreamer := optup.ProgressStreams(os.Stdout)
+	stdoutStreamer := optup.ProgressStreams(os.Stdout, p)
 
 	res, err := p.stack.Up(ctx, stdoutStreamer)
 	if err != nil {
@@ -168,7 +174,7 @@ func (p *PulumiAPI) Destroy(ctx context.Context) (outPut string, err error) {
 		return "", err
 	}
 
-	stdoutStreamer := optdestroy.ProgressStreams(os.Stdout)
+	stdoutStreamer := optdestroy.ProgressStreams(os.Stdout, p)
 
 	res, err := p.stack.Destroy(ctx, stdoutStreamer)
 	if err != nil {
@@ -181,4 +187,25 @@ func (p *PulumiAPI) Destroy(ctx context.Context) (outPut string, err error) {
 	}
 
 	return res.StdOut, nil
+}
+
+func (p *PulumiAPI) Preview(ctx context.Context) (outPut string, err error) {
+	err = p.buildPulumiResources(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	stdoutStreamer := optpreview.ProgressStreams(os.Stdout, p)
+
+	res, err := p.stack.Preview(ctx, stdoutStreamer)
+	if err != nil {
+		return "", errors.Errorf("Failed to preview stack %s: %v", p.stackName, err)
+	}
+
+	return res.StdOut, nil
+}
+
+func (p *PulumiAPI) Write(content []byte) (int, error) {
+	p.OutPut <- string(content)
+	return len(content), nil
 }

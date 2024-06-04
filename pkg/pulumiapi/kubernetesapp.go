@@ -7,7 +7,7 @@ import (
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 )
 
-func KubernetesAppdeployFunc(ctx *pulumi.Context) error {
+func KubernetesAppExaplmdeployFunc(ctx *pulumi.Context) error {
 	isMinikube := true
 	appName := "nginx"
 	appLabels := pulumi.StringMap{
@@ -88,5 +88,10 @@ func KubernetesAppdeployFunc(ctx *pulumi.Context) error {
 	}
 
 	ctx.Export("ip", ip)
+	return nil
+}
+
+// InstallOcean installs ocean on the cluster
+func InstallOcean(ctx *pulumi.Context) error {
 	return nil
 }

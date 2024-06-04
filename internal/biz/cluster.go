@@ -29,8 +29,9 @@ type Cluster struct {
 	AddonsConfig     string  `json:"addons_config" gorm:"column:addons_config; default:''; NOT NULL;"`
 	State            string  `json:"state" gorm:"column:state; default:''; NOT NULL;"`
 	Nodes            []*Node `json:"nodes" gorm:"-"`
-	Logs             string  `json:"logs" gorm:"-"` // logs data from localfile
-
+	Logs             string  `json:"logs" gorm:"-"`                                  // logs data from localfile
+	Type             string  `json:"type" gorm:"column:type; default:''; NOT NULL;"` //  aws google cloud azure local
+	KubeConfig       []byte  `json:"kube_config" gorm:"column:kube_config; default:''; NOT NULL; type:json"`
 	gorm.Model
 }
 
@@ -46,6 +47,7 @@ func (c *Cluster) GetNode(nodeId int64) *Node {
 type Node struct {
 	ID           int64  `json:"id" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
 	Name         string `json:"name" gorm:"column:name; default:''; NOT NULL"`
+	InstanceType string `json:"instance_type" gorm:"column:instance_type; default:''; NOT NULL"`
 	Labels       string `json:"labels" gorm:"column:labels; default:''; NOT NULL"`
 	Annotations  string `json:"annotations" gorm:"column:annotations; default:''; NOT NULL"`
 	OSImage      string `json:"os_image" gorm:"column:os_image; default:''; NOT NULL"`
@@ -590,7 +592,7 @@ func (uc *ClusterUsecase) execPlaybook(param *execPlaybookParam) error {
 	}
 	cresource := uc.c.GetOceanResource()
 	g := new(errgroup.Group)
-	ansibleLog := make(chan string, 100)
+	ansibleLog := make(chan string, 1024)
 	ansibleObj := ansible.NewGoAnsiblePkg(uc.c).
 		SetAnsiblePlaybookBinary(cresource.GetAnsibleCli()).
 		SetLogChan(ansibleLog).
@@ -599,51 +601,46 @@ func (uc *ClusterUsecase) execPlaybook(param *execPlaybookParam) error {
 		SetPlaybooks(param.playbooks).
 		SetEnvMap(param.env)
 	g.Go(func() error {
-		defer func() {
-			close(ansibleLog)
-			err := recover()
-			if err != nil {
-				uc.log.Errorf("execPlaybook panic: %v", err)
-			}
-		}()
-		err = ansibleObj.ExecPlayBooks(param.ctx)
-		if err != nil {
-			return err
-		}
-		return nil
+		defer close(ansibleLog)
+		return ansibleObj.ExecPlayBooks(param.ctx)
 	})
 	g.Go(func() error {
-		defer func() {
-			if r := recover(); r != nil {
-				uc.log.Errorf("execPlaybook panic: %v", r)
-			}
-			if param.cluster.Logs != "" {
-				err = uc.repo.WriteClusterLog(param.cluster)
-				if err != nil {
-					uc.log.Errorf("write cluster log error: %v", err)
-					return
-				}
-				param.cluster.Logs = ""
-			}
-		}()
-		for {
-			select {
-			case log, ok := <-ansibleLog:
-				if !ok {
-					return nil
-				}
-				param.cluster.Logs += log
-			case <-time.After(10 * time.Second):
-				err = uc.repo.WriteClusterLog(param.cluster)
-				if err != nil {
-					return err
-				}
-				param.cluster.Logs = ""
-			}
-		}
+		return uc.HandlerClusterLog(param.ctx, param.cluster, ansibleLog)
 	})
 	if err := g.Wait(); err != nil {
 		return err
 	}
 	return nil
+}
+
+func (uc *ClusterUsecase) HandlerClusterLog(ctx context.Context, cluster *Cluster, output chan string) (err error) {
+	defer func() {
+		if err != nil {
+			uc.log.Errorf("err: %v", err)
+		}
+		if r := recover(); r != nil {
+			uc.log.Errorf("panic: %v", r)
+		}
+		if cluster.Logs != "" {
+			err := uc.repo.WriteClusterLog(cluster)
+			if err != nil {
+				uc.log.Errorf("write cluster log error: %v", err)
+				return
+			}
+		}
+	}()
+	for {
+		select {
+		case log, ok := <-output:
+			if !ok {
+				return nil
+			}
+			cluster.Logs += log
+		case <-time.After(3 * time.Second):
+			err := uc.repo.WriteClusterLog(cluster)
+			if err != nil {
+				return err
+			}
+		}
+	}
 }

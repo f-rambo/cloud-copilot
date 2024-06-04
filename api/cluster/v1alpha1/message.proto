@@ -47,3 +47,21 @@ message Node {
     string state = 16 [json_name = "state"];
     int64 cluster_id = 17 [json_name = "cluster_id"];
 }
+
+message AwsClusterDeployArgs {
+    string AWS_ACCESS_KEY_ID = 1;
+    string AWS_SECRET_ACCESS_KEY = 2;
+    string AWS_DEFAULT_REGION = 3;
+    string vpc_id = 4;
+    string cluster_name = 5;
+    string node_group_name = 6;
+    string security_group_id = 7;
+    repeated NodeGroupOptions node_group_options = 8;
+}
+
+message NodeGroupOptions {
+    string instance_type = 1;
+    int32 desired_size = 2;
+    int32 max_size = 3;
+    int32 min_size = 4;
+}

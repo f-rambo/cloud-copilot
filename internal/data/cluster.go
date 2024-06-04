@@ -108,6 +108,7 @@ func (c *clusterRepo) WriteClusterLog(cluster *biz.Cluster) error {
 	if err != nil {
 		return err
 	}
+	cluster.Logs = ""
 	return nil
 }
 

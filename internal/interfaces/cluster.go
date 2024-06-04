@@ -2,13 +2,16 @@ package interfaces
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/f-rambo/ocean/api/cluster/v1alpha1"
 	"github.com/f-rambo/ocean/internal/biz"
 	"github.com/f-rambo/ocean/internal/conf"
 	"github.com/f-rambo/ocean/pkg/ansible"
+	"github.com/f-rambo/ocean/pkg/pulumiapi"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/pkg/errors"
+	"golang.org/x/sync/errgroup"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
@@ -184,6 +187,86 @@ func (c *ClusterInterface) RemoveNode(ctx context.Context, clusterParam *v1alpha
 	if err != nil {
 		return nil, err
 	}
+	return &v1alpha1.Msg{}, nil
+}
+
+// aws cluster deploy
+func (c *ClusterInterface) AwsClusterDeploy(ctx context.Context, args *v1alpha1.AwsClusterDeployArgs) (*v1alpha1.Msg, error) {
+	if args.AWS_ACCESS_KEY_ID == "" {
+		return nil, errors.New("aws access key id is required")
+	}
+	if args.AWS_DEFAULT_REGION == "" {
+		return nil, errors.New("aws default region is required")
+	}
+	if args.AWS_SECRET_ACCESS_KEY == "" {
+		return nil, errors.New("aws secret access key is required")
+	}
+	if args.ClusterName == "" {
+		return nil, errors.New("cluster name is required")
+	}
+	go func() {
+		var err error
+		defer func() {
+			if err != nil {
+				c.log.Error(err)
+			}
+		}()
+		cluster := &biz.Cluster{
+			Name:  args.ClusterName,
+			Type:  "aws",
+			Nodes: make([]*biz.Node, 0),
+		}
+		err = c.clusterUc.Save(ctx, cluster)
+		if err != nil {
+			return
+		}
+		nodeOptions := make([]pulumiapi.NodeGroupOptions, 0)
+		for _, node := range args.NodeGroupOptions {
+			nodeOptions = append(nodeOptions, pulumiapi.NodeGroupOptions{
+				InstanceType: node.InstanceType,
+				DesiredSize:  int(node.DesiredSize),
+				MinSize:      int(node.MinSize),
+				MaxSize:      int(node.MaxSize),
+			})
+		}
+
+		g := new(errgroup.Group)
+		pulumiOutput := make(chan string, 1024)
+		g.Go(func() error {
+			defer close(pulumiOutput)
+			output, err := pulumiapi.NewPulumiAPI(ctx, pulumiOutput).ProjectName("aws-ocean").StackName("eks").Plugin("aws", "6.38.0").Env(map[string]string{
+				"AWS_ACCESS_KEY_ID":     args.AWS_ACCESS_KEY_ID,
+				"AWS_DEFAULT_REGION":    args.AWS_DEFAULT_REGION,
+				"AWS_SECRET_ACCESS_KEY": args.AWS_SECRET_ACCESS_KEY,
+			}).RegisterDeployFunc(pulumiapi.StartAwsEksCluster(pulumiapi.ClusterNodeGroupArgs{
+				ClusterName:      args.ClusterName,
+				NodeGroupName:    args.NodeGroupName,
+				VPCID:            args.VpcId,
+				SecurityGroupID:  args.SecurityGroupId,
+				NodeGroupOptions: nodeOptions,
+			})).Up(ctx)
+			if err != nil {
+				return err
+			}
+			c.log.Info("aws cluster deploy output:", output)
+			ouputMap := make(map[string]interface{})
+			err = json.Unmarshal([]byte(output), &ouputMap)
+			if err != nil {
+				return err
+			}
+			kubeconfig, ok := ouputMap["kubeconfig"].(string)
+			if !ok {
+				err = errors.New("kubeconfig is not found")
+				return err
+			}
+			cluster.KubeConfig = []byte(kubeconfig)
+			return c.clusterUc.Save(ctx, cluster)
+		})
+		g.Go(func() error {
+			return c.clusterUc.HandlerClusterLog(ctx, cluster, pulumiOutput)
+		})
+		err = g.Wait()
+	}()
 	return &v1alpha1.Msg{}, nil
 }
 

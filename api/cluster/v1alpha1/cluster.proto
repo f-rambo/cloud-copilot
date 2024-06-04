@@ -91,4 +91,11 @@ service ClusterInterface {
                   delete: "/api/v1alpha1/cluster/node/remove"
             };
       }
+
+      rpc AwsClusterDeploy(cluster.v1alpha1.AwsClusterDeployArgs) returns (cluster.v1alpha1.Msg) {
+            option (google.api.http) = {
+                  post: "/api/v1alpha1/cluster/aws/deploy"
+                  body: "*"
+            };
+      }
 }

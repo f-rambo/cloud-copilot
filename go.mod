@@ -5,6 +5,7 @@ go 1.21
 require (
 	github.com/apenella/go-ansible v1.3.0
 	github.com/argoproj/argo-workflows/v3 v3.5.1
+	github.com/blang/semver v3.5.1+incompatible
 	github.com/f-rambo/sailor v0.0.0-20240328021241-d6662a9d12fe
 	github.com/go-kratos/kratos/v2 v2.7.1
 	github.com/go-resty/resty/v2 v2.10.0
@@ -14,6 +15,7 @@ require (
 	github.com/gorilla/handlers v1.5.1
 	github.com/joho/godotenv v1.5.1
 	github.com/pkg/errors v0.9.1
+	github.com/pulumi/pulumi-aws/sdk/v6 v6.38.0
 	github.com/pulumi/pulumi-kubernetes/sdk/v4 v4.12.0
 	github.com/pulumi/pulumi/sdk/v3 v3.117.0
 	github.com/spf13/cast v1.5.1
@@ -21,7 +23,7 @@ require (
 	golang.org/x/sync v0.6.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20240227224415-6ceb2ff114de
 	google.golang.org/grpc v1.63.2
-	google.golang.org/protobuf v1.33.0
+	google.golang.org/protobuf v1.34.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 	gopkg.in/yaml.v2 v2.4.0
 	gorm.io/driver/mysql v1.5.2
@@ -58,7 +60,6 @@ require (
 	github.com/atotto/clipboard v0.1.4 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
-	github.com/blang/semver v3.5.1+incompatible // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/chai2010/gettext-go v1.0.2 // indirect
 	github.com/charmbracelet/bubbles v0.16.1 // indirect
