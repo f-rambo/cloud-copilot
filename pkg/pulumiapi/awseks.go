@@ -7,6 +7,9 @@ import (
 	"github.com/pulumi/pulumi-aws/sdk/v6/go/aws/ec2"
 	"github.com/pulumi/pulumi-aws/sdk/v6/go/aws/eks"
 	"github.com/pulumi/pulumi-aws/sdk/v6/go/aws/iam"
+	"github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes"
+	corev1 "github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes/core/v1"
+	metav1 "github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes/meta/v1"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 )
 
@@ -53,13 +56,12 @@ const (
 
 type ClusterNodeGroupArgs struct {
 	ClusterName      string
-	NodeGroupName    string
-	VPCID            string
-	SecurityGroupID  string
+	Region           string
 	NodeGroupOptions []NodeGroupOptions
 }
 
 type NodeGroupOptions struct {
+	Name         string
 	InstanceType string
 	DesiredSize  int
 	MaxSize      int
@@ -68,13 +70,6 @@ type NodeGroupOptions struct {
 
 type AwsEksCluster struct {
 	clusterNodeGroupArgs ClusterNodeGroupArgs
-	kubeConfig           string
-	vpcID                string
-	subnetIDs            []string
-	SecurityGroupID      string
-	eksRoleResult        *iam.Role
-	nodeGroupRole        *iam.Role
-	eksCluster           *eks.Cluster
 }
 
 func StartAwsEksCluster(clusterNodeGroupArgs ClusterNodeGroupArgs) func(*pulumi.Context) error {
@@ -85,44 +80,19 @@ func StartAwsEksCluster(clusterNodeGroupArgs ClusterNodeGroupArgs) func(*pulumi.
 }
 
 func (a *AwsEksCluster) Start(ctx *pulumi.Context) error {
-	err := a.vpc(ctx)
-	if err != nil {
-		return err
-	}
-	err = a.eksRole(ctx)
-	if err != nil {
-		return err
-	}
-	err = a.securityGroup(ctx)
-	if err != nil {
-		return err
-	}
-	err = a.cluster(ctx)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (a *AwsEksCluster) vpc(ctx *pulumi.Context) (err error) {
 	// Read back the default VPC and public subnets, which we will use.
 	vpcDefault := true
-	lookupVpcArgs := &ec2.LookupVpcArgs{Default: &vpcDefault}
-	if a.clusterNodeGroupArgs.VPCID != "" {
-		lookupVpcArgs = &ec2.LookupVpcArgs{Id: &a.clusterNodeGroupArgs.VPCID}
-	}
-	vpcResult, err := ec2.LookupVpc(ctx, lookupVpcArgs)
+	vpcResult, err := ec2.LookupVpc(ctx, &ec2.LookupVpcArgs{Default: &vpcDefault})
 	if err != nil {
 		return err
 	}
 	if vpcResult == nil || vpcResult.Id == "" {
 		return errors.New("VPC Not found")
 	}
-	a.vpcID = vpcResult.Id
 
 	subnetResult, err := ec2.GetSubnets(ctx, &ec2.GetSubnetsArgs{
 		Filters: []ec2.GetSubnetsFilter{
-			{Name: "vpc-id", Values: []string{a.vpcID}},
+			{Name: "vpc-id", Values: []string{vpcResult.Id}},
 		},
 	})
 	if err != nil {
@@ -131,12 +101,9 @@ func (a *AwsEksCluster) vpc(ctx *pulumi.Context) (err error) {
 	if subnetResult == nil || len(subnetResult.Ids) == 0 {
 		return errors.New("No public subnets found in VPC")
 	}
-	a.subnetIDs = subnetResult.Ids
-	return nil
-}
 
-func (a *AwsEksCluster) eksRole(ctx *pulumi.Context) (err error) {
-	a.eksRoleResult, err = iam.NewRole(ctx, eskClusterRoleName, &iam.RoleArgs{
+	// Create the EKS Cluster Role
+	eksRoleResult, err := iam.NewRole(ctx, eskClusterRoleName, &iam.RoleArgs{
 		AssumeRolePolicy: pulumi.String(eksRoleArgsAssumeRolePolicy),
 	})
 	if err != nil {
@@ -146,14 +113,15 @@ func (a *AwsEksCluster) eksRole(ctx *pulumi.Context) (err error) {
 	for i, eksPolicy := range eksPolicies {
 		_, err := iam.NewRolePolicyAttachment(ctx, fmt.Sprintf("%s-rpa-%d", eskClusterRoleName, i), &iam.RolePolicyAttachmentArgs{
 			PolicyArn: pulumi.String(eksPolicy),
-			Role:      a.eksRoleResult.Name,
+			Role:      eksRoleResult.Name,
 		})
 		if err != nil {
 			return err
 		}
 	}
+
 	// Create the EC2 NodeGroup Role
-	a.nodeGroupRole, err = iam.NewRole(ctx, eskNodeGroupRoleName, &iam.RoleArgs{
+	nodeGroupRole, err := iam.NewRole(ctx, eskNodeGroupRoleName, &iam.RoleArgs{
 		AssumeRolePolicy: pulumi.String(nodeGroupRoleArgsAssumeRolePolicy),
 	})
 	if err != nil {
@@ -162,33 +130,17 @@ func (a *AwsEksCluster) eksRole(ctx *pulumi.Context) (err error) {
 	nodeGroupPolicies := []string{eksWorkerNodePolicyArn, eksCNIPolicyArn, ec2ContainerRegistryArn}
 	for i, nodeGroupPolicy := range nodeGroupPolicies {
 		_, err := iam.NewRolePolicyAttachment(ctx, fmt.Sprintf("%s-ngpa-%d", eskNodeGroupRoleName, i), &iam.RolePolicyAttachmentArgs{
-			Role:      a.nodeGroupRole.Name,
+			Role:      nodeGroupRole.Name,
 			PolicyArn: pulumi.String(nodeGroupPolicy),
 		})
 		if err != nil {
 			return err
 		}
 	}
-	return nil
-}
 
-func (a *AwsEksCluster) securityGroup(ctx *pulumi.Context) (err error) {
-	if a.clusterNodeGroupArgs.SecurityGroupID != "" {
-		clusterSgResult, err := ec2.LookupSecurityGroup(ctx, &ec2.LookupSecurityGroupArgs{
-			Id:    &a.clusterNodeGroupArgs.SecurityGroupID,
-			VpcId: &a.clusterNodeGroupArgs.VPCID,
-		})
-		if err != nil {
-			return err
-		}
-		if clusterSgResult != nil && clusterSgResult.Id != "" {
-			a.SecurityGroupID = clusterSgResult.Id
-			return nil
-		}
-	}
 	// Create a Security Group that we can use to actually connect to our cluster
 	clusterSg, err := ec2.NewSecurityGroup(ctx, eskSecurityGroupName, &ec2.SecurityGroupArgs{
-		VpcId: pulumi.String(a.vpcID),
+		VpcId: pulumi.String(vpcResult.Id),
 		Egress: ec2.SecurityGroupEgressArray{
 			ec2.SecurityGroupEgressArgs{
 				Protocol:   pulumi.String("-1"),
@@ -205,29 +157,22 @@ func (a *AwsEksCluster) securityGroup(ctx *pulumi.Context) (err error) {
 				CidrBlocks: pulumi.StringArray{pulumi.String("0.0.0.0/0")},
 			},
 		},
+		Description: pulumi.String("Managed by Ocean"),
 	})
 	if err != nil {
 		return err
 	}
-	a.SecurityGroupID = clusterSg.ID().ToStringOutput().ElementType().String()
-	return nil
-}
 
-func (a *AwsEksCluster) cluster(ctx *pulumi.Context) (err error) {
 	// Create EKS Cluster
 	if a.clusterNodeGroupArgs.ClusterName == "" {
 		a.clusterNodeGroupArgs.ClusterName = eskClusterName
 	}
-	a.eksCluster, err = eks.NewCluster(ctx, a.clusterNodeGroupArgs.ClusterName, &eks.ClusterArgs{
-		RoleArn: pulumi.StringInput(a.eksRoleResult.Arn),
+	eksCluster, err := eks.NewCluster(ctx, a.clusterNodeGroupArgs.ClusterName, &eks.ClusterArgs{
+		RoleArn: pulumi.StringInput(eksRoleResult.Arn),
 		VpcConfig: &eks.ClusterVpcConfigArgs{
-			PublicAccessCidrs: pulumi.StringArray{
-				pulumi.String("0.0.0.0/0"),
-			},
-			SecurityGroupIds: pulumi.StringArray{
-				pulumi.String(a.SecurityGroupID),
-			},
-			SubnetIds: toPulumiStringArray(a.subnetIDs),
+			PublicAccessCidrs: pulumi.StringArray{pulumi.String("0.0.0.0/0")},
+			SecurityGroupIds:  pulumi.StringArray{clusterSg.ID().ToStringOutput()},
+			SubnetIds:         toPulumiStringArray(subnetResult.Ids),
 		},
 	})
 	if err != nil {
@@ -235,27 +180,26 @@ func (a *AwsEksCluster) cluster(ctx *pulumi.Context) (err error) {
 	}
 
 	// Create a NodeGroup for our cluster defalut : t3.medium instance type
-	if a.clusterNodeGroupArgs.NodeGroupName == "" {
-		a.clusterNodeGroupArgs.NodeGroupName = eskNodeGroupName
-	}
 	if len(a.clusterNodeGroupArgs.NodeGroupOptions) == 0 {
 		a.clusterNodeGroupArgs.NodeGroupOptions = append(a.clusterNodeGroupArgs.NodeGroupOptions, NodeGroupOptions{
+			Name:         eskNodeGroupName,
 			InstanceType: eskNodeDefaultInstanceType,
 			DesiredSize:  eskNodeDesiredSize,
 			MaxSize:      eskNodeMaxSize,
 			MinSize:      eskNodeMinSize,
 		})
 	}
-	for i, nodeGroupOptions := range a.clusterNodeGroupArgs.NodeGroupOptions {
+	nodeGroupResults := make([]pulumi.Resource, 0)
+	for _, nodeGroupOptions := range a.clusterNodeGroupArgs.NodeGroupOptions {
 		instanceType := eskNodeDefaultInstanceType
 		if nodeGroupOptions.InstanceType != "" {
 			instanceType = nodeGroupOptions.InstanceType
 		}
-		_, err = eks.NewNodeGroup(ctx, fmt.Sprintf("%s-%d", a.clusterNodeGroupArgs.NodeGroupName, i), &eks.NodeGroupArgs{
-			ClusterName:   a.eksCluster.Name,
-			NodeGroupName: pulumi.String(a.clusterNodeGroupArgs.NodeGroupName),
-			NodeRoleArn:   pulumi.StringInput(a.nodeGroupRole.Arn),
-			SubnetIds:     toPulumiStringArray(a.subnetIDs),
+		nodeGroupResult, err := eks.NewNodeGroup(ctx, nodeGroupOptions.Name, &eks.NodeGroupArgs{
+			ClusterName:   eksCluster.Name,
+			NodeGroupName: pulumi.String(nodeGroupOptions.Name),
+			NodeRoleArn:   pulumi.StringInput(nodeGroupRole.Arn),
+			SubnetIds:     toPulumiStringArray(subnetResult.Ids),
 			InstanceTypes: pulumi.StringArray{
 				pulumi.String(instanceType),
 			},
@@ -268,13 +212,35 @@ func (a *AwsEksCluster) cluster(ctx *pulumi.Context) (err error) {
 		if err != nil {
 			return err
 		}
+		nodeGroupResults = append(nodeGroupResults, nodeGroupResult)
 	}
 
-	ctx.Export("kubeconfig", generateKubeconfig(a.eksCluster.Endpoint,
-		a.eksCluster.CertificateAuthority.Data().Elem(), a.eksCluster.Name))
+	kubeConfig := generateKubeconfig(eksCluster.Endpoint, eksCluster.CertificateAuthority.Data().Elem(), eksCluster.Name, eksCluster.Arn, pulumi.String(a.clusterNodeGroupArgs.Region).ToStringOutput())
 
-	a.kubeConfig = generateKubeconfig(a.eksCluster.Endpoint,
-		a.eksCluster.CertificateAuthority.Data().Elem(), a.eksCluster.Name).ElementType().String()
+	ctx.Export("kubeconfig", kubeConfig)
+	ctx.Export("version", eksCluster.Version)
+
+	// Create a Kubernetes provider for our cluster
+	k8sProvider, err := kubernetes.NewProvider(ctx, "k8sprovider", &kubernetes.ProviderArgs{
+		Kubeconfig: kubeConfig,
+	}, pulumi.DependsOn(nodeGroupResults))
+	if err != nil {
+		return err
+	}
+
+	// Create a Kubernetes Namespace for our app
+	namespace, err := corev1.NewNamespace(ctx, "ocean", &corev1.NamespaceArgs{
+		Metadata: &metav1.ObjectMetaArgs{
+			Name: pulumi.String("ocean"),
+		},
+	}, pulumi.Provider(k8sProvider))
+	if err != nil {
+		return err
+	}
+
+	ctx.Export("namespace", namespace.Metadata.Name())
+
+	// todo deploy ocean service
 
 	return nil
 }
@@ -288,40 +254,38 @@ func toPulumiStringArray(a []string) pulumi.StringArrayInput {
 }
 
 // Create the KubeConfig Structure as per https://docs.aws.amazon.com/eks/latest/userguide/create-kubeconfig.html
-func generateKubeconfig(clusterEndpoint pulumi.StringOutput, certData pulumi.StringOutput, clusterName pulumi.StringOutput) pulumi.StringOutput {
-	return pulumi.Sprintf(`{
-        "apiVersion": "v1",
-        "clusters": [{
-            "cluster": {
-                "server": "%s",
-                "certificate-authority-data": "%s"
-            },
-            "name": "kubernetes",
-        }],
-        "contexts": [{
-            "context": {
-                "cluster": "kubernetes",
-                "user": "aws",
-            },
-            "name": "aws",
-        }],
-        "current-context": "aws",
-        "kind": "Config",
-        "users": [{
-            "name": "aws",
-            "user": {
-                "exec": {
-                    "apiVersion": "client.authentication.k8s.io/v1beta1",
-                    "command": "aws-iam-authenticator",
-                    "args": [
-                        "token",
-                        "-i",
-                        "%s",
-                    ],
-                },
-            },
-        }],
-    }`, clusterEndpoint, certData, clusterName)
+func generateKubeconfig(clusterEndpoint pulumi.StringOutput, certData pulumi.StringOutput, clusterName pulumi.StringOutput, arn pulumi.StringOutput, region pulumi.StringOutput) pulumi.StringOutput {
+	return pulumi.Sprintf(`
+apiVersion: v1
+clusters:
+- cluster:
+   certificate-authority-data: %s
+   server: %s
+  name: %s
+contexts:
+- context:
+   cluster: %s
+   user: %s
+   name: %s
+current-context: %s
+kind: Config
+preferences: {}
+users:
+- name: %s
+  user:
+   exec:
+    apiVersion: client.authentication.k8s.io/v1beta1
+    args:
+    - --region
+    - %s
+    - eks
+    - get-token
+    - --cluster-name
+    - %s
+    - --output
+    - json
+    command: aws
+`, certData, clusterEndpoint, arn, arn, arn, arn, arn, arn, region, clusterName)
 }
 
 /*

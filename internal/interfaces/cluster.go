@@ -191,11 +191,11 @@ func (c *ClusterInterface) RemoveNode(ctx context.Context, clusterParam *v1alpha
 }
 
 // aws cluster deploy
-func (c *ClusterInterface) AwsClusterDeploy(ctx context.Context, args *v1alpha1.AwsClusterDeployArgs) (*v1alpha1.Msg, error) {
+func (c *ClusterInterface) AwsClusterDeploy(_ context.Context, args *v1alpha1.AwsClusterDeployArgs) (*v1alpha1.Msg, error) {
 	if args.AWS_ACCESS_KEY_ID == "" {
 		return nil, errors.New("aws access key id is required")
 	}
-	if args.AWS_DEFAULT_REGION == "" {
+	if args.AWS_REGION == "" {
 		return nil, errors.New("aws default region is required")
 	}
 	if args.AWS_SECRET_ACCESS_KEY == "" {
@@ -205,17 +205,26 @@ func (c *ClusterInterface) AwsClusterDeploy(ctx context.Context, args *v1alpha1.
 		return nil, errors.New("cluster name is required")
 	}
 	go func() {
+		var ctx = context.Background()
 		var err error
-		defer func() {
-			if err != nil {
-				c.log.Error(err)
-			}
-		}()
 		cluster := &biz.Cluster{
 			Name:  args.ClusterName,
 			Type:  "aws",
 			Nodes: make([]*biz.Node, 0),
+			State: biz.ClusterStateInit,
 		}
+		defer func() {
+			if err != nil {
+				c.log.Error(err)
+				cluster.State = biz.ClusterStateFailed
+			} else {
+				cluster.State = biz.ClusterStateRunning
+			}
+			err = c.clusterUc.Save(ctx, cluster)
+			if err != nil {
+				c.log.Error(err)
+			}
+		}()
 		err = c.clusterUc.Save(ctx, cluster)
 		if err != nil {
 			return
@@ -234,33 +243,28 @@ func (c *ClusterInterface) AwsClusterDeploy(ctx context.Context, args *v1alpha1.
 		pulumiOutput := make(chan string, 1024)
 		g.Go(func() error {
 			defer close(pulumiOutput)
-			output, err := pulumiapi.NewPulumiAPI(ctx, pulumiOutput).ProjectName("aws-ocean").StackName("eks").Plugin("aws", "6.38.0").Env(map[string]string{
-				"AWS_ACCESS_KEY_ID":     args.AWS_ACCESS_KEY_ID,
-				"AWS_DEFAULT_REGION":    args.AWS_DEFAULT_REGION,
-				"AWS_SECRET_ACCESS_KEY": args.AWS_SECRET_ACCESS_KEY,
-			}).RegisterDeployFunc(pulumiapi.StartAwsEksCluster(pulumiapi.ClusterNodeGroupArgs{
+			output, err := pulumiapi.NewPulumiAPI(ctx, pulumiOutput).ProjectName("aws-ocean").StackName("eks").
+				Plugin(pulumiapi.PulumiPlugin{Kind: "aws", Version: "6.38.0"}, pulumiapi.PulumiPlugin{Kind: "kubernetes", Version: "4.12.0"}).
+				Env(map[string]string{
+					"AWS_ACCESS_KEY_ID":     args.AWS_ACCESS_KEY_ID,
+					"AWS_SECRET_ACCESS_KEY": args.AWS_SECRET_ACCESS_KEY,
+					"AWS_DEFAULT_REGION":    args.AWS_REGION,
+				}).RegisterDeployFunc(pulumiapi.StartAwsEksCluster(pulumiapi.ClusterNodeGroupArgs{
 				ClusterName:      args.ClusterName,
-				NodeGroupName:    args.NodeGroupName,
-				VPCID:            args.VpcId,
-				SecurityGroupID:  args.SecurityGroupId,
+				Region:           args.AWS_REGION,
 				NodeGroupOptions: nodeOptions,
 			})).Up(ctx)
 			if err != nil {
 				return err
 			}
-			c.log.Info("aws cluster deploy output:", output)
 			ouputMap := make(map[string]interface{})
 			err = json.Unmarshal([]byte(output), &ouputMap)
 			if err != nil {
 				return err
 			}
-			kubeconfig, ok := ouputMap["kubeconfig"].(string)
-			if !ok {
-				err = errors.New("kubeconfig is not found")
-				return err
-			}
+			kubeconfig, _ := ouputMap["kubeconfig"].(string)
 			cluster.KubeConfig = []byte(kubeconfig)
-			return c.clusterUc.Save(ctx, cluster)
+			return nil
 		})
 		g.Go(func() error {
 			return c.clusterUc.HandlerClusterLog(ctx, cluster, pulumiOutput)

@@ -6,7 +6,6 @@ import (
 	"os"
 
 	"github.com/blang/semver"
-	"github.com/f-rambo/ocean/utils"
 	"github.com/pkg/errors"
 	"github.com/pulumi/pulumi/sdk/v3/go/auto"
 	"github.com/pulumi/pulumi/sdk/v3/go/auto/optdestroy"
@@ -26,14 +25,18 @@ const (
 type PulumiAPI struct {
 	projectName   string
 	stackName     string
-	plugin        string
-	pluginVersion string
+	plugins       []PulumiPlugin
 	config        map[string]string
 	deployFunc    func(ctx *pulumi.Context) error
 	stack         auto.Stack
 	pulumiCommand auto.PulumiCommand
 	env           map[string]string
-	OutPut        chan string
+	outPut        chan string
+}
+
+type PulumiPlugin struct {
+	Kind    string
+	Version string
 }
 
 func NewPulumiAPI(ctx context.Context, output chan string) *PulumiAPI {
@@ -41,17 +44,18 @@ func NewPulumiAPI(ctx context.Context, output chan string) *PulumiAPI {
 		return nil
 	}
 	p := &PulumiAPI{
-		OutPut: output,
+		outPut: output,
 		env: map[string]string{
 			"PULUMI_CONFIG_PASSPHRASE": configPassphrase,
 		},
 	}
-	fmt.Println("Initializing Pulumi API")
+	p.outPut <- "Initializing Pulumi API \n"
 	p.autoInstallPulumiCli(ctx)
 	return p
 }
 
 func (p *PulumiAPI) autoInstallPulumiCli(ctx context.Context) (err error) {
+	p.outPut <- "Installing Pulumi CLI \n"
 	tempDir, err := os.MkdirTemp("", "pulumi_cli_installation")
 	if err != nil {
 		return errors.Wrap(err, "failed to create temp dir")
@@ -63,7 +67,7 @@ func (p *PulumiAPI) autoInstallPulumiCli(ctx context.Context) (err error) {
 	if err != nil {
 		return errors.Wrap(err, "failed to install pulumi command")
 	}
-	fmt.Println("Pulumi CLI installed successfully")
+	p.outPut <- "Pulumi CLI installed successfully \n"
 	return nil
 }
 
@@ -77,9 +81,8 @@ func (p *PulumiAPI) StackName(stackName string) *PulumiAPI {
 	return p
 }
 
-func (p *PulumiAPI) Plugin(plugin, version string) *PulumiAPI {
-	p.plugin = plugin
-	p.pluginVersion = version
+func (p *PulumiAPI) Plugin(plugins ...PulumiPlugin) *PulumiAPI {
+	p.plugins = plugins
 	return p
 }
 
@@ -92,7 +95,9 @@ func (p *PulumiAPI) Config(config map[string]string) *PulumiAPI {
 	if p.config == nil {
 		p.config = make(map[string]string)
 	}
-	p.config = config
+	for k, v := range config {
+		p.config[k] = v
+	}
 	return p
 }
 
@@ -100,18 +105,18 @@ func (p *PulumiAPI) Env(env map[string]string) *PulumiAPI {
 	if p.env == nil {
 		p.env = make(map[string]string)
 	}
-	p.env = env
+	for k, v := range env {
+		p.env[k] = v
+	}
 	return p
 }
 
 func (p *PulumiAPI) buildPulumiResources(ctx context.Context) (err error) {
-	if p.projectName == "" || p.stackName == "" || p.plugin == "" || p.pluginVersion == "" || p.deployFunc == nil {
+	if p.projectName == "" || p.stackName == "" || p.deployFunc == nil {
 		return errors.New("projectName, stackName, plugin, pluginVersion and deployFunc must be set")
 	}
-
-	err = utils.CheckAndCreateDir("~/.pulumi")
-	if err != nil {
-		return errors.Wrap(err, "failed to create pulumi stacks dir")
+	if len(p.plugins) == 0 {
+		return errors.New("plugin and pluginVersion must be set")
 	}
 
 	p.stack, err = auto.UpsertStackInlineSource(ctx, p.stackName, p.projectName, p.deployFunc,
@@ -127,7 +132,7 @@ func (p *PulumiAPI) buildPulumiResources(ctx context.Context) (err error) {
 		return errors.Errorf("Failed to create or update stack %s: %v", p.stackName, err)
 	}
 
-	fmt.Printf("Stack %s created or updated successfully\n", p.stackName)
+	p.outPut <- fmt.Sprintf("Stack %s created or updated successfully\n", p.stackName)
 
 	if p.config != nil {
 		for k, v := range p.config {
@@ -140,12 +145,16 @@ func (p *PulumiAPI) buildPulumiResources(ctx context.Context) (err error) {
 		return errors.New("Failed to get workspace")
 	}
 
-	workspace.InstallPlugin(ctx, p.plugin, p.pluginVersion)
+	p.outPut <- "Installing plugins \n"
+	for _, plugin := range p.plugins {
+		workspace.InstallPlugin(ctx, plugin.Kind, plugin.Version)
+	}
 
-	fmt.Println("Plugin installed successfully")
+	p.outPut <- "Plugin installed successfully \n"
 
 	_, err = p.stack.Refresh(ctx)
 	if err != nil {
+		p.stack.Cancel(ctx)
 		return errors.Errorf("Failed to refresh stack %s: %v", p.stackName, err)
 	}
 
@@ -206,6 +215,6 @@ func (p *PulumiAPI) Preview(ctx context.Context) (outPut string, err error) {
 }
 
 func (p *PulumiAPI) Write(content []byte) (int, error) {
-	p.OutPut <- string(content)
+	p.outPut <- string(content)
 	return len(content), nil
 }

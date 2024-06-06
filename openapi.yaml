@@ -1831,7 +1831,7 @@ components:
                     type: string
                 AWSSECRETACCESSKEY:
                     type: string
-                AWSDEFAULTREGION:
+                AWSREGION:
                     type: string
                 vpcId:
                     type: string
