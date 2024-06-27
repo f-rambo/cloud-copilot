@@ -1,4 +1,5 @@
-ocean:  
+ocean:
+  env: local
   server:
     name: ocean
     http:

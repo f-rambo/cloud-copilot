@@ -5,20 +5,6 @@ import (
 	"strconv"
 )
 
-/*
-app example config...
-appname:
-  base:
-    repo_url: "https://argoproj.github.io/argo-helm"
-    repo_name: "argo"
-    version: "3.5.5"
-    chart_name: "argo-workflows"
-    namespace: "argo"
-    enable: true
-  config:
-    .....
-*/
-
 type Bootstrap struct {
 	Ocean         Ocean `json:"ocean,omitempty"`
 	Ansible       any   `json:"ansible,omitempty"`
@@ -98,12 +84,27 @@ func (b *Bootstrap) GetGrafanaConfig() map[string]interface{} {
 }
 
 type Ocean struct {
+	Env      string   `json:"env,omitempty"`
 	Server   Server   `json:"server,omitempty"`
 	Data     Data     `json:"data,omitempty"`
 	Log      Log      `json:"log,omitempty"`
 	Auth     Auth     `json:"auth,omitempty"`
 	Resource Resource `json:"resource,omitempty"`
 	Business any      `json:"business,omitempty"`
+}
+
+const (
+	EnvLocal       = "local"
+	EnvBostionHost = "bostionhost"
+	EnvCluster     = "cluster"
+)
+
+func (o Ocean) GetEnv() string {
+	env := os.Getenv("ENV")
+	if env != "" {
+		return env
+	}
+	return o.Env
 }
 
 type Resource struct {

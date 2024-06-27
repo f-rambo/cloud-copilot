@@ -20,20 +20,11 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	ClusterInterface_Ping_FullMethodName               = "/cluster.v1alpha1.ClusterInterface/Ping"
-	ClusterInterface_Get_FullMethodName                = "/cluster.v1alpha1.ClusterInterface/Get"
-	ClusterInterface_Save_FullMethodName               = "/cluster.v1alpha1.ClusterInterface/Save"
-	ClusterInterface_List_FullMethodName               = "/cluster.v1alpha1.ClusterInterface/List"
-	ClusterInterface_GetCurrentCluster_FullMethodName  = "/cluster.v1alpha1.ClusterInterface/GetCurrentCluster"
-	ClusterInterface_Delete_FullMethodName             = "/cluster.v1alpha1.ClusterInterface/Delete"
-	ClusterInterface_DeleteNode_FullMethodName         = "/cluster.v1alpha1.ClusterInterface/DeleteNode"
-	ClusterInterface_GetClusterMockData_FullMethodName = "/cluster.v1alpha1.ClusterInterface/GetClusterMockData"
-	ClusterInterface_CheckClusterConfig_FullMethodName = "/cluster.v1alpha1.ClusterInterface/CheckClusterConfig"
-	ClusterInterface_SetUpCluster_FullMethodName       = "/cluster.v1alpha1.ClusterInterface/SetUpCluster"
-	ClusterInterface_UninstallCluster_FullMethodName   = "/cluster.v1alpha1.ClusterInterface/UninstallCluster"
-	ClusterInterface_AddNode_FullMethodName            = "/cluster.v1alpha1.ClusterInterface/AddNode"
-	ClusterInterface_RemoveNode_FullMethodName         = "/cluster.v1alpha1.ClusterInterface/RemoveNode"
-	ClusterInterface_AwsClusterDeploy_FullMethodName   = "/cluster.v1alpha1.ClusterInterface/AwsClusterDeploy"
+	ClusterInterface_Ping_FullMethodName   = "/cluster.v1alpha1.ClusterInterface/Ping"
+	ClusterInterface_Get_FullMethodName    = "/cluster.v1alpha1.ClusterInterface/Get"
+	ClusterInterface_Apply_FullMethodName  = "/cluster.v1alpha1.ClusterInterface/Apply"
+	ClusterInterface_List_FullMethodName   = "/cluster.v1alpha1.ClusterInterface/List"
+	ClusterInterface_Delete_FullMethodName = "/cluster.v1alpha1.ClusterInterface/Delete"
 )
 
 // ClusterInterfaceClient is the client API for ClusterInterface service.
@@ -42,18 +33,9 @@ const (
 type ClusterInterfaceClient interface {
 	Ping(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*Msg, error)
 	Get(ctx context.Context, in *ClusterID, opts ...grpc.CallOption) (*Cluster, error)
-	Save(ctx context.Context, in *Cluster, opts ...grpc.CallOption) (*Cluster, error)
+	Apply(ctx context.Context, in *ClusterArgs, opts ...grpc.CallOption) (*Cluster, error)
 	List(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*ClusterList, error)
-	GetCurrentCluster(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*Cluster, error)
 	Delete(ctx context.Context, in *ClusterID, opts ...grpc.CallOption) (*Msg, error)
-	DeleteNode(ctx context.Context, in *ClusterID, opts ...grpc.CallOption) (*Msg, error)
-	GetClusterMockData(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*Cluster, error)
-	CheckClusterConfig(ctx context.Context, in *ClusterID, opts ...grpc.CallOption) (*Cluster, error)
-	SetUpCluster(ctx context.Context, in *ClusterID, opts ...grpc.CallOption) (*Msg, error)
-	UninstallCluster(ctx context.Context, in *ClusterID, opts ...grpc.CallOption) (*Msg, error)
-	AddNode(ctx context.Context, in *ClusterID, opts ...grpc.CallOption) (*Msg, error)
-	RemoveNode(ctx context.Context, in *ClusterID, opts ...grpc.CallOption) (*Msg, error)
-	AwsClusterDeploy(ctx context.Context, in *AwsClusterDeployArgs, opts ...grpc.CallOption) (*Msg, error)
 }
 
 type clusterInterfaceClient struct {
@@ -82,9 +64,9 @@ func (c *clusterInterfaceClient) Get(ctx context.Context, in *ClusterID, opts ..
 	return out, nil
 }
 
-func (c *clusterInterfaceClient) Save(ctx context.Context, in *Cluster, opts ...grpc.CallOption) (*Cluster, error) {
+func (c *clusterInterfaceClient) Apply(ctx context.Context, in *ClusterArgs, opts ...grpc.CallOption) (*Cluster, error) {
 	out := new(Cluster)
-	err := c.cc.Invoke(ctx, ClusterInterface_Save_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, ClusterInterface_Apply_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -100,90 +82,9 @@ func (c *clusterInterfaceClient) List(ctx context.Context, in *emptypb.Empty, op
 	return out, nil
 }
 
-func (c *clusterInterfaceClient) GetCurrentCluster(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*Cluster, error) {
-	out := new(Cluster)
-	err := c.cc.Invoke(ctx, ClusterInterface_GetCurrentCluster_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *clusterInterfaceClient) Delete(ctx context.Context, in *ClusterID, opts ...grpc.CallOption) (*Msg, error) {
 	out := new(Msg)
 	err := c.cc.Invoke(ctx, ClusterInterface_Delete_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *clusterInterfaceClient) DeleteNode(ctx context.Context, in *ClusterID, opts ...grpc.CallOption) (*Msg, error) {
-	out := new(Msg)
-	err := c.cc.Invoke(ctx, ClusterInterface_DeleteNode_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *clusterInterfaceClient) GetClusterMockData(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*Cluster, error) {
-	out := new(Cluster)
-	err := c.cc.Invoke(ctx, ClusterInterface_GetClusterMockData_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *clusterInterfaceClient) CheckClusterConfig(ctx context.Context, in *ClusterID, opts ...grpc.CallOption) (*Cluster, error) {
-	out := new(Cluster)
-	err := c.cc.Invoke(ctx, ClusterInterface_CheckClusterConfig_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *clusterInterfaceClient) SetUpCluster(ctx context.Context, in *ClusterID, opts ...grpc.CallOption) (*Msg, error) {
-	out := new(Msg)
-	err := c.cc.Invoke(ctx, ClusterInterface_SetUpCluster_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *clusterInterfaceClient) UninstallCluster(ctx context.Context, in *ClusterID, opts ...grpc.CallOption) (*Msg, error) {
-	out := new(Msg)
-	err := c.cc.Invoke(ctx, ClusterInterface_UninstallCluster_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *clusterInterfaceClient) AddNode(ctx context.Context, in *ClusterID, opts ...grpc.CallOption) (*Msg, error) {
-	out := new(Msg)
-	err := c.cc.Invoke(ctx, ClusterInterface_AddNode_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *clusterInterfaceClient) RemoveNode(ctx context.Context, in *ClusterID, opts ...grpc.CallOption) (*Msg, error) {
-	out := new(Msg)
-	err := c.cc.Invoke(ctx, ClusterInterface_RemoveNode_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *clusterInterfaceClient) AwsClusterDeploy(ctx context.Context, in *AwsClusterDeployArgs, opts ...grpc.CallOption) (*Msg, error) {
-	out := new(Msg)
-	err := c.cc.Invoke(ctx, ClusterInterface_AwsClusterDeploy_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -196,18 +97,9 @@ func (c *clusterInterfaceClient) AwsClusterDeploy(ctx context.Context, in *AwsCl
 type ClusterInterfaceServer interface {
 	Ping(context.Context, *emptypb.Empty) (*Msg, error)
 	Get(context.Context, *ClusterID) (*Cluster, error)
-	Save(context.Context, *Cluster) (*Cluster, error)
+	Apply(context.Context, *ClusterArgs) (*Cluster, error)
 	List(context.Context, *emptypb.Empty) (*ClusterList, error)
-	GetCurrentCluster(context.Context, *emptypb.Empty) (*Cluster, error)
 	Delete(context.Context, *ClusterID) (*Msg, error)
-	DeleteNode(context.Context, *ClusterID) (*Msg, error)
-	GetClusterMockData(context.Context, *emptypb.Empty) (*Cluster, error)
-	CheckClusterConfig(context.Context, *ClusterID) (*Cluster, error)
-	SetUpCluster(context.Context, *ClusterID) (*Msg, error)
-	UninstallCluster(context.Context, *ClusterID) (*Msg, error)
-	AddNode(context.Context, *ClusterID) (*Msg, error)
-	RemoveNode(context.Context, *ClusterID) (*Msg, error)
-	AwsClusterDeploy(context.Context, *AwsClusterDeployArgs) (*Msg, error)
 	mustEmbedUnimplementedClusterInterfaceServer()
 }
 
@@ -221,41 +113,14 @@ func (UnimplementedClusterInterfaceServer) Ping(context.Context, *emptypb.Empty)
 func (UnimplementedClusterInterfaceServer) Get(context.Context, *ClusterID) (*Cluster, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Get not implemented")
 }
-func (UnimplementedClusterInterfaceServer) Save(context.Context, *Cluster) (*Cluster, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Save not implemented")
+func (UnimplementedClusterInterfaceServer) Apply(context.Context, *ClusterArgs) (*Cluster, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Apply not implemented")
 }
 func (UnimplementedClusterInterfaceServer) List(context.Context, *emptypb.Empty) (*ClusterList, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method List not implemented")
 }
-func (UnimplementedClusterInterfaceServer) GetCurrentCluster(context.Context, *emptypb.Empty) (*Cluster, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetCurrentCluster not implemented")
-}
 func (UnimplementedClusterInterfaceServer) Delete(context.Context, *ClusterID) (*Msg, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Delete not implemented")
-}
-func (UnimplementedClusterInterfaceServer) DeleteNode(context.Context, *ClusterID) (*Msg, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method DeleteNode not implemented")
-}
-func (UnimplementedClusterInterfaceServer) GetClusterMockData(context.Context, *emptypb.Empty) (*Cluster, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetClusterMockData not implemented")
-}
-func (UnimplementedClusterInterfaceServer) CheckClusterConfig(context.Context, *ClusterID) (*Cluster, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method CheckClusterConfig not implemented")
-}
-func (UnimplementedClusterInterfaceServer) SetUpCluster(context.Context, *ClusterID) (*Msg, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method SetUpCluster not implemented")
-}
-func (UnimplementedClusterInterfaceServer) UninstallCluster(context.Context, *ClusterID) (*Msg, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method UninstallCluster not implemented")
-}
-func (UnimplementedClusterInterfaceServer) AddNode(context.Context, *ClusterID) (*Msg, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method AddNode not implemented")
-}
-func (UnimplementedClusterInterfaceServer) RemoveNode(context.Context, *ClusterID) (*Msg, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method RemoveNode not implemented")
-}
-func (UnimplementedClusterInterfaceServer) AwsClusterDeploy(context.Context, *AwsClusterDeployArgs) (*Msg, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method AwsClusterDeploy not implemented")
 }
 func (UnimplementedClusterInterfaceServer) mustEmbedUnimplementedClusterInterfaceServer() {}
 
@@ -306,20 +171,20 @@ func _ClusterInterface_Get_Handler(srv interface{}, ctx context.Context, dec fun
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ClusterInterface_Save_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Cluster)
+func _ClusterInterface_Apply_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ClusterArgs)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ClusterInterfaceServer).Save(ctx, in)
+		return srv.(ClusterInterfaceServer).Apply(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: ClusterInterface_Save_FullMethodName,
+		FullMethod: ClusterInterface_Apply_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ClusterInterfaceServer).Save(ctx, req.(*Cluster))
+		return srv.(ClusterInterfaceServer).Apply(ctx, req.(*ClusterArgs))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -342,24 +207,6 @@ func _ClusterInterface_List_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ClusterInterface_GetCurrentCluster_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(emptypb.Empty)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ClusterInterfaceServer).GetCurrentCluster(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ClusterInterface_GetCurrentCluster_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ClusterInterfaceServer).GetCurrentCluster(ctx, req.(*emptypb.Empty))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _ClusterInterface_Delete_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ClusterID)
 	if err := dec(in); err != nil {
@@ -374,150 +221,6 @@ func _ClusterInterface_Delete_Handler(srv interface{}, ctx context.Context, dec 
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ClusterInterfaceServer).Delete(ctx, req.(*ClusterID))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _ClusterInterface_DeleteNode_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ClusterID)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ClusterInterfaceServer).DeleteNode(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ClusterInterface_DeleteNode_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ClusterInterfaceServer).DeleteNode(ctx, req.(*ClusterID))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _ClusterInterface_GetClusterMockData_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(emptypb.Empty)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ClusterInterfaceServer).GetClusterMockData(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ClusterInterface_GetClusterMockData_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ClusterInterfaceServer).GetClusterMockData(ctx, req.(*emptypb.Empty))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _ClusterInterface_CheckClusterConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ClusterID)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ClusterInterfaceServer).CheckClusterConfig(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ClusterInterface_CheckClusterConfig_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ClusterInterfaceServer).CheckClusterConfig(ctx, req.(*ClusterID))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _ClusterInterface_SetUpCluster_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ClusterID)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ClusterInterfaceServer).SetUpCluster(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ClusterInterface_SetUpCluster_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ClusterInterfaceServer).SetUpCluster(ctx, req.(*ClusterID))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _ClusterInterface_UninstallCluster_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ClusterID)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ClusterInterfaceServer).UninstallCluster(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ClusterInterface_UninstallCluster_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ClusterInterfaceServer).UninstallCluster(ctx, req.(*ClusterID))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _ClusterInterface_AddNode_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ClusterID)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ClusterInterfaceServer).AddNode(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ClusterInterface_AddNode_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ClusterInterfaceServer).AddNode(ctx, req.(*ClusterID))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _ClusterInterface_RemoveNode_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ClusterID)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ClusterInterfaceServer).RemoveNode(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ClusterInterface_RemoveNode_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ClusterInterfaceServer).RemoveNode(ctx, req.(*ClusterID))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _ClusterInterface_AwsClusterDeploy_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(AwsClusterDeployArgs)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ClusterInterfaceServer).AwsClusterDeploy(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ClusterInterface_AwsClusterDeploy_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ClusterInterfaceServer).AwsClusterDeploy(ctx, req.(*AwsClusterDeployArgs))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -538,52 +241,16 @@ var ClusterInterface_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _ClusterInterface_Get_Handler,
 		},
 		{
-			MethodName: "Save",
-			Handler:    _ClusterInterface_Save_Handler,
+			MethodName: "Apply",
+			Handler:    _ClusterInterface_Apply_Handler,
 		},
 		{
 			MethodName: "List",
 			Handler:    _ClusterInterface_List_Handler,
 		},
 		{
-			MethodName: "GetCurrentCluster",
-			Handler:    _ClusterInterface_GetCurrentCluster_Handler,
-		},
-		{
 			MethodName: "Delete",
 			Handler:    _ClusterInterface_Delete_Handler,
-		},
-		{
-			MethodName: "DeleteNode",
-			Handler:    _ClusterInterface_DeleteNode_Handler,
-		},
-		{
-			MethodName: "GetClusterMockData",
-			Handler:    _ClusterInterface_GetClusterMockData_Handler,
-		},
-		{
-			MethodName: "CheckClusterConfig",
-			Handler:    _ClusterInterface_CheckClusterConfig_Handler,
-		},
-		{
-			MethodName: "SetUpCluster",
-			Handler:    _ClusterInterface_SetUpCluster_Handler,
-		},
-		{
-			MethodName: "UninstallCluster",
-			Handler:    _ClusterInterface_UninstallCluster_Handler,
-		},
-		{
-			MethodName: "AddNode",
-			Handler:    _ClusterInterface_AddNode_Handler,
-		},
-		{
-			MethodName: "RemoveNode",
-			Handler:    _ClusterInterface_RemoveNode_Handler,
-		},
-		{
-			MethodName: "AwsClusterDeploy",
-			Handler:    _ClusterInterface_AwsClusterDeploy_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

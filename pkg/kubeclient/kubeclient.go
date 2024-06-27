@@ -11,7 +11,27 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
-func GetKubeConfig() (config *rest.Config, err error) {
+type ConfigArgs struct {
+	ApiServer string
+	Token     string
+	CaData    string
+	KeyData   string
+	CertData  string
+}
+
+func GetKubeConfig(args *ConfigArgs) (config *rest.Config, err error) {
+	if args != nil {
+		config := &rest.Config{
+			Host:        args.ApiServer,
+			BearerToken: args.Token,
+			TLSClientConfig: rest.TLSClientConfig{
+				CAData:   []byte(args.CaData),
+				KeyData:  []byte(args.KeyData),
+				CertData: []byte(args.CertData),
+			},
+		}
+		return config, nil
+	}
 	config, err = rest.InClusterConfig()
 	if err != nil {
 		config, err = clientcmd.BuildConfigFromFlags("", clientcmd.RecommendedHomeFile)
@@ -23,7 +43,7 @@ func GetKubeConfig() (config *rest.Config, err error) {
 }
 
 func GetKubeClientSet() (clientset *kubernetes.Clientset, err error) {
-	config, err := GetKubeConfig()
+	config, err := GetKubeConfig(nil)
 	if err != nil {
 		return nil, err
 	}

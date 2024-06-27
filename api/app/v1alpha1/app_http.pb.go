@@ -70,7 +70,7 @@ func RegisterAppInterfaceHTTPServer(s *http.Server, srv AppInterfaceHTTPServer) 
 	r := s.Route("/")
 	r.GET("/api/v1alpha1/app/ping", _AppInterface_Ping1_HTTP_Handler(srv))
 	r.POST("/api/v1alpha1/app/upload", _AppInterface_UploadApp0_HTTP_Handler(srv))
-	r.POST("/api/v1alpha1/app/save", _AppInterface_Save1_HTTP_Handler(srv))
+	r.POST("/api/v1alpha1/app/save", _AppInterface_Save0_HTTP_Handler(srv))
 	r.GET("/api/v1alpha1/app", _AppInterface_Get1_HTTP_Handler(srv))
 	r.GET("/api/v1alpha1/app/list", _AppInterface_List1_HTTP_Handler(srv))
 	r.DELETE("/api/v1alpha1/app", _AppInterface_Delete1_HTTP_Handler(srv))
@@ -132,7 +132,7 @@ func _AppInterface_UploadApp0_HTTP_Handler(srv AppInterfaceHTTPServer) func(ctx 
 	}
 }
 
-func _AppInterface_Save1_HTTP_Handler(srv AppInterfaceHTTPServer) func(ctx http.Context) error {
+func _AppInterface_Save0_HTTP_Handler(srv AppInterfaceHTTPServer) func(ctx http.Context) error {
 	return func(ctx http.Context) error {
 		var in App
 		if err := ctx.Bind(&in); err != nil {

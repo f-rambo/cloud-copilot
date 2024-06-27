@@ -1,9 +1,11 @@
 module github.com/f-rambo/ocean
 
-go 1.21
+go 1.22
+
+toolchain go1.22.3
 
 require (
-	github.com/apenella/go-ansible v1.3.0
+	github.com/apenella/go-ansible/v2 v2.0.0
 	github.com/argoproj/argo-workflows/v3 v3.5.1
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/f-rambo/sailor v0.0.0-20240328021241-d6662a9d12fe
@@ -86,10 +88,10 @@ require (
 	github.com/evanphx/json-patch v5.7.0+incompatible // indirect
 	github.com/evilmonkeyinc/jsonpath v0.8.1 // indirect
 	github.com/exponent-io/jsonpath v0.0.0-20210407135951-1de76d718b3f // indirect
-	github.com/fatih/color v1.15.0 // indirect
+	github.com/fatih/color v1.16.0 // indirect
 	github.com/felixge/httpsnoop v1.0.3 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
-	github.com/go-errors/errors v1.5.0 // indirect
+	github.com/go-errors/errors v1.5.1 // indirect
 	github.com/go-git/gcfg v1.5.1-0.20230307220236-3a3c6141e376 // indirect
 	github.com/go-git/go-billy/v5 v5.5.0 // indirect
 	github.com/go-git/go-git/v5 v5.12.0 // indirect
@@ -184,6 +186,7 @@ require (
 	github.com/prometheus/procfs v0.11.1 // indirect
 	github.com/pulumi/appdash v0.0.0-20231130102222-75f619a67231 // indirect
 	github.com/pulumi/esc v0.6.2 // indirect
+	github.com/pulumi/pulumi-alicloud/sdk/v3 v3.56.0
 	github.com/rivo/uniseg v0.4.4 // indirect
 	github.com/rogpeppe/go-internal v1.11.0 // indirect
 	github.com/rubenv/sql-migrate v1.5.2 // indirect

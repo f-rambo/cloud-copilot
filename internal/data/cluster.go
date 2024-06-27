@@ -3,11 +3,13 @@ package data
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/f-rambo/ocean/internal/biz"
 	"github.com/f-rambo/ocean/internal/conf"
 	"github.com/f-rambo/ocean/utils"
 	"github.com/go-kratos/kratos/v2/log"
+	"gorm.io/gorm"
 )
 
 type clusterRepo struct {
@@ -25,6 +27,7 @@ func NewClusterRepo(data *Data, c *conf.Bootstrap, logger log.Logger) biz.Cluste
 }
 
 func (c *clusterRepo) Save(ctx context.Context, cluster *biz.Cluster) error {
+	cluster.Type = strings.ToLower(cluster.Type)
 	// 开始事务
 	tx := c.data.db.Begin()
 	defer func() {
@@ -83,6 +86,15 @@ func (c *clusterRepo) Get(ctx context.Context, id int64) (*biz.Cluster, error) {
 	return cluster, nil
 }
 
+func (c *clusterRepo) GetByName(ctx context.Context, name string) (*biz.Cluster, error) {
+	cluster := &biz.Cluster{}
+	err := c.data.db.Model(&biz.Cluster{}).Where("name = ?", name).First(cluster).Error
+	if err != nil && err != gorm.ErrRecordNotFound {
+		return nil, err
+	}
+	return cluster, nil
+}
+
 func (c *clusterRepo) ReadClusterLog(cluster *biz.Cluster) error {
 	clog := c.c.GetOceanLog()
 	logPath := fmt.Sprintf("%s/cluster-%d.log", clog.GetPath(), cluster.ID)
@@ -124,9 +136,6 @@ func (c *clusterRepo) List(ctx context.Context, cluster *biz.Cluster) ([]*biz.Cl
 	}
 	if cluster.Name != "" {
 		clusterModelObj = clusterModelObj.Where("name = ?", cluster.Name)
-	}
-	if cluster.State != "" {
-		clusterModelObj = clusterModelObj.Where("state = ?", cluster.State)
 	}
 	if cluster.ServerVersion != "" {
 		clusterModelObj = clusterModelObj.Where("server_version = ?", cluster.ServerVersion)

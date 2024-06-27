@@ -20,54 +20,27 @@ var _ = binding.EncodeURL
 
 const _ = http.SupportPackageIsVersion1
 
-const OperationClusterInterfaceAddNode = "/cluster.v1alpha1.ClusterInterface/AddNode"
-const OperationClusterInterfaceAwsClusterDeploy = "/cluster.v1alpha1.ClusterInterface/AwsClusterDeploy"
-const OperationClusterInterfaceCheckClusterConfig = "/cluster.v1alpha1.ClusterInterface/CheckClusterConfig"
+const OperationClusterInterfaceApply = "/cluster.v1alpha1.ClusterInterface/Apply"
 const OperationClusterInterfaceDelete = "/cluster.v1alpha1.ClusterInterface/Delete"
-const OperationClusterInterfaceDeleteNode = "/cluster.v1alpha1.ClusterInterface/DeleteNode"
 const OperationClusterInterfaceGet = "/cluster.v1alpha1.ClusterInterface/Get"
-const OperationClusterInterfaceGetClusterMockData = "/cluster.v1alpha1.ClusterInterface/GetClusterMockData"
-const OperationClusterInterfaceGetCurrentCluster = "/cluster.v1alpha1.ClusterInterface/GetCurrentCluster"
 const OperationClusterInterfaceList = "/cluster.v1alpha1.ClusterInterface/List"
 const OperationClusterInterfacePing = "/cluster.v1alpha1.ClusterInterface/Ping"
-const OperationClusterInterfaceRemoveNode = "/cluster.v1alpha1.ClusterInterface/RemoveNode"
-const OperationClusterInterfaceSave = "/cluster.v1alpha1.ClusterInterface/Save"
-const OperationClusterInterfaceSetUpCluster = "/cluster.v1alpha1.ClusterInterface/SetUpCluster"
-const OperationClusterInterfaceUninstallCluster = "/cluster.v1alpha1.ClusterInterface/UninstallCluster"
 
 type ClusterInterfaceHTTPServer interface {
-	AddNode(context.Context, *ClusterID) (*Msg, error)
-	AwsClusterDeploy(context.Context, *AwsClusterDeployArgs) (*Msg, error)
-	CheckClusterConfig(context.Context, *ClusterID) (*Cluster, error)
+	Apply(context.Context, *ClusterArgs) (*Cluster, error)
 	Delete(context.Context, *ClusterID) (*Msg, error)
-	DeleteNode(context.Context, *ClusterID) (*Msg, error)
 	Get(context.Context, *ClusterID) (*Cluster, error)
-	GetClusterMockData(context.Context, *emptypb.Empty) (*Cluster, error)
-	GetCurrentCluster(context.Context, *emptypb.Empty) (*Cluster, error)
 	List(context.Context, *emptypb.Empty) (*ClusterList, error)
 	Ping(context.Context, *emptypb.Empty) (*Msg, error)
-	RemoveNode(context.Context, *ClusterID) (*Msg, error)
-	Save(context.Context, *Cluster) (*Cluster, error)
-	SetUpCluster(context.Context, *ClusterID) (*Msg, error)
-	UninstallCluster(context.Context, *ClusterID) (*Msg, error)
 }
 
 func RegisterClusterInterfaceHTTPServer(s *http.Server, srv ClusterInterfaceHTTPServer) {
 	r := s.Route("/")
 	r.GET("/api/v1alpha1/cluster/ping", _ClusterInterface_Ping0_HTTP_Handler(srv))
 	r.GET("/api/v1alpha1/cluster", _ClusterInterface_Get0_HTTP_Handler(srv))
-	r.POST("/api/v1alpha1/cluster", _ClusterInterface_Save0_HTTP_Handler(srv))
+	r.POST("/api/v1alpha1/cluster", _ClusterInterface_Apply0_HTTP_Handler(srv))
 	r.GET("/api/v1alpha1/cluster/list", _ClusterInterface_List0_HTTP_Handler(srv))
-	r.GET("/api/v1alpha1/cluster/current", _ClusterInterface_GetCurrentCluster0_HTTP_Handler(srv))
 	r.DELETE("/api/v1alpha1/cluster", _ClusterInterface_Delete0_HTTP_Handler(srv))
-	r.DELETE("/api/v1alpha1/cluster/node", _ClusterInterface_DeleteNode0_HTTP_Handler(srv))
-	r.GET("/api/v1alpha1/cluster/mock", _ClusterInterface_GetClusterMockData0_HTTP_Handler(srv))
-	r.POST("/api/v1alpha1/cluster/check", _ClusterInterface_CheckClusterConfig0_HTTP_Handler(srv))
-	r.POST("/api/v1alpha1/cluster/setup", _ClusterInterface_SetUpCluster0_HTTP_Handler(srv))
-	r.DELETE("/api/v1alpha1/cluster/uninstall", _ClusterInterface_UninstallCluster0_HTTP_Handler(srv))
-	r.POST("/api/v1alpha1/cluster/node", _ClusterInterface_AddNode0_HTTP_Handler(srv))
-	r.DELETE("/api/v1alpha1/cluster/node/remove", _ClusterInterface_RemoveNode0_HTTP_Handler(srv))
-	r.POST("/api/v1alpha1/cluster/aws/deploy", _ClusterInterface_AwsClusterDeploy0_HTTP_Handler(srv))
 }
 
 func _ClusterInterface_Ping0_HTTP_Handler(srv ClusterInterfaceHTTPServer) func(ctx http.Context) error {
@@ -108,18 +81,18 @@ func _ClusterInterface_Get0_HTTP_Handler(srv ClusterInterfaceHTTPServer) func(ct
 	}
 }
 
-func _ClusterInterface_Save0_HTTP_Handler(srv ClusterInterfaceHTTPServer) func(ctx http.Context) error {
+func _ClusterInterface_Apply0_HTTP_Handler(srv ClusterInterfaceHTTPServer) func(ctx http.Context) error {
 	return func(ctx http.Context) error {
-		var in Cluster
+		var in ClusterArgs
 		if err := ctx.Bind(&in); err != nil {
 			return err
 		}
 		if err := ctx.BindQuery(&in); err != nil {
 			return err
 		}
-		http.SetOperation(ctx, OperationClusterInterfaceSave)
+		http.SetOperation(ctx, OperationClusterInterfaceApply)
 		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.Save(ctx, req.(*Cluster))
+			return srv.Apply(ctx, req.(*ClusterArgs))
 		})
 		out, err := h(ctx, &in)
 		if err != nil {
@@ -149,25 +122,6 @@ func _ClusterInterface_List0_HTTP_Handler(srv ClusterInterfaceHTTPServer) func(c
 	}
 }
 
-func _ClusterInterface_GetCurrentCluster0_HTTP_Handler(srv ClusterInterfaceHTTPServer) func(ctx http.Context) error {
-	return func(ctx http.Context) error {
-		var in emptypb.Empty
-		if err := ctx.BindQuery(&in); err != nil {
-			return err
-		}
-		http.SetOperation(ctx, OperationClusterInterfaceGetCurrentCluster)
-		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.GetCurrentCluster(ctx, req.(*emptypb.Empty))
-		})
-		out, err := h(ctx, &in)
-		if err != nil {
-			return err
-		}
-		reply := out.(*Cluster)
-		return ctx.Result(200, reply)
-	}
-}
-
 func _ClusterInterface_Delete0_HTTP_Handler(srv ClusterInterfaceHTTPServer) func(ctx http.Context) error {
 	return func(ctx http.Context) error {
 		var in ClusterID
@@ -187,185 +141,12 @@ func _ClusterInterface_Delete0_HTTP_Handler(srv ClusterInterfaceHTTPServer) func
 	}
 }
 
-func _ClusterInterface_DeleteNode0_HTTP_Handler(srv ClusterInterfaceHTTPServer) func(ctx http.Context) error {
-	return func(ctx http.Context) error {
-		var in ClusterID
-		if err := ctx.BindQuery(&in); err != nil {
-			return err
-		}
-		http.SetOperation(ctx, OperationClusterInterfaceDeleteNode)
-		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.DeleteNode(ctx, req.(*ClusterID))
-		})
-		out, err := h(ctx, &in)
-		if err != nil {
-			return err
-		}
-		reply := out.(*Msg)
-		return ctx.Result(200, reply)
-	}
-}
-
-func _ClusterInterface_GetClusterMockData0_HTTP_Handler(srv ClusterInterfaceHTTPServer) func(ctx http.Context) error {
-	return func(ctx http.Context) error {
-		var in emptypb.Empty
-		if err := ctx.BindQuery(&in); err != nil {
-			return err
-		}
-		http.SetOperation(ctx, OperationClusterInterfaceGetClusterMockData)
-		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.GetClusterMockData(ctx, req.(*emptypb.Empty))
-		})
-		out, err := h(ctx, &in)
-		if err != nil {
-			return err
-		}
-		reply := out.(*Cluster)
-		return ctx.Result(200, reply)
-	}
-}
-
-func _ClusterInterface_CheckClusterConfig0_HTTP_Handler(srv ClusterInterfaceHTTPServer) func(ctx http.Context) error {
-	return func(ctx http.Context) error {
-		var in ClusterID
-		if err := ctx.Bind(&in); err != nil {
-			return err
-		}
-		if err := ctx.BindQuery(&in); err != nil {
-			return err
-		}
-		http.SetOperation(ctx, OperationClusterInterfaceCheckClusterConfig)
-		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.CheckClusterConfig(ctx, req.(*ClusterID))
-		})
-		out, err := h(ctx, &in)
-		if err != nil {
-			return err
-		}
-		reply := out.(*Cluster)
-		return ctx.Result(200, reply)
-	}
-}
-
-func _ClusterInterface_SetUpCluster0_HTTP_Handler(srv ClusterInterfaceHTTPServer) func(ctx http.Context) error {
-	return func(ctx http.Context) error {
-		var in ClusterID
-		if err := ctx.Bind(&in); err != nil {
-			return err
-		}
-		if err := ctx.BindQuery(&in); err != nil {
-			return err
-		}
-		http.SetOperation(ctx, OperationClusterInterfaceSetUpCluster)
-		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.SetUpCluster(ctx, req.(*ClusterID))
-		})
-		out, err := h(ctx, &in)
-		if err != nil {
-			return err
-		}
-		reply := out.(*Msg)
-		return ctx.Result(200, reply)
-	}
-}
-
-func _ClusterInterface_UninstallCluster0_HTTP_Handler(srv ClusterInterfaceHTTPServer) func(ctx http.Context) error {
-	return func(ctx http.Context) error {
-		var in ClusterID
-		if err := ctx.BindQuery(&in); err != nil {
-			return err
-		}
-		http.SetOperation(ctx, OperationClusterInterfaceUninstallCluster)
-		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.UninstallCluster(ctx, req.(*ClusterID))
-		})
-		out, err := h(ctx, &in)
-		if err != nil {
-			return err
-		}
-		reply := out.(*Msg)
-		return ctx.Result(200, reply)
-	}
-}
-
-func _ClusterInterface_AddNode0_HTTP_Handler(srv ClusterInterfaceHTTPServer) func(ctx http.Context) error {
-	return func(ctx http.Context) error {
-		var in ClusterID
-		if err := ctx.Bind(&in); err != nil {
-			return err
-		}
-		if err := ctx.BindQuery(&in); err != nil {
-			return err
-		}
-		http.SetOperation(ctx, OperationClusterInterfaceAddNode)
-		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.AddNode(ctx, req.(*ClusterID))
-		})
-		out, err := h(ctx, &in)
-		if err != nil {
-			return err
-		}
-		reply := out.(*Msg)
-		return ctx.Result(200, reply)
-	}
-}
-
-func _ClusterInterface_RemoveNode0_HTTP_Handler(srv ClusterInterfaceHTTPServer) func(ctx http.Context) error {
-	return func(ctx http.Context) error {
-		var in ClusterID
-		if err := ctx.BindQuery(&in); err != nil {
-			return err
-		}
-		http.SetOperation(ctx, OperationClusterInterfaceRemoveNode)
-		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.RemoveNode(ctx, req.(*ClusterID))
-		})
-		out, err := h(ctx, &in)
-		if err != nil {
-			return err
-		}
-		reply := out.(*Msg)
-		return ctx.Result(200, reply)
-	}
-}
-
-func _ClusterInterface_AwsClusterDeploy0_HTTP_Handler(srv ClusterInterfaceHTTPServer) func(ctx http.Context) error {
-	return func(ctx http.Context) error {
-		var in AwsClusterDeployArgs
-		if err := ctx.Bind(&in); err != nil {
-			return err
-		}
-		if err := ctx.BindQuery(&in); err != nil {
-			return err
-		}
-		http.SetOperation(ctx, OperationClusterInterfaceAwsClusterDeploy)
-		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.AwsClusterDeploy(ctx, req.(*AwsClusterDeployArgs))
-		})
-		out, err := h(ctx, &in)
-		if err != nil {
-			return err
-		}
-		reply := out.(*Msg)
-		return ctx.Result(200, reply)
-	}
-}
-
 type ClusterInterfaceHTTPClient interface {
-	AddNode(ctx context.Context, req *ClusterID, opts ...http.CallOption) (rsp *Msg, err error)
-	AwsClusterDeploy(ctx context.Context, req *AwsClusterDeployArgs, opts ...http.CallOption) (rsp *Msg, err error)
-	CheckClusterConfig(ctx context.Context, req *ClusterID, opts ...http.CallOption) (rsp *Cluster, err error)
+	Apply(ctx context.Context, req *ClusterArgs, opts ...http.CallOption) (rsp *Cluster, err error)
 	Delete(ctx context.Context, req *ClusterID, opts ...http.CallOption) (rsp *Msg, err error)
-	DeleteNode(ctx context.Context, req *ClusterID, opts ...http.CallOption) (rsp *Msg, err error)
 	Get(ctx context.Context, req *ClusterID, opts ...http.CallOption) (rsp *Cluster, err error)
-	GetClusterMockData(ctx context.Context, req *emptypb.Empty, opts ...http.CallOption) (rsp *Cluster, err error)
-	GetCurrentCluster(ctx context.Context, req *emptypb.Empty, opts ...http.CallOption) (rsp *Cluster, err error)
 	List(ctx context.Context, req *emptypb.Empty, opts ...http.CallOption) (rsp *ClusterList, err error)
 	Ping(ctx context.Context, req *emptypb.Empty, opts ...http.CallOption) (rsp *Msg, err error)
-	RemoveNode(ctx context.Context, req *ClusterID, opts ...http.CallOption) (rsp *Msg, err error)
-	Save(ctx context.Context, req *Cluster, opts ...http.CallOption) (rsp *Cluster, err error)
-	SetUpCluster(ctx context.Context, req *ClusterID, opts ...http.CallOption) (rsp *Msg, err error)
-	UninstallCluster(ctx context.Context, req *ClusterID, opts ...http.CallOption) (rsp *Msg, err error)
 }
 
 type ClusterInterfaceHTTPClientImpl struct {
@@ -376,37 +157,11 @@ func NewClusterInterfaceHTTPClient(client *http.Client) ClusterInterfaceHTTPClie
 	return &ClusterInterfaceHTTPClientImpl{client}
 }
 
-func (c *ClusterInterfaceHTTPClientImpl) AddNode(ctx context.Context, in *ClusterID, opts ...http.CallOption) (*Msg, error) {
-	var out Msg
-	pattern := "/api/v1alpha1/cluster/node"
-	path := binding.EncodeURL(pattern, in, false)
-	opts = append(opts, http.Operation(OperationClusterInterfaceAddNode))
-	opts = append(opts, http.PathTemplate(pattern))
-	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return &out, err
-}
-
-func (c *ClusterInterfaceHTTPClientImpl) AwsClusterDeploy(ctx context.Context, in *AwsClusterDeployArgs, opts ...http.CallOption) (*Msg, error) {
-	var out Msg
-	pattern := "/api/v1alpha1/cluster/aws/deploy"
-	path := binding.EncodeURL(pattern, in, false)
-	opts = append(opts, http.Operation(OperationClusterInterfaceAwsClusterDeploy))
-	opts = append(opts, http.PathTemplate(pattern))
-	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return &out, err
-}
-
-func (c *ClusterInterfaceHTTPClientImpl) CheckClusterConfig(ctx context.Context, in *ClusterID, opts ...http.CallOption) (*Cluster, error) {
+func (c *ClusterInterfaceHTTPClientImpl) Apply(ctx context.Context, in *ClusterArgs, opts ...http.CallOption) (*Cluster, error) {
 	var out Cluster
-	pattern := "/api/v1alpha1/cluster/check"
+	pattern := "/api/v1alpha1/cluster"
 	path := binding.EncodeURL(pattern, in, false)
-	opts = append(opts, http.Operation(OperationClusterInterfaceCheckClusterConfig))
+	opts = append(opts, http.Operation(OperationClusterInterfaceApply))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
 	if err != nil {
@@ -428,50 +183,11 @@ func (c *ClusterInterfaceHTTPClientImpl) Delete(ctx context.Context, in *Cluster
 	return &out, err
 }
 
-func (c *ClusterInterfaceHTTPClientImpl) DeleteNode(ctx context.Context, in *ClusterID, opts ...http.CallOption) (*Msg, error) {
-	var out Msg
-	pattern := "/api/v1alpha1/cluster/node"
-	path := binding.EncodeURL(pattern, in, true)
-	opts = append(opts, http.Operation(OperationClusterInterfaceDeleteNode))
-	opts = append(opts, http.PathTemplate(pattern))
-	err := c.cc.Invoke(ctx, "DELETE", path, nil, &out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return &out, err
-}
-
 func (c *ClusterInterfaceHTTPClientImpl) Get(ctx context.Context, in *ClusterID, opts ...http.CallOption) (*Cluster, error) {
 	var out Cluster
 	pattern := "/api/v1alpha1/cluster"
 	path := binding.EncodeURL(pattern, in, true)
 	opts = append(opts, http.Operation(OperationClusterInterfaceGet))
-	opts = append(opts, http.PathTemplate(pattern))
-	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return &out, err
-}
-
-func (c *ClusterInterfaceHTTPClientImpl) GetClusterMockData(ctx context.Context, in *emptypb.Empty, opts ...http.CallOption) (*Cluster, error) {
-	var out Cluster
-	pattern := "/api/v1alpha1/cluster/mock"
-	path := binding.EncodeURL(pattern, in, true)
-	opts = append(opts, http.Operation(OperationClusterInterfaceGetClusterMockData))
-	opts = append(opts, http.PathTemplate(pattern))
-	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return &out, err
-}
-
-func (c *ClusterInterfaceHTTPClientImpl) GetCurrentCluster(ctx context.Context, in *emptypb.Empty, opts ...http.CallOption) (*Cluster, error) {
-	var out Cluster
-	pattern := "/api/v1alpha1/cluster/current"
-	path := binding.EncodeURL(pattern, in, true)
-	opts = append(opts, http.Operation(OperationClusterInterfaceGetCurrentCluster))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
 	if err != nil {
@@ -500,58 +216,6 @@ func (c *ClusterInterfaceHTTPClientImpl) Ping(ctx context.Context, in *emptypb.E
 	opts = append(opts, http.Operation(OperationClusterInterfacePing))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return &out, err
-}
-
-func (c *ClusterInterfaceHTTPClientImpl) RemoveNode(ctx context.Context, in *ClusterID, opts ...http.CallOption) (*Msg, error) {
-	var out Msg
-	pattern := "/api/v1alpha1/cluster/node/remove"
-	path := binding.EncodeURL(pattern, in, true)
-	opts = append(opts, http.Operation(OperationClusterInterfaceRemoveNode))
-	opts = append(opts, http.PathTemplate(pattern))
-	err := c.cc.Invoke(ctx, "DELETE", path, nil, &out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return &out, err
-}
-
-func (c *ClusterInterfaceHTTPClientImpl) Save(ctx context.Context, in *Cluster, opts ...http.CallOption) (*Cluster, error) {
-	var out Cluster
-	pattern := "/api/v1alpha1/cluster"
-	path := binding.EncodeURL(pattern, in, false)
-	opts = append(opts, http.Operation(OperationClusterInterfaceSave))
-	opts = append(opts, http.PathTemplate(pattern))
-	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return &out, err
-}
-
-func (c *ClusterInterfaceHTTPClientImpl) SetUpCluster(ctx context.Context, in *ClusterID, opts ...http.CallOption) (*Msg, error) {
-	var out Msg
-	pattern := "/api/v1alpha1/cluster/setup"
-	path := binding.EncodeURL(pattern, in, false)
-	opts = append(opts, http.Operation(OperationClusterInterfaceSetUpCluster))
-	opts = append(opts, http.PathTemplate(pattern))
-	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return &out, err
-}
-
-func (c *ClusterInterfaceHTTPClientImpl) UninstallCluster(ctx context.Context, in *ClusterID, opts ...http.CallOption) (*Msg, error) {
-	var out Msg
-	pattern := "/api/v1alpha1/cluster/uninstall"
-	path := binding.EncodeURL(pattern, in, true)
-	opts = append(opts, http.Operation(OperationClusterInterfaceUninstallCluster))
-	opts = append(opts, http.PathTemplate(pattern))
-	err := c.cc.Invoke(ctx, "DELETE", path, nil, &out, opts...)
 	if err != nil {
 		return nil, err
 	}

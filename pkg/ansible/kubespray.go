@@ -76,7 +76,7 @@ func (k *Kubespray) GetDefaultClusterAddonsConfig(ctx context.Context) (string, 
 
 /*
 容器内执行
-在原油的docker file上增加一层容器
+在docker file上增加一层容器
 git checkout v2.24.1
 docker pull quay.io/kubespray/kubespray:v2.24.1
 docker run --rm -it --mount type=bind,source="$(pwd)"/inventory/sample,dst=/inventory \
@@ -91,22 +91,22 @@ func (k *Kubespray) GetPackagePath() string {
 	return k.packagePath
 }
 
-func (k *Kubespray) GetResetPath() string {
+func GetResetPlaybookPath() string {
 	return "reset.yml"
 }
 
-func (k *Kubespray) GetClusterPath() string {
+func GetClusterPlaybookPath() string {
 	return "cluster.yml"
 }
 
-func (k *Kubespray) GetUpgradePath() string {
+func GetUpgradePlaybookPath() string {
 	return "upgrade-cluster.yml"
 }
 
-func (k *Kubespray) GetRemoveNodePath() string {
+func GetRemoveNodePlaybookPath() string {
 	return "remove-node.yml"
 }
 
-func (k *Kubespray) GetScalePath() string {
+func GetScalePlaybookPath() string {
 	return "scale.yml"
 }

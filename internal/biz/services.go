@@ -168,7 +168,7 @@ func (uc *ServicesUseCase) CommitWorklfow(ctx context.Context, project *Project,
 	if err != nil {
 		return err
 	}
-	kubeConf, err := kubeclient.GetKubeConfig()
+	kubeConf, err := kubeclient.GetKubeConfig(nil)
 	if err != nil {
 		return err
 	}

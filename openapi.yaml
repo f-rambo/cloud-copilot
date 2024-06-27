@@ -714,12 +714,12 @@ paths:
         post:
             tags:
                 - ClusterInterface
-            operationId: ClusterInterface_Save
+            operationId: ClusterInterface_Apply
             requestBody:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/cluster.v1alpha1.Cluster'
+                            $ref: '#/components/schemas/cluster.v1alpha1.ClusterArgs'
                 required: true
             responses:
                 "200":
@@ -748,54 +748,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/cluster.v1alpha1.Msg'
-    /api/v1alpha1/cluster/aws/deploy:
-        post:
-            tags:
-                - ClusterInterface
-            operationId: ClusterInterface_AwsClusterDeploy
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/cluster.v1alpha1.AwsClusterDeployArgs'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/cluster.v1alpha1.Msg'
-    /api/v1alpha1/cluster/check:
-        post:
-            tags:
-                - ClusterInterface
-            operationId: ClusterInterface_CheckClusterConfig
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/cluster.v1alpha1.ClusterID'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/cluster.v1alpha1.Cluster'
-    /api/v1alpha1/cluster/current:
-        get:
-            tags:
-                - ClusterInterface
-            operationId: ClusterInterface_GetCurrentCluster
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/cluster.v1alpha1.Cluster'
     /api/v1alpha1/cluster/list:
         get:
             tags:
@@ -808,121 +760,11 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/cluster.v1alpha1.ClusterList'
-    /api/v1alpha1/cluster/mock:
-        get:
-            tags:
-                - ClusterInterface
-            operationId: ClusterInterface_GetClusterMockData
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/cluster.v1alpha1.Cluster'
-    /api/v1alpha1/cluster/node:
-        post:
-            tags:
-                - ClusterInterface
-            operationId: ClusterInterface_AddNode
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/cluster.v1alpha1.ClusterID'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/cluster.v1alpha1.Msg'
-        delete:
-            tags:
-                - ClusterInterface
-            operationId: ClusterInterface_DeleteNode
-            parameters:
-                - name: id
-                  in: query
-                  schema:
-                    type: string
-                - name: nodeId
-                  in: query
-                  schema:
-                    type: string
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/cluster.v1alpha1.Msg'
-    /api/v1alpha1/cluster/node/remove:
-        delete:
-            tags:
-                - ClusterInterface
-            operationId: ClusterInterface_RemoveNode
-            parameters:
-                - name: id
-                  in: query
-                  schema:
-                    type: string
-                - name: nodeId
-                  in: query
-                  schema:
-                    type: string
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/cluster.v1alpha1.Msg'
     /api/v1alpha1/cluster/ping:
         get:
             tags:
                 - ClusterInterface
             operationId: ClusterInterface_Ping
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/cluster.v1alpha1.Msg'
-    /api/v1alpha1/cluster/setup:
-        post:
-            tags:
-                - ClusterInterface
-            operationId: ClusterInterface_SetUpCluster
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/cluster.v1alpha1.ClusterID'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/cluster.v1alpha1.Msg'
-    /api/v1alpha1/cluster/uninstall:
-        delete:
-            tags:
-                - ClusterInterface
-            operationId: ClusterInterface_UninstallCluster
-            parameters:
-                - name: id
-                  in: query
-                  schema:
-                    type: string
-                - name: nodeId
-                  in: query
-                  schema:
-                    type: string
             responses:
                 "200":
                     description: OK
@@ -1824,27 +1666,6 @@ components:
                     format: enum
                 Message:
                     type: string
-        cluster.v1alpha1.AwsClusterDeployArgs:
-            type: object
-            properties:
-                AWSACCESSKEYID:
-                    type: string
-                AWSSECRETACCESSKEY:
-                    type: string
-                AWSREGION:
-                    type: string
-                vpcId:
-                    type: string
-                clusterName:
-                    type: string
-                nodeGroupName:
-                    type: string
-                securityGroupId:
-                    type: string
-                nodeGroupOptions:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/cluster.v1alpha1.NodeGroupOptions'
         cluster.v1alpha1.Cluster:
             type: object
             properties:
@@ -1872,12 +1693,20 @@ components:
                     type: string
                 is_current_cluster:
                     type: boolean
-        cluster.v1alpha1.ClusterID:
+        cluster.v1alpha1.ClusterArgs:
             type: object
             properties:
-                id:
+                name:
                     type: string
-                nodeId:
+                server_type:
+                    type: string
+                public_key:
+                    type: string
+                region:
+                    type: string
+                access_key_id:
+                    type: string
+                secret_access_key:
                     type: string
         cluster.v1alpha1.ClusterList:
             type: object
@@ -1931,20 +1760,6 @@ components:
                     type: string
                 cluster_id:
                     type: string
-        cluster.v1alpha1.NodeGroupOptions:
-            type: object
-            properties:
-                instanceType:
-                    type: string
-                desiredSize:
-                    type: integer
-                    format: int32
-                maxSize:
-                    type: integer
-                    format: int32
-                minSize:
-                    type: integer
-                    format: int32
         project.v1alpha1.Business:
             type: object
             properties:

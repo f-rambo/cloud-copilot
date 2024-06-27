@@ -13,6 +13,8 @@ import (
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 )
 
+// https://docs.aws.amazon.com/zh_cn/eks/latest/userguide/what-is-eks.html
+
 const (
 	eksServicePolicyArn     = "arn:aws:iam::aws:policy/AmazonEKSServicePolicy"
 	eksClusterPolicyArn     = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"

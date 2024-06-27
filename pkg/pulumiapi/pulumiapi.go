@@ -39,6 +39,8 @@ type PulumiPlugin struct {
 	Version string
 }
 
+type PulumiFunc func(ctx *pulumi.Context) error
+
 func NewPulumiAPI(ctx context.Context, output chan string) *PulumiAPI {
 	if output == nil {
 		return nil

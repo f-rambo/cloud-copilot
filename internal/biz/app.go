@@ -315,7 +315,7 @@ func (uc *AppUsecase) DeployAppList(ctx context.Context, appDeployedReq DeployAp
 }
 
 func (uc *AppUsecase) AppOperation(ctx context.Context, deployedApp *DeployApp) error {
-	restConfig, err := kubeclient.GetKubeConfig()
+	restConfig, err := kubeclient.GetKubeConfig(nil)
 	if err != nil {
 		return err
 	}

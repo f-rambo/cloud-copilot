@@ -5,6 +5,15 @@ package cluster.v1alpha1;
 option go_package = "api/cluster/v1alpha1;v1alpha1";
 
 
+message ClusterArgs {
+    string name = 1 [json_name = "name"];
+    string server_type = 2 [json_name = "server_type"];
+    string public_key = 3 [json_name = "public_key"];
+    string region = 4 [json_name = "region"];
+    string access_key_id = 5 [json_name = "access_key_id"];
+    string secret_access_key = 6 [json_name = "secret_access_key"];
+}
+
 message ClusterID {
     int64 id = 1;
     int64 node_id = 2;
