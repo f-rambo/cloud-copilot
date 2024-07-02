@@ -47,7 +47,7 @@ func (c *ClusterInterface) Get(ctx context.Context, clusterID *v1alpha1.ClusterI
 	return data, nil
 }
 
-func (c *ClusterInterface) Apply(ctx context.Context, clusterArgs *v1alpha1.ClusterArgs) (*v1alpha1.Cluster, error) {
+func (c *ClusterInterface) Save(ctx context.Context, clusterArgs *v1alpha1.ClusterArgs) (*v1alpha1.Cluster, error) {
 	if clusterArgs.Name == "" {
 		return nil, errors.New("cluster name is required")
 	}
@@ -75,8 +75,20 @@ func (c *ClusterInterface) Apply(ctx context.Context, clusterArgs *v1alpha1.Clus
 		Region:    clusterArgs.Region,
 		AccessID:  clusterArgs.AccessKeyId,
 		AccessKey: clusterArgs.SecretAccessKey,
+		Nodes:     make([]*biz.Node, 0),
 	}
-	err := c.clusterUc.Apply(ctx, cluster)
+	if clusterArgs.ServerType == biz.ClusterTypeLocal {
+		if len(clusterArgs.Nodes) == 0 {
+			return nil, errors.New("at least one node is required")
+		}
+		for _, node := range clusterArgs.Nodes {
+			cluster.Nodes = append(cluster.Nodes, &biz.Node{
+				ExternalIP: node.Ip,
+				User:       node.User,
+			})
+		}
+	}
+	err := c.clusterUc.Save(ctx, cluster)
 	if err != nil {
 		return nil, err
 	}
@@ -127,59 +139,20 @@ func (c *ClusterInterface) bizCLusterToCluster(bizCluster *biz.Cluster) *v1alpha
 
 func (c *ClusterInterface) bizNodeToNode(bizNode *biz.Node) *v1alpha1.Node {
 	node := &v1alpha1.Node{
-		Id:           bizNode.ID,
-		Name:         bizNode.Name,
-		Labels:       bizNode.Labels,
-		Annotations:  bizNode.Annotations,
-		OsImage:      bizNode.OSImage,
-		Kernel:       bizNode.Kernel,
-		Container:    bizNode.Container,
-		Kubelet:      bizNode.Kubelet,
-		KubeProxy:    bizNode.KubeProxy,
-		InternalIp:   bizNode.InternalIP,
-		ExternalIp:   bizNode.ExternalIP,
-		User:         bizNode.User,
-		Password:     bizNode.Password,
-		SudoPassword: bizNode.SudoPassword,
-		Role:         bizNode.Role,
-		ClusterId:    bizNode.ClusterID,
+		Id:          bizNode.ID,
+		Name:        bizNode.Name,
+		Labels:      bizNode.Labels,
+		Annotations: bizNode.Annotations,
+		OsImage:     bizNode.OSImage,
+		Kernel:      bizNode.Kernel,
+		Container:   bizNode.Container,
+		Kubelet:     bizNode.Kubelet,
+		KubeProxy:   bizNode.KubeProxy,
+		InternalIp:  bizNode.InternalIP,
+		ExternalIp:  bizNode.ExternalIP,
+		User:        bizNode.User,
+		Role:        bizNode.Role,
+		ClusterId:   bizNode.ClusterID,
 	}
 	return node
-}
-
-func (c *ClusterInterface) clusterToBizCluster(cluster *v1alpha1.Cluster) *biz.Cluster {
-	bizCluster := &biz.Cluster{
-		ID:               cluster.Id,
-		Name:             cluster.Name,
-		ServerVersion:    cluster.ServerVersion,
-		ApiServerAddress: cluster.ApiServerAddress,
-		Config:           cluster.Config,
-		Addons:           cluster.Addons,
-	}
-	for _, node := range cluster.Nodes {
-		bizCluster.Nodes = append(bizCluster.Nodes, c.nodeToBizNode(node))
-	}
-	return bizCluster
-}
-
-func (c *ClusterInterface) nodeToBizNode(node *v1alpha1.Node) *biz.Node {
-	bizNode := &biz.Node{
-		ID:           node.Id,
-		Name:         node.Name,
-		Labels:       node.Labels,
-		Annotations:  node.Annotations,
-		OSImage:      node.OsImage,
-		Kernel:       node.Kernel,
-		Container:    node.Container,
-		Kubelet:      node.Kubelet,
-		KubeProxy:    node.KubeProxy,
-		InternalIP:   node.InternalIp,
-		ExternalIP:   node.ExternalIp,
-		User:         node.User,
-		Password:     node.Password,
-		SudoPassword: node.SudoPassword,
-		Role:         node.Role,
-		ClusterID:    node.ClusterId,
-	}
-	return bizNode
 }

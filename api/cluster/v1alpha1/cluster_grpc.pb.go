@@ -22,7 +22,7 @@ const _ = grpc.SupportPackageIsVersion7
 const (
 	ClusterInterface_Ping_FullMethodName   = "/cluster.v1alpha1.ClusterInterface/Ping"
 	ClusterInterface_Get_FullMethodName    = "/cluster.v1alpha1.ClusterInterface/Get"
-	ClusterInterface_Apply_FullMethodName  = "/cluster.v1alpha1.ClusterInterface/Apply"
+	ClusterInterface_Save_FullMethodName   = "/cluster.v1alpha1.ClusterInterface/Save"
 	ClusterInterface_List_FullMethodName   = "/cluster.v1alpha1.ClusterInterface/List"
 	ClusterInterface_Delete_FullMethodName = "/cluster.v1alpha1.ClusterInterface/Delete"
 )
@@ -33,7 +33,7 @@ const (
 type ClusterInterfaceClient interface {
 	Ping(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*Msg, error)
 	Get(ctx context.Context, in *ClusterID, opts ...grpc.CallOption) (*Cluster, error)
-	Apply(ctx context.Context, in *ClusterArgs, opts ...grpc.CallOption) (*Cluster, error)
+	Save(ctx context.Context, in *ClusterArgs, opts ...grpc.CallOption) (*Cluster, error)
 	List(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*ClusterList, error)
 	Delete(ctx context.Context, in *ClusterID, opts ...grpc.CallOption) (*Msg, error)
 }
@@ -64,9 +64,9 @@ func (c *clusterInterfaceClient) Get(ctx context.Context, in *ClusterID, opts ..
 	return out, nil
 }
 
-func (c *clusterInterfaceClient) Apply(ctx context.Context, in *ClusterArgs, opts ...grpc.CallOption) (*Cluster, error) {
+func (c *clusterInterfaceClient) Save(ctx context.Context, in *ClusterArgs, opts ...grpc.CallOption) (*Cluster, error) {
 	out := new(Cluster)
-	err := c.cc.Invoke(ctx, ClusterInterface_Apply_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, ClusterInterface_Save_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +97,7 @@ func (c *clusterInterfaceClient) Delete(ctx context.Context, in *ClusterID, opts
 type ClusterInterfaceServer interface {
 	Ping(context.Context, *emptypb.Empty) (*Msg, error)
 	Get(context.Context, *ClusterID) (*Cluster, error)
-	Apply(context.Context, *ClusterArgs) (*Cluster, error)
+	Save(context.Context, *ClusterArgs) (*Cluster, error)
 	List(context.Context, *emptypb.Empty) (*ClusterList, error)
 	Delete(context.Context, *ClusterID) (*Msg, error)
 	mustEmbedUnimplementedClusterInterfaceServer()
@@ -113,8 +113,8 @@ func (UnimplementedClusterInterfaceServer) Ping(context.Context, *emptypb.Empty)
 func (UnimplementedClusterInterfaceServer) Get(context.Context, *ClusterID) (*Cluster, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Get not implemented")
 }
-func (UnimplementedClusterInterfaceServer) Apply(context.Context, *ClusterArgs) (*Cluster, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Apply not implemented")
+func (UnimplementedClusterInterfaceServer) Save(context.Context, *ClusterArgs) (*Cluster, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Save not implemented")
 }
 func (UnimplementedClusterInterfaceServer) List(context.Context, *emptypb.Empty) (*ClusterList, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method List not implemented")
@@ -171,20 +171,20 @@ func _ClusterInterface_Get_Handler(srv interface{}, ctx context.Context, dec fun
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ClusterInterface_Apply_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _ClusterInterface_Save_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ClusterArgs)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ClusterInterfaceServer).Apply(ctx, in)
+		return srv.(ClusterInterfaceServer).Save(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: ClusterInterface_Apply_FullMethodName,
+		FullMethod: ClusterInterface_Save_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ClusterInterfaceServer).Apply(ctx, req.(*ClusterArgs))
+		return srv.(ClusterInterfaceServer).Save(ctx, req.(*ClusterArgs))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -241,8 +241,8 @@ var ClusterInterface_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _ClusterInterface_Get_Handler,
 		},
 		{
-			MethodName: "Apply",
-			Handler:    _ClusterInterface_Apply_Handler,
+			MethodName: "Save",
+			Handler:    _ClusterInterface_Save_Handler,
 		},
 		{
 			MethodName: "List",

@@ -1,22 +1,22 @@
 package biz
 
+// todo pkg 下的package也应该定义成接口；
 import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/f-rambo/ocean/internal/conf"
 	"github.com/f-rambo/ocean/pkg/ansible"
 	"github.com/f-rambo/ocean/pkg/kubeclient"
 	"github.com/f-rambo/ocean/pkg/pulumiapi"
+	"github.com/f-rambo/ocean/utils"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/pkg/errors"
 	"github.com/spf13/cast"
 	"golang.org/x/sync/errgroup"
 	"gorm.io/gorm"
-	coreV1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -77,8 +77,6 @@ type Node struct {
 	InternalIP              string  `json:"internal_ip" gorm:"column:internal_ip; default:''; NOT NULL"`
 	ExternalIP              string  `json:"external_ip" gorm:"column:external_ip; default:''; NOT NULL"`
 	User                    string  `json:"user" gorm:"column:user; default:''; NOT NULL"`
-	Password                string  `json:"password" gorm:"column:password; default:''; NOT NULL"`
-	SudoPassword            string  `json:"sudo_password" gorm:"column:sudo_password; default:''; NOT NULL"`
 	Role                    string  `json:"role" gorm:"column:role; default:''; NOT NULL;"` // master worker edge
 	Status                  uint8   `json:"status" gorm:"column:status; default:0; NOT NULL;"`
 	InternetMaxBandwidthOut int     `json:"internet_max_bandwidth_out" gorm:"column:internet_max_bandwidth_out; default:0; NOT NULL"`
@@ -111,6 +109,10 @@ func (c *Cluster) IsEmpty() bool {
 	return c.ID == 0
 }
 
+func (c *Cluster) IsDeleteed() bool {
+	return c.DeletedAt.Valid
+}
+
 func (c *Cluster) GetNode(nodeId int64) *Node {
 	for _, node := range c.Nodes {
 		if node.ID == nodeId {
@@ -128,6 +130,18 @@ type ClusterRepo interface {
 	Delete(context.Context, int64) error
 	ReadClusterLog(cluster *Cluster) error
 	WriteClusterLog(cluster *Cluster) error
+}
+
+// 基础建设
+type Infrastructure interface {
+}
+
+// 集群配置
+type Construct interface {
+}
+
+// 运行时集群
+type ClusterRuntime interface {
 }
 
 type ClusterUsecase struct {
@@ -160,21 +174,6 @@ func (uc *ClusterUsecase) List(ctx context.Context) ([]*Cluster, error) {
 	return uc.repo.List(ctx, nil)
 }
 
-func (uc *ClusterUsecase) Apply(ctx context.Context, cluster *Cluster) error {
-	data, err := uc.repo.GetByName(ctx, cluster.Name)
-	if err != nil {
-		return err
-	}
-	if !data.IsEmpty() {
-		return errors.New("cluster name already exists")
-	}
-	err = uc.repo.Save(ctx, cluster)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 func (uc *ClusterUsecase) Delete(ctx context.Context, clusterID int64) error {
 	cluster, err := uc.repo.Get(ctx, clusterID)
 	if err != nil {
@@ -190,14 +189,83 @@ func (uc *ClusterUsecase) Delete(ctx context.Context, clusterID int64) error {
 	return nil
 }
 
-// 集群信息回调处理
-func (uc *ClusterUsecase) Reconcile(ctx context.Context, cluster *Cluster) error {
-	data, err := uc.repo.Get(ctx, cluster.ID)
+func (uc *ClusterUsecase) Save(ctx context.Context, cluster *Cluster) error {
+	data, err := uc.repo.GetByName(ctx, cluster.Name)
 	if err != nil {
 		return err
 	}
-	uc.c.GetArgoWorkflowConfig()
-	if data.IsEmpty() {
+	if !data.IsEmpty() && cluster.ID != data.ID {
+		return errors.New("cluster name already exists")
+	}
+	for _, node := range cluster.Nodes {
+		if node.Name == "" {
+			node.Name = fmt.Sprintf("%s-%s", cluster.Name, utils.GetRandomString())
+		}
+	}
+	err = uc.repo.Save(ctx, cluster)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// 集群控制
+// 负责生成适合的集群配置，节点数量，节点配置等
+// 本地集群和云服务集群
+// 1. 首次创建集群
+// 2. 通过监控数据/app数据，扩容和缩容集群
+// 3. 保存一个完整的集群配置，包括集群信息，节点信息，服务信息等
+// 4. 策略
+func (uc *ClusterUsecase) Apply(ctx context.Context, cluster *Cluster) error {
+	if cluster.Type == ClusterTypeLocal {
+		return nil
+	}
+	if len(cluster.Nodes) == 0 {
+		// 第一次创建集群
+		// ID                      int64   `json:"id" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
+		// Name                    string  `json:"name" gorm:"column:name; default:''; NOT NULL"`
+		// CPU                     int     `json:"cpu" gorm:"column:cpu; default:0; NOT NULL"`
+		// Memory                  float64 `json:"memory" gorm:"column:memory; default:0; NOT NULL"`
+		// GPU                     int     `json:"gpu" gorm:"column:gpu; default:0; NOT NULL"`
+		// GpuSpec                 string  `json:"gpu_spec" gorm:"column:gpu_spec; default:''; NOT NULL"`      // 1080ti 2080ti 3090
+		// SystemDisk              int     `json:"system_disk" gorm:"column:system_disk; default:0; NOT NULL"` // 随着服务释放掉的存储空间
+		// DataDisk                int     `json:"data_disk" gorm:"column:data_disk; default:0; NOT NULL"`
+		// InstanceType            string  `json:"instance_type" gorm:"column:instance_type; default:''; NOT NULL"`
+		// Labels                  string  `json:"labels" gorm:"column:labels; default:''; NOT NULL"`
+		// Annotations             string  `json:"annotations" gorm:"column:annotations; default:''; NOT NULL"`
+		// OSImage                 string  `json:"os_image" gorm:"column:os_image; default:''; NOT NULL"`
+		// Kernel                  string  `json:"kernel" gorm:"column:kernel; default:''; NOT NULL"`
+		// Container               string  `json:"container" gorm:"column:container; default:''; NOT NULL"`
+		// Kubelet                 string  `json:"kubelet" gorm:"column:kubelet; default:''; NOT NULL"`
+		// KubeProxy               string  `json:"kube_proxy" gorm:"column:kube_proxy; default:''; NOT NULL"`
+		// InternalIP              string  `json:"internal_ip" gorm:"column:internal_ip; default:''; NOT NULL"`
+		// ExternalIP              string  `json:"external_ip" gorm:"column:external_ip; default:''; NOT NULL"`
+		// User                    string  `json:"user" gorm:"column:user; default:''; NOT NULL"`
+		// Role                    string  `json:"role" gorm:"column:role; default:''; NOT NULL;"` // master worker edge
+		// Status                  uint8   `json:"status" gorm:"column:status; default:0; NOT NULL;"`
+		// InternetMaxBandwidthOut int     `json:"internet_max_bandwidth_out" gorm:"column:internet_max_bandwidth_out; default:0; NOT NULL"`
+		// NodeInitScript          string  `json:"cloud_init_script" gorm:"column:cloud_init_script; default:''; NOT NULL"`
+		// ClusterID               int64   `json:"cluster_id" gorm:"column:cluster_id; default:0; NOT NULL"`
+		cluster.Nodes = append(cluster.Nodes, &Node{
+			Name:         fmt.Sprintf("%s-%s", cluster.Name, utils.GetRandomString()),
+			CPU:          4,
+			Memory:       8,
+			SystemDisk:   20,
+			InstanceType: "",
+		})
+	}
+	// auto scale
+	// 1. 监控数据/app数据，判断集群是否需要扩容或缩容
+	// 2. 扩容：根据监控数据/app数据，增加节点数量
+	// 3. 缩容：根据监控数据/app数据，减少节点数量
+	// 4. 扩容和缩容：通过调用云服务接口，增加或减少节点数量
+	// 5. 保存一个完整的集群配置，包括集群信息，节点信息，服务信息等
+	// 6. 策略
+	return nil
+}
+
+func (uc *ClusterUsecase) Reconcile(ctx context.Context, cluster *Cluster) (err error) {
+	if cluster.IsDeleteed() {
 		cluster.Logs = "start uninstal cluster..."
 		err = uc.clusterUninstall(ctx, cluster)
 		if err != nil {
@@ -217,6 +285,10 @@ func (uc *ClusterUsecase) Reconcile(ctx context.Context, cluster *Cluster) error
 		if err != nil {
 			return err
 		}
+		err = uc.migrateToBostionHost(ctx, cluster)
+		if err != nil {
+			return err
+		}
 	}
 	if env == conf.EnvBostionHost || cluster.Type == ClusterTypeLocal {
 		err = uc.cluster(ctx, cluster)
@@ -225,17 +297,30 @@ func (uc *ClusterUsecase) Reconcile(ctx context.Context, cluster *Cluster) error
 		}
 	}
 	if env == conf.EnvCluster {
+		clientSet, err := kubeclient.GetKubeClientSet()
+		if err != nil {
+			return err
+		}
+		// update servers
+		err = uc.servers(ctx, cluster, nil)
+		if err != nil {
+			return err
+		}
 		// remove node
-		for _, node := range cluster.Nodes {
+		nodeList, err := clientSet.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
+		if err != nil {
+			return err
+		}
+		for _, node := range nodeList.Items {
 			ok := false
-			for _, v := range data.Nodes {
-				if v.ID == node.ID {
+			for _, cnode := range cluster.Nodes {
+				if cnode.Name == node.Name {
 					ok = true
 					break
 				}
 			}
 			if !ok {
-				err = uc.removeNode(ctx, cluster, node)
+				err = uc.removeNode(ctx, cluster, node.Name)
 				if err != nil {
 					return err
 				}
@@ -243,11 +328,6 @@ func (uc *ClusterUsecase) Reconcile(ctx context.Context, cluster *Cluster) error
 		}
 		// add node
 		err = uc.addNode(ctx, cluster)
-		if err != nil {
-			return err
-		}
-		// update servers
-		err = uc.servers(ctx, cluster, nil)
 		if err != nil {
 			return err
 		}
@@ -264,12 +344,10 @@ func (uc *ClusterUsecase) servers(ctx context.Context, cluster *Cluster, pulumiA
 			return err
 		}
 	case ClusterTypeAWS:
+	case ClusterTypeLocal:
+		return nil
 	default:
 		return errors.New("not support cluster type")
-	}
-	err := uc.migrateToBostionHost(ctx, cluster)
-	if err != nil {
-		return err
 	}
 	return nil
 }
@@ -391,7 +469,7 @@ func (uc *ClusterUsecase) migrateToBostionHost(ctx context.Context, cluster *Clu
 
 // 集群安装
 func (uc *ClusterUsecase) cluster(ctx context.Context, cluster *Cluster) error {
-	// todo 设置集群配置文件
+	// todo 写集群配置文件
 	serversInitPlaybook := ansible.GetServerInitPlaybook()
 	serversInitPlaybookPath, err := ansible.SavePlaybook(uc.c.GetOceanResource().GetClusterPath(), serversInitPlaybook)
 	if err != nil {
@@ -410,9 +488,9 @@ func (uc *ClusterUsecase) addNode(ctx context.Context, cluster *Cluster) error {
 }
 
 // 移除节点
-func (uc *ClusterUsecase) removeNode(ctx context.Context, cluster *Cluster, node *Node) error {
+func (uc *ClusterUsecase) removeNode(ctx context.Context, cluster *Cluster, nodeName string) error {
 	args := &ansibleArgs{
-		env: map[string]string{"node": node.Name},
+		env: map[string]string{"node": nodeName},
 	}
 	return uc.kubespray(ctx, cluster, ansible.GetRemoveNodePlaybookPath(), args)
 }
@@ -420,98 +498,6 @@ func (uc *ClusterUsecase) removeNode(ctx context.Context, cluster *Cluster, node
 // 卸载集群
 func (uc *ClusterUsecase) clusterUninstall(ctx context.Context, cluster *Cluster) error {
 	return uc.kubespray(ctx, cluster, ansible.GetResetPlaybookPath(), nil)
-}
-
-// 获取集群信息
-func (uc *ClusterUsecase) clusterInfomation(ctx context.Context, cluster *Cluster) error {
-	clientSet, err := kubeclient.GetKubeClientSet()
-	if err != nil {
-		return err
-	}
-	versionInfo, err := clientSet.Discovery().ServerVersion()
-	if err != nil {
-		return err
-	}
-	serverAddress := clientSet.Discovery().RESTClient().Get().URL().Host
-	cluster.ServerVersion = versionInfo.String()
-	cluster.ApiServerAddress = serverAddress
-	err = uc.getNodes(ctx, cluster)
-	if err != nil {
-		return err
-	}
-	for _, node := range cluster.Nodes {
-		if strings.Contains(node.Role, ClusterRoleMaster) {
-			cluster.Name = node.Name
-			break
-		}
-	}
-	return nil
-}
-
-func (uc *ClusterUsecase) getNodes(ctx context.Context, cluster *Cluster) error {
-	clientSet, err := kubeclient.GetKubeClientSet()
-	if err != nil {
-		return err
-	}
-	nodeList, err := clientSet.CoreV1().Nodes().List(context.Background(), metav1.ListOptions{})
-	if err != nil {
-		return err
-	}
-	for _, node := range nodeList.Items {
-		labelsJson, err := json.Marshal(node.Labels)
-		if err != nil {
-			return err
-		}
-		annotationsJson, err := json.Marshal(node.Annotations)
-		if err != nil {
-			return err
-		}
-		roles := make([]string, 0)
-		if _, ok := node.Labels["node-role.kubernetes.io/master"]; ok {
-			roles = append(roles, ClusterRoleMaster)
-		}
-		if _, ok := node.Labels["node-role.kubernetes.io/control-plane"]; ok {
-			roles = append(roles, ClusterRoleMaster)
-		}
-		if _, ok := node.Labels["node-role.kubernetes.io/edge"]; ok {
-			roles = append(roles, ClusterRoleEdge)
-		}
-		if _, ok := node.Labels["node-role.kubernetes.io/worker"]; ok {
-			roles = append(roles, ClusterRoleWorker)
-		}
-		if len(roles) == 0 {
-			roles = append(roles, ClusterRoleWorker)
-		}
-		roleJson, err := json.Marshal(roles)
-		if err != nil {
-			return err
-		}
-		var internalIP string
-		var externalIP string
-		for _, addr := range node.Status.Addresses {
-			if addr.Type == coreV1.NodeInternalIP {
-				internalIP = addr.Address
-			}
-			if addr.Type == coreV1.NodeExternalIP {
-				externalIP = addr.Address
-			}
-		}
-		cluster.Nodes = append(cluster.Nodes, &Node{
-			Name:        node.Name,
-			Labels:      string(labelsJson),
-			Annotations: string(annotationsJson),
-			OSImage:     node.Status.NodeInfo.OSImage,
-			Kernel:      node.Status.NodeInfo.KernelVersion,
-			Container:   node.Status.NodeInfo.ContainerRuntimeVersion,
-			Kubelet:     node.Status.NodeInfo.KubeletVersion,
-			KubeProxy:   node.Status.NodeInfo.KubeProxyVersion,
-			InternalIP:  internalIP,
-			ExternalIP:  externalIP,
-			Role:        string(roleJson),
-			ClusterID:   cluster.ID,
-		})
-	}
-	return nil
 }
 
 func (uc *ClusterUsecase) kubespray(ctx context.Context, cluster *Cluster, playbook string, args *ansibleArgs) error {

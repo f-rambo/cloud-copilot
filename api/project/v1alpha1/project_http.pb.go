@@ -43,7 +43,7 @@ type ProjectServiceHTTPServer interface {
 func RegisterProjectServiceHTTPServer(s *http.Server, srv ProjectServiceHTTPServer) {
 	r := s.Route("/")
 	r.GET("/api/v1alpha1/project/ping", _ProjectService_Ping2_HTTP_Handler(srv))
-	r.POST("/api/v1alpha1/project", _ProjectService_Save1_HTTP_Handler(srv))
+	r.POST("/api/v1alpha1/project", _ProjectService_Save2_HTTP_Handler(srv))
 	r.GET("/api/v1alpha1/project", _ProjectService_Get2_HTTP_Handler(srv))
 	r.GET("/api/v1alpha1/project/list", _ProjectService_List2_HTTP_Handler(srv))
 	r.DELETE("/api/v1alpha1/project", _ProjectService_Delete2_HTTP_Handler(srv))
@@ -71,7 +71,7 @@ func _ProjectService_Ping2_HTTP_Handler(srv ProjectServiceHTTPServer) func(ctx h
 	}
 }
 
-func _ProjectService_Save1_HTTP_Handler(srv ProjectServiceHTTPServer) func(ctx http.Context) error {
+func _ProjectService_Save2_HTTP_Handler(srv ProjectServiceHTTPServer) func(ctx http.Context) error {
 	return func(ctx http.Context) error {
 		var in Project
 		if err := ctx.Bind(&in); err != nil {

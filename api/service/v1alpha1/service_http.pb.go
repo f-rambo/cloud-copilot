@@ -46,7 +46,7 @@ func RegisterServiceInterfaceHTTPServer(s *http.Server, srv ServiceInterfaceHTTP
 	r := s.Route("/")
 	r.GET("/api/v1alpha1/service/ping", _ServiceInterface_Ping3_HTTP_Handler(srv))
 	r.GET("/api/v1alpha1/service/list", _ServiceInterface_List3_HTTP_Handler(srv))
-	r.POST("/api/v1alpha1/service/save", _ServiceInterface_Save2_HTTP_Handler(srv))
+	r.POST("/api/v1alpha1/service/save", _ServiceInterface_Save3_HTTP_Handler(srv))
 	r.GET("/api/v1alpha1/service/get", _ServiceInterface_Get3_HTTP_Handler(srv))
 	r.DELETE("/api/v1alpha1/service/delete", _ServiceInterface_Delete3_HTTP_Handler(srv))
 	r.GET("/api/v1alpha1/service/workflow", _ServiceInterface_GetWorkflow0_HTTP_Handler(srv))
@@ -93,7 +93,7 @@ func _ServiceInterface_List3_HTTP_Handler(srv ServiceInterfaceHTTPServer) func(c
 	}
 }
 
-func _ServiceInterface_Save2_HTTP_Handler(srv ServiceInterfaceHTTPServer) func(ctx http.Context) error {
+func _ServiceInterface_Save3_HTTP_Handler(srv ServiceInterfaceHTTPServer) func(ctx http.Context) error {
 	return func(ctx http.Context) error {
 		var in Service
 		if err := ctx.Bind(&in); err != nil {

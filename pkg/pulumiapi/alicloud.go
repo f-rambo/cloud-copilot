@@ -43,9 +43,10 @@ type AlicloudCluster struct {
 }
 
 type AlicloudClusterArgs struct {
-	Name      string // cluster name *required*
-	PublicKey string // public key for ssh login *required*
-	Nodes     []AlicloudNodeArgs
+	Name        string // cluster name *required*
+	PublicKey   string // public key for ssh login *required*
+	Nodes       []AlicloudNodeArgs
+	BostionHost bool // create bostion host or not
 }
 
 type AlicloudNodeArgs struct {
@@ -67,6 +68,26 @@ func StartAlicloudCluster(clusterArgs AlicloudClusterArgs) *AlicloudCluster {
 	return &AlicloudCluster{
 		clusterArgs: clusterArgs,
 	}
+}
+
+func (a *AlicloudCluster) StartServers(ctx *pulumi.Context) error {
+	err := a.init(ctx)
+	if err != nil {
+		return errors.Wrap(err, "alicloud cluster init failed")
+	}
+	err = a.bostionHost(ctx)
+	if err != nil {
+		return errors.Wrap(err, "start bostion host failed")
+	}
+	err = a.servers(ctx)
+	if err != nil {
+		return errors.Wrap(err, "start ecs failed")
+	}
+	err = a.localBalancer(ctx)
+	if err != nil {
+		return errors.Wrap(err, "start local balancer failed")
+	}
+	return nil
 }
 
 func (a *AlicloudCluster) init(ctx *pulumi.Context) error {
@@ -218,32 +239,15 @@ func (a *AlicloudCluster) init(ctx *pulumi.Context) error {
 	return nil
 }
 
-func (a *AlicloudCluster) StartServers(ctx *pulumi.Context) error {
-	err := a.init(ctx)
-	if err != nil {
-		return errors.Wrap(err, "alicloud cluster init failed")
-	}
-	err = a.bostionHost(ctx)
-	if err != nil {
-		return errors.Wrap(err, "start bostion host failed")
-	}
-	err = a.servers(ctx)
-	if err != nil {
-		return errors.Wrap(err, "start ecs failed")
-	}
-	err = a.localBalancer(ctx)
-	if err != nil {
-		return errors.Wrap(err, "start local balancer failed")
-	}
-	return nil
-}
-
 func (a *AlicloudCluster) Clear(ctx *pulumi.Context) error {
 	// 清理资源
 	return nil
 }
 
 func (a *AlicloudCluster) bostionHost(ctx *pulumi.Context) error {
+	if !a.clusterArgs.BostionHost {
+		return nil
+	}
 	// 2 core 4G 经济型
 	masterGetInstanceType, err := ecs.GetInstanceTypes(ctx, &ecs.GetInstanceTypesArgs{
 		InstanceTypeFamily: pulumi.StringRef("ecs.e"),
@@ -411,6 +415,7 @@ func (a *AlicloudCluster) servers(ctx *pulumi.Context) error {
 }
 
 func (a *AlicloudCluster) localBalancer(ctx *pulumi.Context) error {
+	ctx.Export("local_balancer_id", pulumi.String("a"))
 	return nil
 }
 

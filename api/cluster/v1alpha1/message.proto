@@ -12,6 +12,12 @@ message ClusterArgs {
     string region = 4 [json_name = "region"];
     string access_key_id = 5 [json_name = "access_key_id"];
     string secret_access_key = 6 [json_name = "secret_access_key"];
+    repeated NodeArgs nodes = 7 [json_name = "nodes"];
+}
+
+message NodeArgs {
+    string ip = 1 [json_name = "ip"];
+    string user = 2 [json_name = "user"];
 }
 
 message ClusterID {
@@ -50,27 +56,7 @@ message Node {
     string internal_ip = 10 [json_name = "internal_ip"];
     string external_ip = 11 [json_name = "external_ip"];
     string user = 12 [json_name = "user"];
-    string password = 13 [json_name = "password"];
-    string sudo_password = 14 [json_name = "sudo_password"];
     string role = 15 [json_name = "role"];
     string state = 16 [json_name = "state"];
     int64 cluster_id = 17 [json_name = "cluster_id"];
-}
-
-message AwsClusterDeployArgs {
-    string AWS_ACCESS_KEY_ID = 1;
-    string AWS_SECRET_ACCESS_KEY = 2;
-    string AWS_REGION = 3;
-    string vpc_id = 4;
-    string cluster_name = 5;
-    string node_group_name = 6;
-    string security_group_id = 7;
-    repeated NodeGroupOptions node_group_options = 8;
-}
-
-message NodeGroupOptions {
-    string instance_type = 1;
-    int32 desired_size = 2;
-    int32 max_size = 3;
-    int32 min_size = 4;
 }

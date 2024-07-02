@@ -1,12 +1,11 @@
 package ansible
 
 import (
-	"context"
-	"fmt"
 	"regexp"
 
 	"github.com/f-rambo/ocean/internal/conf"
 	"github.com/f-rambo/ocean/utils"
+	"github.com/pkg/errors"
 )
 
 type Kubespray struct {
@@ -37,17 +36,29 @@ func NewKubespray(c *conf.Resource) (*Kubespray, error) {
 	if len(match) > 1 {
 		version = match[1]
 	} else {
-		return nil, fmt.Errorf("kubespray version not found")
+		return nil, errors.New("kubespray version not found")
 	}
 	// 重命名kubespray
 	err = utils.RenameFile(c.GetClusterPath()+"kubespray-"+version, k.packagePath)
 	if err != nil {
 		return nil, err
 	}
+	err = k.generateConfig()
+	if err != nil {
+		return nil, err
+	}
 	return k, nil
 }
 
-func (k *Kubespray) GetDefaultClusterConfig(ctx context.Context) (string, error) {
+// 生成配置文件
+func (k *Kubespray) generateConfig() error {
+	k.readClusterConfig()
+	k.readClusterAddons()
+	k.readClusterAddonsConfig()
+	return nil
+}
+
+func (k *Kubespray) readClusterConfig() (string, error) {
 	defaultClusterConfig := k.packagePath + "/inventory/sample/group_vars/all/all.yml"
 	fileData, err := utils.ReadFile(defaultClusterConfig)
 	if err != nil {
@@ -56,7 +67,7 @@ func (k *Kubespray) GetDefaultClusterConfig(ctx context.Context) (string, error)
 	return string(fileData), nil
 }
 
-func (k *Kubespray) GetDefaultClusterAddons(ctx context.Context) (string, error) {
+func (k *Kubespray) readClusterAddons() (string, error) {
 	defaultClusterAddons := k.packagePath + "/inventory/sample/group_vars/k8s_cluster/addons.yml"
 	fileData, err := utils.ReadFile(defaultClusterAddons)
 	if err != nil {
@@ -65,7 +76,7 @@ func (k *Kubespray) GetDefaultClusterAddons(ctx context.Context) (string, error)
 	return string(fileData), nil
 }
 
-func (k *Kubespray) GetDefaultClusterAddonsConfig(ctx context.Context) (string, error) {
+func (k *Kubespray) readClusterAddonsConfig() (string, error) {
 	defaultClusterAddonsConfig := k.packagePath + "/inventory/sample/group_vars/k8s_cluster/k8s-cluster.yml"
 	fileData, err := utils.ReadFile(defaultClusterAddonsConfig)
 	if err != nil {
@@ -73,18 +84,6 @@ func (k *Kubespray) GetDefaultClusterAddonsConfig(ctx context.Context) (string, 
 	}
 	return string(fileData), nil
 }
-
-/*
-容器内执行
-在docker file上增加一层容器
-git checkout v2.24.1
-docker pull quay.io/kubespray/kubespray:v2.24.1
-docker run --rm -it --mount type=bind,source="$(pwd)"/inventory/sample,dst=/inventory \
-  --mount type=bind,source="${HOME}"/.ssh/id_rsa,dst=/root/.ssh/id_rsa \
-  quay.io/kubespray/kubespray:v2.24.1 bash
-# Inside the container you may now run the kubespray playbooks:
-ansible-playbook -i /inventory/inventory.ini --private-key /root/.ssh/id_rsa cluster.yml
-*/
 
 func (k *Kubespray) GetPackagePath() string {
 	// cmd dir

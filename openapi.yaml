@@ -714,7 +714,7 @@ paths:
         post:
             tags:
                 - ClusterInterface
-            operationId: ClusterInterface_Apply
+            operationId: ClusterInterface_Save
             requestBody:
                 content:
                     application/json:
@@ -1708,6 +1708,10 @@ components:
                     type: string
                 secret_access_key:
                     type: string
+                nodes:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/cluster.v1alpha1.NodeArgs'
         cluster.v1alpha1.ClusterList:
             type: object
             properties:
@@ -1750,15 +1754,18 @@ components:
                     type: string
                 user:
                     type: string
-                password:
-                    type: string
-                sudo_password:
-                    type: string
                 role:
                     type: string
                 state:
                     type: string
                 cluster_id:
+                    type: string
+        cluster.v1alpha1.NodeArgs:
+            type: object
+            properties:
+                ip:
+                    type: string
+                user:
                     type: string
         project.v1alpha1.Business:
             type: object
