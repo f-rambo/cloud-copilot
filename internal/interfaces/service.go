@@ -91,7 +91,7 @@ func (s *ServicesInterface) GetWorkflow(ctx context.Context, serviceParam *v1alp
 	if serviceParam.Id == 0 {
 		return nil, errors.New("id is required")
 	}
-	workflow, err := s.serviceUc.GetWorkflow(ctx, serviceParam.Id, strings.ToLower(serviceParam.WfArgs))
+	workflow, err := s.serviceUc.GetWorkflow(ctx, serviceParam.Id, biz.WorkflowType(serviceParam.WfType))
 	if err != nil {
 		return nil, err
 	}
@@ -185,7 +185,7 @@ func (s *ServicesInterface) SaveWorkflow(ctx context.Context, request *v1alpha1.
 		Name:     request.Workflow.Name,
 		Workflow: wfData,
 	}
-	err = s.serviceUc.SaveWorkflow(ctx, request.Id, request.WfType, wf)
+	err = s.serviceUc.SaveWorkflow(ctx, request.Id, biz.WorkflowType(request.WfType), wf)
 	if err != nil {
 		return nil, err
 	}
@@ -210,7 +210,7 @@ func (s *ServicesInterface) CommitWorklfow(ctx context.Context, request *v1alpha
 	if err != nil {
 		return nil, err
 	}
-	err = s.serviceUc.CommitWorklfow(ctx, project, service, request.WfType, request.WorkflowId)
+	err = s.serviceUc.CommitWorklfow(ctx, project, service, biz.WorkflowType(request.WfType), request.WorkflowId)
 	if err != nil {
 		return nil, err
 	}

@@ -9,8 +9,10 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
 )
 
 type WorkflowV1Alpha1Interface interface {
@@ -21,7 +23,26 @@ type WorkflowV1Alpha1Client struct {
 	restClient rest.Interface
 }
 
-func NewForConfig(c *rest.Config) (*WorkflowV1Alpha1Client, error) {
+func getKubeConfig() (config *rest.Config, err error) {
+	config, err = rest.InClusterConfig()
+	if err != nil {
+		config, err = clientcmd.BuildConfigFromFlags("", clientcmd.RecommendedHomeFile)
+		if err != nil {
+			return
+		}
+	}
+	return
+}
+
+func getKubeClientSet() (clientset *kubernetes.Clientset, err error) {
+	config, err := getKubeConfig()
+	if err != nil {
+		return nil, err
+	}
+	return kubernetes.NewForConfig(config)
+}
+
+func newForConfig(c *rest.Config) (*WorkflowV1Alpha1Client, error) {
 	wfv1.AddToScheme(scheme.Scheme)
 	config := *c
 	config.ContentConfig.GroupVersion = &wfv1.SchemeGroupVersion

@@ -10,7 +10,6 @@ message ServiceRequest {
       int64 pageSize = 3 [json_name = "page_size"];
       int64 projectId = 4 [json_name = "project_id"];
       int64 id = 5 [json_name = "id"];
-      string wfArgs = 8 [json_name = "wf_args"];
       Worklfow workflow = 9 [json_name = "workflow"];
       string wfType = 10 [json_name = "wf_type"];
       int64 workflowId = 11 [json_name = "workflow_id"];

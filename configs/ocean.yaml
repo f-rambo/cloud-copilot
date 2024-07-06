@@ -39,6 +39,7 @@ ocean:
     cluster: 'resource/cluster/'
     kubespray_url: 'https://github.com/kubernetes-sigs/kubespray/archive/refs/tags/v2.22.0.tar.gz'
     ansible_cli: '/Users/yangzongfang/anaconda3/envs/ansible/bin/ansible-playbook'
+    pulumi_path: '~/.pulumi'
   business:
     - name: 'Backend'
       technologys:

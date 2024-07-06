@@ -2,13 +2,8 @@ package biz
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"strings"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/f-rambo/ocean/pkg/argoworkflows"
-	"github.com/f-rambo/ocean/pkg/kubeclient"
 	"github.com/go-kratos/kratos/v2/log"
 	"gorm.io/gorm"
 )
@@ -82,18 +77,30 @@ type ServicesRepo interface {
 	GetServiceCis(ctx context.Context, serviceId int64, page, pageSize int32) ([]*CI, int64, error)
 }
 
-type ServicesUseCase struct {
-	repo ServicesRepo
-	log  *log.Helper
+type WorkflowRepo interface {
+	GenerateCIWorkflow(context.Context, *Service) (ciWf *Workflow, cdwf *Workflow, err error)
+	Create(ctx context.Context, namespace string, workflow *Workflow) error
 }
 
+type ServicesUseCase struct {
+	repo   ServicesRepo
+	wfrepo WorkflowRepo
+	log    *log.Helper
+}
+
+type WorkflowType string
+
 const (
-	ci = "ci"
-	cd = "cd"
+	WorkflowTypeCI WorkflowType = "ci"
+	WorkflowTypeCD WorkflowType = "cd"
 )
 
-func NewServicesUseCase(repo ServicesRepo, logger log.Logger) *ServicesUseCase {
-	return &ServicesUseCase{repo: repo, log: log.NewHelper(logger)}
+func (w WorkflowType) String() string {
+	return string(w)
+}
+
+func NewServicesUseCase(repo ServicesRepo, wfrepo WorkflowRepo, logger log.Logger) *ServicesUseCase {
+	return &ServicesUseCase{repo: repo, wfrepo: wfrepo, log: log.NewHelper(logger)}
 }
 
 func (uc *ServicesUseCase) List(ctx context.Context, serviceParam *Service, page, pageSize int) ([]*Service, int64, error) {
@@ -101,6 +108,22 @@ func (uc *ServicesUseCase) List(ctx context.Context, serviceParam *Service, page
 }
 
 func (uc *ServicesUseCase) Save(ctx context.Context, service *Service) error {
+	if service.ID == 0 {
+		ciWf, cdWf, err := uc.wfrepo.GenerateCIWorkflow(ctx, service)
+		if err != nil {
+			return err
+		}
+		err = uc.repo.SaveWrkflow(ctx, ciWf)
+		if err != nil {
+			return err
+		}
+		service.CIWorklfowID = ciWf.ID
+		err = uc.repo.SaveWrkflow(ctx, cdWf)
+		if err != nil {
+			return err
+		}
+		service.CDWorklfowID = cdWf.ID
+	}
 	return uc.repo.Save(ctx, service)
 }
 
@@ -112,80 +135,60 @@ func (uc *ServicesUseCase) Delete(ctx context.Context, id int64) error {
 	return uc.repo.Delete(ctx, id)
 }
 
-func (uc *ServicesUseCase) GetWorkflow(ctx context.Context, id int64, args string) (*Workflow, error) {
+func (uc *ServicesUseCase) GetWorkflow(ctx context.Context, id int64, wfType WorkflowType) (*Workflow, error) {
 	service, err := uc.Get(ctx, id)
 	if err != nil {
 		return nil, err
 	}
-	if args == "ci" && service.CIWorklfowID != 0 {
-		return uc.repo.GetWorkflow(ctx, service.CIWorklfowID)
-	}
-	if args == "cd" && service.CDWorklfowID != 0 {
-		return uc.repo.GetWorkflow(ctx, service.CDWorklfowID)
-	}
-	argoWorkflowJson, err := argoworkflows.GetDefaultWorklfows(ctx, strings.ToLower(service.Business), strings.ToLower(service.Technology), args)
+	wf, err := uc.repo.GetWorkflow(ctx, service.CIWorklfowID)
 	if err != nil {
 		return nil, err
 	}
-	return &Workflow{
-		Name:     fmt.Sprintf("default-%s-%s-%s", service.Business, service.Technology, args),
-		Workflow: argoWorkflowJson,
-	}, nil
+	if wfType == WorkflowTypeCD {
+		wf, err = uc.repo.GetWorkflow(ctx, service.CDWorklfowID)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return wf, nil
 }
 
-func (uc *ServicesUseCase) SaveWorkflow(ctx context.Context, serviceId int64, wfType string, wf *Workflow) error {
+func (uc *ServicesUseCase) SaveWorkflow(ctx context.Context, serviceId int64, wfType WorkflowType, wf *Workflow) error {
 	service, err := uc.Get(ctx, serviceId)
 	if err != nil {
 		return err
 	}
-	if wfType == ci && service.CIWorklfowID != 0 {
+	if wfType == WorkflowTypeCI && service.CIWorklfowID != 0 {
 		wf.ID = service.CIWorklfowID
 	}
-	if wfType == cd && service.CDWorklfowID != 0 {
+	if wfType == WorkflowTypeCD && service.CDWorklfowID != 0 {
 		wf.ID = service.CDWorklfowID
 	}
 	err = uc.repo.SaveWrkflow(ctx, wf)
 	if err != nil {
 		return err
 	}
-	if wfType == ci {
+	if wfType == WorkflowTypeCI {
 		service.CIWorklfowID = wf.ID
 	}
-	if wfType == cd {
+	if wfType == WorkflowTypeCD {
 		service.CDWorklfowID = wf.ID
 	}
 	return uc.repo.Save(ctx, service)
 }
 
-func (uc *ServicesUseCase) CommitWorklfow(ctx context.Context, project *Project, service *Service, wfType string, workflowsId int64) error {
-	if wfType == ci && service.CIWorklfowID != workflowsId {
+func (uc *ServicesUseCase) CommitWorklfow(ctx context.Context, project *Project, service *Service, wfType WorkflowType, workflowsId int64) error {
+	if wfType == WorkflowTypeCI && service.CIWorklfowID != workflowsId {
 		return fmt.Errorf("ci workflow not match")
 	}
-	if wfType == cd && service.CDWorklfowID != workflowsId {
+	if wfType == WorkflowTypeCD && service.CDWorklfowID != workflowsId {
 		return fmt.Errorf("cd workflow not match")
 	}
 	wf, err := uc.repo.GetWorkflow(ctx, workflowsId)
 	if err != nil {
 		return err
 	}
-	kubeConf, err := kubeclient.GetKubeConfig(nil)
-	if err != nil {
-		return err
-	}
-	argoClient, err := argoworkflows.NewForConfig(kubeConf)
-	if err != nil {
-		return err
-	}
-	argoWf := &wfv1.Workflow{}
-	err = json.Unmarshal(wf.Workflow, argoWf)
-	if err != nil {
-		return err
-	}
-	_, err = argoClient.Workflows(project.Namespace).Create(ctx, argoWf)
-	if err != nil {
-		return err
-	}
-	return nil
+	return uc.wfrepo.Create(ctx, project.Namespace, wf)
 }
 
 func (uc *ServicesUseCase) GetServiceCis(ctx context.Context, serviceId int64, page, pageSize int32) ([]*CI, int64, error) {

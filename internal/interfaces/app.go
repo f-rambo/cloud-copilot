@@ -135,7 +135,7 @@ func (a *AppInterface) UploadApp(ctx context.Context, req *v1alpha1.FileUploadRe
 		return nil, err
 	}
 	appVersion := &biz.AppVersion{Chart: filePathName, State: biz.AppUntested}
-	err = appVersion.GetChartInfo(cresource.GetAppPath())
+	err = a.uc.GetAppVersionChartInfomation(ctx, appVersion)
 	if err != nil {
 		return nil, err
 	}

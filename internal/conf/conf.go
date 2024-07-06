@@ -114,6 +114,7 @@ type Resource struct {
 	Cluster      string `json:"cluster,omitempty"`       // cluster setting
 	KubesprayUrl string `json:"kubespray_url,omitempty"` // kubespray url
 	AnsibleCli   string `json:"ansible_cli,omitempty"`   // ansible cli
+	PulumiPath   string `json:"pulumi_path,omitempty"`   // pulumi path
 }
 
 func (r Resource) GetClusterPath() string {
@@ -162,6 +163,14 @@ func (r Resource) GetAnsibleCli() string {
 		ansibleCli = r.AnsibleCli
 	}
 	return ansibleCli
+}
+
+func (r Resource) GetPulumiPath() string {
+	pulumiPath := os.Getenv("PULUMI_PATH")
+	if pulumiPath == "" {
+		pulumiPath = r.PulumiPath
+	}
+	return pulumiPath
 }
 
 type Server struct {

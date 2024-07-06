@@ -7,23 +7,12 @@ import (
 	"strings"
 
 	"github.com/f-rambo/ocean/internal/conf"
-	"github.com/f-rambo/ocean/pkg/helm"
-	"github.com/f-rambo/ocean/pkg/kubeclient"
-	"github.com/f-rambo/ocean/pkg/sailor"
 	"github.com/f-rambo/ocean/utils"
+	"github.com/go-kratos/kratos/v2/log"
 	"github.com/pkg/errors"
 	"github.com/spf13/cast"
 	"gopkg.in/yaml.v2"
-
-	sailorV1alpha1 "github.com/f-rambo/sailor/api/v1alpha1"
-	"github.com/go-kratos/kratos/v2/log"
 	"gorm.io/gorm"
-	pkgChart "helm.sh/helm/v3/pkg/chart"
-	"helm.sh/helm/v3/pkg/cli"
-	"helm.sh/helm/v3/pkg/getter"
-	releasePkg "helm.sh/helm/v3/pkg/release"
-	"helm.sh/helm/v3/pkg/repo"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type AppType struct {
@@ -70,18 +59,18 @@ type App struct {
 }
 
 type AppVersion struct {
-	ID          int64             `json:"id" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
-	AppID       int64             `json:"app_id" gorm:"column:app_id; default:0; NOT NULL; index"`
-	AppName     string            `json:"app_name,omitempty" gorm:"column:app_name; default:''; NOT NULL"`
-	Name        string            `json:"name,omitempty" gorm:"column:name; default:''; NOT NULL"`
-	Chart       string            `json:"chart,omitempty" gorm:"column:chart; default:''; NOT NULL"`
-	Version     string            `json:"version,omitempty" gorm:"column:version; default:''; NOT NULL; index"`
-	Config      string            `json:"config,omitempty" gorm:"column:config; default:''; NOT NULL"`
-	Readme      string            `json:"readme,omitempty" gorm:"-"`
-	State       string            `json:"state,omitempty" gorm:"column:state; default:''; NOT NULL"`
-	TestResult  string            `json:"test_result,omitempty" gorm:"column:test_result; default:''; NOT NULL"` // 哪些资源部署成功，哪些失败
-	Description string            `json:"description,omitempty" gorm:"column:description; default:''; NOT NULL"`
-	Metadata    pkgChart.Metadata `json:"metadata,omitempty" gorm:"-"`
+	ID          int64  `json:"id" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
+	AppID       int64  `json:"app_id" gorm:"column:app_id; default:0; NOT NULL; index"`
+	AppName     string `json:"app_name,omitempty" gorm:"column:app_name; default:''; NOT NULL"`
+	Name        string `json:"name,omitempty" gorm:"column:name; default:''; NOT NULL"`
+	Chart       string `json:"chart,omitempty" gorm:"column:chart; default:''; NOT NULL"`
+	Version     string `json:"version,omitempty" gorm:"column:version; default:''; NOT NULL; index"`
+	Config      string `json:"config,omitempty" gorm:"column:config; default:''; NOT NULL"`
+	Readme      string `json:"readme,omitempty" gorm:"-"`
+	State       string `json:"state,omitempty" gorm:"column:state; default:''; NOT NULL"`
+	TestResult  string `json:"test_result,omitempty" gorm:"column:test_result; default:''; NOT NULL"` // 哪些资源部署成功，哪些失败
+	Description string `json:"description,omitempty" gorm:"column:description; default:''; NOT NULL"`
+	Metadata    []byte `json:"metadata,omitempty" gorm:"-"`
 	gorm.Model
 }
 
@@ -169,22 +158,6 @@ func (a *App) DeleteVersion(version string) {
 	}
 }
 
-func (v *AppVersion) GetChartInfo(appPath string) error {
-	charInfo, err := helm.GetLocalChartInfo(v.AppName, appPath, v.Chart)
-	if err != nil {
-		return err
-	}
-	v.Name = charInfo.Name
-	v.Config = charInfo.Config
-	v.Readme = charInfo.Readme
-	v.Description = charInfo.Description
-	v.Metadata = charInfo.Metadata
-	v.Version = charInfo.Version
-	v.AppName = charInfo.Name
-	v.Chart = charInfo.Chart
-	return nil
-}
-
 func (v *AppVersion) GetAppDeployed() *DeployApp {
 	releaseName := fmt.Sprintf("%s-%s", v.AppName, strings.ReplaceAll(v.Version, ".", "-"))
 	return &DeployApp{
@@ -195,7 +168,6 @@ func (v *AppVersion) GetAppDeployed() *DeployApp {
 		AppName:     v.AppName,
 		Namespace:   "default",
 		Config:      v.Config,
-		State:       releasePkg.StatusUnknown.String(),
 		ReleaseName: releaseName,
 	}
 }
@@ -220,16 +192,39 @@ type AppRepo interface {
 	DeleteRepo(ctx context.Context, helmRepoID int64) error
 }
 
-type AppUsecase struct {
-	repo        AppRepo
-	log         *log.Helper
-	c           *conf.Bootstrap
-	clusterRepo ClusterRepo
-	projectRepo ProjectRepo
+type SailorRepo interface {
+	Create(context.Context, *DeployApp) error
 }
 
-func NewAppUsecase(repo AppRepo, logger log.Logger, c *conf.Bootstrap, clusterRepo ClusterRepo, projectRepo ProjectRepo) *AppUsecase {
-	return &AppUsecase{repo, log.NewHelper(logger), c, clusterRepo, projectRepo}
+type AppRuntime interface {
+	GetPodResources(context.Context, *DeployApp) ([]*AppDeployedResource, error)
+	GetNetResouces(context.Context, *DeployApp) ([]*AppDeployedResource, error)
+	GetAppsReouces(context.Context, *DeployApp) ([]*AppDeployedResource, error)
+}
+
+type AppConstruct interface {
+	GetAppVersionChartInfomation(context.Context, *AppVersion) error
+	DeployingApp(context.Context, *DeployApp) error
+	UnDeployingApp(context.Context, *DeployApp) error
+	AddAppRepo(context.Context, *AppHelmRepo) error
+	GetAppDetailByRepo(ctx context.Context, apprepo *AppHelmRepo, appName, version string) (*App, error)
+	GetAppsByRepo(context.Context, *AppHelmRepo) ([]*App, error)
+	DeleteAppChart(ctx context.Context, app *App, versionId int64) (err error)
+}
+
+type AppUsecase struct {
+	repo         AppRepo
+	log          *log.Helper
+	c            *conf.Bootstrap
+	clusterRepo  ClusterRepo
+	projectRepo  ProjectRepo
+	sailorRepo   SailorRepo
+	appRuntime   AppRuntime
+	appConstruct AppConstruct
+}
+
+func NewAppUsecase(repo AppRepo, logger log.Logger, c *conf.Bootstrap, clusterRepo ClusterRepo, projectRepo ProjectRepo, sailorRepo SailorRepo, appRuntime AppRuntime, appConstruct AppConstruct) *AppUsecase {
+	return &AppUsecase{repo, log.NewHelper(logger), c, clusterRepo, projectRepo, sailorRepo, appRuntime, appConstruct}
 }
 
 func (uc *AppUsecase) GetAppByName(ctx context.Context, name string) (app *App, err error) {
@@ -249,8 +244,7 @@ func (uc *AppUsecase) Get(ctx context.Context, id, versionId int64) (*App, error
 	if appVersion == nil {
 		return app, nil
 	}
-	cresource := uc.c.GetOceanResource()
-	err = appVersion.GetChartInfo(cresource.GetAppPath())
+	err = uc.appConstruct.GetAppVersionChartInfomation(ctx, appVersion)
 	if err != nil {
 		return nil, err
 	}
@@ -270,28 +264,7 @@ func (uc *AppUsecase) Delete(ctx context.Context, id, versionId int64) error {
 	if err != nil {
 		return err
 	}
-	cresource := uc.c.GetOceanResource()
-	if app.Icon != "" && utils.IsFileExist(cresource.GetIconPath()+app.Icon) && versionId == 0 {
-		err = utils.DeleteFile(cresource.GetIconPath() + app.Icon)
-		if err != nil {
-			return err
-		}
-	}
-	for _, v := range app.Versions {
-		if v.Chart != "" && utils.IsFileExist(cresource.GetAppPath()+v.Chart) && versionId == 0 {
-			err = utils.DeleteFile(cresource.GetAppPath() + v.Chart)
-			if err != nil {
-				return err
-			}
-		}
-		if v.Chart != "" && utils.IsFileExist(cresource.GetAppPath()+v.Chart) && versionId == v.ID {
-			err = utils.DeleteFile(cresource.GetAppPath() + v.Chart)
-			if err != nil {
-				return err
-			}
-		}
-	}
-	return nil
+	return uc.appConstruct.DeleteAppChart(ctx, app, versionId)
 }
 
 func (uc *AppUsecase) CreateAppType(ctx context.Context, appType *AppType) error {
@@ -315,21 +288,11 @@ func (uc *AppUsecase) DeployAppList(ctx context.Context, appDeployedReq DeployAp
 }
 
 func (uc *AppUsecase) AppOperation(ctx context.Context, deployedApp *DeployApp) error {
-	restConfig, err := kubeclient.GetKubeConfig(nil)
-	if err != nil {
-		return err
-	}
-	sailorApp, err := sailor.NewForConfig(restConfig)
-	if err != nil {
-		return err
-	}
-	app := sailor.BuildAppResource(deployedApp.Namespace, deployedApp.ReleaseName,
-		sailorV1alpha1.AppSpec{Manifest: deployedApp.Manifest})
-	_, err = sailorApp.Apps(deployedApp.Namespace).Create(ctx, &app)
-	if err != nil {
-		return err
-	}
-	return nil
+	return uc.sailorRepo.Create(ctx, deployedApp)
+}
+
+func (uc *AppUsecase) GetAppVersionChartInfomation(ctx context.Context, appVersion *AppVersion) error {
+	return uc.appConstruct.GetAppVersionChartInfomation(ctx, appVersion)
 }
 
 func (uc *AppUsecase) AppTest(ctx context.Context, appID, versionID int64) (*DeployApp, error) {
@@ -343,7 +306,7 @@ func (uc *AppUsecase) AppTest(ctx context.Context, appID, versionID int64) (*Dep
 	}
 	appDeployed := appVersion.GetAppDeployed()
 	appDeployed.IsTest = true
-	deployAppErr := uc.deployApp(ctx, appDeployed)
+	deployAppErr := uc.appConstruct.DeployingApp(ctx, appDeployed)
 	if deployAppErr != nil {
 		appVersion.State = AppTestFailed
 	}
@@ -392,7 +355,7 @@ func (uc *AppUsecase) DeployApp(ctx context.Context, deployAppReq *DeployApp) (*
 		}
 		appDeployed.ReleaseName = appDeployedRes.ReleaseName
 	}
-	deployAppErr := uc.deployApp(ctx, appDeployed)
+	deployAppErr := uc.appConstruct.DeployingApp(ctx, appDeployed)
 	err = uc.repo.SaveDeployApp(ctx, appDeployed)
 	if err != nil {
 		return nil, err
@@ -408,7 +371,7 @@ func (uc *AppUsecase) DeleteDeployedApp(ctx context.Context, id int64) error {
 	if appDeployed == nil {
 		return nil
 	}
-	err = uc.unDeployApp(appDeployed)
+	err = uc.appConstruct.UnDeployingApp(ctx, appDeployed)
 	if err != nil {
 		return err
 	}
@@ -427,7 +390,7 @@ func (uc *AppUsecase) StopApp(ctx context.Context, id int64) error {
 	if appDeployed == nil {
 		return errors.New("app deployed not found")
 	}
-	unDeployAppErr := uc.unDeployApp(appDeployed)
+	unDeployAppErr := uc.appConstruct.UnDeployingApp(ctx, appDeployed)
 	err = uc.repo.SaveDeployApp(ctx, appDeployed)
 	if err != nil {
 		return err
@@ -446,7 +409,7 @@ func (uc *AppUsecase) SaveRepo(ctx context.Context, helmRepo *AppHelmRepo) error
 			helmRepo.ID = v.ID
 		}
 	}
-	err = uc.addRepo(helmRepo)
+	err = uc.appConstruct.AddAppRepo(ctx, helmRepo)
 	if err != nil {
 		return err
 	}
@@ -469,7 +432,7 @@ func (uc *AppUsecase) GetAppsByRepo(ctx context.Context, helmRepoID int64) ([]*A
 	if err != nil {
 		return nil, err
 	}
-	return uc.getAppsByRepo(helmRepo)
+	return uc.appConstruct.GetAppsByRepo(ctx, helmRepo)
 }
 
 // 根据repo获取app详情包含app version
@@ -488,71 +451,7 @@ func (uc *AppUsecase) GetAppDetailByRepo(ctx context.Context, helmRepoID int64, 
 	if helmRepo == nil {
 		return nil, errors.New("helm repo not found")
 	}
-	return uc.getAppDetailByRepo(helmRepo, appName, version)
-}
-
-func (uc *AppUsecase) deployApp(ctx context.Context, appDeployed *DeployApp) error {
-	helmPkg, err := helm.NewHelmPkg(uc.log, appDeployed.Namespace)
-	if err != nil {
-		return err
-	}
-	install, err := helmPkg.NewInstall()
-	if err != nil {
-		return err
-	}
-	cresource := uc.c.GetOceanResource()
-	chart := fmt.Sprintf("%s%s", cresource.GetAppPath(), appDeployed.Chart)
-	if appDeployed.AppTypeID == AppTypeRepo {
-		chart = fmt.Sprintf("%s%s/%s", cresource.GetRepoPath(), appDeployed.AppName, appDeployed.Chart)
-	}
-	install.ReleaseName = appDeployed.ReleaseName
-	install.Namespace = appDeployed.Namespace
-	install.CreateNamespace = true
-	install.GenerateName = true
-	install.Version = appDeployed.Version
-	install.DryRun = appDeployed.IsTest
-	install.Atomic = true
-	install.Wait = true
-	release, err := helmPkg.RunInstall(ctx, install, chart, appDeployed.Config)
-	appDeployed.Logs = helmPkg.GetLogs()
-	if err != nil {
-		return err
-	}
-	if release != nil {
-		appDeployed.ReleaseName = release.Name
-		appDeployed.Manifest = strings.TrimSpace(release.Manifest)
-		if release.Info != nil {
-			appDeployed.State = string(release.Info.Status)
-			appDeployed.Notes = release.Info.Notes
-		}
-		return nil
-	}
-	appDeployed.State = releasePkg.StatusUnknown.String()
-	return nil
-}
-
-func (uc *AppUsecase) unDeployApp(appDeployed *DeployApp) error {
-	helmPkg, err := helm.NewHelmPkg(uc.log, appDeployed.Namespace)
-	if err != nil {
-		return err
-	}
-	uninstall, err := helmPkg.NewUninstall()
-	if err != nil {
-		return err
-	}
-	uninstall.KeepHistory = false
-	uninstall.DryRun = appDeployed.IsTest
-	uninstall.Wait = true
-	resp, err := helmPkg.RunUninstall(uninstall, appDeployed.ReleaseName)
-	appDeployed.Logs = helmPkg.GetLogs()
-	if err != nil {
-		return errors.WithMessage(err, "uninstall fail")
-	}
-	if resp != nil && resp.Release != nil && resp.Release.Info != nil {
-		appDeployed.State = string(resp.Release.Info.Status)
-	}
-	appDeployed.Notes = resp.Info
-	return nil
+	return uc.appConstruct.GetAppDetailByRepo(ctx, helmRepo, appName, version)
 }
 
 type AppDeployedResource struct {
@@ -570,9 +469,9 @@ func (uc *AppUsecase) GetDeployedResources(ctx context.Context, appDeployID int6
 	}
 	resources := make([]*AppDeployedResource, 0)
 	resourcesFunc := []func(ctx context.Context, appDeployed *DeployApp) ([]*AppDeployedResource, error){
-		uc.getAppsReouces,
-		uc.getNetResouces,
-		uc.getPodResources,
+		uc.appRuntime.GetPodResources,
+		uc.appRuntime.GetNetResouces,
+		uc.appRuntime.GetAppsReouces,
 	}
 	for _, f := range resourcesFunc {
 		res, err := f(ctx, appDeployed)
@@ -669,318 +568,4 @@ func (uc *AppUsecase) BaseInstallation(ctx context.Context, cluster *Cluster, pr
 		}
 	}
 	return nil
-}
-
-func (uc *AppUsecase) getPodResources(ctx context.Context, appDeployed *DeployApp) (resources []*AppDeployedResource, err error) {
-	resources = make([]*AppDeployedResource, 0)
-	clusterClient, err := kubeclient.GetKubeClientSet()
-	if err != nil {
-		return nil, err
-	}
-	labelSelector := fmt.Sprintf("app.kubernetes.io/instance=%s", appDeployed.ReleaseName)
-	podResources, _ := clusterClient.CoreV1().Pods(appDeployed.Namespace).List(ctx, metav1.ListOptions{
-		LabelSelector: labelSelector,
-	})
-	if podResources != nil && len(podResources.Items) > 0 {
-		for _, pod := range podResources.Items {
-			resource := &AppDeployedResource{
-				Name:      pod.Name,
-				Kind:      "Pod",
-				StartedAt: pod.CreationTimestamp.Format("2006-01-02 15:04:05"),
-				Status:    []string{string(pod.Status.Phase)},
-				Events:    make([]string, 0),
-			}
-			events, _ := clusterClient.CoreV1().Events(appDeployed.Namespace).List(ctx, metav1.ListOptions{
-				FieldSelector: fmt.Sprintf("involvedObject.name=%s", pod.Name),
-			})
-			if events != nil && len(events.Items) > 0 {
-				for _, event := range events.Items {
-					resource.Events = append(resource.Events, event.Message)
-				}
-			}
-			resources = append(resources, resource)
-		}
-	}
-	return resources, nil
-}
-
-func (uc *AppUsecase) getNetResouces(ctx context.Context, appDeployed *DeployApp) (resources []*AppDeployedResource, err error) {
-	resources = make([]*AppDeployedResource, 0)
-	clusterClient, err := kubeclient.GetKubeClientSet()
-	if err != nil {
-		return nil, err
-	}
-	labelSelector := fmt.Sprintf("app.kubernetes.io/instance=%s", appDeployed.ReleaseName)
-	serviceResources, _ := clusterClient.CoreV1().Services(appDeployed.Namespace).List(ctx, metav1.ListOptions{
-		LabelSelector: labelSelector,
-	})
-	if serviceResources != nil && len(serviceResources.Items) > 0 {
-		for _, service := range serviceResources.Items {
-			port := ""
-			for _, v := range service.Spec.Ports {
-				port = fmt.Sprintf("%s %d:%d/%s", port, v.Port, v.NodePort, v.Protocol)
-			}
-			externalIPs := ""
-			for _, v := range service.Spec.ExternalIPs {
-				externalIPs = fmt.Sprintf("%s,%s", externalIPs, v)
-			}
-			resource := &AppDeployedResource{
-				Name:      service.Name,
-				Kind:      "Service",
-				StartedAt: service.CreationTimestamp.Format("2006-01-02 15:04:05"),
-				Status: []string{
-					"Type: " + string(service.Spec.Type),
-					"ClusterIP: " + service.Spec.ClusterIP,
-					"ExternalIP: " + externalIPs,
-					"Port: " + port,
-				},
-			}
-			resources = append(resources, resource)
-		}
-	}
-	ingressResources, _ := clusterClient.NetworkingV1beta1().Ingresses(appDeployed.Namespace).List(ctx, metav1.ListOptions{
-		LabelSelector: labelSelector,
-	})
-	if ingressResources != nil && len(ingressResources.Items) > 0 {
-		for _, ingress := range ingressResources.Items {
-			class := ""
-			if ingress.Spec.IngressClassName != nil {
-				class = *ingress.Spec.IngressClassName
-			}
-			hosts := ""
-			for _, v := range ingress.Spec.Rules {
-				hosts = fmt.Sprintf("%s,%s", hosts, v.Host)
-			}
-			ports := ""
-			for _, v := range ingress.Spec.TLS {
-				for _, v := range v.Hosts {
-					ports = fmt.Sprintf("%s,%s", ports, v)
-				}
-			}
-			loadBalancerIP := ""
-			for _, v := range ingress.Status.LoadBalancer.Ingress {
-				loadBalancerIP = fmt.Sprintf("%s,%s", loadBalancerIP, v.IP)
-			}
-			resource := &AppDeployedResource{
-				Name:      ingress.Name,
-				Kind:      "Ingress",
-				StartedAt: ingress.CreationTimestamp.Format("2006-01-02 15:04:05"),
-				Status: []string{
-					"class: " + class,
-					"hosts: " + hosts,
-					"address: " + loadBalancerIP,
-					"ports: " + ports,
-				},
-			}
-			resources = append(resources, resource)
-		}
-	}
-	return resources, nil
-}
-
-func (uc *AppUsecase) getAppsReouces(ctx context.Context, appDeployed *DeployApp) (resources []*AppDeployedResource, err error) {
-	resources = make([]*AppDeployedResource, 0)
-	clusterClient, err := kubeclient.GetKubeClientSet()
-	if err != nil {
-		return nil, err
-	}
-	labelSelector := fmt.Sprintf("app.kubernetes.io/instance=%s", appDeployed.ReleaseName)
-	deploymentResources, _ := clusterClient.AppsV1().Deployments(appDeployed.Namespace).List(ctx, metav1.ListOptions{
-		LabelSelector: labelSelector,
-	})
-	if deploymentResources != nil && len(deploymentResources.Items) > 0 {
-		for _, deployment := range deploymentResources.Items {
-			resource := &AppDeployedResource{
-				Name:      deployment.Name,
-				Kind:      "Deployment",
-				StartedAt: deployment.CreationTimestamp.Format("2006-01-02 15:04:05"),
-				Status: []string{
-					"Ready: " + cast.ToString(deployment.Status.ReadyReplicas),
-					"Up-to-date: " + cast.ToString(deployment.Status.UpdatedReplicas),
-					"Available: " + cast.ToString(deployment.Status.AvailableReplicas),
-				},
-			}
-			resources = append(resources, resource)
-		}
-	}
-
-	statefulSetResources, _ := clusterClient.AppsV1().StatefulSets(appDeployed.Namespace).List(ctx, metav1.ListOptions{
-		LabelSelector: labelSelector,
-	})
-	if statefulSetResources != nil && len(statefulSetResources.Items) > 0 {
-		for _, statefulSet := range statefulSetResources.Items {
-			resource := &AppDeployedResource{
-				Name:      statefulSet.Name,
-				Kind:      "StatefulSet",
-				StartedAt: statefulSet.CreationTimestamp.Format("2006-01-02 15:04:05"),
-				Status: []string{
-					"Ready: " + cast.ToString(statefulSet.Status.ReadyReplicas),
-					"Up-to-date: " + cast.ToString(statefulSet.Status.UpdatedReplicas),
-					"Available: " + cast.ToString(statefulSet.Status.AvailableReplicas),
-				},
-			}
-			resources = append(resources, resource)
-		}
-	}
-
-	deamonsetResources, _ := clusterClient.AppsV1().DaemonSets(appDeployed.Namespace).List(ctx, metav1.ListOptions{
-		LabelSelector: labelSelector,
-	})
-	if deamonsetResources != nil && len(deamonsetResources.Items) > 0 {
-		for _, deamonset := range deamonsetResources.Items {
-			resource := &AppDeployedResource{
-				Name:      deamonset.Name,
-				Kind:      "Deamonset",
-				StartedAt: deamonset.CreationTimestamp.Format("2006-01-02 15:04:05"),
-				Status: []string{
-					"Desired: " + cast.ToString(deamonset.Status.DesiredNumberScheduled),
-					"Current: " + cast.ToString(deamonset.Status.CurrentNumberScheduled),
-					"Ready: " + cast.ToString(deamonset.Status.NumberReady),
-					"Up-to-date: " + cast.ToString(deamonset.Status.UpdatedNumberScheduled),
-					"Available: " + cast.ToString(deamonset.Status.NumberAvailable),
-				},
-			}
-			resources = append(resources, resource)
-		}
-	}
-
-	jobResources, _ := clusterClient.BatchV1().Jobs(appDeployed.Namespace).List(ctx, metav1.ListOptions{
-		LabelSelector: labelSelector,
-	})
-	if jobResources != nil && len(jobResources.Items) > 0 {
-		for _, job := range jobResources.Items {
-			resource := &AppDeployedResource{
-				Name:      job.Name,
-				Kind:      "Job",
-				StartedAt: job.CreationTimestamp.Format("2006-01-02 15:04:05"),
-				Status: []string{
-					"Completions: " + cast.ToString(job.Spec.Completions),
-					"Parallelism: " + cast.ToString(job.Spec.Parallelism),
-					"BackoffLimit: " + cast.ToString(job.Spec.BackoffLimit),
-				},
-			}
-			resources = append(resources, resource)
-		}
-	}
-
-	cronjobResources, _ := clusterClient.BatchV1beta1().CronJobs(appDeployed.Namespace).List(ctx, metav1.ListOptions{
-		LabelSelector: labelSelector,
-	})
-	if cronjobResources != nil && len(cronjobResources.Items) > 0 {
-		for _, cronjob := range cronjobResources.Items {
-			suspend := *cronjob.Spec.Suspend // Dereference the pointer to bool
-			resource := &AppDeployedResource{
-				Name:      cronjob.Name,
-				Kind:      "Cronjob",
-				StartedAt: cronjob.CreationTimestamp.Format("2006-01-02 15:04:05"),
-				Status: []string{
-					"Schedule: " + cronjob.Spec.Schedule,
-					"Suspend: " + cast.ToString(suspend),
-					"Active: " + cast.ToString(len(cronjob.Status.Active)),
-					"Last Schedule: " + cronjob.Status.LastScheduleTime.Format("2006-01-02 15:04:05"),
-				},
-			}
-			resources = append(resources, resource)
-		}
-	}
-	return resources, nil
-}
-
-// add helm repo
-func (uc *AppUsecase) addRepo(helmRepo *AppHelmRepo) error {
-	settings := cli.New()
-	r, err := repo.NewChartRepository(&repo.Entry{
-		Name: helmRepo.Name,
-		URL:  helmRepo.Url,
-	}, getter.All(settings))
-	if err != nil {
-		return err
-	}
-	cresource := uc.c.GetOceanResource()
-	r.CachePath = cresource.GetRepoPath()
-	indexFile, err := r.DownloadIndexFile()
-	if err != nil {
-		return err
-	}
-	helmRepo.SetIndexPath(indexFile)
-	return nil
-}
-
-func (uc *AppUsecase) getAppsByRepo(helmRepo *AppHelmRepo) ([]*App, error) {
-	index, err := repo.LoadIndexFile(helmRepo.IndexPath)
-	if err != nil {
-		return nil, err
-	}
-	apps := make([]*App, 0)
-	for chartName, chartVersions := range index.Entries {
-		app := &App{
-			Name:          chartName,
-			AppTypeID:     AppTypeRepo,
-			AppHelmRepoID: helmRepo.ID,
-			Versions:      make([]*AppVersion, 0),
-		}
-		app.CreatedAt = helmRepo.CreatedAt
-		app.UpdatedAt = helmRepo.UpdatedAt
-		for _, chartMatedata := range chartVersions {
-			if app.Icon == "" {
-				app.Icon = chartMatedata.Icon
-			}
-			if len(chartMatedata.URLs) == 0 {
-				return nil, errors.New("chart urls is empty")
-			}
-			appVersion := &AppVersion{
-				AppName:     chartName,
-				Name:        chartMatedata.Name,
-				Chart:       chartMatedata.URLs[0],
-				Version:     chartMatedata.Version,
-				Description: chartMatedata.Description,
-				State:       AppTested,
-			}
-			app.AddVersion(appVersion)
-		}
-		apps = append(apps, app)
-	}
-	return apps, nil
-}
-
-func (uc *AppUsecase) getAppDetailByRepo(helmRepo *AppHelmRepo, appName, version string) (*App, error) {
-	cresource := uc.c.GetOceanResource()
-	index, err := repo.LoadIndexFile(helmRepo.IndexPath)
-	if err != nil {
-		return nil, err
-	}
-	app := &App{
-		Name:          appName,
-		AppTypeID:     AppTypeRepo,
-		AppHelmRepoID: helmRepo.ID,
-		Versions:      make([]*AppVersion, 0),
-	}
-	for chartName, chartVersions := range index.Entries {
-		if chartName != appName {
-			continue
-		}
-		for i, chartMatedata := range chartVersions {
-			if len(chartMatedata.URLs) == 0 {
-				return nil, errors.New("chart urls is empty")
-			}
-			if app.Icon == "" {
-				app.Icon = chartMatedata.Icon
-			}
-			appVersion := &AppVersion{
-				AppName:     chartName,
-				Name:        chartMatedata.Name,
-				Chart:       chartMatedata.URLs[0],
-				Version:     chartMatedata.Version,
-				Description: chartMatedata.Description,
-			}
-			if (version == "" && i == 0) || (version != "" && version == chartMatedata.Version) {
-				err = appVersion.GetChartInfo(cresource.GetRepoPath())
-				if err != nil {
-					return nil, err
-				}
-			}
-			app.AddVersion(appVersion)
-		}
-	}
-	return app, nil
 }

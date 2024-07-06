@@ -12,6 +12,12 @@ import (
 	"github.com/f-rambo/ocean/internal/data"
 	"github.com/f-rambo/ocean/internal/interfaces"
 	"github.com/f-rambo/ocean/internal/server"
+	"github.com/f-rambo/ocean/pkg/ansible"
+	"github.com/f-rambo/ocean/pkg/argoworkflows"
+	"github.com/f-rambo/ocean/pkg/helm"
+	"github.com/f-rambo/ocean/pkg/kubernetes"
+	"github.com/f-rambo/ocean/pkg/pulumi"
+	"github.com/f-rambo/ocean/pkg/sailor"
 	"github.com/go-kratos/kratos/v2"
 	"github.com/go-kratos/kratos/v2/log"
 )
@@ -30,17 +36,25 @@ func wireApp(bootstrap *conf.Bootstrap, logger log.Logger) (*kratos.App, func(),
 		return nil, nil, err
 	}
 	clusterRepo := data.NewClusterRepo(dataData, bootstrap, logger)
-	clusterUsecase := biz.NewClusterUseCase(bootstrap, clusterRepo, logger)
+	infrastructure := pulumi.NewClusterInfrastructure(bootstrap, logger)
+	clusterConstruct := ansible.NewClusterConstruct(bootstrap, logger)
+	clusterRuntime := kubernetes.NewClusterRuntime(bootstrap, logger)
+	clusterUsecase := biz.NewClusterUseCase(clusterRepo, infrastructure, clusterConstruct, clusterRuntime, logger)
 	projectRepo := data.NewProjectRepo(dataData, bootstrap, logger)
-	projectUsecase := biz.NewProjectUseCase(projectRepo, logger, bootstrap)
+	clusterPorjectRepo := kubernetes.NewProjectClient(bootstrap, logger)
+	projectUsecase := biz.NewProjectUseCase(projectRepo, clusterPorjectRepo, logger)
 	appRepo := data.NewAppRepo(dataData, logger)
-	appUsecase := biz.NewAppUsecase(appRepo, logger, bootstrap, clusterRepo, projectRepo)
+	sailorRepo := sailor.NewSailorClient(bootstrap, logger)
+	appRuntime := kubernetes.NewAppDeployedResource(bootstrap, logger)
+	appConstruct := helm.NewAppConstructRepo(bootstrap, logger)
+	appUsecase := biz.NewAppUsecase(appRepo, logger, bootstrap, clusterRepo, projectRepo, sailorRepo, appRuntime, appConstruct)
 	clusterInterface := interfaces.NewClusterInterface(clusterUsecase, projectUsecase, appUsecase, bootstrap, logger)
 	userRepo := data.NewUserRepo(dataData, logger)
 	userUseCase := biz.NewUseUser(userRepo, logger, bootstrap)
 	appInterface := interfaces.NewAppInterface(appUsecase, userUseCase, bootstrap, logger)
 	servicesRepo := data.NewServicesRepo(dataData, logger)
-	servicesUseCase := biz.NewServicesUseCase(servicesRepo, logger)
+	workflowRepo := argoworkflows.NewWorkflowRepo(bootstrap, logger)
+	servicesUseCase := biz.NewServicesUseCase(servicesRepo, workflowRepo, logger)
 	servicesInterface := interfaces.NewServicesInterface(servicesUseCase, projectUsecase)
 	userInterface := interfaces.NewUserInterface(userUseCase, bootstrap)
 	projectInterface := interfaces.NewProjectInterface(projectUsecase, appUsecase, clusterUsecase, bootstrap, logger)

@@ -1,4 +1,4 @@
-package pulumiapi
+package pulumi
 
 import (
 	appsv1 "github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes/apps/v1"

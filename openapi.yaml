@@ -998,10 +998,6 @@ paths:
                   in: query
                   schema:
                     type: string
-                - name: wf_args
-                  in: query
-                  schema:
-                    type: string
                 - name: workflow.id
                   in: query
                   schema:
@@ -1055,10 +1051,6 @@ paths:
                   in: query
                   schema:
                     type: string
-                - name: wf_args
-                  in: query
-                  schema:
-                    type: string
                 - name: workflow.id
                   in: query
                   schema:
@@ -1109,10 +1101,6 @@ paths:
                   schema:
                     type: string
                 - name: id
-                  in: query
-                  schema:
-                    type: string
-                - name: wf_args
                   in: query
                   schema:
                     type: string
@@ -1196,10 +1184,6 @@ paths:
                   schema:
                     type: string
                 - name: id
-                  in: query
-                  schema:
-                    type: string
-                - name: wf_args
                   in: query
                   schema:
                     type: string
@@ -1946,8 +1930,6 @@ components:
                 project_id:
                     type: string
                 id:
-                    type: string
-                wf_args:
                     type: string
                 workflow:
                     $ref: '#/components/schemas/service.v1alpha1.Worklfow'

@@ -1,4 +1,4 @@
-package pulumiapi
+package pulumi
 
 import (
 	"fmt"
@@ -52,14 +52,14 @@ type AlicloudClusterArgs struct {
 type AlicloudNodeArgs struct {
 	Name                    string            // node name *required*
 	InstanceType            string            // instance type
-	CPU                     int               // cpu cores *required*
+	CPU                     int32             // cpu cores *required*
 	Memory                  float64           // memory in GB *required*
-	GPU                     int               // gpu cores
+	GPU                     int32             // gpu cores
 	GpuSpec                 string            // gpu spec
 	OSImage                 string            // os image
-	InternetMaxBandwidthOut int               // internet max bandwidth out *required*
-	SystemDisk              int               // system disk size in GB *required*
-	DataDisk                int               // data disk size in GB
+	InternetMaxBandwidthOut int32             // internet max bandwidth out *required*
+	SystemDisk              int32             // system disk size in GB *required*
+	DataDisk                int32             // data disk size in GB
 	Labels                  map[string]string // labels for node selector
 	NodeInitScript          string            // node init script : user data for ecs instance
 }
@@ -328,13 +328,13 @@ func (a *AlicloudCluster) servers(ctx *pulumi.Context) error {
 		if node.InstanceType == "" {
 			instanceArgs := &ecs.GetInstanceTypesArgs{}
 			if node.CPU != 0 {
-				instanceArgs.CpuCoreCount = pulumi.IntRef(node.CPU)
+				instanceArgs.CpuCoreCount = pulumi.IntRef(int(node.CPU))
 			}
 			if node.Memory != 0 {
 				instanceArgs.MemorySize = pulumi.Float64Ref(node.Memory)
 			}
 			if node.GPU != 0 {
-				instanceArgs.GpuAmount = pulumi.IntRef(node.GPU)
+				instanceArgs.GpuAmount = pulumi.IntRef(int(node.GPU))
 			}
 			if node.GpuSpec != "" {
 				instanceArgs.GpuSpec = pulumi.StringRef(node.GpuSpec)

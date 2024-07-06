@@ -57,7 +57,7 @@ func (c *ClusterInterface) Save(ctx context.Context, clusterArgs *v1alpha1.Clust
 	if clusterArgs.ServerType == "" {
 		return nil, errors.New("server type is required")
 	}
-	if clusterArgs.ServerType != biz.ClusterTypeLocal {
+	if biz.ClusterType(clusterArgs.ServerType) != biz.ClusterTypeLocal {
 		if clusterArgs.AccessKeyId == "" {
 			return nil, errors.New("access key id is required")
 		}
@@ -77,7 +77,7 @@ func (c *ClusterInterface) Save(ctx context.Context, clusterArgs *v1alpha1.Clust
 		AccessKey: clusterArgs.SecretAccessKey,
 		Nodes:     make([]*biz.Node, 0),
 	}
-	if clusterArgs.ServerType == biz.ClusterTypeLocal {
+	if biz.ClusterType(clusterArgs.ServerType) == biz.ClusterTypeLocal {
 		if len(clusterArgs.Nodes) == 0 {
 			return nil, errors.New("at least one node is required")
 		}
@@ -139,20 +139,19 @@ func (c *ClusterInterface) bizCLusterToCluster(bizCluster *biz.Cluster) *v1alpha
 
 func (c *ClusterInterface) bizNodeToNode(bizNode *biz.Node) *v1alpha1.Node {
 	node := &v1alpha1.Node{
-		Id:          bizNode.ID,
-		Name:        bizNode.Name,
-		Labels:      bizNode.Labels,
-		Annotations: bizNode.Annotations,
-		OsImage:     bizNode.OSImage,
-		Kernel:      bizNode.Kernel,
-		Container:   bizNode.Container,
-		Kubelet:     bizNode.Kubelet,
-		KubeProxy:   bizNode.KubeProxy,
-		InternalIp:  bizNode.InternalIP,
-		ExternalIp:  bizNode.ExternalIP,
-		User:        bizNode.User,
-		Role:        bizNode.Role,
-		ClusterId:   bizNode.ClusterID,
+		Id:         bizNode.ID,
+		Name:       bizNode.Name,
+		Labels:     bizNode.Labels,
+		OsImage:    bizNode.NodeGroup.OSImage,
+		Kernel:     bizNode.Kernel,
+		Container:  bizNode.Container,
+		Kubelet:    bizNode.Kubelet,
+		KubeProxy:  bizNode.KubeProxy,
+		InternalIp: bizNode.InternalIP,
+		ExternalIp: bizNode.ExternalIP,
+		User:       bizNode.User,
+		Role:       bizNode.Role,
+		ClusterId:  bizNode.ClusterID,
 	}
 	return node
 }

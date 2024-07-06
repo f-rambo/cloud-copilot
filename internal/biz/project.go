@@ -3,8 +3,7 @@ package biz
 import (
 	"context"
 
-	"github.com/f-rambo/ocean/internal/conf"
-	"github.com/f-rambo/ocean/pkg/kubeclient"
+	"github.com/f-rambo/ocean/utils"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/pkg/errors"
 	"gorm.io/gorm"
@@ -64,14 +63,19 @@ type ProjectRepo interface {
 	Delete(context.Context, int64) error
 }
 
-type ProjectUsecase struct {
-	repo ProjectRepo
-	log  *log.Helper
-	c    *conf.Bootstrap
+type ClusterPorjectRepo interface {
+	CreateNamespace(context.Context, string) error
+	GetNamespaces(context.Context) (namespaces []string, err error)
 }
 
-func NewProjectUseCase(repo ProjectRepo, logger log.Logger, c *conf.Bootstrap) *ProjectUsecase {
-	return &ProjectUsecase{repo: repo, log: log.NewHelper(logger), c: c}
+type ProjectUsecase struct {
+	repo        ProjectRepo
+	clusterRepo ClusterPorjectRepo
+	log         *log.Helper
+}
+
+func NewProjectUseCase(repo ProjectRepo, clusterRepo ClusterPorjectRepo, logger log.Logger) *ProjectUsecase {
+	return &ProjectUsecase{repo: repo, clusterRepo: clusterRepo, log: log.NewHelper(logger)}
 }
 
 func (uc *ProjectUsecase) Save(ctx context.Context, projectParam *Project) error {
@@ -87,15 +91,11 @@ func (uc *ProjectUsecase) Save(ctx context.Context, projectParam *Project) error
 			}
 		}
 		projectParam.initPorject()
-		kubeClientSet, err := kubeclient.GetKubeClientSet()
+		namespaces, err := uc.clusterRepo.GetNamespaces(ctx)
 		if err != nil {
 			return err
 		}
-		namespaceOk, err := kubeclient.NamespaceExists(ctx, kubeClientSet, projectParam.Namespace)
-		if err != nil {
-			return err
-		}
-		if namespaceOk {
+		if utils.Contains(namespaces, projectParam.Namespace) {
 			return errors.New("namespace exists")
 		}
 		return uc.repo.Save(ctx, projectParam)
@@ -127,20 +127,9 @@ func (uc *ProjectUsecase) Delete(ctx context.Context, id int64) error {
 }
 
 func (uc *ProjectUsecase) Enable(ctx context.Context, project *Project, cluster *Cluster, baseAppInstallation func(context.Context, *Cluster, *Project) error) error {
-	// crate namespace
-	kubeClientSet, err := kubeclient.GetKubeClientSet()
+	err := uc.clusterRepo.CreateNamespace(ctx, project.Namespace)
 	if err != nil {
 		return err
-	}
-	namespaceOk, err := kubeclient.NamespaceExists(ctx, kubeClientSet, project.Namespace)
-	if err != nil {
-		return err
-	}
-	if !namespaceOk {
-		err = kubeclient.CreateNamespace(ctx, kubeClientSet, project.Namespace)
-		if err != nil {
-			return err
-		}
 	}
 	// todo create service account
 	// todo create role

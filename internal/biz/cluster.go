@@ -1,37 +1,49 @@
 package biz
 
-// todo pkg 下的package也应该定义成接口；
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"time"
 
-	"github.com/f-rambo/ocean/internal/conf"
-	"github.com/f-rambo/ocean/pkg/ansible"
-	"github.com/f-rambo/ocean/pkg/kubeclient"
-	"github.com/f-rambo/ocean/pkg/pulumiapi"
 	"github.com/f-rambo/ocean/utils"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/pkg/errors"
-	"github.com/spf13/cast"
-	"golang.org/x/sync/errgroup"
 	"gorm.io/gorm"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-const (
-	ClusterTypeLocal    = "local"
-	ClusterTypeAWS      = "aws"
-	ClusterTypeGoogle   = "google"
-	ClusterTypeAzure    = "azure"
-	ClusterTypeAliCloud = "alicloud"
-)
+var ErrClusterNotFound error = errors.New("cluster not found")
+
+type ClusterType string
 
 const (
-	ClusterRoleMaster = "master"
-	ClusterRoleWorker = "worker"
-	ClusterRoleEdge   = "edge"
+	ClusterTypeLocal    ClusterType = "local"
+	ClusterTypeAWS      ClusterType = "aws"
+	ClusterTypeGoogle   ClusterType = "google"
+	ClusterTypeAzure    ClusterType = "azure"
+	ClusterTypeAliCloud ClusterType = "alicloud"
+)
+
+type ClusterStatus uint8
+
+const (
+	ClusterStatusUnspecified ClusterStatus = 0
+	ClusterStatusRunning     ClusterStatus = 1
+	ClusterStatusDeleted     ClusterStatus = 2
+	ClusterStatucCreating    ClusterStatus = 3
+)
+
+var (
+	ClusterStatusName = map[uint8]string{
+		0: "unspecified",
+		1: "running",
+		2: "deleted",
+		3: "creating",
+	}
+	ClusterStatusValue = map[string]uint8{
+		"unspecified": 0,
+		"running":     1,
+		"deleted":     2,
+		"creating":    3,
+	}
 )
 
 type Cluster struct {
@@ -54,34 +66,97 @@ type Cluster struct {
 	BostionHost      *BostionHost `json:"bostion_host" gorm:"-"`
 	Logs             string       `json:"logs" gorm:"-"` // logs data from localfile
 	Nodes            []*Node      `json:"nodes" gorm:"-"`
+	NodeGroups       []*NodeGroup `json:"node_groups" gorm:"-"`
+	GPULabel         string       `json:"gpu_label" gorm:"column:gpu_label; default:''; NOT NULL;"`
+	GPUTypes         string       `json:"gpu_types" gorm:"column:gpu_types; default:''; NOT NULL;"` // examlpe: 1080ti,2080ti,3090
 	gorm.Model
 }
 
-type Node struct {
+type NodeGroupType string
+
+const (
+	NodeGroupTypeNormal        NodeGroupType = "normal"
+	NodeGroupTypeCPU           NodeGroupType = "cpu"
+	NodeGroupTypeGPU           NodeGroupType = "gpu"
+	NodeGroupTypeHighMemory    NodeGroupType = "highMemory"
+	NodeGroupTypeLargeHardDisk NodeGroupType = "largeHardDisk"
+)
+
+type NodeGroup struct {
 	ID                      int64   `json:"id" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
 	Name                    string  `json:"name" gorm:"column:name; default:''; NOT NULL"`
-	CPU                     int     `json:"cpu" gorm:"column:cpu; default:0; NOT NULL"`
-	Memory                  float64 `json:"memory" gorm:"column:memory; default:0; NOT NULL"`
-	GPU                     int     `json:"gpu" gorm:"column:gpu; default:0; NOT NULL"`
-	GpuSpec                 string  `json:"gpu_spec" gorm:"column:gpu_spec; default:''; NOT NULL"`      // 1080ti 2080ti 3090
-	SystemDisk              int     `json:"system_disk" gorm:"column:system_disk; default:0; NOT NULL"` // 随着服务释放掉的存储空间
-	DataDisk                int     `json:"data_disk" gorm:"column:data_disk; default:0; NOT NULL"`
+	Type                    string  `json:"type" gorm:"column:type; default:''; NOT NULL;"` // normal cpu gpu High Memory Large hard disk
 	InstanceType            string  `json:"instance_type" gorm:"column:instance_type; default:''; NOT NULL"`
-	Labels                  string  `json:"labels" gorm:"column:labels; default:''; NOT NULL"`
-	Annotations             string  `json:"annotations" gorm:"column:annotations; default:''; NOT NULL"`
 	OSImage                 string  `json:"os_image" gorm:"column:os_image; default:''; NOT NULL"`
-	Kernel                  string  `json:"kernel" gorm:"column:kernel; default:''; NOT NULL"`
-	Container               string  `json:"container" gorm:"column:container; default:''; NOT NULL"`
-	Kubelet                 string  `json:"kubelet" gorm:"column:kubelet; default:''; NOT NULL"`
-	KubeProxy               string  `json:"kube_proxy" gorm:"column:kube_proxy; default:''; NOT NULL"`
-	InternalIP              string  `json:"internal_ip" gorm:"column:internal_ip; default:''; NOT NULL"`
-	ExternalIP              string  `json:"external_ip" gorm:"column:external_ip; default:''; NOT NULL"`
-	User                    string  `json:"user" gorm:"column:user; default:''; NOT NULL"`
-	Role                    string  `json:"role" gorm:"column:role; default:''; NOT NULL;"` // master worker edge
-	Status                  uint8   `json:"status" gorm:"column:status; default:0; NOT NULL;"`
-	InternetMaxBandwidthOut int     `json:"internet_max_bandwidth_out" gorm:"column:internet_max_bandwidth_out; default:0; NOT NULL"`
+	CPU                     int32   `json:"cpu" gorm:"column:cpu; default:0; NOT NULL"`
+	Memory                  float64 `json:"memory" gorm:"column:memory; default:0; NOT NULL"`
+	GPU                     int32   `json:"gpu" gorm:"column:gpu; default:0; NOT NULL"`
+	GpuSpec                 string  `json:"gpu_spec" gorm:"column:gpu_spec; default:''; NOT NULL"`      // 1080ti 2080ti 3090
+	SystemDisk              int32   `json:"system_disk" gorm:"column:system_disk; default:0; NOT NULL"` // 随着服务释放掉的存储空间
+	DataDisk                int32   `json:"data_disk" gorm:"column:data_disk; default:0; NOT NULL"`
+	InternetMaxBandwidthOut int32   `json:"internet_max_bandwidth_out" gorm:"column:internet_max_bandwidth_out; default:0; NOT NULL"`
 	NodeInitScript          string  `json:"cloud_init_script" gorm:"column:cloud_init_script; default:''; NOT NULL"`
+	MinSize                 int32   `json:"min_size" gorm:"column:min_size; default:0; NOT NULL"`
+	MaxSize                 int32   `json:"max_size" gorm:"column:max_size; default:0; NOT NULL"`
+	TargetSize              int32   `json:"target_size" gorm:"column:target_size; default:0; NOT NULL"`
 	ClusterID               int64   `json:"cluster_id" gorm:"column:cluster_id; default:0; NOT NULL"`
+}
+
+type NodeRole string
+
+const (
+	NodeRoleMaster NodeRole = "master"
+	NodeRoleWorker NodeRole = "worker"
+	NodeRoleEdge   NodeRole = "edge"
+)
+
+type NodeStatus uint8
+
+const (
+	// an Unspecified instanceState means the actual instance status is undefined (nil).
+	NodeStatusUnspecified NodeStatus = 0
+	// NodeStatusRunning means instance is running.
+	NodeStatusRunning NodeStatus = 1
+	// NodeStatusCreating means instance is being created.
+	NodeStatusCreating NodeStatus = 2
+	// NodeStatusDeleting means instance is being deleted.
+	NodeStatusDeleting NodeStatus = 3
+)
+
+var (
+	NodeStatusName = map[uint8]string{
+		0: "unspecified",
+		1: "instanceRunning",
+		2: "instanceCreating",
+		3: "instanceDeleting",
+	}
+	NodeStatusValue = map[string]uint8{
+		"unspecified":      0,
+		"instanceRunning":  1,
+		"instanceCreating": 2,
+		"instanceDeleting": 3,
+	}
+)
+
+type Node struct {
+	ID          int64      `json:"id" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
+	Name        string     `json:"name" gorm:"column:name; default:''; NOT NULL"`
+	Labels      string     `json:"labels" gorm:"column:labels; default:''; NOT NULL"`
+	Kernel      string     `json:"kernel" gorm:"column:kernel; default:''; NOT NULL"`
+	Container   string     `json:"container" gorm:"column:container; default:''; NOT NULL"`
+	Kubelet     string     `json:"kubelet" gorm:"column:kubelet; default:''; NOT NULL"`
+	KubeProxy   string     `json:"kube_proxy" gorm:"column:kube_proxy; default:''; NOT NULL"`
+	InternalIP  string     `json:"internal_ip" gorm:"column:internal_ip; default:''; NOT NULL"`
+	ExternalIP  string     `json:"external_ip" gorm:"column:external_ip; default:''; NOT NULL"`
+	User        string     `json:"user" gorm:"column:user; default:''; NOT NULL"`
+	Role        string     `json:"role" gorm:"column:role; default:''; NOT NULL;"` // master worker edge
+	Status      uint8      `json:"status" gorm:"column:status; default:0; NOT NULL;"`
+	ErrorInfo   string     `json:"error_info" gorm:"column:error_info; default:''; NOT NULL"`
+	ClusterID   int64      `json:"cluster_id" gorm:"column:cluster_id; default:0; NOT NULL"`
+	NodeGroup   *NodeGroup `json:"node_group" gorm:"-"`
+	NodeGroupID int64      `json:"node_group_id" gorm:"column:node_group_id; default:0; NOT NULL"`
+	NodePrice   float64    `json:"node_price" gorm:"column:node_price; default:0; NOT NULL;"` // 节点价格
+	PodPrice    float64    `json:"pod_price" gorm:"column:pod_price; default:0; NOT NULL;"`   // 节点上pod的价格
 	gorm.Model
 }
 
@@ -94,15 +169,6 @@ type BostionHost struct {
 	PrivateIP  string `json:"private_ip" gorm:"column:private_ip; default:''; NOT NULL"`
 	ClusterID  int64  `json:"cluster_id" gorm:"column:cluster_id; default:0; NOT NULL"`
 	gorm.Model
-}
-
-type ansibleArgs struct {
-	servers []ansible.Server
-	env     map[string]string
-}
-
-type pulumiArgs struct {
-	delete bool
 }
 
 func (c *Cluster) IsEmpty() bool {
@@ -122,6 +188,19 @@ func (c *Cluster) GetNode(nodeId int64) *Node {
 	return nil
 }
 
+func (ng *NodeGroup) SetTargetSize(size int32) {
+	ng.TargetSize = size
+}
+
+func (c *Cluster) GetType() ClusterType {
+	return ClusterType(c.Type)
+}
+
+func (n *Node) GetStatus() NodeStatus {
+	return NodeStatus(n.Status)
+}
+
+// 持久化
 type ClusterRepo interface {
 	Save(context.Context, *Cluster) error
 	Get(context.Context, int64) (*Cluster, error)
@@ -134,27 +213,40 @@ type ClusterRepo interface {
 
 // 基础建设
 type Infrastructure interface {
+	SaveServers(context.Context, *Cluster) error
+	DeleteServers(context.Context, *Cluster) error
 }
 
 // 集群配置
-type Construct interface {
+type ClusterConstruct interface {
+	MigrateToBostionHost(context.Context, *Cluster) error
+	InstallCluster(context.Context, *Cluster) error
+	UnInstallCluster(context.Context, *Cluster) error
+	AddNodes(context.Context, *Cluster, []*Node) error
+	RemoveNodes(context.Context, *Cluster, []*Node) error
 }
 
 // 运行时集群
 type ClusterRuntime interface {
+	CurrentCluster(context.Context) (*Cluster, error)
+	ConnectCluster(context.Context, *Cluster) (*Cluster, error)
 }
 
 type ClusterUsecase struct {
-	c    *conf.Bootstrap
-	repo ClusterRepo
-	log  *log.Helper
+	repo             ClusterRepo
+	log              *log.Helper
+	infrastructure   Infrastructure
+	clusterConstruct ClusterConstruct
+	clusterRuntime   ClusterRuntime
 }
 
-func NewClusterUseCase(c *conf.Bootstrap, repo ClusterRepo, logger log.Logger) *ClusterUsecase {
+func NewClusterUseCase(repo ClusterRepo, infrastructure Infrastructure, clusterConstruct ClusterConstruct, clusterRuntime ClusterRuntime, logger log.Logger) *ClusterUsecase {
 	return &ClusterUsecase{
-		c:    c,
-		repo: repo,
-		log:  log.NewHelper(logger),
+		repo:             repo,
+		infrastructure:   infrastructure,
+		clusterConstruct: clusterConstruct,
+		clusterRuntime:   clusterRuntime,
+		log:              log.NewHelper(logger),
 	}
 }
 
@@ -209,6 +301,37 @@ func (uc *ClusterUsecase) Save(ctx context.Context, cluster *Cluster) error {
 	return nil
 }
 
+// 获取当前集群最新信息
+func (uc *ClusterUsecase) GetCurrentCluster(ctx context.Context) (*Cluster, error) {
+	return uc.clusterRuntime.CurrentCluster(ctx)
+}
+
+func (uc *ClusterUsecase) Cleanup(ctx context.Context) error {
+	return nil
+}
+
+func (uc *ClusterUsecase) Refresh(ctx context.Context) error {
+	return nil
+}
+
+// 根据nodegroup增加节点
+func (uc *ClusterUsecase) NodeGroupIncreaseSize(ctx context.Context, cluster *Cluster, nodeGroup *NodeGroup, size int32) error {
+	uc.apply(ctx, cluster) // todo
+	return nil
+}
+
+// 删除节点
+func (uc *ClusterUsecase) DeleteNodes(ctx context.Context, cluster *Cluster, nodes []*Node) error {
+	// apply
+	return nil
+}
+
+// 预测一个节点配置，也就是根据当前节点组目前还可以配置的节点
+func (uc *ClusterUsecase) NodeGroupTemplateNodeInfo(ctx context.Context, cluster *Cluster, nodeGroup *NodeGroup) (*Node, error) {
+
+	return nil, nil
+}
+
 // 集群控制
 // 负责生成适合的集群配置，节点数量，节点配置等
 // 本地集群和云服务集群
@@ -216,42 +339,14 @@ func (uc *ClusterUsecase) Save(ctx context.Context, cluster *Cluster) error {
 // 2. 通过监控数据/app数据，扩容和缩容集群
 // 3. 保存一个完整的集群配置，包括集群信息，节点信息，服务信息等
 // 4. 策略
-func (uc *ClusterUsecase) Apply(ctx context.Context, cluster *Cluster) error {
-	if cluster.Type == ClusterTypeLocal {
+func (uc *ClusterUsecase) apply(_ context.Context, cluster *Cluster) error {
+	if cluster.GetType() == ClusterTypeLocal {
 		return nil
 	}
 	if len(cluster.Nodes) == 0 {
 		// 第一次创建集群
-		// ID                      int64   `json:"id" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
-		// Name                    string  `json:"name" gorm:"column:name; default:''; NOT NULL"`
-		// CPU                     int     `json:"cpu" gorm:"column:cpu; default:0; NOT NULL"`
-		// Memory                  float64 `json:"memory" gorm:"column:memory; default:0; NOT NULL"`
-		// GPU                     int     `json:"gpu" gorm:"column:gpu; default:0; NOT NULL"`
-		// GpuSpec                 string  `json:"gpu_spec" gorm:"column:gpu_spec; default:''; NOT NULL"`      // 1080ti 2080ti 3090
-		// SystemDisk              int     `json:"system_disk" gorm:"column:system_disk; default:0; NOT NULL"` // 随着服务释放掉的存储空间
-		// DataDisk                int     `json:"data_disk" gorm:"column:data_disk; default:0; NOT NULL"`
-		// InstanceType            string  `json:"instance_type" gorm:"column:instance_type; default:''; NOT NULL"`
-		// Labels                  string  `json:"labels" gorm:"column:labels; default:''; NOT NULL"`
-		// Annotations             string  `json:"annotations" gorm:"column:annotations; default:''; NOT NULL"`
-		// OSImage                 string  `json:"os_image" gorm:"column:os_image; default:''; NOT NULL"`
-		// Kernel                  string  `json:"kernel" gorm:"column:kernel; default:''; NOT NULL"`
-		// Container               string  `json:"container" gorm:"column:container; default:''; NOT NULL"`
-		// Kubelet                 string  `json:"kubelet" gorm:"column:kubelet; default:''; NOT NULL"`
-		// KubeProxy               string  `json:"kube_proxy" gorm:"column:kube_proxy; default:''; NOT NULL"`
-		// InternalIP              string  `json:"internal_ip" gorm:"column:internal_ip; default:''; NOT NULL"`
-		// ExternalIP              string  `json:"external_ip" gorm:"column:external_ip; default:''; NOT NULL"`
-		// User                    string  `json:"user" gorm:"column:user; default:''; NOT NULL"`
-		// Role                    string  `json:"role" gorm:"column:role; default:''; NOT NULL;"` // master worker edge
-		// Status                  uint8   `json:"status" gorm:"column:status; default:0; NOT NULL;"`
-		// InternetMaxBandwidthOut int     `json:"internet_max_bandwidth_out" gorm:"column:internet_max_bandwidth_out; default:0; NOT NULL"`
-		// NodeInitScript          string  `json:"cloud_init_script" gorm:"column:cloud_init_script; default:''; NOT NULL"`
-		// ClusterID               int64   `json:"cluster_id" gorm:"column:cluster_id; default:0; NOT NULL"`
 		cluster.Nodes = append(cluster.Nodes, &Node{
-			Name:         fmt.Sprintf("%s-%s", cluster.Name, utils.GetRandomString()),
-			CPU:          4,
-			Memory:       8,
-			SystemDisk:   20,
-			InstanceType: "",
+			Name: fmt.Sprintf("%s-%s", cluster.Name, utils.GetRandomString()),
 		})
 	}
 	// auto scale
@@ -265,315 +360,78 @@ func (uc *ClusterUsecase) Apply(ctx context.Context, cluster *Cluster) error {
 }
 
 func (uc *ClusterUsecase) Reconcile(ctx context.Context, cluster *Cluster) (err error) {
+	defer func() {
+		uc.repo.Save(ctx, cluster)
+		uc.repo.WriteClusterLog(cluster)
+	}()
 	if cluster.IsDeleteed() {
-		cluster.Logs = "start uninstal cluster..."
-		err = uc.clusterUninstall(ctx, cluster)
+		err = uc.clusterConstruct.UnInstallCluster(ctx, cluster)
 		if err != nil {
 			return err
 		}
-		cluster.Logs = "start delete cluster..."
-		err = uc.servers(ctx, cluster, &pulumiArgs{delete: true})
+		err = uc.infrastructure.DeleteServers(ctx, cluster)
 		if err != nil {
 			return err
 		}
 		return nil
 	}
 	cluster.Logs = "start update cluster..."
-	env := uc.c.Ocean.GetEnv()
-	if env == conf.EnvLocal && cluster.Type != ClusterTypeLocal {
-		err = uc.servers(ctx, cluster, nil)
+	currentCluster, err := uc.clusterRuntime.ConnectCluster(ctx, cluster)
+	if errors.Is(err, ErrClusterNotFound) {
+		err = uc.infrastructure.SaveServers(ctx, cluster)
 		if err != nil {
 			return err
 		}
-		err = uc.migrateToBostionHost(ctx, cluster)
+		err = uc.clusterConstruct.MigrateToBostionHost(ctx, cluster)
 		if err != nil {
 			return err
 		}
-	}
-	if env == conf.EnvBostionHost || cluster.Type == ClusterTypeLocal {
-		err = uc.cluster(ctx, cluster)
+		err = uc.clusterConstruct.InstallCluster(ctx, cluster)
 		if err != nil {
 			return err
-		}
-	}
-	if env == conf.EnvCluster {
-		clientSet, err := kubeclient.GetKubeClientSet()
-		if err != nil {
-			return err
-		}
-		// update servers
-		err = uc.servers(ctx, cluster, nil)
-		if err != nil {
-			return err
-		}
-		// remove node
-		nodeList, err := clientSet.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
-		if err != nil {
-			return err
-		}
-		for _, node := range nodeList.Items {
-			ok := false
-			for _, cnode := range cluster.Nodes {
-				if cnode.Name == node.Name {
-					ok = true
-					break
-				}
-			}
-			if !ok {
-				err = uc.removeNode(ctx, cluster, node.Name)
-				if err != nil {
-					return err
-				}
-			}
-		}
-		// add node
-		err = uc.addNode(ctx, cluster)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-// 创建/删除服务器
-func (uc *ClusterUsecase) servers(ctx context.Context, cluster *Cluster, pulumiArgs *pulumiArgs) error {
-	switch cluster.Type {
-	case ClusterTypeAliCloud:
-		err := uc.alicloudServers(ctx, cluster, pulumiArgs)
-		if err != nil {
-			return err
-		}
-	case ClusterTypeAWS:
-	case ClusterTypeLocal:
-		return nil
-	default:
-		return errors.New("not support cluster type")
-	}
-	return nil
-}
-
-func (uc *ClusterUsecase) alicloudServers(ctx context.Context, cluster *Cluster, pulumiArgs *pulumiArgs) error {
-	args := pulumiapi.AlicloudClusterArgs{
-		Name:      cluster.Name,
-		PublicKey: cluster.PublicKey,
-		Nodes:     make([]pulumiapi.AlicloudNodeArgs, 0),
-	}
-	for _, node := range cluster.Nodes {
-		labels := make(map[string]string)
-		if node.Labels != "" {
-			err := json.Unmarshal([]byte(node.Labels), &labels)
-			if err != nil {
-				return err
-			}
-		}
-		args.Nodes = append(args.Nodes, pulumiapi.AlicloudNodeArgs{
-			Name:                    node.Name,
-			InstanceType:            node.InstanceType,
-			CPU:                     node.CPU,
-			Memory:                  node.Memory,
-			GPU:                     node.GPU,
-			GpuSpec:                 node.GpuSpec,
-			OSImage:                 node.OSImage,
-			InternetMaxBandwidthOut: node.InternetMaxBandwidthOut,
-			SystemDisk:              node.SystemDisk,
-			DataDisk:                node.DataDisk,
-			Labels:                  labels,
-			NodeInitScript:          node.NodeInitScript,
-		})
-	}
-	var pulumiFunc pulumiapi.PulumiFunc
-	pulumiFunc = pulumiapi.StartAlicloudCluster(args).StartServers
-	if pulumiArgs != nil && pulumiArgs.delete {
-		pulumiFunc = pulumiapi.StartAlicloudCluster(args).Clear
-	}
-	g := new(errgroup.Group)
-	bostionHost := &BostionHost{}
-	pulumiOutput := make(chan string, 1024)
-	pulumiOutput <- "starting alicloud servers..."
-	g.Go(func() error {
-		defer close(pulumiOutput)
-		output, err := pulumiapi.NewPulumiAPI(ctx, pulumiOutput).
-			ProjectName(pulumiapi.AlicloudProjectName).
-			StackName(pulumiapi.AlicloudStackName).
-			Plugin(pulumiapi.PulumiPlugin{Kind: "alicloud", Version: "3.56.0"}, pulumiapi.PulumiPlugin{Kind: "kubernetes", Version: "4.12.0"}).
-			Env(map[string]string{"ALICLOUD_ACCESS_KEY": cluster.AccessID, "ALICLOUD_SECRET_KEY": cluster.AccessKey, "ALICLOUD_REGION": cluster.Region}).
-			RegisterDeployFunc(pulumiFunc).
-			Up(ctx)
-		if err != nil {
-			return err
-		}
-		outputMap := make(map[string]interface{})
-		err = json.Unmarshal([]byte(output), &outputMap)
-		if err != nil {
-			return err
-		}
-		for k, v := range outputMap {
-			switch k {
-			case "vpc_id":
-				cluster.VpcID = cast.ToString(v)
-			case "external_ip":
-				cluster.ExternalIP = cast.ToString(v)
-				bostionHost.ExternalIP = cast.ToString(v)
-			case "bostion_public_ip":
-				bostionHost.PublicIP = cast.ToString(v)
-			case "bostion_private_ip":
-				bostionHost.PrivateIP = cast.ToString(v)
-			case "bostion_id":
-				bostionHost.InstanceID = cast.ToString(v)
-			case "bostion_hostname":
-				bostionHost.Hostname = cast.ToString(v)
-			default:
-				cluster.Logs += fmt.Sprintf("%s: %s\n", k, v)
-			}
 		}
 		return nil
-	})
-	g.Go(func() error {
-		return uc.clusterLog(ctx, cluster, pulumiOutput)
-	})
-	cluster.BostionHost = bostionHost
-	err := g.Wait()
+	}
 	if err != nil {
 		return err
 	}
-	pulumiOutput <- "alicloud servers success"
-	return nil
-}
-
-// 数据迁移到bostion主机
-func (uc *ClusterUsecase) migrateToBostionHost(ctx context.Context, cluster *Cluster) error {
-	oceanResource := uc.c.GetOceanResource()
-	migratePlaybook := ansible.GetMigratePlaybook()
-	migratePlaybook.AddSynchronize("database", uc.c.GetOceanData().GetDBFilePath(), "/var/lib/mysql")
-	migratePlaybook.AddSynchronize("pulumi", "~/.pulumi", "/root/.pulumi")
-	migratePlaybookPath, err := ansible.SavePlaybook(oceanResource.GetClusterPath(), migratePlaybook)
+	err = uc.infrastructure.SaveServers(ctx, cluster)
 	if err != nil {
 		return err
 	}
-	args := &ansibleArgs{
-		servers: []ansible.Server{
-			{Ip: cluster.BostionHost.ExternalIP, Username: "root", ID: cluster.BostionHost.InstanceID, Role: "bostion"},
-		},
+	removeNodes := make([]*Node, 0)
+	for _, currentNode := range currentCluster.Nodes {
+		nodeExist := false
+		for _, node := range cluster.Nodes {
+			if currentNode.Name == node.Name {
+				nodeExist = true
+				break
+			}
+		}
+		if !nodeExist {
+			removeNodes = append(removeNodes, currentNode)
+		}
 	}
-	err = uc.exec(ctx,
-		cluster,
-		oceanResource.GetClusterPath(),
-		migratePlaybookPath,
-		args,
-	)
+	err = uc.clusterConstruct.RemoveNodes(ctx, cluster, removeNodes)
 	if err != nil {
 		return err
 	}
-	return nil
-}
-
-// 集群安装
-func (uc *ClusterUsecase) cluster(ctx context.Context, cluster *Cluster) error {
-	// todo 写集群配置文件
-	serversInitPlaybook := ansible.GetServerInitPlaybook()
-	serversInitPlaybookPath, err := ansible.SavePlaybook(uc.c.GetOceanResource().GetClusterPath(), serversInitPlaybook)
-	if err != nil {
-		return err
-	}
-	err = uc.exec(ctx, cluster, uc.c.GetOceanResource().GetClusterPath(), serversInitPlaybookPath, nil)
-	if err != nil {
-		return err
-	}
-	return uc.kubespray(ctx, cluster, ansible.GetClusterPlaybookPath(), nil)
-}
-
-// 增加节点
-func (uc *ClusterUsecase) addNode(ctx context.Context, cluster *Cluster) error {
-	return uc.kubespray(ctx, cluster, ansible.GetScalePlaybookPath(), nil)
-}
-
-// 移除节点
-func (uc *ClusterUsecase) removeNode(ctx context.Context, cluster *Cluster, nodeName string) error {
-	args := &ansibleArgs{
-		env: map[string]string{"node": nodeName},
-	}
-	return uc.kubespray(ctx, cluster, ansible.GetRemoveNodePlaybookPath(), args)
-}
-
-// 卸载集群
-func (uc *ClusterUsecase) clusterUninstall(ctx context.Context, cluster *Cluster) error {
-	return uc.kubespray(ctx, cluster, ansible.GetResetPlaybookPath(), nil)
-}
-
-func (uc *ClusterUsecase) kubespray(ctx context.Context, cluster *Cluster, playbook string, args *ansibleArgs) error {
-	oceanResource := uc.c.GetOceanResource()
-	kubespray, err := ansible.NewKubespray(&oceanResource)
-	if err != nil {
-		return errors.Wrap(err, "new kubespray error")
-	}
-	return uc.exec(ctx, cluster, kubespray.GetPackagePath(), playbook, args)
-}
-
-func (uc *ClusterUsecase) exec(ctx context.Context, cluster *Cluster, playbook string, cmdRunDir string, args *ansibleArgs) error {
-	servers := make([]ansible.Server, 0)
+	addNodes := make([]*Node, 0)
 	for _, node := range cluster.Nodes {
-		servers = append(servers, ansible.Server{Ip: node.ExternalIP, Username: node.User, ID: cast.ToString(node.ID), Role: node.Role})
+		nodeExist := false
+		for _, currentNode := range currentCluster.Nodes {
+			if node.Name == currentNode.Name {
+				nodeExist = true
+				break
+			}
+		}
+		if !nodeExist {
+			addNodes = append(addNodes, node)
+		}
 	}
-	if args != nil && len(args.servers) > 0 {
-		servers = args.servers
-	}
-	env := make(map[string]string)
-	if args != nil && len(args.env) > 0 {
-		env = args.env
-	}
-	g := new(errgroup.Group)
-	ansibleLog := make(chan string, 1024)
-	g.Go(func() error {
-		defer close(ansibleLog)
-		return ansible.NewGoAnsiblePkg(uc.c).
-			SetAnsiblePlaybookBinary(uc.c.GetOceanResource().GetAnsibleCli()).
-			SetLogChan(ansibleLog).
-			SetServers(servers...).
-			SetCmdRunDir(cmdRunDir).
-			SetPlaybooks(playbook).
-			SetEnvMap(env).
-			ExecPlayBooks(ctx)
-	})
-	g.Go(func() error {
-		return uc.clusterLog(ctx, cluster, ansibleLog)
-	})
-	err := g.Wait()
+	err = uc.clusterConstruct.AddNodes(ctx, cluster, addNodes)
 	if err != nil {
 		return err
 	}
 	return nil
-}
-
-func (uc *ClusterUsecase) clusterLog(ctx context.Context, cluster *Cluster, output chan string) (err error) {
-	defer func() {
-		if err != nil {
-			uc.log.Errorf("err: %v", err)
-		}
-		if r := recover(); r != nil {
-			uc.log.Errorf("panic: %v", r)
-		}
-		if cluster.Logs != "" {
-			err := uc.repo.WriteClusterLog(cluster)
-			if err != nil {
-				uc.log.Errorf("write cluster log error: %v", err)
-				return
-			}
-		}
-	}()
-	for {
-		select {
-		case log, ok := <-output:
-			if !ok {
-				return nil
-			}
-			cluster.Logs += log
-		case <-ctx.Done():
-			return ctx.Err()
-		case <-time.After(3 * time.Second):
-			err := uc.repo.WriteClusterLog(cluster)
-			if err != nil {
-				return err
-			}
-		}
-	}
 }

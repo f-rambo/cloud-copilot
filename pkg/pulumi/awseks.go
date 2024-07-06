@@ -1,4 +1,4 @@
-package pulumiapi
+package pulumi
 
 import (
 	"fmt"
