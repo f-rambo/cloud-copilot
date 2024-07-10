@@ -2,6 +2,7 @@ package ansible
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/f-rambo/ocean/internal/biz"
 	"github.com/f-rambo/ocean/internal/conf"
@@ -21,6 +22,26 @@ func NewClusterConstruct(c *conf.Bootstrap, logger log.Logger) biz.ClusterConstr
 		log: log.NewHelper(logger),
 		c:   c,
 	}
+}
+
+func (cc *ClusterConstruct) GenerateInitialCluster(ctx context.Context, cluster *biz.Cluster) error {
+
+	return nil
+}
+
+func (cc *ClusterConstruct) GenerateNodeLables(ctx context.Context, cluster *biz.Cluster, nodeGroup *biz.NodeGroup) (lables string, err error) {
+	lableMap := make(map[string]string)
+	lableMap["cluster"] = cluster.Name
+	lableMap["cluster_type"] = cluster.Type
+	lableMap["region"] = cluster.Region
+	lableMap["nodegroup"] = nodeGroup.Name
+	lableMap["nodegroup_type"] = nodeGroup.Type
+	lableMap["instance_type"] = nodeGroup.InstanceType
+	lablebytes, err := json.Marshal(lableMap)
+	if err != nil {
+		return "", err
+	}
+	return string(lablebytes), nil
 }
 
 func (cc *ClusterConstruct) MigrateToBostionHost(ctx context.Context, cluster *biz.Cluster) error {

@@ -92,6 +92,12 @@ func (c *ClusterInterface) Save(ctx context.Context, clusterArgs *v1alpha1.Clust
 	if err != nil {
 		return nil, err
 	}
+	// first
+	cluster.Status = uint8(biz.ClusterStatucCreating)
+	err = c.clusterUc.Apply(ctx, cluster)
+	if err != nil {
+		return nil, err
+	}
 	return c.bizCLusterToCluster(cluster), nil
 }
 

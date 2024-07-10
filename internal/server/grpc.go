@@ -4,13 +4,13 @@ import (
 	"time"
 
 	appv1alpha1 "github.com/f-rambo/ocean/api/app/v1alpha1"
+	autoscalerpb "github.com/f-rambo/ocean/api/autoscaler"
 	clusterv1alpha1 "github.com/f-rambo/ocean/api/cluster/v1alpha1"
 	projectv1alpha1 "github.com/f-rambo/ocean/api/project/v1alpha1"
 	servicev1alpha1 "github.com/f-rambo/ocean/api/service/v1alpha1"
 	userv1alpha1 "github.com/f-rambo/ocean/api/user/v1alpha1"
 	"github.com/f-rambo/ocean/internal/conf"
 	"github.com/f-rambo/ocean/internal/interfaces"
-
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-kratos/kratos/v2/middleware/recovery"
 	"github.com/go-kratos/kratos/v2/middleware/selector"
@@ -24,6 +24,7 @@ func NewGRPCServer(c *conf.Bootstrap,
 	services *interfaces.ServicesInterface,
 	user *interfaces.UserInterface,
 	project *interfaces.ProjectInterface,
+	autoscaler *interfaces.Autoscaler,
 	logger log.Logger) *grpc.Server {
 	var opts = []grpc.ServerOption{
 		grpc.Middleware(
@@ -47,5 +48,6 @@ func NewGRPCServer(c *conf.Bootstrap,
 	servicev1alpha1.RegisterServiceInterfaceServer(srv, services)
 	userv1alpha1.RegisterUserInterfaceServer(srv, user)
 	projectv1alpha1.RegisterProjectServiceServer(srv, project)
+	autoscalerpb.RegisterAutoscalerServiceServer(srv, autoscaler)
 	return srv
 }

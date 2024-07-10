@@ -31,6 +31,7 @@ import (
 
 // wireApp init kratos application.
 func wireApp(bootstrap *conf.Bootstrap, logger log.Logger) (*kratos.App, func(), error) {
+	context := newContext()
 	dataData, cleanup, err := data.NewData(bootstrap, logger)
 	if err != nil {
 		return nil, nil, err
@@ -39,7 +40,7 @@ func wireApp(bootstrap *conf.Bootstrap, logger log.Logger) (*kratos.App, func(),
 	infrastructure := pulumi.NewClusterInfrastructure(bootstrap, logger)
 	clusterConstruct := ansible.NewClusterConstruct(bootstrap, logger)
 	clusterRuntime := kubernetes.NewClusterRuntime(bootstrap, logger)
-	clusterUsecase := biz.NewClusterUseCase(clusterRepo, infrastructure, clusterConstruct, clusterRuntime, logger)
+	clusterUsecase := biz.NewClusterUseCase(context, clusterRepo, infrastructure, clusterConstruct, clusterRuntime, logger)
 	projectRepo := data.NewProjectRepo(dataData, bootstrap, logger)
 	clusterPorjectRepo := kubernetes.NewProjectClient(bootstrap, logger)
 	projectUsecase := biz.NewProjectUseCase(projectRepo, clusterPorjectRepo, logger)
@@ -58,9 +59,10 @@ func wireApp(bootstrap *conf.Bootstrap, logger log.Logger) (*kratos.App, func(),
 	servicesInterface := interfaces.NewServicesInterface(servicesUseCase, projectUsecase)
 	userInterface := interfaces.NewUserInterface(userUseCase, bootstrap)
 	projectInterface := interfaces.NewProjectInterface(projectUsecase, appUsecase, clusterUsecase, bootstrap, logger)
-	grpcServer := server.NewGRPCServer(bootstrap, clusterInterface, appInterface, servicesInterface, userInterface, projectInterface, logger)
+	autoscaler := interfaces.NewAutoscaler(clusterUsecase, bootstrap, logger)
+	grpcServer := server.NewGRPCServer(bootstrap, clusterInterface, appInterface, servicesInterface, userInterface, projectInterface, autoscaler, logger)
 	httpServer := server.NewHTTPServer(bootstrap, clusterInterface, appInterface, servicesInterface, userInterface, projectInterface, logger)
-	app := newApp(logger, grpcServer, httpServer)
+	app := newApp(context, logger, grpcServer, httpServer)
 	return app, func() {
 		cleanup()
 	}, nil

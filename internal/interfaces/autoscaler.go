@@ -2,6 +2,7 @@ package interfaces
 
 import (
 	"context"
+	"encoding/json"
 	"strings"
 
 	"github.com/f-rambo/ocean/api/autoscaler"
@@ -10,7 +11,6 @@ import (
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/pkg/errors"
 	"github.com/spf13/cast"
-	grpc "google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	anypb "google.golang.org/protobuf/types/known/anypb"
@@ -76,12 +76,19 @@ func getNodesByNGIDAndName(nodeGroupID string, nodeName string, cluster *biz.Clu
 }
 
 func nodeToV1Node(node *biz.Node) *corev1.Node {
-	return &corev1.Node{}
+	coreNode := &corev1.Node{}
+	coreNode.Kind = "Node"
+	coreNode.APIVersion = "v1"
+	coreNode.Name = node.Name
+	lables := make(map[string]string)
+	json.Unmarshal([]byte(node.Labels), &lables)
+	coreNode.Labels = lables
+	return coreNode
 }
 
 // NodeGroups：返回配置的所有节点组。
 // NodeGroups returns all node groups configured for this cloud provider.
-func (a *Autoscaler) NodeGroups(ctx context.Context, in *autoscaler.NodeGroupsRequest, opts ...grpc.CallOption) (*autoscaler.NodeGroupsResponse, error) {
+func (a *Autoscaler) NodeGroups(ctx context.Context, in *autoscaler.NodeGroupsRequest) (*autoscaler.NodeGroupsResponse, error) {
 	a.log.Infof("NodeGroups got gRPC request: %T %s", in, in)
 	cluster, err := a.clusterUc.GetCurrentCluster(ctx)
 	if err != nil {
@@ -100,7 +107,7 @@ func (a *Autoscaler) NodeGroups(ctx context.Context, in *autoscaler.NodeGroupsRe
 // NodeGroupForNode returns the node group for the given node.
 // The node group id is an empty string if the node should not
 // be processed by cluster autoscaler.
-func (a *Autoscaler) NodeGroupForNode(ctx context.Context, in *autoscaler.NodeGroupForNodeRequest, opts ...grpc.CallOption) (*autoscaler.NodeGroupForNodeResponse, error) {
+func (a *Autoscaler) NodeGroupForNode(ctx context.Context, in *autoscaler.NodeGroupForNodeRequest) (*autoscaler.NodeGroupForNodeResponse, error) {
 	a.log.Infof("NodeGroupForNode got gRPC request: %T %s", in, in)
 	node := in.GetNode()
 	if node == nil {
@@ -123,7 +130,7 @@ func (a *Autoscaler) NodeGroupForNode(ctx context.Context, in *autoscaler.NodeGr
 // PricingNodePrice returns a theoretical minimum price of running a node for
 // a given period of time on a perfectly matching machine.
 // Implementation optional: if unimplemented return error code 12 (for `Unimplemented`)
-func (a *Autoscaler) PricingNodePrice(ctx context.Context, in *autoscaler.PricingNodePriceRequest, opts ...grpc.CallOption) (*autoscaler.PricingNodePriceResponse, error) {
+func (a *Autoscaler) PricingNodePrice(ctx context.Context, in *autoscaler.PricingNodePriceRequest) (*autoscaler.PricingNodePriceResponse, error) {
 	a.log.Infof("PricingNodePrice got gRPC request: %T %s", in, in)
 	node := in.GetNode()
 	cluster, err := a.clusterUc.GetCurrentCluster(ctx)
@@ -141,7 +148,7 @@ func (a *Autoscaler) PricingNodePrice(ctx context.Context, in *autoscaler.Pricin
 // PricingPodPrice returns a theoretical minimum price of running a pod for a given
 // period of time on a perfectly matching machine.
 // Implementation optional: if unimplemented return error code 12 (for `Unimplemented`)
-func (a *Autoscaler) PricingPodPrice(ctx context.Context, in *autoscaler.PricingPodPriceRequest, opts ...grpc.CallOption) (*autoscaler.PricingPodPriceResponse, error) {
+func (a *Autoscaler) PricingPodPrice(ctx context.Context, in *autoscaler.PricingPodPriceRequest) (*autoscaler.PricingPodPriceResponse, error) {
 	a.log.Infof("PricingPodPrice got gRPC request: %T %s", in, in)
 	pod := in.GetPod()
 	cluster, err := a.clusterUc.GetCurrentCluster(ctx)
@@ -157,7 +164,7 @@ func (a *Autoscaler) PricingPodPrice(ctx context.Context, in *autoscaler.Pricing
 
 // GPULabel：返回添加到具有 GPU 资源的节点的标签。
 // GPULabel returns the label added to nodes with GPU resource.
-func (a *Autoscaler) GPULabel(ctx context.Context, in *autoscaler.GPULabelRequest, opts ...grpc.CallOption) (*autoscaler.GPULabelResponse, error) {
+func (a *Autoscaler) GPULabel(ctx context.Context, in *autoscaler.GPULabelRequest) (*autoscaler.GPULabelResponse, error) {
 	a.log.Infof("GPULabel got gRPC request: %T %s", in, in)
 	cluster, err := a.clusterUc.GetCurrentCluster(ctx)
 	if err != nil {
@@ -168,7 +175,7 @@ func (a *Autoscaler) GPULabel(ctx context.Context, in *autoscaler.GPULabelReques
 
 // GetAvailableGPUTypes：返回云提供商支持的所有 GPU 类型。
 // GetAvailableGPUTypes return all available GPU types cloud provider supports.
-func (a *Autoscaler) GetAvailableGPUTypes(ctx context.Context, in *autoscaler.GetAvailableGPUTypesRequest, opts ...grpc.CallOption) (*autoscaler.GetAvailableGPUTypesResponse, error) {
+func (a *Autoscaler) GetAvailableGPUTypes(ctx context.Context, in *autoscaler.GetAvailableGPUTypesRequest) (*autoscaler.GetAvailableGPUTypesResponse, error) {
 	a.log.Infof("GetAvailableGPUTypes got gRPC request: %T %s", in, in)
 	cluster, err := a.clusterUc.GetCurrentCluster(ctx)
 	if err != nil {
@@ -192,7 +199,7 @@ func (a *Autoscaler) GetAvailableGPUTypes(ctx context.Context, in *autoscaler.Ge
 
 // Cleanup：在云提供商销毁前清理打开的资源，例如协程等。
 // Cleanup cleans up open resources before the cloud provider is destroyed, i.e. go routines etc.
-func (a *Autoscaler) Cleanup(ctx context.Context, in *autoscaler.CleanupRequest, opts ...grpc.CallOption) (*autoscaler.CleanupResponse, error) {
+func (a *Autoscaler) Cleanup(ctx context.Context, in *autoscaler.CleanupRequest) (*autoscaler.CleanupResponse, error) {
 	a.log.Infof("Cleanup got gRPC request: %T %s", in, in)
 	err := a.clusterUc.Cleanup(ctx)
 	if err != nil {
@@ -203,7 +210,7 @@ func (a *Autoscaler) Cleanup(ctx context.Context, in *autoscaler.CleanupRequest,
 
 // Refresh：在每个主循环前调用，用于动态更新云提供商状态。
 // Refresh is called before every main loop and can be used to dynamically update cloud provider state.
-func (a *Autoscaler) Refresh(ctx context.Context, in *autoscaler.RefreshRequest, opts ...grpc.CallOption) (*autoscaler.RefreshResponse, error) {
+func (a *Autoscaler) Refresh(ctx context.Context, in *autoscaler.RefreshRequest) (*autoscaler.RefreshResponse, error) {
 	a.log.Infof("Refresh got gRPC request: %T %s", in, in)
 	err := a.clusterUc.Refresh(ctx)
 	if err != nil {
@@ -217,7 +224,7 @@ func (a *Autoscaler) Refresh(ctx context.Context, in *autoscaler.RefreshRequest,
 // that the number of nodes in Kubernetes is different at the moment but should be equal
 // to the size of a node group once everything stabilizes (new nodes finish startup and
 // registration or removed nodes are deleted completely).
-func (a *Autoscaler) NodeGroupTargetSize(ctx context.Context, in *autoscaler.NodeGroupTargetSizeRequest, opts ...grpc.CallOption) (*autoscaler.NodeGroupTargetSizeResponse, error) {
+func (a *Autoscaler) NodeGroupTargetSize(ctx context.Context, in *autoscaler.NodeGroupTargetSizeRequest) (*autoscaler.NodeGroupTargetSizeResponse, error) {
 	a.log.Infof("NodeGroupTargetSize got gRPC request: %T %s", in, in)
 	nodeGroupId := in.GetId()
 	cluster, err := a.clusterUc.GetCurrentCluster(ctx)
@@ -235,7 +242,7 @@ func (a *Autoscaler) NodeGroupTargetSize(ctx context.Context, in *autoscaler.Nod
 // NodeGroupIncreaseSize increases the size of the node group. To delete a node you need
 // to explicitly name it and use NodeGroupDeleteNodes. This function should wait until
 // node group size is updated.
-func (a *Autoscaler) NodeGroupIncreaseSize(ctx context.Context, in *autoscaler.NodeGroupIncreaseSizeRequest, opts ...grpc.CallOption) (*autoscaler.NodeGroupIncreaseSizeResponse, error) {
+func (a *Autoscaler) NodeGroupIncreaseSize(ctx context.Context, in *autoscaler.NodeGroupIncreaseSizeRequest) (*autoscaler.NodeGroupIncreaseSizeResponse, error) {
 	a.log.Infof("NodeGroupIncreaseSize got gRPC request: %T %s", in, in)
 	nodeGroupId := in.GetId()
 	delta := in.GetDelta()
@@ -258,7 +265,7 @@ func (a *Autoscaler) NodeGroupIncreaseSize(ctx context.Context, in *autoscaler.N
 // NodeGroupDeleteNodes deletes nodes from this node group (and also decreasing the size
 // of the node group with that). Error is returned either on failure or if the given node
 // doesn't belong to this node group. This function should wait until node group size is updated.
-func (a *Autoscaler) NodeGroupDeleteNodes(ctx context.Context, in *autoscaler.NodeGroupDeleteNodesRequest, opts ...grpc.CallOption) (*autoscaler.NodeGroupDeleteNodesResponse, error) {
+func (a *Autoscaler) NodeGroupDeleteNodes(ctx context.Context, in *autoscaler.NodeGroupDeleteNodesRequest) (*autoscaler.NodeGroupDeleteNodesResponse, error) {
 	a.log.Infof("NodeGroupDeleteNodes got gRPC request: %T %s", in, in)
 	nodeGroupId := in.GetId()
 	cluster, err := a.clusterUc.GetCurrentCluster(ctx)
@@ -290,7 +297,7 @@ func (a *Autoscaler) NodeGroupDeleteNodes(ctx context.Context, in *autoscaler.No
 // for new nodes that have not been yet fulfilled. Delta should be negative. It is assumed
 // that cloud provider will not delete the existing nodes if the size when there is an option
 // to just decrease the target.
-func (a *Autoscaler) NodeGroupDecreaseTargetSize(ctx context.Context, in *autoscaler.NodeGroupDecreaseTargetSizeRequest, opts ...grpc.CallOption) (*autoscaler.NodeGroupDecreaseTargetSizeResponse, error) {
+func (a *Autoscaler) NodeGroupDecreaseTargetSize(ctx context.Context, in *autoscaler.NodeGroupDecreaseTargetSizeRequest) (*autoscaler.NodeGroupDecreaseTargetSizeResponse, error) {
 	a.log.Infof("NodeGroupDecreaseTargetSize got gRPC request: %T %s", in, in)
 	nodeGroupId := in.GetId()
 	delta := in.GetDelta()
@@ -319,7 +326,7 @@ func (a *Autoscaler) NodeGroupDecreaseTargetSize(ctx context.Context, in *autosc
 
 // NodeGroupNodes：返回属于该节点组的所有节点列表。
 // NodeGroupNodes returns a list of all nodes that belong to this node group.
-func (a *Autoscaler) NodeGroupNodes(ctx context.Context, in *autoscaler.NodeGroupNodesRequest, opts ...grpc.CallOption) (*autoscaler.NodeGroupNodesResponse, error) {
+func (a *Autoscaler) NodeGroupNodes(ctx context.Context, in *autoscaler.NodeGroupNodesRequest) (*autoscaler.NodeGroupNodesResponse, error) {
 	a.log.Infof("NodeGroupNodes got gRPC request: %T %s", in, in)
 	nodeGroupId := in.GetId()
 	cluster, err := a.clusterUc.GetCurrentCluster(ctx)
@@ -370,7 +377,7 @@ func (a *Autoscaler) NodeGroupNodes(ctx context.Context, in *autoscaler.NodeGrou
 // with all of the labels, capacity and allocatable information. This will be used in
 // scale-up simulations to predict what would a new node look like if a node group was expanded.
 // Implementation optional: if unimplemented return error code 12 (for `Unimplemented`)
-func (a *Autoscaler) NodeGroupTemplateNodeInfo(ctx context.Context, in *autoscaler.NodeGroupTemplateNodeInfoRequest, opts ...grpc.CallOption) (*autoscaler.NodeGroupTemplateNodeInfoResponse, error) {
+func (a *Autoscaler) NodeGroupTemplateNodeInfo(ctx context.Context, in *autoscaler.NodeGroupTemplateNodeInfoRequest) (*autoscaler.NodeGroupTemplateNodeInfoResponse, error) {
 	a.log.Infof("NodeGroupTemplateNodeInfo got gRPC request: %T %s", in, in)
 	nodeGroupID := in.GetId()
 	cluster, err := a.clusterUc.GetCurrentCluster(ctx)
@@ -392,7 +399,7 @@ func (a *Autoscaler) NodeGroupTemplateNodeInfo(ctx context.Context, in *autoscal
 // GetOptions returns NodeGroupAutoscalingOptions that should be used for this particular
 // NodeGroup.
 // Implementation optional: if unimplemented return error code 12 (for `Unimplemented`)
-func (a *Autoscaler) NodeGroupGetOptions(ctx context.Context, in *autoscaler.NodeGroupAutoscalingOptionsRequest, opts ...grpc.CallOption) (*autoscaler.NodeGroupAutoscalingOptionsResponse, error) {
+func (a *Autoscaler) NodeGroupGetOptions(ctx context.Context, in *autoscaler.NodeGroupAutoscalingOptionsRequest) (*autoscaler.NodeGroupAutoscalingOptionsResponse, error) {
 	a.log.Infof("NodeGroupGetOptions got gRPC request: %T %s", in, in)
 	defaultopts := in.GetDefaults()
 	// todo

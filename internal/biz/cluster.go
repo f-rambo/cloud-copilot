@@ -24,6 +24,10 @@ const (
 
 type ClusterStatus uint8
 
+func (s ClusterStatus) Uint8() uint8 {
+	return uint8(s)
+}
+
 const (
 	ClusterStatusUnspecified ClusterStatus = 0
 	ClusterStatusRunning     ClusterStatus = 1
@@ -110,6 +114,10 @@ const (
 	NodeRoleEdge   NodeRole = "edge"
 )
 
+func (n NodeRole) String() string {
+	return string(n)
+}
+
 type NodeStatus uint8
 
 const (
@@ -122,6 +130,10 @@ const (
 	// NodeStatusDeleting means instance is being deleted.
 	NodeStatusDeleting NodeStatus = 3
 )
+
+func (s NodeStatus) Uint8() uint8 {
+	return uint8(s)
+}
 
 var (
 	NodeStatusName = map[uint8]string{
@@ -141,7 +153,7 @@ var (
 type Node struct {
 	ID          int64      `json:"id" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
 	Name        string     `json:"name" gorm:"column:name; default:''; NOT NULL"`
-	Labels      string     `json:"labels" gorm:"column:labels; default:''; NOT NULL"`
+	Labels      string     `json:"labels" gorm:"column:labels; default:''; NOT NULL"` // map[string]string json
 	Kernel      string     `json:"kernel" gorm:"column:kernel; default:''; NOT NULL"`
 	Container   string     `json:"container" gorm:"column:container; default:''; NOT NULL"`
 	Kubelet     string     `json:"kubelet" gorm:"column:kubelet; default:''; NOT NULL"`
@@ -224,6 +236,8 @@ type ClusterConstruct interface {
 	UnInstallCluster(context.Context, *Cluster) error
 	AddNodes(context.Context, *Cluster, []*Node) error
 	RemoveNodes(context.Context, *Cluster, []*Node) error
+	GenerateInitialCluster(context.Context, *Cluster) error
+	GenerateNodeLables(context.Context, *Cluster, *NodeGroup) (lables string, err error)
 }
 
 // 运行时集群
@@ -233,20 +247,54 @@ type ClusterRuntime interface {
 }
 
 type ClusterUsecase struct {
-	repo             ClusterRepo
+	ctx              context.Context
 	log              *log.Helper
 	infrastructure   Infrastructure
 	clusterConstruct ClusterConstruct
 	clusterRuntime   ClusterRuntime
+	repo             ClusterRepo
+	resources        chan *Cluster
 }
 
-func NewClusterUseCase(repo ClusterRepo, infrastructure Infrastructure, clusterConstruct ClusterConstruct, clusterRuntime ClusterRuntime, logger log.Logger) *ClusterUsecase {
-	return &ClusterUsecase{
+func NewClusterUseCase(ctx context.Context, repo ClusterRepo, infrastructure Infrastructure, clusterConstruct ClusterConstruct, clusterRuntime ClusterRuntime, logger log.Logger) *ClusterUsecase {
+	c := &ClusterUsecase{
+		ctx:              ctx,
 		repo:             repo,
 		infrastructure:   infrastructure,
 		clusterConstruct: clusterConstruct,
 		clusterRuntime:   clusterRuntime,
 		log:              log.NewHelper(logger),
+		resources:        make(chan *Cluster, 1024),
+	}
+	c.consume()
+	return c
+}
+
+func (uc *ClusterUsecase) push(cluster *Cluster) error {
+	if uc.resources == nil {
+		return errors.New("resources channel is nil")
+	}
+	uc.resources <- cluster
+	return nil
+}
+
+func (uc *ClusterUsecase) consume() {
+	for {
+		select {
+		case cluster, ok := <-uc.resources:
+			if !ok {
+				return
+			}
+			err := uc.Reconcile(uc.ctx, cluster)
+			if err != nil {
+				uc.log.Error(err)
+				return
+			}
+		case <-uc.ctx.Done():
+			return
+		default:
+			return
+		}
 	}
 }
 
@@ -303,60 +351,105 @@ func (uc *ClusterUsecase) Save(ctx context.Context, cluster *Cluster) error {
 
 // 获取当前集群最新信息
 func (uc *ClusterUsecase) GetCurrentCluster(ctx context.Context) (*Cluster, error) {
-	return uc.clusterRuntime.CurrentCluster(ctx)
-}
-
-func (uc *ClusterUsecase) Cleanup(ctx context.Context) error {
-	return nil
-}
-
-func (uc *ClusterUsecase) Refresh(ctx context.Context) error {
-	return nil
+	currentCluster, err := uc.clusterRuntime.CurrentCluster(ctx)
+	if err != nil {
+		return nil, err
+	}
+	cluster, err := uc.repo.GetByName(ctx, currentCluster.Name)
+	if err != nil {
+		return nil, err
+	}
+	return cluster, nil
 }
 
 // 根据nodegroup增加节点
 func (uc *ClusterUsecase) NodeGroupIncreaseSize(ctx context.Context, cluster *Cluster, nodeGroup *NodeGroup, size int32) error {
-	uc.apply(ctx, cluster) // todo
-	return nil
+	for i := 0; i < int(size); i++ {
+		node := &Node{
+			Name:        fmt.Sprintf("%s-%s", cluster.Name, utils.GetRandomString()),
+			Role:        NodeRoleWorker.String(),
+			Status:      NodeStatusCreating.Uint8(),
+			ClusterID:   cluster.ID,
+			NodeGroupID: nodeGroup.ID,
+		}
+		cluster.Nodes = append(cluster.Nodes, node)
+	}
+	return uc.Apply(ctx, cluster)
 }
 
 // 删除节点
 func (uc *ClusterUsecase) DeleteNodes(ctx context.Context, cluster *Cluster, nodes []*Node) error {
-	// apply
-	return nil
+	for _, node := range nodes {
+		for i, n := range cluster.Nodes {
+			if n.ID == node.ID {
+				cluster.Nodes = append(cluster.Nodes[:i], cluster.Nodes[i+1:]...)
+				break
+			}
+		}
+	}
+	return uc.Apply(ctx, cluster)
 }
 
 // 预测一个节点配置，也就是根据当前节点组目前还可以配置的节点
 func (uc *ClusterUsecase) NodeGroupTemplateNodeInfo(ctx context.Context, cluster *Cluster, nodeGroup *NodeGroup) (*Node, error) {
-
-	return nil, nil
+	nodeLables, err := uc.clusterConstruct.GenerateNodeLables(ctx, cluster, nodeGroup)
+	if err != nil {
+		return nil, err
+	}
+	return &Node{
+		Name:        fmt.Sprintf("%s-%s", cluster.Name, utils.GetRandomString()),
+		Role:        NodeRoleWorker.String(),
+		Status:      NodeStatusCreating.Uint8(),
+		ClusterID:   cluster.ID,
+		NodeGroupID: nodeGroup.ID,
+		Labels:      nodeLables,
+	}, nil
 }
 
-// 集群控制
-// 负责生成适合的集群配置，节点数量，节点配置等
-// 本地集群和云服务集群
-// 1. 首次创建集群
-// 2. 通过监控数据/app数据，扩容和缩容集群
-// 3. 保存一个完整的集群配置，包括集群信息，节点信息，服务信息等
-// 4. 策略
-func (uc *ClusterUsecase) apply(_ context.Context, cluster *Cluster) error {
-	if cluster.GetType() == ClusterTypeLocal {
+// 在云提供商销毁前清理打开的资源，例如协程等
+func (uc *ClusterUsecase) Cleanup(ctx context.Context) error {
+	close(uc.resources)
+	return nil
+}
+
+// 在每个主循环前调用，用于动态更新云提供商状态
+func (uc *ClusterUsecase) Refresh(ctx context.Context) error {
+	// 获取当前集群状态更新状态
+	currentCluster, err := uc.clusterRuntime.CurrentCluster(ctx)
+	if err != nil {
+		return err
+	}
+	cluster, err := uc.repo.GetByName(ctx, currentCluster.Name)
+	if err != nil {
+		return err
+	}
+	cluster.Status = currentCluster.Status
+	for _, v := range cluster.Nodes {
+		for _, currentNode := range currentCluster.Nodes {
+			if v.Name == currentNode.Name {
+				v.Status = currentNode.Status
+				break
+			}
+		}
+	}
+	err = uc.Save(ctx, cluster)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (uc *ClusterUsecase) Apply(ctx context.Context, cluster *Cluster) (err error) {
+	if ClusterStatus(cluster.Status) == ClusterStatusUnspecified {
 		return nil
 	}
-	if len(cluster.Nodes) == 0 {
-		// 第一次创建集群
-		cluster.Nodes = append(cluster.Nodes, &Node{
-			Name: fmt.Sprintf("%s-%s", cluster.Name, utils.GetRandomString()),
-		})
+	if ClusterStatus(cluster.Status) == ClusterStatucCreating {
+		err = uc.clusterConstruct.GenerateInitialCluster(ctx, cluster)
+		if err != nil {
+			return err
+		}
 	}
-	// auto scale
-	// 1. 监控数据/app数据，判断集群是否需要扩容或缩容
-	// 2. 扩容：根据监控数据/app数据，增加节点数量
-	// 3. 缩容：根据监控数据/app数据，减少节点数量
-	// 4. 扩容和缩容：通过调用云服务接口，增加或减少节点数量
-	// 5. 保存一个完整的集群配置，包括集群信息，节点信息，服务信息等
-	// 6. 策略
-	return nil
+	return uc.push(cluster)
 }
 
 func (uc *ClusterUsecase) Reconcile(ctx context.Context, cluster *Cluster) (err error) {
