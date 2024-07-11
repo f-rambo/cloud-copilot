@@ -10,7 +10,7 @@ import (
 	"github.com/google/wire"
 )
 
-var PkgSet = wire.NewSet(
+var ProviderSet = wire.NewSet(
 	ansible.NewClusterConstruct,
 	argoworkflows.NewWorkflowRepo,
 	helm.NewAppConstructRepo,

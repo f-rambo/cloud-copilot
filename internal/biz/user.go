@@ -236,7 +236,7 @@ func (u *UserUseCase) getAdmin() *User {
 }
 
 func (u *UserUseCase) DecodeToken(ctx context.Context, t string) (*User, error) {
-	token, err := jwtv5.Parse(t, func(token *jwtv5.Token) (interface{}, error) {
+	token, err := jwtv5.Parse(t, func(token *jwtv5.Token) (any, error) {
 		if _, ok := token.Method.(*jwtv5.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}

@@ -223,7 +223,12 @@ type AppUsecase struct {
 	appConstruct AppConstruct
 }
 
-func NewAppUsecase(repo AppRepo, logger log.Logger, c *conf.Bootstrap, clusterRepo ClusterRepo, projectRepo ProjectRepo, sailorRepo SailorRepo, appRuntime AppRuntime, appConstruct AppConstruct) *AppUsecase {
+func NewAppUsecase(repo AppRepo,
+	clusterRepo ClusterRepo,
+	projectRepo ProjectRepo,
+	sailorRepo SailorRepo,
+	appRuntime AppRuntime,
+	appConstruct AppConstruct, logger log.Logger, c *conf.Bootstrap) *AppUsecase {
 	return &AppUsecase{repo, log.NewHelper(logger), c, clusterRepo, projectRepo, sailorRepo, appRuntime, appConstruct}
 }
 

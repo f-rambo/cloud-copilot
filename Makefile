@@ -1,3 +1,16 @@
+# 设置你的包路径和目标目录
+PACKAGE_PATH := internal/biz
+DESTINATION_DIR := mocks
+
+# 获取所有的 .go 文件
+GO_FILES := $(wildcard $(PACKAGE_PATH)/*.go)
+GO_FILES := $(filter-out $(wildcard $(PACKAGE_PATH)/*test*.go), $(GO_FILES))
+GO_FILES := $(filter-out $(wildcard $(PACKAGE_PATH)/*biz*.go), $(GO_FILES))
+
+# 为每个 .go 文件生成对应的 mock 文件
+MOCK_FILES := $(patsubst $(PACKAGE_PATH)/%.go,$(DESTINATION_DIR)/mock_%.go,$(GO_FILES))
+
+# 设置 GOHOSTOS 和 GOPATH
 GOHOSTOS:=$(shell go env GOHOSTOS)
 GOPATH:=$(shell go env GOPATH)
 VERSION=0.0.1
@@ -25,6 +38,7 @@ init:
 	go install github.com/go-kratos/kratos/cmd/protoc-gen-go-http/v2@latest
 	go install github.com/google/gnostic/cmd/protoc-gen-openapi@latest
 	go install github.com/google/wire/cmd/wire@latest
+	go install github.com/golang/mock/mockgen@v1.6.0
 
 .PHONY: api
 # generate api proto
@@ -55,12 +69,32 @@ docker-push:
 .PHONY: run
 # run
 run:
-	go run ./cmd/server
+	go run ./cmd/server -conf ./configs/
 
 .PHONY: generate
 # generate
 generate:
 	go mod tidy
+	@cd cmd/server && wire && cd -
+# 生成 mock
+.PHONY: mock
+mock: $(MOCK_FILES)
+
+$(DESTINATION_DIR)/mock_%.go: $(PACKAGE_PATH)/%.go
+	@mkdir -p $(DESTINATION_DIR)
+	mockgen -source=$< -destination=$@ -package=mocks -write_package_comment
+
+.PHONY: test
+test:
+	go test -v ./mocks/...
+
+.PHONY: testserver
+testserver:
+	go test -v -count=1 ./cmd/test/...
+
+.PHONY: cleantest
+cleantest:
+	go clean -testcache
 
 .PHONY: all
 # generate all

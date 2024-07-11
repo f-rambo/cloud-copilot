@@ -48,7 +48,7 @@ func wireApp(bootstrap *conf.Bootstrap, logger log.Logger) (*kratos.App, func(),
 	sailorRepo := sailor.NewSailorClient(bootstrap, logger)
 	appRuntime := kubernetes.NewAppDeployedResource(bootstrap, logger)
 	appConstruct := helm.NewAppConstructRepo(bootstrap, logger)
-	appUsecase := biz.NewAppUsecase(appRepo, logger, bootstrap, clusterRepo, projectRepo, sailorRepo, appRuntime, appConstruct)
+	appUsecase := biz.NewAppUsecase(appRepo, clusterRepo, projectRepo, sailorRepo, appRuntime, appConstruct, logger, bootstrap)
 	clusterInterface := interfaces.NewClusterInterface(clusterUsecase, projectUsecase, appUsecase, bootstrap, logger)
 	userRepo := data.NewUserRepo(dataData, logger)
 	userUseCase := biz.NewUseUser(userRepo, logger, bootstrap)

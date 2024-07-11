@@ -38,6 +38,8 @@ require (
 	k8s.io/client-go v0.29.0
 )
 
+require github.com/golang/mock v1.6.0
+
 require (
 	dario.cat/mergo v1.0.0 // indirect
 	github.com/AdaLogics/go-fuzz-headers v0.0.0-20230811130428-ced1acdcaa24 // indirect
