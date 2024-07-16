@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: testserver-deployment
+  labels:
+    app: testserver
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: testserver
+  template:
+    metadata:
+      labels:
+        app: testserver
+    spec:
+      containers:
+      - name: testserver
+        image: frambos/oceantestserver:0.0.1
+        resources:
+          limits:
+            cpu: "2"
+            memory: "2048Mi"
+          requests:
+            cpu: "2000m"
+            memory: "2048Mi"
+        ports:
+        - containerPort: 8000
+        - containerPort: 9000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: testserver-multiport-service
+  labels:
+    app: testserver
+spec:
+  type: ClusterIP
+  ports:
+  - name: http-8000
+    port: 8000
+    targetPort: 8000
+    protocol: TCP
+  - name: grpc-9000
+    port: 9000
+    targetPort: 9000
+    protocol: TCP
+  selector:
+    app: testserver

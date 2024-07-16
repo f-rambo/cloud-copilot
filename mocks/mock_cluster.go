@@ -333,12 +333,11 @@ func (m *MockClusterRuntime) EXPECT() *MockClusterRuntimeMockRecorder {
 }
 
 // ConnectCluster mocks base method.
-func (m *MockClusterRuntime) ConnectCluster(arg0 context.Context, arg1 *biz.Cluster) (*biz.Cluster, error) {
+func (m *MockClusterRuntime) ConnectCluster(arg0 context.Context, arg1 *biz.Cluster) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ConnectCluster", arg0, arg1)
-	ret0, _ := ret[0].(*biz.Cluster)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	ret0, _ := ret[0].(error)
+	return ret0
 }
 
 // ConnectCluster indicates an expected call of ConnectCluster.

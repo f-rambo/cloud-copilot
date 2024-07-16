@@ -25,7 +25,7 @@ func (cr *ClusterRuntime) CurrentCluster(ctx context.Context) (*biz.Cluster, err
 	return nil, nil
 }
 
-func (cr *ClusterRuntime) ConnectCluster(ctx context.Context, cluster *biz.Cluster) (*biz.Cluster, error) {
+func (cr *ClusterRuntime) ConnectCluster(ctx context.Context, cluster *biz.Cluster) error {
 	// TODO: 实现集群连接
-	return nil, nil
+	return nil
 }

@@ -243,7 +243,7 @@ type ClusterConstruct interface {
 // 运行时集群
 type ClusterRuntime interface {
 	CurrentCluster(context.Context) (*Cluster, error)
-	ConnectCluster(context.Context, *Cluster) (*Cluster, error)
+	ConnectCluster(context.Context, *Cluster) error
 }
 
 type ClusterUsecase struct {
@@ -270,6 +270,7 @@ func NewClusterUseCase(ctx context.Context, repo ClusterRepo, infrastructure Inf
 	return c
 }
 
+// todo 需要替换成etcd的watch机制
 func (uc *ClusterUsecase) push(cluster *Cluster) error {
 	if uc.resources == nil {
 		return errors.New("resources channel is nil")
@@ -351,6 +352,7 @@ func (uc *ClusterUsecase) Save(ctx context.Context, cluster *Cluster) error {
 
 // 获取当前集群最新信息
 func (uc *ClusterUsecase) GetCurrentCluster(ctx context.Context) (*Cluster, error) {
+	uc.log.Info("get current cluster")
 	currentCluster, err := uc.clusterRuntime.CurrentCluster(ctx)
 	if err != nil {
 		return nil, err
@@ -364,6 +366,7 @@ func (uc *ClusterUsecase) GetCurrentCluster(ctx context.Context) (*Cluster, erro
 
 // 根据nodegroup增加节点
 func (uc *ClusterUsecase) NodeGroupIncreaseSize(ctx context.Context, cluster *Cluster, nodeGroup *NodeGroup, size int32) error {
+	uc.log.Info("node group increase size...")
 	for i := 0; i < int(size); i++ {
 		node := &Node{
 			Name:        fmt.Sprintf("%s-%s", cluster.Name, utils.GetRandomString()),
@@ -379,6 +382,7 @@ func (uc *ClusterUsecase) NodeGroupIncreaseSize(ctx context.Context, cluster *Cl
 
 // 删除节点
 func (uc *ClusterUsecase) DeleteNodes(ctx context.Context, cluster *Cluster, nodes []*Node) error {
+	uc.log.Info("delete nodes...")
 	for _, node := range nodes {
 		for i, n := range cluster.Nodes {
 			if n.ID == node.ID {
@@ -408,12 +412,14 @@ func (uc *ClusterUsecase) NodeGroupTemplateNodeInfo(ctx context.Context, cluster
 
 // 在云提供商销毁前清理打开的资源，例如协程等
 func (uc *ClusterUsecase) Cleanup(ctx context.Context) error {
+	uc.log.Info("clean up resources...")
 	close(uc.resources)
 	return nil
 }
 
 // 在每个主循环前调用，用于动态更新云提供商状态
 func (uc *ClusterUsecase) Refresh(ctx context.Context) error {
+	uc.log.Info("refresh resources...")
 	// 获取当前集群状态更新状态
 	currentCluster, err := uc.clusterRuntime.CurrentCluster(ctx)
 	if err != nil {
@@ -469,7 +475,7 @@ func (uc *ClusterUsecase) Reconcile(ctx context.Context, cluster *Cluster) (err 
 		return nil
 	}
 	cluster.Logs = "start update cluster..."
-	currentCluster, err := uc.clusterRuntime.ConnectCluster(ctx, cluster)
+	err = uc.clusterRuntime.ConnectCluster(ctx, cluster)
 	if errors.Is(err, ErrClusterNotFound) {
 		err = uc.infrastructure.SaveServers(ctx, cluster)
 		if err != nil {
@@ -489,6 +495,10 @@ func (uc *ClusterUsecase) Reconcile(ctx context.Context, cluster *Cluster) (err 
 		return err
 	}
 	err = uc.infrastructure.SaveServers(ctx, cluster)
+	if err != nil {
+		return err
+	}
+	currentCluster, err := uc.clusterRuntime.CurrentCluster(ctx)
 	if err != nil {
 		return err
 	}

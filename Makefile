@@ -15,6 +15,8 @@ GOHOSTOS:=$(shell go env GOHOSTOS)
 GOPATH:=$(shell go env GOPATH)
 VERSION=0.0.1
 IMG=frambos/ocean:$(VERSION)
+TESTVERSION=0.0.1
+TESTIMG=frambos/oceantestserver:$(TESTVERSION)
 
 ifeq ($(GOHOSTOS), windows)
 	#the `find.exe` is different from `find` in bash/shell.
@@ -90,11 +92,23 @@ test:
 
 .PHONY: testserver
 testserver:
-	go test -v -count=1 ./cmd/test/...
+	go test -v -count=1 -timeout=3h ./cmd/test/...
 
 .PHONY: cleantest
 cleantest:
 	go clean -testcache
+
+.PHONY: buildtest
+buildtest:
+	docker build -t $(TESTIMG) -f testdockerfile .
+
+.PHONY: runtest
+runtest:
+	docker run -it -d --rm -p 8000:8000 -p 9000:9000 $(TESTIMG)
+
+.PHONY: pushtest
+pushtest:
+	docker push $(TESTIMG)
 
 .PHONY: all
 # generate all

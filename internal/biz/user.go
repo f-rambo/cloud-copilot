@@ -43,10 +43,12 @@ const (
 	AdminName = "admin"
 )
 
+type UserKey string
+
 const (
-	TokenKey     = "token"
-	SignType     = "sign_type"
-	UserEmailKey = "user_email"
+	TokenKey     UserKey = "token"
+	SignType     UserKey = "sign_type"
+	UserEmailKey UserKey = "user_email"
 )
 
 type UserRepo interface {
