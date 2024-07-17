@@ -2,7 +2,6 @@ package interfaces
 
 import (
 	"context"
-	"time"
 
 	"github.com/f-rambo/ocean/api/cluster/v1alpha1"
 	"github.com/f-rambo/ocean/internal/biz"
@@ -33,21 +32,17 @@ func NewClusterInterface(clusterUc *biz.ClusterUsecase, projectUc *biz.ProjectUs
 
 func (uc *ClusterInterface) StartReconcile(ctx context.Context) error {
 	for {
-		cluser, err := uc.clusterUc.GetReconcile(ctx)
+		cluser, err := uc.clusterUc.Watch(ctx)
 		if err != nil {
-			uc.log.Errorf("get reconcile cluster error: %v", err)
-			time.Sleep(5 * time.Second)
-			continue
+			return err
 		}
 		if cluser == nil {
-			time.Sleep(5 * time.Second)
 			continue
 		}
 		err = uc.clusterUc.Reconcile(ctx, cluser)
 		if err != nil {
-			uc.log.Errorf("reconcile cluster error: %v", err)
+			return err
 		}
-
 	}
 }
 

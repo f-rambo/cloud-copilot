@@ -94,6 +94,48 @@ func (d *Data) Get(ctx context.Context, key string) (string, error) {
 	return "", nil
 }
 
+func (d *Data) Watch(ctx context.Context, key string) (string, error) {
+	if d.etcd == nil {
+		watchChan, err := d.kvStore.Watch(ctx, key)
+		if err != nil {
+			return "", err
+		}
+		lenth := len(watchChan)
+		var i int = 0
+		for {
+			i++
+			select {
+			case val, exists := <-watchChan:
+				if !exists {
+					return "", nil
+				}
+				if i >= lenth {
+					return val, nil
+				}
+			case <-ctx.Done():
+				return "", ctx.Err()
+			}
+		}
+	}
+	watchChan := d.etcd.Watch(ctx, key)
+	if watchChan == nil {
+		return "", errors.New("watch chan is nil")
+	}
+	for {
+		select {
+		case wresp, ok := <-watchChan:
+			if !ok {
+				return "", nil
+			}
+			for _, ev := range wresp.Events {
+				return string(ev.Kv.Value), nil
+			}
+		case <-ctx.Done():
+			return "", ctx.Err()
+		}
+	}
+}
+
 func (d *Data) Delete(ctx context.Context, key string) error {
 	if d.etcd == nil {
 		return d.kvStore.Delete(ctx, key)

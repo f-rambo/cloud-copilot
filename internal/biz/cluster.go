@@ -220,8 +220,7 @@ type ClusterRepo interface {
 	List(context.Context, *Cluster) ([]*Cluster, error)
 	Delete(context.Context, int64) error
 	Put(ctx context.Context, cluster *Cluster) error
-	GetByQueue(ctx context.Context) (*Cluster, error)
-	DeleteByQueue(ctx context.Context) error
+	Watch(ctx context.Context) (*Cluster, error)
 	ReadClusterLog(cluster *Cluster) error
 	WriteClusterLog(cluster *Cluster) error
 }
@@ -433,12 +432,8 @@ func (uc *ClusterUsecase) Apply(ctx context.Context, cluster *Cluster) (err erro
 	return nil
 }
 
-func (uc *ClusterUsecase) GetReconcile(ctx context.Context) (*Cluster, error) {
-	return uc.repo.GetByQueue(ctx)
-}
-
-func (uc *ClusterUsecase) DeleteReconcile(ctx context.Context) error {
-	return uc.repo.DeleteByQueue(ctx)
+func (uc *ClusterUsecase) Watch(ctx context.Context) (*Cluster, error) {
+	return uc.repo.Watch(ctx)
 }
 
 func (uc *ClusterUsecase) Reconcile(ctx context.Context, cluster *Cluster) (err error) {

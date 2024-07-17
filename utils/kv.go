@@ -39,18 +39,40 @@ func (kv *KVStore) Put(ctx context.Context, key, val string) error {
 }
 
 func (kv *KVStore) Get(ctx context.Context, key string) (string, error) {
-	if ch, exists := kv.chans[key]; exists {
+	kv.mu.RLock()
+	defer kv.mu.RUnlock()
+	if _, exists := kv.chans[key]; !exists {
+		kv.chans[key] = make(chan string, 1024)
+	}
+	ch := kv.chans[key]
+	lenth := len(ch)
+	if lenth == 0 {
+		return "", nil
+	}
+	var i int = 0
+	for {
+		i++
 		select {
-		case val, exists := <-ch:
+		case val, exists := <-kv.chans[key]:
 			if !exists {
 				return "", errors.New("chan is closed")
 			}
-			return val, nil
+			if i >= lenth {
+				return val, nil
+			}
 		case <-ctx.Done():
 			return "", ctx.Err()
 		}
 	}
-	return "", nil
+}
+
+func (kv *KVStore) Watch(ctx context.Context, key string) (<-chan string, error) {
+	kv.mu.RLock()
+	defer kv.mu.RUnlock()
+	if _, exists := kv.chans[key]; !exists {
+		kv.chans[key] = make(chan string, 1024)
+	}
+	return kv.chans[key], nil
 }
 
 func (kv *KVStore) Delete(ctx context.Context, key string) error {
