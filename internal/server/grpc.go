@@ -48,6 +48,6 @@ func NewGRPCServer(c *conf.Bootstrap,
 	servicev1alpha1.RegisterServiceInterfaceServer(srv, services)
 	userv1alpha1.RegisterUserInterfaceServer(srv, user)
 	projectv1alpha1.RegisterProjectServiceServer(srv, project)
-	autoscalerpb.RegisterAutoscalerServiceServer(srv, autoscaler)
+	autoscalerpb.RegisterCloudProviderServer(srv, autoscaler)
 	return srv
 }

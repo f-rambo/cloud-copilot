@@ -19,7 +19,7 @@
 // - protoc             v4.25.1
 // source: api/autoscaler/autoscaler.proto
 
-package autoscaler
+package protos
 
 import (
 	context "context"
@@ -34,27 +34,27 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	AutoscalerService_NodeGroups_FullMethodName                  = "/autoscaler.AutoscalerService/NodeGroups"
-	AutoscalerService_NodeGroupForNode_FullMethodName            = "/autoscaler.AutoscalerService/NodeGroupForNode"
-	AutoscalerService_PricingNodePrice_FullMethodName            = "/autoscaler.AutoscalerService/PricingNodePrice"
-	AutoscalerService_PricingPodPrice_FullMethodName             = "/autoscaler.AutoscalerService/PricingPodPrice"
-	AutoscalerService_GPULabel_FullMethodName                    = "/autoscaler.AutoscalerService/GPULabel"
-	AutoscalerService_GetAvailableGPUTypes_FullMethodName        = "/autoscaler.AutoscalerService/GetAvailableGPUTypes"
-	AutoscalerService_Cleanup_FullMethodName                     = "/autoscaler.AutoscalerService/Cleanup"
-	AutoscalerService_Refresh_FullMethodName                     = "/autoscaler.AutoscalerService/Refresh"
-	AutoscalerService_NodeGroupTargetSize_FullMethodName         = "/autoscaler.AutoscalerService/NodeGroupTargetSize"
-	AutoscalerService_NodeGroupIncreaseSize_FullMethodName       = "/autoscaler.AutoscalerService/NodeGroupIncreaseSize"
-	AutoscalerService_NodeGroupDeleteNodes_FullMethodName        = "/autoscaler.AutoscalerService/NodeGroupDeleteNodes"
-	AutoscalerService_NodeGroupDecreaseTargetSize_FullMethodName = "/autoscaler.AutoscalerService/NodeGroupDecreaseTargetSize"
-	AutoscalerService_NodeGroupNodes_FullMethodName              = "/autoscaler.AutoscalerService/NodeGroupNodes"
-	AutoscalerService_NodeGroupTemplateNodeInfo_FullMethodName   = "/autoscaler.AutoscalerService/NodeGroupTemplateNodeInfo"
-	AutoscalerService_NodeGroupGetOptions_FullMethodName         = "/autoscaler.AutoscalerService/NodeGroupGetOptions"
+	CloudProvider_NodeGroups_FullMethodName                  = "/clusterautoscaler.cloudprovider.v1.externalgrpc.CloudProvider/NodeGroups"
+	CloudProvider_NodeGroupForNode_FullMethodName            = "/clusterautoscaler.cloudprovider.v1.externalgrpc.CloudProvider/NodeGroupForNode"
+	CloudProvider_PricingNodePrice_FullMethodName            = "/clusterautoscaler.cloudprovider.v1.externalgrpc.CloudProvider/PricingNodePrice"
+	CloudProvider_PricingPodPrice_FullMethodName             = "/clusterautoscaler.cloudprovider.v1.externalgrpc.CloudProvider/PricingPodPrice"
+	CloudProvider_GPULabel_FullMethodName                    = "/clusterautoscaler.cloudprovider.v1.externalgrpc.CloudProvider/GPULabel"
+	CloudProvider_GetAvailableGPUTypes_FullMethodName        = "/clusterautoscaler.cloudprovider.v1.externalgrpc.CloudProvider/GetAvailableGPUTypes"
+	CloudProvider_Cleanup_FullMethodName                     = "/clusterautoscaler.cloudprovider.v1.externalgrpc.CloudProvider/Cleanup"
+	CloudProvider_Refresh_FullMethodName                     = "/clusterautoscaler.cloudprovider.v1.externalgrpc.CloudProvider/Refresh"
+	CloudProvider_NodeGroupTargetSize_FullMethodName         = "/clusterautoscaler.cloudprovider.v1.externalgrpc.CloudProvider/NodeGroupTargetSize"
+	CloudProvider_NodeGroupIncreaseSize_FullMethodName       = "/clusterautoscaler.cloudprovider.v1.externalgrpc.CloudProvider/NodeGroupIncreaseSize"
+	CloudProvider_NodeGroupDeleteNodes_FullMethodName        = "/clusterautoscaler.cloudprovider.v1.externalgrpc.CloudProvider/NodeGroupDeleteNodes"
+	CloudProvider_NodeGroupDecreaseTargetSize_FullMethodName = "/clusterautoscaler.cloudprovider.v1.externalgrpc.CloudProvider/NodeGroupDecreaseTargetSize"
+	CloudProvider_NodeGroupNodes_FullMethodName              = "/clusterautoscaler.cloudprovider.v1.externalgrpc.CloudProvider/NodeGroupNodes"
+	CloudProvider_NodeGroupTemplateNodeInfo_FullMethodName   = "/clusterautoscaler.cloudprovider.v1.externalgrpc.CloudProvider/NodeGroupTemplateNodeInfo"
+	CloudProvider_NodeGroupGetOptions_FullMethodName         = "/clusterautoscaler.cloudprovider.v1.externalgrpc.CloudProvider/NodeGroupGetOptions"
 )
 
-// AutoscalerServiceClient is the client API for AutoscalerService service.
+// CloudProviderClient is the client API for CloudProvider service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-type AutoscalerServiceClient interface {
+type CloudProviderClient interface {
 	// NodeGroups returns all node groups configured for this cloud provider.
 	NodeGroups(ctx context.Context, in *NodeGroupsRequest, opts ...grpc.CallOption) (*NodeGroupsResponse, error)
 	// NodeGroupForNode returns the node group for the given node.
@@ -109,153 +109,153 @@ type AutoscalerServiceClient interface {
 	NodeGroupGetOptions(ctx context.Context, in *NodeGroupAutoscalingOptionsRequest, opts ...grpc.CallOption) (*NodeGroupAutoscalingOptionsResponse, error)
 }
 
-type autoscalerServiceClient struct {
+type cloudProviderClient struct {
 	cc grpc.ClientConnInterface
 }
 
-func NewAutoscalerServiceClient(cc grpc.ClientConnInterface) AutoscalerServiceClient {
-	return &autoscalerServiceClient{cc}
+func NewCloudProviderClient(cc grpc.ClientConnInterface) CloudProviderClient {
+	return &cloudProviderClient{cc}
 }
 
-func (c *autoscalerServiceClient) NodeGroups(ctx context.Context, in *NodeGroupsRequest, opts ...grpc.CallOption) (*NodeGroupsResponse, error) {
+func (c *cloudProviderClient) NodeGroups(ctx context.Context, in *NodeGroupsRequest, opts ...grpc.CallOption) (*NodeGroupsResponse, error) {
 	out := new(NodeGroupsResponse)
-	err := c.cc.Invoke(ctx, AutoscalerService_NodeGroups_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, CloudProvider_NodeGroups_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *autoscalerServiceClient) NodeGroupForNode(ctx context.Context, in *NodeGroupForNodeRequest, opts ...grpc.CallOption) (*NodeGroupForNodeResponse, error) {
+func (c *cloudProviderClient) NodeGroupForNode(ctx context.Context, in *NodeGroupForNodeRequest, opts ...grpc.CallOption) (*NodeGroupForNodeResponse, error) {
 	out := new(NodeGroupForNodeResponse)
-	err := c.cc.Invoke(ctx, AutoscalerService_NodeGroupForNode_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, CloudProvider_NodeGroupForNode_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *autoscalerServiceClient) PricingNodePrice(ctx context.Context, in *PricingNodePriceRequest, opts ...grpc.CallOption) (*PricingNodePriceResponse, error) {
+func (c *cloudProviderClient) PricingNodePrice(ctx context.Context, in *PricingNodePriceRequest, opts ...grpc.CallOption) (*PricingNodePriceResponse, error) {
 	out := new(PricingNodePriceResponse)
-	err := c.cc.Invoke(ctx, AutoscalerService_PricingNodePrice_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, CloudProvider_PricingNodePrice_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *autoscalerServiceClient) PricingPodPrice(ctx context.Context, in *PricingPodPriceRequest, opts ...grpc.CallOption) (*PricingPodPriceResponse, error) {
+func (c *cloudProviderClient) PricingPodPrice(ctx context.Context, in *PricingPodPriceRequest, opts ...grpc.CallOption) (*PricingPodPriceResponse, error) {
 	out := new(PricingPodPriceResponse)
-	err := c.cc.Invoke(ctx, AutoscalerService_PricingPodPrice_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, CloudProvider_PricingPodPrice_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *autoscalerServiceClient) GPULabel(ctx context.Context, in *GPULabelRequest, opts ...grpc.CallOption) (*GPULabelResponse, error) {
+func (c *cloudProviderClient) GPULabel(ctx context.Context, in *GPULabelRequest, opts ...grpc.CallOption) (*GPULabelResponse, error) {
 	out := new(GPULabelResponse)
-	err := c.cc.Invoke(ctx, AutoscalerService_GPULabel_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, CloudProvider_GPULabel_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *autoscalerServiceClient) GetAvailableGPUTypes(ctx context.Context, in *GetAvailableGPUTypesRequest, opts ...grpc.CallOption) (*GetAvailableGPUTypesResponse, error) {
+func (c *cloudProviderClient) GetAvailableGPUTypes(ctx context.Context, in *GetAvailableGPUTypesRequest, opts ...grpc.CallOption) (*GetAvailableGPUTypesResponse, error) {
 	out := new(GetAvailableGPUTypesResponse)
-	err := c.cc.Invoke(ctx, AutoscalerService_GetAvailableGPUTypes_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, CloudProvider_GetAvailableGPUTypes_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *autoscalerServiceClient) Cleanup(ctx context.Context, in *CleanupRequest, opts ...grpc.CallOption) (*CleanupResponse, error) {
+func (c *cloudProviderClient) Cleanup(ctx context.Context, in *CleanupRequest, opts ...grpc.CallOption) (*CleanupResponse, error) {
 	out := new(CleanupResponse)
-	err := c.cc.Invoke(ctx, AutoscalerService_Cleanup_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, CloudProvider_Cleanup_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *autoscalerServiceClient) Refresh(ctx context.Context, in *RefreshRequest, opts ...grpc.CallOption) (*RefreshResponse, error) {
+func (c *cloudProviderClient) Refresh(ctx context.Context, in *RefreshRequest, opts ...grpc.CallOption) (*RefreshResponse, error) {
 	out := new(RefreshResponse)
-	err := c.cc.Invoke(ctx, AutoscalerService_Refresh_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, CloudProvider_Refresh_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *autoscalerServiceClient) NodeGroupTargetSize(ctx context.Context, in *NodeGroupTargetSizeRequest, opts ...grpc.CallOption) (*NodeGroupTargetSizeResponse, error) {
+func (c *cloudProviderClient) NodeGroupTargetSize(ctx context.Context, in *NodeGroupTargetSizeRequest, opts ...grpc.CallOption) (*NodeGroupTargetSizeResponse, error) {
 	out := new(NodeGroupTargetSizeResponse)
-	err := c.cc.Invoke(ctx, AutoscalerService_NodeGroupTargetSize_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, CloudProvider_NodeGroupTargetSize_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *autoscalerServiceClient) NodeGroupIncreaseSize(ctx context.Context, in *NodeGroupIncreaseSizeRequest, opts ...grpc.CallOption) (*NodeGroupIncreaseSizeResponse, error) {
+func (c *cloudProviderClient) NodeGroupIncreaseSize(ctx context.Context, in *NodeGroupIncreaseSizeRequest, opts ...grpc.CallOption) (*NodeGroupIncreaseSizeResponse, error) {
 	out := new(NodeGroupIncreaseSizeResponse)
-	err := c.cc.Invoke(ctx, AutoscalerService_NodeGroupIncreaseSize_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, CloudProvider_NodeGroupIncreaseSize_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *autoscalerServiceClient) NodeGroupDeleteNodes(ctx context.Context, in *NodeGroupDeleteNodesRequest, opts ...grpc.CallOption) (*NodeGroupDeleteNodesResponse, error) {
+func (c *cloudProviderClient) NodeGroupDeleteNodes(ctx context.Context, in *NodeGroupDeleteNodesRequest, opts ...grpc.CallOption) (*NodeGroupDeleteNodesResponse, error) {
 	out := new(NodeGroupDeleteNodesResponse)
-	err := c.cc.Invoke(ctx, AutoscalerService_NodeGroupDeleteNodes_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, CloudProvider_NodeGroupDeleteNodes_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *autoscalerServiceClient) NodeGroupDecreaseTargetSize(ctx context.Context, in *NodeGroupDecreaseTargetSizeRequest, opts ...grpc.CallOption) (*NodeGroupDecreaseTargetSizeResponse, error) {
+func (c *cloudProviderClient) NodeGroupDecreaseTargetSize(ctx context.Context, in *NodeGroupDecreaseTargetSizeRequest, opts ...grpc.CallOption) (*NodeGroupDecreaseTargetSizeResponse, error) {
 	out := new(NodeGroupDecreaseTargetSizeResponse)
-	err := c.cc.Invoke(ctx, AutoscalerService_NodeGroupDecreaseTargetSize_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, CloudProvider_NodeGroupDecreaseTargetSize_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *autoscalerServiceClient) NodeGroupNodes(ctx context.Context, in *NodeGroupNodesRequest, opts ...grpc.CallOption) (*NodeGroupNodesResponse, error) {
+func (c *cloudProviderClient) NodeGroupNodes(ctx context.Context, in *NodeGroupNodesRequest, opts ...grpc.CallOption) (*NodeGroupNodesResponse, error) {
 	out := new(NodeGroupNodesResponse)
-	err := c.cc.Invoke(ctx, AutoscalerService_NodeGroupNodes_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, CloudProvider_NodeGroupNodes_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *autoscalerServiceClient) NodeGroupTemplateNodeInfo(ctx context.Context, in *NodeGroupTemplateNodeInfoRequest, opts ...grpc.CallOption) (*NodeGroupTemplateNodeInfoResponse, error) {
+func (c *cloudProviderClient) NodeGroupTemplateNodeInfo(ctx context.Context, in *NodeGroupTemplateNodeInfoRequest, opts ...grpc.CallOption) (*NodeGroupTemplateNodeInfoResponse, error) {
 	out := new(NodeGroupTemplateNodeInfoResponse)
-	err := c.cc.Invoke(ctx, AutoscalerService_NodeGroupTemplateNodeInfo_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, CloudProvider_NodeGroupTemplateNodeInfo_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *autoscalerServiceClient) NodeGroupGetOptions(ctx context.Context, in *NodeGroupAutoscalingOptionsRequest, opts ...grpc.CallOption) (*NodeGroupAutoscalingOptionsResponse, error) {
+func (c *cloudProviderClient) NodeGroupGetOptions(ctx context.Context, in *NodeGroupAutoscalingOptionsRequest, opts ...grpc.CallOption) (*NodeGroupAutoscalingOptionsResponse, error) {
 	out := new(NodeGroupAutoscalingOptionsResponse)
-	err := c.cc.Invoke(ctx, AutoscalerService_NodeGroupGetOptions_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, CloudProvider_NodeGroupGetOptions_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// AutoscalerServiceServer is the server API for AutoscalerService service.
-// All implementations must embed UnimplementedAutoscalerServiceServer
+// CloudProviderServer is the server API for CloudProvider service.
+// All implementations must embed UnimplementedCloudProviderServer
 // for forward compatibility
-type AutoscalerServiceServer interface {
+type CloudProviderServer interface {
 	// NodeGroups returns all node groups configured for this cloud provider.
 	NodeGroups(context.Context, *NodeGroupsRequest) (*NodeGroupsResponse, error)
 	// NodeGroupForNode returns the node group for the given node.
@@ -308,407 +308,407 @@ type AutoscalerServiceServer interface {
 	// NodeGroup.
 	// Implementation optional: if unimplemented return error code 12 (for `Unimplemented`)
 	NodeGroupGetOptions(context.Context, *NodeGroupAutoscalingOptionsRequest) (*NodeGroupAutoscalingOptionsResponse, error)
-	mustEmbedUnimplementedAutoscalerServiceServer()
+	mustEmbedUnimplementedCloudProviderServer()
 }
 
-// UnimplementedAutoscalerServiceServer must be embedded to have forward compatible implementations.
-type UnimplementedAutoscalerServiceServer struct {
+// UnimplementedCloudProviderServer must be embedded to have forward compatible implementations.
+type UnimplementedCloudProviderServer struct {
 }
 
-func (UnimplementedAutoscalerServiceServer) NodeGroups(context.Context, *NodeGroupsRequest) (*NodeGroupsResponse, error) {
+func (UnimplementedCloudProviderServer) NodeGroups(context.Context, *NodeGroupsRequest) (*NodeGroupsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method NodeGroups not implemented")
 }
-func (UnimplementedAutoscalerServiceServer) NodeGroupForNode(context.Context, *NodeGroupForNodeRequest) (*NodeGroupForNodeResponse, error) {
+func (UnimplementedCloudProviderServer) NodeGroupForNode(context.Context, *NodeGroupForNodeRequest) (*NodeGroupForNodeResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method NodeGroupForNode not implemented")
 }
-func (UnimplementedAutoscalerServiceServer) PricingNodePrice(context.Context, *PricingNodePriceRequest) (*PricingNodePriceResponse, error) {
+func (UnimplementedCloudProviderServer) PricingNodePrice(context.Context, *PricingNodePriceRequest) (*PricingNodePriceResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method PricingNodePrice not implemented")
 }
-func (UnimplementedAutoscalerServiceServer) PricingPodPrice(context.Context, *PricingPodPriceRequest) (*PricingPodPriceResponse, error) {
+func (UnimplementedCloudProviderServer) PricingPodPrice(context.Context, *PricingPodPriceRequest) (*PricingPodPriceResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method PricingPodPrice not implemented")
 }
-func (UnimplementedAutoscalerServiceServer) GPULabel(context.Context, *GPULabelRequest) (*GPULabelResponse, error) {
+func (UnimplementedCloudProviderServer) GPULabel(context.Context, *GPULabelRequest) (*GPULabelResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GPULabel not implemented")
 }
-func (UnimplementedAutoscalerServiceServer) GetAvailableGPUTypes(context.Context, *GetAvailableGPUTypesRequest) (*GetAvailableGPUTypesResponse, error) {
+func (UnimplementedCloudProviderServer) GetAvailableGPUTypes(context.Context, *GetAvailableGPUTypesRequest) (*GetAvailableGPUTypesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetAvailableGPUTypes not implemented")
 }
-func (UnimplementedAutoscalerServiceServer) Cleanup(context.Context, *CleanupRequest) (*CleanupResponse, error) {
+func (UnimplementedCloudProviderServer) Cleanup(context.Context, *CleanupRequest) (*CleanupResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Cleanup not implemented")
 }
-func (UnimplementedAutoscalerServiceServer) Refresh(context.Context, *RefreshRequest) (*RefreshResponse, error) {
+func (UnimplementedCloudProviderServer) Refresh(context.Context, *RefreshRequest) (*RefreshResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Refresh not implemented")
 }
-func (UnimplementedAutoscalerServiceServer) NodeGroupTargetSize(context.Context, *NodeGroupTargetSizeRequest) (*NodeGroupTargetSizeResponse, error) {
+func (UnimplementedCloudProviderServer) NodeGroupTargetSize(context.Context, *NodeGroupTargetSizeRequest) (*NodeGroupTargetSizeResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method NodeGroupTargetSize not implemented")
 }
-func (UnimplementedAutoscalerServiceServer) NodeGroupIncreaseSize(context.Context, *NodeGroupIncreaseSizeRequest) (*NodeGroupIncreaseSizeResponse, error) {
+func (UnimplementedCloudProviderServer) NodeGroupIncreaseSize(context.Context, *NodeGroupIncreaseSizeRequest) (*NodeGroupIncreaseSizeResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method NodeGroupIncreaseSize not implemented")
 }
-func (UnimplementedAutoscalerServiceServer) NodeGroupDeleteNodes(context.Context, *NodeGroupDeleteNodesRequest) (*NodeGroupDeleteNodesResponse, error) {
+func (UnimplementedCloudProviderServer) NodeGroupDeleteNodes(context.Context, *NodeGroupDeleteNodesRequest) (*NodeGroupDeleteNodesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method NodeGroupDeleteNodes not implemented")
 }
-func (UnimplementedAutoscalerServiceServer) NodeGroupDecreaseTargetSize(context.Context, *NodeGroupDecreaseTargetSizeRequest) (*NodeGroupDecreaseTargetSizeResponse, error) {
+func (UnimplementedCloudProviderServer) NodeGroupDecreaseTargetSize(context.Context, *NodeGroupDecreaseTargetSizeRequest) (*NodeGroupDecreaseTargetSizeResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method NodeGroupDecreaseTargetSize not implemented")
 }
-func (UnimplementedAutoscalerServiceServer) NodeGroupNodes(context.Context, *NodeGroupNodesRequest) (*NodeGroupNodesResponse, error) {
+func (UnimplementedCloudProviderServer) NodeGroupNodes(context.Context, *NodeGroupNodesRequest) (*NodeGroupNodesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method NodeGroupNodes not implemented")
 }
-func (UnimplementedAutoscalerServiceServer) NodeGroupTemplateNodeInfo(context.Context, *NodeGroupTemplateNodeInfoRequest) (*NodeGroupTemplateNodeInfoResponse, error) {
+func (UnimplementedCloudProviderServer) NodeGroupTemplateNodeInfo(context.Context, *NodeGroupTemplateNodeInfoRequest) (*NodeGroupTemplateNodeInfoResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method NodeGroupTemplateNodeInfo not implemented")
 }
-func (UnimplementedAutoscalerServiceServer) NodeGroupGetOptions(context.Context, *NodeGroupAutoscalingOptionsRequest) (*NodeGroupAutoscalingOptionsResponse, error) {
+func (UnimplementedCloudProviderServer) NodeGroupGetOptions(context.Context, *NodeGroupAutoscalingOptionsRequest) (*NodeGroupAutoscalingOptionsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method NodeGroupGetOptions not implemented")
 }
-func (UnimplementedAutoscalerServiceServer) mustEmbedUnimplementedAutoscalerServiceServer() {}
+func (UnimplementedCloudProviderServer) mustEmbedUnimplementedCloudProviderServer() {}
 
-// UnsafeAutoscalerServiceServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to AutoscalerServiceServer will
+// UnsafeCloudProviderServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to CloudProviderServer will
 // result in compilation errors.
-type UnsafeAutoscalerServiceServer interface {
-	mustEmbedUnimplementedAutoscalerServiceServer()
+type UnsafeCloudProviderServer interface {
+	mustEmbedUnimplementedCloudProviderServer()
 }
 
-func RegisterAutoscalerServiceServer(s grpc.ServiceRegistrar, srv AutoscalerServiceServer) {
-	s.RegisterService(&AutoscalerService_ServiceDesc, srv)
+func RegisterCloudProviderServer(s grpc.ServiceRegistrar, srv CloudProviderServer) {
+	s.RegisterService(&CloudProvider_ServiceDesc, srv)
 }
 
-func _AutoscalerService_NodeGroups_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _CloudProvider_NodeGroups_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(NodeGroupsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AutoscalerServiceServer).NodeGroups(ctx, in)
+		return srv.(CloudProviderServer).NodeGroups(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: AutoscalerService_NodeGroups_FullMethodName,
+		FullMethod: CloudProvider_NodeGroups_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AutoscalerServiceServer).NodeGroups(ctx, req.(*NodeGroupsRequest))
+		return srv.(CloudProviderServer).NodeGroups(ctx, req.(*NodeGroupsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AutoscalerService_NodeGroupForNode_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _CloudProvider_NodeGroupForNode_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(NodeGroupForNodeRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AutoscalerServiceServer).NodeGroupForNode(ctx, in)
+		return srv.(CloudProviderServer).NodeGroupForNode(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: AutoscalerService_NodeGroupForNode_FullMethodName,
+		FullMethod: CloudProvider_NodeGroupForNode_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AutoscalerServiceServer).NodeGroupForNode(ctx, req.(*NodeGroupForNodeRequest))
+		return srv.(CloudProviderServer).NodeGroupForNode(ctx, req.(*NodeGroupForNodeRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AutoscalerService_PricingNodePrice_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _CloudProvider_PricingNodePrice_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(PricingNodePriceRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AutoscalerServiceServer).PricingNodePrice(ctx, in)
+		return srv.(CloudProviderServer).PricingNodePrice(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: AutoscalerService_PricingNodePrice_FullMethodName,
+		FullMethod: CloudProvider_PricingNodePrice_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AutoscalerServiceServer).PricingNodePrice(ctx, req.(*PricingNodePriceRequest))
+		return srv.(CloudProviderServer).PricingNodePrice(ctx, req.(*PricingNodePriceRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AutoscalerService_PricingPodPrice_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _CloudProvider_PricingPodPrice_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(PricingPodPriceRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AutoscalerServiceServer).PricingPodPrice(ctx, in)
+		return srv.(CloudProviderServer).PricingPodPrice(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: AutoscalerService_PricingPodPrice_FullMethodName,
+		FullMethod: CloudProvider_PricingPodPrice_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AutoscalerServiceServer).PricingPodPrice(ctx, req.(*PricingPodPriceRequest))
+		return srv.(CloudProviderServer).PricingPodPrice(ctx, req.(*PricingPodPriceRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AutoscalerService_GPULabel_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _CloudProvider_GPULabel_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GPULabelRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AutoscalerServiceServer).GPULabel(ctx, in)
+		return srv.(CloudProviderServer).GPULabel(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: AutoscalerService_GPULabel_FullMethodName,
+		FullMethod: CloudProvider_GPULabel_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AutoscalerServiceServer).GPULabel(ctx, req.(*GPULabelRequest))
+		return srv.(CloudProviderServer).GPULabel(ctx, req.(*GPULabelRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AutoscalerService_GetAvailableGPUTypes_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _CloudProvider_GetAvailableGPUTypes_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetAvailableGPUTypesRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AutoscalerServiceServer).GetAvailableGPUTypes(ctx, in)
+		return srv.(CloudProviderServer).GetAvailableGPUTypes(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: AutoscalerService_GetAvailableGPUTypes_FullMethodName,
+		FullMethod: CloudProvider_GetAvailableGPUTypes_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AutoscalerServiceServer).GetAvailableGPUTypes(ctx, req.(*GetAvailableGPUTypesRequest))
+		return srv.(CloudProviderServer).GetAvailableGPUTypes(ctx, req.(*GetAvailableGPUTypesRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AutoscalerService_Cleanup_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _CloudProvider_Cleanup_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CleanupRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AutoscalerServiceServer).Cleanup(ctx, in)
+		return srv.(CloudProviderServer).Cleanup(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: AutoscalerService_Cleanup_FullMethodName,
+		FullMethod: CloudProvider_Cleanup_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AutoscalerServiceServer).Cleanup(ctx, req.(*CleanupRequest))
+		return srv.(CloudProviderServer).Cleanup(ctx, req.(*CleanupRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AutoscalerService_Refresh_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _CloudProvider_Refresh_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(RefreshRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AutoscalerServiceServer).Refresh(ctx, in)
+		return srv.(CloudProviderServer).Refresh(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: AutoscalerService_Refresh_FullMethodName,
+		FullMethod: CloudProvider_Refresh_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AutoscalerServiceServer).Refresh(ctx, req.(*RefreshRequest))
+		return srv.(CloudProviderServer).Refresh(ctx, req.(*RefreshRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AutoscalerService_NodeGroupTargetSize_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _CloudProvider_NodeGroupTargetSize_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(NodeGroupTargetSizeRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AutoscalerServiceServer).NodeGroupTargetSize(ctx, in)
+		return srv.(CloudProviderServer).NodeGroupTargetSize(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: AutoscalerService_NodeGroupTargetSize_FullMethodName,
+		FullMethod: CloudProvider_NodeGroupTargetSize_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AutoscalerServiceServer).NodeGroupTargetSize(ctx, req.(*NodeGroupTargetSizeRequest))
+		return srv.(CloudProviderServer).NodeGroupTargetSize(ctx, req.(*NodeGroupTargetSizeRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AutoscalerService_NodeGroupIncreaseSize_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _CloudProvider_NodeGroupIncreaseSize_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(NodeGroupIncreaseSizeRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AutoscalerServiceServer).NodeGroupIncreaseSize(ctx, in)
+		return srv.(CloudProviderServer).NodeGroupIncreaseSize(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: AutoscalerService_NodeGroupIncreaseSize_FullMethodName,
+		FullMethod: CloudProvider_NodeGroupIncreaseSize_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AutoscalerServiceServer).NodeGroupIncreaseSize(ctx, req.(*NodeGroupIncreaseSizeRequest))
+		return srv.(CloudProviderServer).NodeGroupIncreaseSize(ctx, req.(*NodeGroupIncreaseSizeRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AutoscalerService_NodeGroupDeleteNodes_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _CloudProvider_NodeGroupDeleteNodes_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(NodeGroupDeleteNodesRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AutoscalerServiceServer).NodeGroupDeleteNodes(ctx, in)
+		return srv.(CloudProviderServer).NodeGroupDeleteNodes(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: AutoscalerService_NodeGroupDeleteNodes_FullMethodName,
+		FullMethod: CloudProvider_NodeGroupDeleteNodes_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AutoscalerServiceServer).NodeGroupDeleteNodes(ctx, req.(*NodeGroupDeleteNodesRequest))
+		return srv.(CloudProviderServer).NodeGroupDeleteNodes(ctx, req.(*NodeGroupDeleteNodesRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AutoscalerService_NodeGroupDecreaseTargetSize_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _CloudProvider_NodeGroupDecreaseTargetSize_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(NodeGroupDecreaseTargetSizeRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AutoscalerServiceServer).NodeGroupDecreaseTargetSize(ctx, in)
+		return srv.(CloudProviderServer).NodeGroupDecreaseTargetSize(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: AutoscalerService_NodeGroupDecreaseTargetSize_FullMethodName,
+		FullMethod: CloudProvider_NodeGroupDecreaseTargetSize_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AutoscalerServiceServer).NodeGroupDecreaseTargetSize(ctx, req.(*NodeGroupDecreaseTargetSizeRequest))
+		return srv.(CloudProviderServer).NodeGroupDecreaseTargetSize(ctx, req.(*NodeGroupDecreaseTargetSizeRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AutoscalerService_NodeGroupNodes_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _CloudProvider_NodeGroupNodes_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(NodeGroupNodesRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AutoscalerServiceServer).NodeGroupNodes(ctx, in)
+		return srv.(CloudProviderServer).NodeGroupNodes(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: AutoscalerService_NodeGroupNodes_FullMethodName,
+		FullMethod: CloudProvider_NodeGroupNodes_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AutoscalerServiceServer).NodeGroupNodes(ctx, req.(*NodeGroupNodesRequest))
+		return srv.(CloudProviderServer).NodeGroupNodes(ctx, req.(*NodeGroupNodesRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AutoscalerService_NodeGroupTemplateNodeInfo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _CloudProvider_NodeGroupTemplateNodeInfo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(NodeGroupTemplateNodeInfoRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AutoscalerServiceServer).NodeGroupTemplateNodeInfo(ctx, in)
+		return srv.(CloudProviderServer).NodeGroupTemplateNodeInfo(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: AutoscalerService_NodeGroupTemplateNodeInfo_FullMethodName,
+		FullMethod: CloudProvider_NodeGroupTemplateNodeInfo_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AutoscalerServiceServer).NodeGroupTemplateNodeInfo(ctx, req.(*NodeGroupTemplateNodeInfoRequest))
+		return srv.(CloudProviderServer).NodeGroupTemplateNodeInfo(ctx, req.(*NodeGroupTemplateNodeInfoRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AutoscalerService_NodeGroupGetOptions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _CloudProvider_NodeGroupGetOptions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(NodeGroupAutoscalingOptionsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AutoscalerServiceServer).NodeGroupGetOptions(ctx, in)
+		return srv.(CloudProviderServer).NodeGroupGetOptions(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: AutoscalerService_NodeGroupGetOptions_FullMethodName,
+		FullMethod: CloudProvider_NodeGroupGetOptions_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AutoscalerServiceServer).NodeGroupGetOptions(ctx, req.(*NodeGroupAutoscalingOptionsRequest))
+		return srv.(CloudProviderServer).NodeGroupGetOptions(ctx, req.(*NodeGroupAutoscalingOptionsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-// AutoscalerService_ServiceDesc is the grpc.ServiceDesc for AutoscalerService service.
+// CloudProvider_ServiceDesc is the grpc.ServiceDesc for CloudProvider service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
-var AutoscalerService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "autoscaler.AutoscalerService",
-	HandlerType: (*AutoscalerServiceServer)(nil),
+var CloudProvider_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "clusterautoscaler.cloudprovider.v1.externalgrpc.CloudProvider",
+	HandlerType: (*CloudProviderServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
 			MethodName: "NodeGroups",
-			Handler:    _AutoscalerService_NodeGroups_Handler,
+			Handler:    _CloudProvider_NodeGroups_Handler,
 		},
 		{
 			MethodName: "NodeGroupForNode",
-			Handler:    _AutoscalerService_NodeGroupForNode_Handler,
+			Handler:    _CloudProvider_NodeGroupForNode_Handler,
 		},
 		{
 			MethodName: "PricingNodePrice",
-			Handler:    _AutoscalerService_PricingNodePrice_Handler,
+			Handler:    _CloudProvider_PricingNodePrice_Handler,
 		},
 		{
 			MethodName: "PricingPodPrice",
-			Handler:    _AutoscalerService_PricingPodPrice_Handler,
+			Handler:    _CloudProvider_PricingPodPrice_Handler,
 		},
 		{
 			MethodName: "GPULabel",
-			Handler:    _AutoscalerService_GPULabel_Handler,
+			Handler:    _CloudProvider_GPULabel_Handler,
 		},
 		{
 			MethodName: "GetAvailableGPUTypes",
-			Handler:    _AutoscalerService_GetAvailableGPUTypes_Handler,
+			Handler:    _CloudProvider_GetAvailableGPUTypes_Handler,
 		},
 		{
 			MethodName: "Cleanup",
-			Handler:    _AutoscalerService_Cleanup_Handler,
+			Handler:    _CloudProvider_Cleanup_Handler,
 		},
 		{
 			MethodName: "Refresh",
-			Handler:    _AutoscalerService_Refresh_Handler,
+			Handler:    _CloudProvider_Refresh_Handler,
 		},
 		{
 			MethodName: "NodeGroupTargetSize",
-			Handler:    _AutoscalerService_NodeGroupTargetSize_Handler,
+			Handler:    _CloudProvider_NodeGroupTargetSize_Handler,
 		},
 		{
 			MethodName: "NodeGroupIncreaseSize",
-			Handler:    _AutoscalerService_NodeGroupIncreaseSize_Handler,
+			Handler:    _CloudProvider_NodeGroupIncreaseSize_Handler,
 		},
 		{
 			MethodName: "NodeGroupDeleteNodes",
-			Handler:    _AutoscalerService_NodeGroupDeleteNodes_Handler,
+			Handler:    _CloudProvider_NodeGroupDeleteNodes_Handler,
 		},
 		{
 			MethodName: "NodeGroupDecreaseTargetSize",
-			Handler:    _AutoscalerService_NodeGroupDecreaseTargetSize_Handler,
+			Handler:    _CloudProvider_NodeGroupDecreaseTargetSize_Handler,
 		},
 		{
 			MethodName: "NodeGroupNodes",
-			Handler:    _AutoscalerService_NodeGroupNodes_Handler,
+			Handler:    _CloudProvider_NodeGroupNodes_Handler,
 		},
 		{
 			MethodName: "NodeGroupTemplateNodeInfo",
-			Handler:    _AutoscalerService_NodeGroupTemplateNodeInfo_Handler,
+			Handler:    _CloudProvider_NodeGroupTemplateNodeInfo_Handler,
 		},
 		{
 			MethodName: "NodeGroupGetOptions",
-			Handler:    _AutoscalerService_NodeGroupGetOptions_Handler,
+			Handler:    _CloudProvider_NodeGroupGetOptions_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

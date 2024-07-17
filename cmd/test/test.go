@@ -95,7 +95,7 @@ var nodeGroup *biz.NodeGroup = &biz.NodeGroup{
 var node *biz.Node = &biz.Node{
 	ID:          1,
 	NodeGroup:   nodeGroup,
-	Name:        "testNode",
+	Name:        "minikube",
 	Status:      biz.NodeStatusRunning.Uint8(),
 	Role:        "master",
 	InternalIP:  "127.0.0.1",

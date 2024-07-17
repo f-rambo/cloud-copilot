@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"strings"
 
-	"github.com/f-rambo/ocean/api/autoscaler"
+	autoscaler "github.com/f-rambo/ocean/api/autoscaler"
 	"github.com/f-rambo/ocean/internal/biz"
 	"github.com/f-rambo/ocean/internal/conf"
 	"github.com/go-kratos/kratos/v2/log"
@@ -17,8 +17,10 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
+// clusterautoscaler.cloudprovider.v1.externalgrpc.CloudProvider
+
 type Autoscaler struct {
-	autoscaler.UnimplementedAutoscalerServiceServer
+	autoscaler.UnimplementedCloudProviderServer
 	clusterUc *biz.ClusterUsecase
 	c         *conf.Bootstrap
 	log       *log.Helper

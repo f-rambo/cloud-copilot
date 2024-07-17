@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	"github.com/f-rambo/ocean/internal/biz"
@@ -19,7 +18,6 @@ func NewAuthServer(user *interfaces.UserInterface) func(handler middleware.Handl
 		return func(ctx context.Context, req interface{}) (reply interface{}, err error) {
 			var authorization string
 			var userEmail string
-			fmt.Println("NewAuthServer")
 			if md, ok := metadata.FromIncomingContext(ctx); ok {
 				authorizations := md.Get("Authorization")
 				for _, v := range authorizations {
@@ -62,7 +60,7 @@ func NewWhiteListMatcher() selector.MatchFunc {
 		"/app.v1alpha1.AppInterface/Ping",
 		"/cluster.v1alpha1.ClusterInterface/Ping",
 		"/service.v1alpha1.ServiceInterface/Ping",
-		"/autoscaler.AutoscalerService/",
+		"/clusterautoscaler.cloudprovider.v1.externalgrpc.CloudProvider/",
 	}
 	return func(ctx context.Context, operation string) bool {
 		for _, v := range whiteList {
