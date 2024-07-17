@@ -219,6 +219,9 @@ type ClusterRepo interface {
 	GetByName(context.Context, string) (*Cluster, error)
 	List(context.Context, *Cluster) ([]*Cluster, error)
 	Delete(context.Context, int64) error
+	Put(ctx context.Context, cluster *Cluster) error
+	GetByQueue(ctx context.Context) (*Cluster, error)
+	DeleteByQueue(ctx context.Context) error
 	ReadClusterLog(cluster *Cluster) error
 	WriteClusterLog(cluster *Cluster) error
 }
@@ -247,7 +250,6 @@ type ClusterRuntime interface {
 }
 
 type ClusterUsecase struct {
-	ctx              context.Context
 	log              *log.Helper
 	infrastructure   Infrastructure
 	clusterConstruct ClusterConstruct
@@ -256,9 +258,8 @@ type ClusterUsecase struct {
 	resources        chan *Cluster
 }
 
-func NewClusterUseCase(ctx context.Context, repo ClusterRepo, infrastructure Infrastructure, clusterConstruct ClusterConstruct, clusterRuntime ClusterRuntime, logger log.Logger) *ClusterUsecase {
+func NewClusterUseCase(repo ClusterRepo, infrastructure Infrastructure, clusterConstruct ClusterConstruct, clusterRuntime ClusterRuntime, logger log.Logger) *ClusterUsecase {
 	c := &ClusterUsecase{
-		ctx:              ctx,
 		repo:             repo,
 		infrastructure:   infrastructure,
 		clusterConstruct: clusterConstruct,
@@ -266,37 +267,7 @@ func NewClusterUseCase(ctx context.Context, repo ClusterRepo, infrastructure Inf
 		log:              log.NewHelper(logger),
 		resources:        make(chan *Cluster, 1024),
 	}
-	c.consume()
 	return c
-}
-
-// todo 需要替换成etcd的watch机制
-func (uc *ClusterUsecase) push(cluster *Cluster) error {
-	if uc.resources == nil {
-		return errors.New("resources channel is nil")
-	}
-	uc.resources <- cluster
-	return nil
-}
-
-func (uc *ClusterUsecase) consume() {
-	for {
-		select {
-		case cluster, ok := <-uc.resources:
-			if !ok {
-				return
-			}
-			err := uc.Reconcile(uc.ctx, cluster)
-			if err != nil {
-				uc.log.Error(err)
-				return
-			}
-		case <-uc.ctx.Done():
-			return
-		default:
-			return
-		}
-	}
 }
 
 func (uc *ClusterUsecase) Get(ctx context.Context, id int64) (*Cluster, error) {
@@ -455,7 +426,19 @@ func (uc *ClusterUsecase) Apply(ctx context.Context, cluster *Cluster) (err erro
 			return err
 		}
 	}
-	return uc.push(cluster)
+	err = uc.repo.Put(ctx, cluster)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (uc *ClusterUsecase) GetReconcile(ctx context.Context) (*Cluster, error) {
+	return uc.repo.GetByQueue(ctx)
+}
+
+func (uc *ClusterUsecase) DeleteReconcile(ctx context.Context) error {
+	return uc.repo.DeleteByQueue(ctx)
 }
 
 func (uc *ClusterUsecase) Reconcile(ctx context.Context, cluster *Cluster) (err error) {

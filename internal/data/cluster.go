@@ -2,6 +2,7 @@ package data
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -11,6 +12,8 @@ import (
 	"github.com/go-kratos/kratos/v2/log"
 	"gorm.io/gorm"
 )
+
+const ClusterQueueKey QueueKey = "ocean-cluster-queue"
 
 type clusterRepo struct {
 	data *Data
@@ -163,4 +166,32 @@ func (c *clusterRepo) Delete(ctx context.Context, id int64) error {
 		return err
 	}
 	return tx.Commit().Error
+}
+
+func (c *clusterRepo) Put(ctx context.Context, cluster *biz.Cluster) error {
+	clusterJson, err := json.Marshal(cluster)
+	if err != nil {
+		return err
+	}
+	return c.data.Put(ctx, ClusterQueueKey.String(), string(clusterJson))
+}
+
+func (c *clusterRepo) GetByQueue(ctx context.Context) (*biz.Cluster, error) {
+	data, err := c.data.Get(ctx, ClusterQueueKey.String())
+	if err != nil {
+		return nil, err
+	}
+	if data == "" {
+		return nil, nil
+	}
+	cluster := &biz.Cluster{}
+	err = json.Unmarshal([]byte(data), cluster)
+	if err != nil {
+		return nil, err
+	}
+	return cluster, nil
+}
+
+func (c *clusterRepo) DeleteByQueue(ctx context.Context) error {
+	return c.data.Delete(ctx, ClusterQueueKey.String())
 }

@@ -1,12 +1,12 @@
 package main
 
 import (
-	"context"
 	"flag"
 	"fmt"
 	"os"
 
 	"github.com/f-rambo/ocean/internal/conf"
+	"github.com/f-rambo/ocean/internal/server"
 
 	"github.com/go-kratos/kratos/v2"
 	"github.com/go-kratos/kratos/v2/config"
@@ -37,19 +37,14 @@ func init() {
 	flag.StringVar(&flagconf, "conf", "configs", "config path, eg: -conf config.yaml")
 }
 
-func newContext() context.Context {
-	return context.Background()
-}
-
-func newApp(ctx context.Context, logger log.Logger, gs *grpc.Server, hs *http.Server) *kratos.App {
+func newApp(logger log.Logger, gs *grpc.Server, hs *http.Server, otherServer *server.OtherServer) *kratos.App {
 	return kratos.New(
 		kratos.ID(id),
 		kratos.Name(Name),
 		kratos.Version(Version),
-		kratos.Context(ctx),
 		kratos.Metadata(map[string]string{}),
 		kratos.Logger(logger),
-		kratos.Server(gs, hs),
+		kratos.Server(gs, hs, otherServer),
 	)
 }
 

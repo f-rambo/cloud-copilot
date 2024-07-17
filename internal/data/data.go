@@ -1,14 +1,17 @@
 package data
 
 import (
+	"context"
 	"fmt"
+	"time"
 
 	"github.com/f-rambo/ocean/internal/biz"
 	"github.com/f-rambo/ocean/internal/conf"
 	"github.com/f-rambo/ocean/utils"
-
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/wire"
+	"github.com/pkg/errors"
+	clientv3 "go.etcd.io/etcd/client/v3"
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
 	"gorm.io/driver/sqlite"
@@ -19,26 +22,110 @@ import (
 var ProviderSet = wire.NewSet(NewData, NewClusterRepo, NewAppRepo, NewServicesRepo, NewUserRepo, NewProjectRepo)
 
 type Data struct {
-	c      *conf.Data
-	logger log.Logger
-	db     *gorm.DB
+	databaseConf *conf.Data
+	etcdConf     *conf.ETCD
+	log          *log.Helper
+	db           *gorm.DB
+	etcd         *clientv3.Client
+	kvStore      *utils.KVStore
 }
 
 func NewData(c *conf.Bootstrap, logger log.Logger) (*Data, func(), error) {
 	var err error
 	cdata := c.GetOceanData()
+	etcd := c.GetOceanETCD()
 	data := &Data{
-		c:      &cdata,
-		logger: logger,
+		databaseConf: &cdata,
+		etcdConf:     &etcd,
+		log:          log.NewHelper(logger),
 	}
-	cleanup := func() {
-		log.NewHelper(logger).Info("closing the data resources")
-	}
+
 	data.db, err = newDB(cdata)
 	if err != nil {
 		return nil, nil, err
 	}
+	data.etcd, err = newEtcd(etcd)
+	if err != nil {
+		data.kvStore = utils.NewKVStore()
+	}
+	cleanup := func() {
+		if data.etcd != nil {
+			err = data.etcd.Close()
+			if err != nil {
+				log.Error("closing the etcd resources", err)
+			}
+		}
+		if data.kvStore != nil {
+			data.kvStore.Close()
+		}
+		log.Info("closing the data resources")
+	}
 	return data, cleanup, nil
+}
+
+type QueueKey string
+
+func (k QueueKey) String() string {
+	return string(k)
+}
+
+func (d *Data) Put(ctx context.Context, key, val string) error {
+	if d.etcd == nil {
+		return d.kvStore.Put(ctx, key, val)
+	}
+	_, err := d.etcd.Put(ctx, key, val)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (d *Data) Get(ctx context.Context, key string) (string, error) {
+	if d.etcd == nil {
+		return d.kvStore.Get(ctx, key)
+	}
+	resp, err := d.etcd.Get(ctx, key)
+	if err != nil {
+		return "", err
+	}
+	for _, v := range resp.Kvs {
+		return string(v.Value), nil
+	}
+	return "", nil
+}
+
+func (d *Data) Delete(ctx context.Context, key string) error {
+	if d.etcd == nil {
+		return d.kvStore.Delete(ctx, key)
+	}
+	_, err := d.etcd.Delete(ctx, key)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func newEtcd(c conf.ETCD) (*clientv3.Client, error) {
+	endpoints := make([]string, 0)
+	for _, endpoint := range c.GetETCDEndpoints() {
+		if endpoint == "" {
+			continue
+		}
+		endpoints = append(endpoints, endpoint)
+	}
+	if len(endpoints) == 0 {
+		return nil, errors.New("etcd endpoints is empty")
+	}
+	cli, err := clientv3.New(clientv3.Config{
+		Username:    c.GetUsername(),
+		Password:    c.GetPassword(),
+		Endpoints:   endpoints,
+		DialTimeout: 5 * time.Second,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return cli, nil
 }
 
 func newDB(c conf.Data) (*gorm.DB, error) {

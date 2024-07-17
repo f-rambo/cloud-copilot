@@ -38,7 +38,19 @@ require (
 	k8s.io/client-go v0.29.0
 )
 
-require github.com/golang/mock v1.6.0
+require (
+	github.com/golang/mock v1.6.0
+	go.etcd.io/etcd/client/v3 v3.5.14
+)
+
+require (
+	github.com/coreos/go-semver v0.3.1 // indirect
+	github.com/coreos/go-systemd/v22 v22.5.0 // indirect
+	go.etcd.io/etcd/api/v3 v3.5.14 // indirect
+	go.etcd.io/etcd/client/pkg/v3 v3.5.14 // indirect
+	go.uber.org/multierr v1.11.0 // indirect
+	go.uber.org/zap v1.26.0 // indirect
+)
 
 require (
 	dario.cat/mergo v1.0.0 // indirect

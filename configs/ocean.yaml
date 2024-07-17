@@ -19,6 +19,13 @@ ocean:
     password: '123456'
     database: ocean
     dbfilepath: 'resource/db/gorm.db'
+  etcd:
+    username: ''
+    password: ''
+    endpoints:
+      - ''
+      - ''
+      - ''
   log:
     path: logs
     filename: log.log
