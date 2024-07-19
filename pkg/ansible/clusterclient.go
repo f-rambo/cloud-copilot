@@ -45,10 +45,10 @@ func (cc *ClusterConstruct) GenerateNodeLables(ctx context.Context, cluster *biz
 }
 
 func (cc *ClusterConstruct) MigrateToBostionHost(ctx context.Context, cluster *biz.Cluster) error {
-	oceanResource := cc.c.GetOceanResource()
+	oceanResource := cc.c.Resource
 	migratePlaybook := GetMigratePlaybook()
-	databasePath := cc.c.GetOceanData().GetDBFilePath()
-	pulumiPath := cc.c.GetOceanResource().GetPulumiPath()
+	databasePath := cc.c.Data.GetDBFilePath()
+	pulumiPath := cc.c.Resource.GetPulumiPath()
 	migratePlaybook.AddSynchronize("database", databasePath, databasePath)
 	migratePlaybook.AddSynchronize("pulumi", pulumiPath, pulumiPath)
 	migratePlaybookPath, err := SavePlaybook(oceanResource.GetClusterPath(), migratePlaybook)
@@ -74,11 +74,11 @@ func (cc *ClusterConstruct) MigrateToBostionHost(ctx context.Context, cluster *b
 
 func (cc *ClusterConstruct) InstallCluster(ctx context.Context, cluster *biz.Cluster) error {
 	serversInitPlaybook := GetServerInitPlaybook()
-	serversInitPlaybookPath, err := SavePlaybook(cc.c.GetOceanResource().GetClusterPath(), serversInitPlaybook)
+	serversInitPlaybookPath, err := SavePlaybook(cc.c.Resource.GetClusterPath(), serversInitPlaybook)
 	if err != nil {
 		return err
 	}
-	err = cc.exec(ctx, cluster, cc.c.GetOceanResource().GetClusterPath(), serversInitPlaybookPath, nil)
+	err = cc.exec(ctx, cluster, cc.c.Resource.GetClusterPath(), serversInitPlaybookPath, nil)
 	if err != nil {
 		return err
 	}
@@ -116,7 +116,7 @@ type ansibleArgs struct {
 }
 
 func (cc *ClusterConstruct) kubespray(ctx context.Context, cluster *biz.Cluster, playbook string, args *ansibleArgs) error {
-	oceanResource := cc.c.GetOceanResource()
+	oceanResource := cc.c.Resource
 	kubespray, err := NewKubespray(&oceanResource)
 	if err != nil {
 		return errors.Wrap(err, "new kubespray error")
@@ -141,7 +141,7 @@ func (cc *ClusterConstruct) exec(ctx context.Context, cluster *biz.Cluster, play
 	g.Go(func() error {
 		defer close(ansibleLog)
 		return NewGoAnsiblePkg(cc.c).
-			SetAnsiblePlaybookBinary(cc.c.GetOceanResource().GetAnsibleCli()).
+			SetAnsiblePlaybookBinary(cc.c.Resource.GetAnsibleCli()).
 			SetLogChan(ansibleLog).
 			SetServers(servers...).
 			SetCmdRunDir(cmdRunDir).

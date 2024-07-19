@@ -2,17 +2,8 @@ package biz
 
 import (
 	"context"
-	"fmt"
-	"strings"
-	"time"
 
-	"github.com/pkg/errors"
-
-	"github.com/f-rambo/ocean/internal/conf"
-	"github.com/f-rambo/ocean/pkg/githubapi"
-	"github.com/f-rambo/ocean/utils"
 	"github.com/go-kratos/kratos/v2/log"
-	jwtv5 "github.com/golang-jwt/jwt/v5" // gorm customize data type
 	"github.com/spf13/cast"
 	"gorm.io/gorm"
 )
@@ -38,11 +29,6 @@ const (
 	SignTypeBasic  = "CREDENTIALS"
 )
 
-const (
-	AdminID   = -1
-	AdminName = "admin"
-)
-
 type UserKey string
 
 const (
@@ -58,17 +44,22 @@ type UserRepo interface {
 	GetUserByBatchID(ctx context.Context, ids []int64) ([]*User, error)
 	GetUsers(ctx context.Context, username, email string, pageNum, pageSize int) (users []*User, total int64, err error)
 	DeleteUser(ctx context.Context, id int64) error
+	SignIn(context.Context, *User) error
+	GetUserEmail(ctx context.Context, token string) (string, error)
+}
+
+type Thirdparty interface {
+	GetUserEmail(ctx context.Context, token string) (string, error)
 }
 
 type UserUseCase struct {
-	repo     UserRepo
-	log      *log.Helper
-	authConf *conf.Auth
+	repo       UserRepo
+	thirdparty Thirdparty
+	log        *log.Helper
 }
 
-func NewUseUser(repo UserRepo, logger log.Logger, conf *conf.Bootstrap) *UserUseCase {
-	cAuth := conf.GetOceanAuth()
-	return &UserUseCase{repo: repo, log: log.NewHelper(logger), authConf: &cAuth}
+func NewUseUser(repo UserRepo, thirdparty Thirdparty, logger log.Logger) *UserUseCase {
+	return &UserUseCase{repo: repo, thirdparty: thirdparty, log: log.NewHelper(logger)}
 }
 
 func (u *UserUseCase) Save(ctx context.Context, user *User) error {
@@ -79,129 +70,35 @@ func (u *UserUseCase) GetUsers(ctx context.Context, name, email string, pageNum,
 	return u.repo.GetUsers(ctx, name, email, pageNum, pageSize)
 }
 
-func (u *UserUseCase) adminSignIn(user *User) (*User, bool, error) {
-	if user.Email == u.authConf.Email && user.PassWord == utils.Md5(u.authConf.PassWord) {
-		accessToken, err := u.encodeToken(u.getAdmin())
-		if err != nil {
-			return nil, true, err
-		}
-		return &User{
-			ID:          AdminID,
-			Name:        AdminName,
-			Email:       u.authConf.Email,
-			AccessToken: accessToken,
-			SignType:    SignTypeBasic,
-			State:       UserStateEnable,
-		}, true, nil
-	}
-	return nil, false, nil
-}
-
-// thirdparty sign in
-func (u *UserUseCase) thirdpartySignIn(ctx context.Context, user *User) (*User, bool, error) {
+func (u *UserUseCase) SignIn(ctx context.Context, user *User) error {
 	if user.AccessToken != "" {
-		switch strings.ToUpper(user.SignType) {
-		case SignTypeGithub:
-			githubUser, err := githubapi.NewClient(user.AccessToken).GetCurrentUser(ctx)
-			if err != nil {
-				return nil, true, err
-			}
-			if githubUser == nil {
-				return nil, true, errors.New("github user is null")
-			}
-		default:
-			return nil, true, errors.New("sign type error")
-		}
-		userInfo, err := u.repo.GetUserInfoByEmail(ctx, user.Email)
+		email, err := u.thirdparty.GetUserEmail(ctx, user.AccessToken)
 		if err != nil {
-			return nil, true, err
+			return err
 		}
-		user.ID = userInfo.ID
-		user.State = UserStateEnable
-		if user.ID == 0 {
-			user.State = UserStateDisable
-		}
-		err = u.Save(ctx, user)
+		user.Email = email
+		user.SignType = SignTypeGithub
+	} else {
+		err := u.repo.SignIn(ctx, user)
 		if err != nil {
-			return nil, true, err
+			return err
 		}
-		return user, true, nil
+		user.SignType = SignTypeBasic
 	}
-	return nil, false, nil
+	user.State = UserStateEnable
+	err := u.Save(ctx, user)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
-func (u *UserUseCase) SignIn(ctx context.Context, user *User) (*User, error) {
-	data, ok, err := u.adminSignIn(user)
-	if ok {
-		return data, err
-	}
-	data, ok, err = u.thirdpartySignIn(ctx, user)
-	if ok {
-		return data, err
-	}
-	userInfo, err := u.repo.GetUserInfoByEmail(ctx, user.Email)
-	if err != nil {
-		return nil, err
-	}
-	if userInfo == nil || userInfo.ID == 0 {
-		return nil, errors.New("user not exist")
-	}
-	if userInfo.PassWord != user.PassWord {
-		return nil, errors.New("password error")
-	}
-	userInfo.AccessToken, err = u.encodeToken(userInfo)
-	if err != nil {
-		return nil, err
-	}
-	userInfo.SignType = SignTypeBasic
-	err = u.Save(ctx, userInfo)
-	if err != nil {
-		return nil, err
-	}
-	return userInfo, nil
-}
-
-// 通过token获取用户信息
 func (u *UserUseCase) GetUserInfo(ctx context.Context) (*User, error) {
-	token := ctx.Value(TokenKey)
-	signType := ctx.Value(SignType)
 	userEmail := ctx.Value(UserEmailKey)
-	if token == nil || cast.ToString(token) == "" {
-		return nil, errors.New("token is null")
-	}
-	if signType == nil || cast.ToString(signType) == "" {
-		return nil, errors.New("sign type is null")
-	}
-	user := &User{}
-	if strings.ToUpper(cast.ToString(signType)) == SignTypeGithub {
-		githubUser, err := githubapi.NewClient(cast.ToString(token)).GetCurrentUser(ctx)
-		if err != nil {
-			return nil, err
-		}
-		if githubUser == nil {
-			return nil, errors.New("github user is null")
-		}
-		user.Name = *githubUser.Name
-		user.Email = cast.ToString(userEmail)
-	}
-	if strings.ToUpper(cast.ToString(signType)) == SignTypeBasic {
-		userJwt, err := u.DecodeToken(ctx, cast.ToString(token))
-		if err != nil {
-			return nil, err
-		}
-		user.Name = userJwt.Name
-		user.Email = userJwt.Email
-	}
-	if user.Email == "" {
-		return nil, errors.New("email is null")
-	}
-	return u.repo.GetUserInfoByEmail(ctx, user.Email)
+	return u.repo.GetUserInfoByEmail(ctx, cast.ToString(userEmail))
 }
 
 func (u *UserUseCase) GetUserByID(ctx context.Context, id int64) (*User, error) {
-	if id == AdminID {
-		return u.getAdmin(), nil
-	}
 	return u.repo.GetUserByID(ctx, id)
 }
 
@@ -213,58 +110,9 @@ func (u *UserUseCase) GetUserByBatchID(ctx context.Context, ids []int64) ([]*Use
 	if err != nil {
 		return nil, err
 	}
-	for _, id := range ids {
-		if id == AdminID {
-			users = append(users, u.getAdmin())
-			break
-		}
-	}
 	return users, nil
 }
 
 func (u *UserUseCase) DeleteUser(ctx context.Context, id int64) error {
-	if id == AdminID {
-		return errors.New("admin can't be deleted")
-	}
 	return u.repo.DeleteUser(ctx, id)
-}
-
-func (u *UserUseCase) getAdmin() *User {
-	return &User{
-		ID:    AdminID,
-		Name:  AdminName,
-		Email: u.authConf.Email,
-	}
-}
-
-func (u *UserUseCase) DecodeToken(ctx context.Context, t string) (*User, error) {
-	token, err := jwtv5.Parse(t, func(token *jwtv5.Token) (any, error) {
-		if _, ok := token.Method.(*jwtv5.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-		}
-		return []byte(u.authConf.Key), nil
-	})
-	if err != nil {
-		return nil, err
-	}
-	claims, ok := token.Claims.(jwtv5.MapClaims)
-	if !ok || cast.ToInt64(claims["exp"]) < time.Now().Unix() {
-		return nil, errors.New("invalid token")
-	}
-	return &User{
-		ID:    cast.ToInt64(claims["id"]),
-		Email: cast.ToString(claims["email"]),
-		Name:  cast.ToString(claims["name"]),
-	}, nil
-}
-
-func (u *UserUseCase) encodeToken(user *User) (token string, err error) {
-	claims := jwtv5.MapClaims{
-		"id":    user.ID,
-		"email": user.Email,
-		"name":  user.Name,
-		"state": user.State,
-		"exp":   time.Now().Add(time.Hour * time.Duration(u.authConf.Exp)).Unix(),
-	}
-	return jwtv5.NewWithClaims(jwtv5.SigningMethodHS256, claims).SignedString([]byte(u.authConf.Key))
 }

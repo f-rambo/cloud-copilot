@@ -555,7 +555,6 @@ func (uc *AppUsecase) BaseInstallation(ctx context.Context, cluster *Cluster, pr
 			AppTypeID: AppTypeRepo,
 			RepoID:    repo.ID,
 			Version:   cast.ToString(appVersion),
-			UserID:    AdminID,
 			Config:    string(appConfigYamlByte),
 			Namespace: cast.ToString(namespace),
 		}

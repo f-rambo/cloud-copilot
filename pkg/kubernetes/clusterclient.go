@@ -20,12 +20,10 @@ func NewClusterRuntime(c *conf.Bootstrap, logger log.Logger) biz.ClusterRuntime 
 	}
 }
 
-func (cr *ClusterRuntime) CurrentCluster(ctx context.Context) (*biz.Cluster, error) {
-	// TODO: 实现当前集群获取
-	return nil, nil
-}
-
-func (cr *ClusterRuntime) ConnectCluster(ctx context.Context, cluster *biz.Cluster) error {
-	// TODO: 实现集群连接
+func (cr *ClusterRuntime) CurrentCluster(ctx context.Context, cluster *biz.Cluster) error {
+	_, err := getKubeClientSet()
+	if err != nil {
+		return err
+	}
 	return nil
 }

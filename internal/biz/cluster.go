@@ -11,6 +11,7 @@ import (
 )
 
 var ErrClusterNotFound error = errors.New("cluster not found")
+var ErrClusterApiServerAddressEmpty error = errors.New("cluster api server address is empty")
 
 type ClusterType string
 
@@ -183,8 +184,14 @@ type BostionHost struct {
 	gorm.Model
 }
 
-func (c *Cluster) IsEmpty() bool {
-	return c.ID == 0
+func isClusterEmpty(c *Cluster) bool {
+	if c == nil {
+		return true
+	}
+	if c.ID == 0 {
+		return true
+	}
+	return false
 }
 
 func (c *Cluster) IsDeleteed() bool {
@@ -221,8 +228,6 @@ type ClusterRepo interface {
 	Delete(context.Context, int64) error
 	Put(ctx context.Context, cluster *Cluster) error
 	Watch(ctx context.Context) (*Cluster, error)
-	ReadClusterLog(cluster *Cluster) error
-	WriteClusterLog(cluster *Cluster) error
 }
 
 // 基础建设
@@ -244,37 +249,30 @@ type ClusterConstruct interface {
 
 // 运行时集群
 type ClusterRuntime interface {
-	CurrentCluster(context.Context) (*Cluster, error)
-	ConnectCluster(context.Context, *Cluster) error
+	CurrentCluster(context.Context, *Cluster) error
 }
 
 type ClusterUsecase struct {
-	log              *log.Helper
+	clusterRepo      ClusterRepo
 	infrastructure   Infrastructure
 	clusterConstruct ClusterConstruct
 	clusterRuntime   ClusterRuntime
-	repo             ClusterRepo
-	resources        chan *Cluster
+	log              *log.Helper
 }
 
-func NewClusterUseCase(repo ClusterRepo, infrastructure Infrastructure, clusterConstruct ClusterConstruct, clusterRuntime ClusterRuntime, logger log.Logger) *ClusterUsecase {
+func NewClusterUseCase(clusterRepo ClusterRepo, infrastructure Infrastructure, clusterConstruct ClusterConstruct, clusterRuntime ClusterRuntime, logger log.Logger) *ClusterUsecase {
 	c := &ClusterUsecase{
-		repo:             repo,
+		clusterRepo:      clusterRepo,
 		infrastructure:   infrastructure,
 		clusterConstruct: clusterConstruct,
 		clusterRuntime:   clusterRuntime,
 		log:              log.NewHelper(logger),
-		resources:        make(chan *Cluster, 1024),
 	}
 	return c
 }
 
 func (uc *ClusterUsecase) Get(ctx context.Context, id int64) (*Cluster, error) {
-	cluster, err := uc.repo.Get(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-	err = uc.repo.ReadClusterLog(cluster)
+	cluster, err := uc.clusterRepo.Get(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -282,18 +280,18 @@ func (uc *ClusterUsecase) Get(ctx context.Context, id int64) (*Cluster, error) {
 }
 
 func (uc *ClusterUsecase) List(ctx context.Context) ([]*Cluster, error) {
-	return uc.repo.List(ctx, nil)
+	return uc.clusterRepo.List(ctx, nil)
 }
 
 func (uc *ClusterUsecase) Delete(ctx context.Context, clusterID int64) error {
-	cluster, err := uc.repo.Get(ctx, clusterID)
+	cluster, err := uc.clusterRepo.Get(ctx, clusterID)
 	if err != nil {
 		return err
 	}
-	if cluster.IsEmpty() {
+	if isClusterEmpty(cluster) {
 		return nil
 	}
-	err = uc.repo.Delete(ctx, clusterID)
+	err = uc.clusterRepo.Delete(ctx, clusterID)
 	if err != nil {
 		return err
 	}
@@ -301,11 +299,11 @@ func (uc *ClusterUsecase) Delete(ctx context.Context, clusterID int64) error {
 }
 
 func (uc *ClusterUsecase) Save(ctx context.Context, cluster *Cluster) error {
-	data, err := uc.repo.GetByName(ctx, cluster.Name)
+	data, err := uc.clusterRepo.GetByName(ctx, cluster.Name)
 	if err != nil {
 		return err
 	}
-	if !data.IsEmpty() && cluster.ID != data.ID {
+	if !isClusterEmpty(cluster) && cluster.ID != data.ID {
 		return errors.New("cluster name already exists")
 	}
 	for _, node := range cluster.Nodes {
@@ -313,7 +311,7 @@ func (uc *ClusterUsecase) Save(ctx context.Context, cluster *Cluster) error {
 			node.Name = fmt.Sprintf("%s-%s", cluster.Name, utils.GetRandomString())
 		}
 	}
-	err = uc.repo.Save(ctx, cluster)
+	err = uc.clusterRepo.Save(ctx, cluster)
 	if err != nil {
 		return err
 	}
@@ -322,12 +320,12 @@ func (uc *ClusterUsecase) Save(ctx context.Context, cluster *Cluster) error {
 
 // 获取当前集群最新信息
 func (uc *ClusterUsecase) GetCurrentCluster(ctx context.Context) (*Cluster, error) {
-	uc.log.Info("get current cluster")
-	currentCluster, err := uc.clusterRuntime.CurrentCluster(ctx)
+	cluster := &Cluster{}
+	err := uc.clusterRuntime.CurrentCluster(ctx, cluster)
 	if err != nil {
 		return nil, err
 	}
-	cluster, err := uc.repo.GetByName(ctx, currentCluster.Name)
+	cluster, err = uc.clusterRepo.GetByName(ctx, cluster.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -336,7 +334,6 @@ func (uc *ClusterUsecase) GetCurrentCluster(ctx context.Context) (*Cluster, erro
 
 // 根据nodegroup增加节点
 func (uc *ClusterUsecase) NodeGroupIncreaseSize(ctx context.Context, cluster *Cluster, nodeGroup *NodeGroup, size int32) error {
-	uc.log.Info("node group increase size...")
 	for i := 0; i < int(size); i++ {
 		node := &Node{
 			Name:        fmt.Sprintf("%s-%s", cluster.Name, utils.GetRandomString()),
@@ -352,7 +349,6 @@ func (uc *ClusterUsecase) NodeGroupIncreaseSize(ctx context.Context, cluster *Cl
 
 // 删除节点
 func (uc *ClusterUsecase) DeleteNodes(ctx context.Context, cluster *Cluster, nodes []*Node) error {
-	uc.log.Info("delete nodes...")
 	for _, node := range nodes {
 		for i, n := range cluster.Nodes {
 			if n.ID == node.ID {
@@ -382,26 +378,23 @@ func (uc *ClusterUsecase) NodeGroupTemplateNodeInfo(ctx context.Context, cluster
 
 // 在云提供商销毁前清理打开的资源，例如协程等
 func (uc *ClusterUsecase) Cleanup(ctx context.Context) error {
-	uc.log.Info("clean up resources...")
-	close(uc.resources)
 	return nil
 }
 
 // 在每个主循环前调用，用于动态更新云提供商状态
 func (uc *ClusterUsecase) Refresh(ctx context.Context) error {
-	uc.log.Info("refresh resources...")
 	// 获取当前集群状态更新状态
-	currentCluster, err := uc.clusterRuntime.CurrentCluster(ctx)
+	cluster := &Cluster{}
+	err := uc.clusterRuntime.CurrentCluster(ctx, cluster)
 	if err != nil {
 		return err
 	}
-	cluster, err := uc.repo.GetByName(ctx, currentCluster.Name)
+	cluster, err = uc.clusterRepo.GetByName(ctx, cluster.Name)
 	if err != nil {
 		return err
 	}
-	cluster.Status = currentCluster.Status
 	for _, v := range cluster.Nodes {
-		for _, currentNode := range currentCluster.Nodes {
+		for _, currentNode := range cluster.Nodes {
 			if v.Name == currentNode.Name {
 				v.Status = currentNode.Status
 				break
@@ -425,7 +418,7 @@ func (uc *ClusterUsecase) Apply(ctx context.Context, cluster *Cluster) (err erro
 			return err
 		}
 	}
-	err = uc.repo.Put(ctx, cluster)
+	err = uc.clusterRepo.Put(ctx, cluster)
 	if err != nil {
 		return err
 	}
@@ -433,13 +426,16 @@ func (uc *ClusterUsecase) Apply(ctx context.Context, cluster *Cluster) (err erro
 }
 
 func (uc *ClusterUsecase) Watch(ctx context.Context) (*Cluster, error) {
-	return uc.repo.Watch(ctx)
+	return uc.clusterRepo.Watch(ctx)
 }
 
 func (uc *ClusterUsecase) Reconcile(ctx context.Context, cluster *Cluster) (err error) {
 	defer func() {
-		uc.repo.Save(ctx, cluster)
-		uc.repo.WriteClusterLog(cluster)
+		err = uc.clusterRepo.Save(ctx, cluster)
+		if err != nil {
+			uc.log.Errorf("Reconcile save cluster error: %v", err)
+			return
+		}
 	}()
 	if cluster.IsDeleteed() {
 		err = uc.clusterConstruct.UnInstallCluster(ctx, cluster)
@@ -452,8 +448,7 @@ func (uc *ClusterUsecase) Reconcile(ctx context.Context, cluster *Cluster) (err 
 		}
 		return nil
 	}
-	cluster.Logs = "start update cluster..."
-	err = uc.clusterRuntime.ConnectCluster(ctx, cluster)
+	err = uc.clusterRuntime.CurrentCluster(ctx, cluster)
 	if errors.Is(err, ErrClusterNotFound) {
 		err = uc.infrastructure.SaveServers(ctx, cluster)
 		if err != nil {
@@ -476,12 +471,12 @@ func (uc *ClusterUsecase) Reconcile(ctx context.Context, cluster *Cluster) (err 
 	if err != nil {
 		return err
 	}
-	currentCluster, err := uc.clusterRuntime.CurrentCluster(ctx)
+	err = uc.clusterRuntime.CurrentCluster(ctx, cluster)
 	if err != nil {
 		return err
 	}
 	removeNodes := make([]*Node, 0)
-	for _, currentNode := range currentCluster.Nodes {
+	for _, currentNode := range cluster.Nodes {
 		nodeExist := false
 		for _, node := range cluster.Nodes {
 			if currentNode.Name == node.Name {
@@ -500,7 +495,7 @@ func (uc *ClusterUsecase) Reconcile(ctx context.Context, cluster *Cluster) (err 
 	addNodes := make([]*Node, 0)
 	for _, node := range cluster.Nodes {
 		nodeExist := false
-		for _, currentNode := range currentCluster.Nodes {
+		for _, currentNode := range cluster.Nodes {
 			if node.Name == currentNode.Name {
 				nodeExist = true
 				break

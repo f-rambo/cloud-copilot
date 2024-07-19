@@ -113,7 +113,7 @@ func (p *ProjectInterface) GetProjectMockData(ctx context.Context, _ *emptypb.Em
 		Description: "project description",
 		State:       biz.ProjectStateInit,
 	}
-	business := p.c.Ocean.Business
+	business := p.c.Business
 	if business == nil {
 		return nil, errors.New("business technology is required")
 	}

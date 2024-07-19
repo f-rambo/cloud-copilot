@@ -14,6 +14,7 @@ import (
 	"github.com/f-rambo/ocean/internal/server"
 	"github.com/f-rambo/ocean/pkg/ansible"
 	"github.com/f-rambo/ocean/pkg/argoworkflows"
+	"github.com/f-rambo/ocean/pkg/githubapi"
 	"github.com/f-rambo/ocean/pkg/helm"
 	"github.com/f-rambo/ocean/pkg/kubernetes"
 	"github.com/f-rambo/ocean/pkg/pulumi"
@@ -49,8 +50,9 @@ func wireApp(bootstrap *conf.Bootstrap, logger log.Logger) (*kratos.App, func(),
 	appConstruct := helm.NewAppConstructRepo(bootstrap, logger)
 	appUsecase := biz.NewAppUsecase(appRepo, clusterRepo, projectRepo, sailorRepo, appRuntime, appConstruct, logger, bootstrap)
 	clusterInterface := interfaces.NewClusterInterface(clusterUsecase, projectUsecase, appUsecase, bootstrap, logger)
-	userRepo := data.NewUserRepo(dataData, logger)
-	userUseCase := biz.NewUseUser(userRepo, logger, bootstrap)
+	userRepo := data.NewUserRepo(dataData, bootstrap, logger)
+	thirdparty := githubapi.NewUserClient(bootstrap, logger)
+	userUseCase := biz.NewUseUser(userRepo, thirdparty, logger)
 	appInterface := interfaces.NewAppInterface(appUsecase, userUseCase, bootstrap, logger)
 	servicesRepo := data.NewServicesRepo(dataData, logger)
 	workflowRepo := argoworkflows.NewWorkflowRepo(bootstrap, logger)

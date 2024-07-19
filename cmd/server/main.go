@@ -65,8 +65,8 @@ func main() {
 	if err := c.Scan(&bc); err != nil {
 		panic(err)
 	}
-	oceanConf := bc.Ocean
-	logConf := oceanConf.Log
+	conf := bc
+	logConf := conf.Log
 
 	logger := log.With(log.NewStdLogger(&lumberjack.Logger{
 		Filename:   fmt.Sprintf("%s/%s", logConf.Path, logConf.Filename),

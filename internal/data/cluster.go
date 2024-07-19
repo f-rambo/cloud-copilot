@@ -71,7 +71,12 @@ func (c *clusterRepo) Save(ctx context.Context, cluster *biz.Cluster) error {
 			return err
 		}
 	}
-	return tx.Commit().Error
+	err = tx.Commit().Error
+	if err != nil {
+		return err
+	}
+	c.writeClusterLog(cluster)
+	return nil
 }
 
 func (c *clusterRepo) Get(ctx context.Context, id int64) (*biz.Cluster, error) {
@@ -86,6 +91,7 @@ func (c *clusterRepo) Get(ctx context.Context, id int64) (*biz.Cluster, error) {
 		return nil, err
 	}
 	cluster.Nodes = append(cluster.Nodes, nodes...)
+	c.readClusterLog(cluster)
 	return cluster, nil
 }
 
@@ -96,35 +102,6 @@ func (c *clusterRepo) GetByName(ctx context.Context, name string) (*biz.Cluster,
 		return nil, err
 	}
 	return cluster, nil
-}
-
-func (c *clusterRepo) ReadClusterLog(cluster *biz.Cluster) error {
-	clog := c.c.GetOceanLog()
-	logPath := fmt.Sprintf("%s/cluster-%d.log", clog.GetPath(), cluster.ID)
-	if utils.IsFileExist(logPath) {
-		logs, err := utils.ReadFile(logPath)
-		if err != nil {
-			return err
-		}
-		cluster.Logs = string(logs)
-	}
-	return nil
-}
-
-func (c *clusterRepo) WriteClusterLog(cluster *biz.Cluster) error {
-	clog := c.c.GetOceanLog()
-	file, err := utils.NewFile(clog.GetPath(),
-		fmt.Sprintf("cluster-%d.log", cluster.ID), true)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-	err = file.Write([]byte(cluster.Logs))
-	if err != nil {
-		return err
-	}
-	cluster.Logs = ""
-	return nil
 }
 
 func (c *clusterRepo) List(ctx context.Context, cluster *biz.Cluster) ([]*biz.Cluster, error) {
@@ -190,4 +167,34 @@ func (c *clusterRepo) Watch(ctx context.Context) (*biz.Cluster, error) {
 		return nil, err
 	}
 	return cluster, nil
+}
+
+func (c *clusterRepo) readClusterLog(cluster *biz.Cluster) {
+	clog := c.c.Log
+	logPath := fmt.Sprintf("%s/cluster-%d.log", clog.GetPath(), cluster.ID)
+	if utils.IsFileExist(logPath) {
+		logs, err := utils.ReadFile(logPath)
+		if err != nil {
+			c.log.Errorf("read cluster log error: %v", err)
+			return
+		}
+		cluster.Logs = string(logs)
+	}
+}
+
+func (c *clusterRepo) writeClusterLog(cluster *biz.Cluster) {
+	clog := c.c.Log
+	file, err := utils.NewFile(clog.GetPath(),
+		fmt.Sprintf("cluster-%d.log", cluster.ID), true)
+	if err != nil {
+		c.log.Errorf("write cluster log error: %v", err)
+		return
+	}
+	defer file.Close()
+	err = file.Write([]byte(cluster.Logs))
+	if err != nil {
+		c.log.Errorf("write cluster log error: %v", err)
+		return
+	}
+	cluster.Logs = ""
 }

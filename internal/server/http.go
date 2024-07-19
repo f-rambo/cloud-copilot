@@ -32,7 +32,7 @@ func NewHTTPServer(c *conf.Bootstrap,
 		),
 		http.Timeout(10 * time.Minute),
 	}
-	cserver := c.GetOceanServer()
+	cserver := c.Server
 	netWork := cserver.HTTP.GetNetwork()
 	if netWork != "" {
 		opts = append(opts, http.Network(netWork))

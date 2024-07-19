@@ -79,6 +79,21 @@ func (mr *MockUserRepoMockRecorder) GetUserByID(ctx, id interface{}) *gomock.Cal
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserByID", reflect.TypeOf((*MockUserRepo)(nil).GetUserByID), ctx, id)
 }
 
+// GetUserEmail mocks base method.
+func (m *MockUserRepo) GetUserEmail(ctx context.Context, token string) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetUserEmail", ctx, token)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetUserEmail indicates an expected call of GetUserEmail.
+func (mr *MockUserRepoMockRecorder) GetUserEmail(ctx, token interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserEmail", reflect.TypeOf((*MockUserRepo)(nil).GetUserEmail), ctx, token)
+}
+
 // GetUserInfoByEmail mocks base method.
 func (m *MockUserRepo) GetUserInfoByEmail(ctx context.Context, email string) (*biz.User, error) {
 	m.ctrl.T.Helper()
@@ -122,4 +137,56 @@ func (m *MockUserRepo) Save(ctx context.Context, user *biz.User) error {
 func (mr *MockUserRepoMockRecorder) Save(ctx, user interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Save", reflect.TypeOf((*MockUserRepo)(nil).Save), ctx, user)
+}
+
+// SignIn mocks base method.
+func (m *MockUserRepo) SignIn(arg0 context.Context, arg1 *biz.User) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SignIn", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SignIn indicates an expected call of SignIn.
+func (mr *MockUserRepoMockRecorder) SignIn(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SignIn", reflect.TypeOf((*MockUserRepo)(nil).SignIn), arg0, arg1)
+}
+
+// MockThirdparty is a mock of Thirdparty interface.
+type MockThirdparty struct {
+	ctrl     *gomock.Controller
+	recorder *MockThirdpartyMockRecorder
+}
+
+// MockThirdpartyMockRecorder is the mock recorder for MockThirdparty.
+type MockThirdpartyMockRecorder struct {
+	mock *MockThirdparty
+}
+
+// NewMockThirdparty creates a new mock instance.
+func NewMockThirdparty(ctrl *gomock.Controller) *MockThirdparty {
+	mock := &MockThirdparty{ctrl: ctrl}
+	mock.recorder = &MockThirdpartyMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockThirdparty) EXPECT() *MockThirdpartyMockRecorder {
+	return m.recorder
+}
+
+// GetUserEmail mocks base method.
+func (m *MockThirdparty) GetUserEmail(ctx context.Context, token string) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetUserEmail", ctx, token)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetUserEmail indicates an expected call of GetUserEmail.
+func (mr *MockThirdpartyMockRecorder) GetUserEmail(ctx, token interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserEmail", reflect.TypeOf((*MockThirdparty)(nil).GetUserEmail), ctx, token)
 }

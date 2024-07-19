@@ -49,13 +49,14 @@ func wireApp(controller *gomock.Controller, bootstrap *conf.Bootstrap, logger lo
 	appConstruct := appConstruct(controller)
 	// user
 	userRepo := userRepo(controller)
+	thirdparty := githubClient(controller)
 	// services
 	servicesRepo := servicesRepo(controller)
 	workflowRepo := workflowRepo(controller)
 	// biz
-	clusterUsecase := biz.NewClusterUseCase(context, clusterRepo, infrastructure, clusterConstruct, clusterRuntime, logger)
+	clusterUsecase := biz.NewClusterUseCase(clusterRepo, infrastructure, clusterConstruct, clusterRuntime, logger)
 	servicesUseCase := biz.NewServicesUseCase(servicesRepo, workflowRepo, logger)
-	userUseCase := biz.NewUseUser(userRepo, logger, bootstrap)
+	userUseCase := biz.NewUseUser(userRepo, thirdparty, logger)
 	appUsecase := biz.NewAppUsecase(appRepo, clusterRepo, projectRepo, sailorRepo, appRuntime, appConstruct, logger, bootstrap)
 	projectUsecase := biz.NewProjectUseCase(projectRepo, clusterPorjectRepo, logger)
 	servicesInterface := interfaces.NewServicesInterface(servicesUseCase, projectUsecase)
@@ -143,9 +144,6 @@ func clusterRepo(controller *gomock.Controller) biz.ClusterRepo {
 		cluster = paramCluster
 		return nil
 	})
-	mc.EXPECT().WriteClusterLog(gomock.Any()).AnyTimes().DoAndReturn(func(cluster *biz.Cluster) error {
-		return nil
-	})
 	return mc
 }
 
@@ -209,14 +207,8 @@ func clusterConstruct(controller *gomock.Controller) biz.ClusterConstruct {
 
 func clusterRuntime(controller *gomock.Controller) biz.ClusterRuntime {
 	mc := mocks.NewMockClusterRuntime(controller)
-	mc.EXPECT().CurrentCluster(gomock.Any()).AnyTimes().DoAndReturn(func(ctx context.Context) (*biz.Cluster, error) {
+	mc.EXPECT().CurrentCluster(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(func(ctx context.Context) (*biz.Cluster, error) {
 		return cluster, nil
-	})
-	mc.EXPECT().ConnectCluster(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(func(ctx context.Context, cluster *biz.Cluster) error {
-		if cluster == nil {
-			return biz.ErrClusterNotFound
-		}
-		return nil
 	})
 	return mc
 }
@@ -257,6 +249,10 @@ func appConstruct(controller *gomock.Controller) biz.AppConstruct {
 // user
 func userRepo(controller *gomock.Controller) biz.UserRepo {
 	return mocks.NewMockUserRepo(controller)
+}
+
+func githubClient(controller *gomock.Controller) biz.Thirdparty {
+	return mocks.NewMockThirdparty(controller)
 }
 
 // services

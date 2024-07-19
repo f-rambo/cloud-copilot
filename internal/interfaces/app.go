@@ -7,13 +7,12 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/pkg/errors"
-
 	v1alpha1 "github.com/f-rambo/ocean/api/app/v1alpha1"
 	"github.com/f-rambo/ocean/internal/biz"
 	"github.com/f-rambo/ocean/internal/conf"
 	"github.com/f-rambo/ocean/utils"
 	"github.com/go-kratos/kratos/v2/log"
+	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
@@ -129,7 +128,7 @@ func (a *AppInterface) UploadApp(ctx context.Context, req *v1alpha1.FileUploadRe
 	if filepath.Ext(req.GetFileName()) != ".tgz" {
 		return nil, errors.New("file type is not supported")
 	}
-	cresource := a.c.GetOceanResource()
+	cresource := a.c.Resource
 	filePathName, err := a.upload(cresource.GetAppPath(), req.GetFileName(), req.GetChunk())
 	if err != nil {
 		return nil, err

@@ -20,12 +20,6 @@ func NewKVStore() *KVStore {
 }
 
 func (kv *KVStore) Put(ctx context.Context, key, val string) error {
-	if key == "" {
-		return errors.New("key is empty")
-	}
-	if val == "" {
-		return errors.New("val is empty")
-	}
 	kv.mu.Lock()
 	defer kv.mu.Unlock()
 	if _, exists := kv.chans[key]; !exists {

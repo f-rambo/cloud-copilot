@@ -13,23 +13,22 @@ import (
 
 type UserInterface struct {
 	v1alpha1.UnimplementedUserInterfaceServer
-	uc       *biz.UserUseCase
-	authConf *conf.Auth
+	uc *biz.UserUseCase
 }
 
 func NewUserInterface(uc *biz.UserUseCase, conf *conf.Bootstrap) *UserInterface {
-	cAuth := conf.GetOceanAuth()
-	return &UserInterface{uc: uc, authConf: &cAuth}
+	return &UserInterface{uc: uc}
 }
 
 func (u *UserInterface) SignIn(ctx context.Context, request *v1alpha1.SignIn) (*v1alpha1.User, error) {
-	user, err := u.uc.SignIn(ctx, &biz.User{
+	user := &biz.User{
 		Name:        request.Username,
 		Email:       request.Email,
 		PassWord:    request.Password,
 		AccessToken: request.AccessToken,
 		SignType:    request.SignType,
-	})
+	}
+	err := u.uc.SignIn(ctx, user)
 	if err != nil {
 		return nil, err
 	}

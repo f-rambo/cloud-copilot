@@ -7,88 +7,6 @@ import (
 )
 
 type Bootstrap struct {
-	Ocean         Ocean `json:"ocean,omitempty"`
-	Ansible       any   `json:"ansible,omitempty"`
-	IstioBase     any   `json:"istio_base,omitempty"`
-	Istiod        any   `json:"istiod,omitempty"`
-	Traefik       any   `json:"traefik,omitempty"`
-	Serverinit    any   `json:"serverinit,omitempty"`
-	OpenEBS       any   `json:"openebs,omitempty"`
-	Argoworkflows any   `json:"argoworkflows,omitempty"`
-	Prometheus    any   `json:"prometheus,omitempty"`
-	Grafana       any   `json:"grafana,omitempty"`
-}
-
-func (b *Bootstrap) GetOceanData() Data {
-	return b.Ocean.Data
-}
-
-func (b *Bootstrap) GetOceanETCD() ETCD {
-	return b.Ocean.ETCD
-}
-
-func (b *Bootstrap) GetOceanServer() Server {
-	return b.Ocean.Server
-}
-
-func (b *Bootstrap) GetOceanAuth() Auth {
-	return b.Ocean.Auth
-}
-
-func (b *Bootstrap) GetOceanResource() Resource {
-	return b.Ocean.Resource
-}
-
-func (b *Bootstrap) GetOceanLog() Log {
-	return b.Ocean.Log
-}
-
-func (b *Bootstrap) GetOpenebsConfig() map[string]interface{} {
-	openebsConfig := make(map[string]interface{})
-	openebsData, ok := b.OpenEBS.(map[string]interface{})
-	if b.OpenEBS != nil && openebsData != nil && ok {
-		openebsConfig = openebsData
-	}
-	return openebsConfig
-}
-
-func (b *Bootstrap) GetTraefikConfig() map[string]interface{} {
-	traefikConfig := make(map[string]interface{})
-	traefikData, ok := b.Traefik.(map[string]interface{})
-	if b.Traefik != nil && traefikData != nil && ok {
-		traefikConfig = traefikData
-	}
-	return traefikConfig
-}
-
-func (b *Bootstrap) GetArgoWorkflowConfig() map[string]interface{} {
-	argoworkflowsConfig := make(map[string]interface{})
-	argoworkflowsData, ok := b.Argoworkflows.(map[string]interface{})
-	if b.Argoworkflows != nil && argoworkflowsData != nil && ok {
-		argoworkflowsConfig = argoworkflowsData
-	}
-	return argoworkflowsConfig
-}
-
-func (b *Bootstrap) GetPrometheusConfig() map[string]interface{} {
-	prometheusConfig := make(map[string]interface{})
-	prometheusData, ok := b.Prometheus.(map[string]interface{})
-	if b.Prometheus != nil && prometheusData != nil && ok {
-		prometheusConfig = prometheusData
-	}
-	return prometheusConfig
-}
-
-func (b *Bootstrap) GetGrafanaConfig() map[string]interface{} {
-	grafanaConfig := make(map[string]interface{})
-	grafanaData, ok := b.Grafana.(map[string]interface{})
-	if b.Grafana != nil && grafanaData != nil && ok {
-		grafanaConfig = grafanaData
-	}
-	return grafanaConfig
-}
-
-type Ocean struct {
 	Env      string   `json:"env,omitempty"`
 	Server   Server   `json:"server,omitempty"`
 	Data     Data     `json:"data,omitempty"`
@@ -97,6 +15,7 @@ type Ocean struct {
 	Auth     Auth     `json:"auth,omitempty"`
 	Resource Resource `json:"resource,omitempty"`
 	Business any      `json:"business,omitempty"`
+	Ansible  any      `json:"ansible,omitempty"`
 }
 
 type ETCD struct {
@@ -130,18 +49,24 @@ func (e ETCD) GetPassword() string {
 	return e.Password
 }
 
+type Env string
+
 const (
-	EnvLocal       = "local"
-	EnvBostionHost = "bostionhost"
-	EnvCluster     = "cluster"
+	EnvLocal       Env = "local"
+	EnvBostionHost Env = "bostionhost"
+	EnvCluster     Env = "cluster"
 )
 
-func (o Ocean) GetEnv() string {
+func (e Env) String() string {
+	return string(e)
+}
+
+func (b Bootstrap) GetEnv() string {
 	env := os.Getenv("ENV")
 	if env != "" {
 		return env
 	}
-	return o.Env
+	return b.Env
 }
 
 type Resource struct {

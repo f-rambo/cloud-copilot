@@ -94,18 +94,18 @@ func (mr *MockClusterRepoMockRecorder) List(arg0, arg1 interface{}) *gomock.Call
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockClusterRepo)(nil).List), arg0, arg1)
 }
 
-// ReadClusterLog mocks base method.
-func (m *MockClusterRepo) ReadClusterLog(cluster *biz.Cluster) error {
+// Put mocks base method.
+func (m *MockClusterRepo) Put(ctx context.Context, cluster *biz.Cluster) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ReadClusterLog", cluster)
+	ret := m.ctrl.Call(m, "Put", ctx, cluster)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// ReadClusterLog indicates an expected call of ReadClusterLog.
-func (mr *MockClusterRepoMockRecorder) ReadClusterLog(cluster interface{}) *gomock.Call {
+// Put indicates an expected call of Put.
+func (mr *MockClusterRepoMockRecorder) Put(ctx, cluster interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReadClusterLog", reflect.TypeOf((*MockClusterRepo)(nil).ReadClusterLog), cluster)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Put", reflect.TypeOf((*MockClusterRepo)(nil).Put), ctx, cluster)
 }
 
 // Save mocks base method.
@@ -122,18 +122,19 @@ func (mr *MockClusterRepoMockRecorder) Save(arg0, arg1 interface{}) *gomock.Call
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Save", reflect.TypeOf((*MockClusterRepo)(nil).Save), arg0, arg1)
 }
 
-// WriteClusterLog mocks base method.
-func (m *MockClusterRepo) WriteClusterLog(cluster *biz.Cluster) error {
+// Watch mocks base method.
+func (m *MockClusterRepo) Watch(ctx context.Context) (*biz.Cluster, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "WriteClusterLog", cluster)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret := m.ctrl.Call(m, "Watch", ctx)
+	ret0, _ := ret[0].(*biz.Cluster)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
-// WriteClusterLog indicates an expected call of WriteClusterLog.
-func (mr *MockClusterRepoMockRecorder) WriteClusterLog(cluster interface{}) *gomock.Call {
+// Watch indicates an expected call of Watch.
+func (mr *MockClusterRepoMockRecorder) Watch(ctx interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WriteClusterLog", reflect.TypeOf((*MockClusterRepo)(nil).WriteClusterLog), cluster)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Watch", reflect.TypeOf((*MockClusterRepo)(nil).Watch), ctx)
 }
 
 // MockInfrastructure is a mock of Infrastructure interface.
@@ -332,31 +333,16 @@ func (m *MockClusterRuntime) EXPECT() *MockClusterRuntimeMockRecorder {
 	return m.recorder
 }
 
-// ConnectCluster mocks base method.
-func (m *MockClusterRuntime) ConnectCluster(arg0 context.Context, arg1 *biz.Cluster) error {
+// CurrentCluster mocks base method.
+func (m *MockClusterRuntime) CurrentCluster(arg0 context.Context, arg1 *biz.Cluster) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ConnectCluster", arg0, arg1)
+	ret := m.ctrl.Call(m, "CurrentCluster", arg0, arg1)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// ConnectCluster indicates an expected call of ConnectCluster.
-func (mr *MockClusterRuntimeMockRecorder) ConnectCluster(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ConnectCluster", reflect.TypeOf((*MockClusterRuntime)(nil).ConnectCluster), arg0, arg1)
-}
-
-// CurrentCluster mocks base method.
-func (m *MockClusterRuntime) CurrentCluster(arg0 context.Context) (*biz.Cluster, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CurrentCluster", arg0)
-	ret0, _ := ret[0].(*biz.Cluster)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
 // CurrentCluster indicates an expected call of CurrentCluster.
-func (mr *MockClusterRuntimeMockRecorder) CurrentCluster(arg0 interface{}) *gomock.Call {
+func (mr *MockClusterRuntimeMockRecorder) CurrentCluster(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CurrentCluster", reflect.TypeOf((*MockClusterRuntime)(nil).CurrentCluster), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CurrentCluster", reflect.TypeOf((*MockClusterRuntime)(nil).CurrentCluster), arg0, arg1)
 }

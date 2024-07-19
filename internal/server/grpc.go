@@ -33,7 +33,7 @@ func NewGRPCServer(c *conf.Bootstrap,
 		),
 		grpc.Timeout(10 * time.Minute),
 	}
-	cserver := c.GetOceanServer()
+	cserver := c.Server
 	netWork := cserver.GRPC.GetNetwork()
 	if netWork != "" {
 		opts = append(opts, grpc.Network(netWork))

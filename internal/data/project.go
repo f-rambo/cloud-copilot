@@ -16,7 +16,7 @@ type projectRepo struct {
 }
 
 func NewProjectRepo(data *Data, c *conf.Bootstrap, logger log.Logger) biz.ProjectRepo {
-	cserver := c.GetOceanServer()
+	cserver := c.Server
 	return &projectRepo{
 		data:       data,
 		log:        log.NewHelper(logger),

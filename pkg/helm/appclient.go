@@ -30,7 +30,7 @@ func NewAppConstructRepo(c *conf.Bootstrap, logger log.Logger) biz.AppConstruct 
 }
 
 func (r *AppConstructRepo) GetAppVersionChartInfomation(ctx context.Context, appVersion *biz.AppVersion) error {
-	cresource := r.c.GetOceanResource()
+	cresource := r.c.Resource
 	charInfo, err := GetLocalChartInfo(appVersion.AppName, cresource.GetAppPath(), appVersion.Chart)
 	if err != nil {
 		return err
@@ -59,7 +59,7 @@ func (r *AppConstructRepo) DeployingApp(ctx context.Context, appDeployed *biz.De
 	if err != nil {
 		return err
 	}
-	cresource := r.c.GetOceanResource()
+	cresource := r.c.Resource
 	chart := fmt.Sprintf("%s%s", cresource.GetAppPath(), appDeployed.Chart)
 	if appDeployed.AppTypeID == biz.AppTypeRepo {
 		chart = fmt.Sprintf("%s%s/%s", cresource.GetRepoPath(), appDeployed.AppName, appDeployed.Chart)
@@ -123,7 +123,7 @@ func (r *AppConstructRepo) AddAppRepo(ctx context.Context, helmRepo *biz.AppHelm
 	if err != nil {
 		return err
 	}
-	cresource := r.c.GetOceanResource()
+	cresource := r.c.Resource
 	res.CachePath = cresource.GetRepoPath()
 	indexFile, err := res.DownloadIndexFile()
 	if err != nil {
@@ -212,7 +212,7 @@ func (r *AppConstructRepo) GetAppsByRepo(ctx context.Context, helmRepo *biz.AppH
 }
 
 func (r *AppConstructRepo) DeleteAppChart(ctx context.Context, app *biz.App, versionId int64) (err error) {
-	cresource := r.c.GetOceanResource()
+	cresource := r.c.Resource
 	if app.Icon != "" && utils.IsFileExist(cresource.GetIconPath()+app.Icon) && versionId == 0 {
 		err = utils.DeleteFile(cresource.GetIconPath() + app.Icon)
 		if err != nil {

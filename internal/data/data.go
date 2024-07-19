@@ -32,8 +32,8 @@ type Data struct {
 
 func NewData(c *conf.Bootstrap, logger log.Logger) (*Data, func(), error) {
 	var err error
-	cdata := c.GetOceanData()
-	etcd := c.GetOceanETCD()
+	cdata := c.Data
+	etcd := c.ETCD
 	data := &Data{
 		databaseConf: &cdata,
 		etcdConf:     &etcd,
