@@ -40,6 +40,6 @@ bin/
 # log
 logs/
 
-resource/
+/resource/
 
 copilot/
