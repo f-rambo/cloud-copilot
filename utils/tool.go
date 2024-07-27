@@ -103,7 +103,6 @@ func (f *File) handlerFile() (err error) {
 	}
 	if f.checkIsObjExist(f.path + f.name) {
 		if f.resume {
-			// resume
 			f.outputFile, err = os.OpenFile(f.path+f.name, os.O_APPEND|os.O_WRONLY, 0644)
 			return err
 		}
@@ -191,12 +190,11 @@ func TimeParse(timeStr string) (time.Time, error) {
 }
 
 func getRandomTimeString() string {
-	rand.Seed(time.Now().UnixNano())
-	randPart := rand.Intn(1000)                     // Generate a random integer
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	randPart := r.Intn(1000)                        // Generate a random integer
 	timePart := time.Now().Format("20060102150405") // Get the current time in the format YYYYMMDDHHMMSS
 	return fmt.Sprintf("%s%d", timePart, randPart)
 }
-
 func ReadFile(path string) ([]byte, error) {
 	return os.ReadFile(path)
 }

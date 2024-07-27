@@ -7,25 +7,30 @@ import (
 )
 
 type ConfigArgs struct {
-	ApiServer string
-	Token     string
-	CaData    string
-	KeyData   string
-	CertData  string
+	ApiServer  string
+	Token      string
+	CaData     string
+	KeyData    string
+	CertData   string
+	KubeConfig string
 }
 
 func getKubeConfig(args *ConfigArgs) (config *rest.Config, err error) {
 	if args != nil {
-		config := &rest.Config{
-			Host:        args.ApiServer,
-			BearerToken: args.Token,
-			TLSClientConfig: rest.TLSClientConfig{
-				CAData:   []byte(args.CaData),
-				KeyData:  []byte(args.KeyData),
-				CertData: []byte(args.CertData),
-			},
+		if args.KubeConfig != "" {
+			return clientcmd.BuildConfigFromFlags("", args.KubeConfig)
 		}
-		return config, nil
+		if args.ApiServer != "" && (args.Token != "" || (args.CaData != "" && args.KeyData != "" && args.CertData != "")) {
+			return &rest.Config{
+				Host:        args.ApiServer,
+				BearerToken: args.Token,
+				TLSClientConfig: rest.TLSClientConfig{
+					CAData:   []byte(args.CaData),
+					KeyData:  []byte(args.KeyData),
+					CertData: []byte(args.CertData),
+				},
+			}, nil
+		}
 	}
 	config, err = rest.InClusterConfig()
 	if err != nil {

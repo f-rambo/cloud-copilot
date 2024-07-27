@@ -4,20 +4,21 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
+	"io"
 	"strings"
 
 	"github.com/apenella/go-ansible/v2/pkg/execute"
+	"github.com/apenella/go-ansible/v2/pkg/execute/result"
 	"github.com/apenella/go-ansible/v2/pkg/execute/result/transformer"
 	"github.com/apenella/go-ansible/v2/pkg/playbook"
-	"github.com/f-rambo/ocean/internal/conf"
+	"github.com/f-rambo/ocean/utils"
 	"github.com/pkg/errors"
 	"github.com/spf13/cast"
 	"gopkg.in/yaml.v2"
 )
 
 type GoAnsiblePkg struct {
-	c                     *conf.Bootstrap
+	ansibleConfig         any
 	logPrefix             string
 	ansiblePlaybookBinary string
 	LogChan               chan string
@@ -26,6 +27,7 @@ type GoAnsiblePkg struct {
 	playbooks             []string
 	env                   map[string]string
 	servers               []Server
+	mateData              map[string]string
 }
 
 type Server struct {
@@ -35,16 +37,39 @@ type Server struct {
 	Role     string
 }
 
-func NewGoAnsiblePkg(c *conf.Bootstrap) *GoAnsiblePkg {
+func NewGoAnsiblePkg(ansibleConfig any) *GoAnsiblePkg {
 	return &GoAnsiblePkg{
-		c:                     c,
+		ansibleConfig:         ansibleConfig,
 		ansiblePlaybookBinary: playbook.DefaultAnsiblePlaybookBinary,
 	}
 }
 
 func (a *GoAnsiblePkg) Write(p []byte) (n int, err error) {
-	a.LogChan <- string(p)
 	return len(p), nil
+}
+
+func (a *GoAnsiblePkg) Print(ctx context.Context, reader io.Reader, writer io.Writer, options ...result.OptionsFunc) error {
+	if a.LogChan == nil {
+		return nil
+	}
+	for {
+		buf := make([]byte, 1024)
+		n, err := reader.Read(buf)
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			return err
+		}
+		if n > 0 {
+			a.LogChan <- string(buf[:n])
+		}
+	}
+	return nil
+}
+
+func (a *GoAnsiblePkg) Enrich(err error) error {
+	return nil
 }
 
 func (a *GoAnsiblePkg) SetLogChan(logchan chan string) *GoAnsiblePkg {
@@ -92,8 +117,27 @@ func (a *GoAnsiblePkg) SetServers(servers ...Server) *GoAnsiblePkg {
 }
 
 func (a *GoAnsiblePkg) SetEnvMap(env map[string]string) *GoAnsiblePkg {
+	if env == nil {
+		a.env = make(map[string]string)
+		return a
+	}
 	for k, v := range env {
 		a.SetEnv(k, v)
+	}
+	return a
+}
+
+func (a *GoAnsiblePkg) SetMatedata(key, val string) *GoAnsiblePkg {
+	if a.mateData == nil {
+		a.mateData = make(map[string]string)
+	}
+	a.mateData[key] = val
+	return a
+}
+
+func (a *GoAnsiblePkg) SetMatedataMap(mateData map[string]string) *GoAnsiblePkg {
+	for k, v := range mateData {
+		a.SetMatedata(k, v)
 	}
 	return a
 }
@@ -101,9 +145,6 @@ func (a *GoAnsiblePkg) SetEnvMap(env map[string]string) *GoAnsiblePkg {
 func (a *GoAnsiblePkg) ExecPlayBooks(ctx context.Context) error {
 	if a.cmdRunDir == "" {
 		return errors.New("cmdRunDir is required")
-	}
-	if a.inventory == "" {
-		return errors.New("inventory is required")
 	}
 	if len(a.playbooks) == 0 {
 		return errors.New("playbooks is required")
@@ -132,14 +173,14 @@ func (a *GoAnsiblePkg) ExecPlayBooks(ctx context.Context) error {
 		playbook.WithPlaybooks(a.playbooks...),
 		playbook.WithPlaybookOptions(ansiblePlaybookOptions),
 		playbook.WithBinary(a.ansiblePlaybookBinary),
-		playbook.WithPlaybookOptions(ansiblePlaybookOptions),
 	)
 
 	exec := execute.NewDefaultExecute(
 		execute.WithCmd(playbookCmd),
 		execute.WithCmdRunDir(a.cmdRunDir),
-		execute.WithErrorEnrich(playbook.NewAnsiblePlaybookErrorEnrich()),
+		execute.WithErrorEnrich(a),
 		execute.WithWrite(a),
+		execute.WithOutput(a),
 		execute.WithWriteError(a),
 		execute.WithEnvVars(a.env),
 		execute.WithTransformers(
@@ -167,7 +208,7 @@ func (a *GoAnsiblePkg) generateAnsibleCfg() error {
 		Inventory     map[string]any `json:"inventory"`
 	}
 	ansibleCfg := AnsibleCfg{}
-	ansibleCfgJson, err := json.Marshal(a.c.Ansible)
+	ansibleCfgJson, err := json.Marshal(a.ansibleConfig)
 	if err != nil {
 		return err
 	}
@@ -195,7 +236,16 @@ func (a *GoAnsiblePkg) generateAnsibleCfg() error {
 		ansibleCfgContent += fString(k, v)
 	}
 	// write ansible.cfg
-	return os.WriteFile(strings.Join([]string{a.cmdRunDir, "ansible.cfg"}, "/"), []byte(ansibleCfgContent), 0644)
+	file, err := utils.NewFile(a.cmdRunDir, "ansible.cfg", true)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	err = file.ClearFileContent()
+	if err != nil {
+		return err
+	}
+	return file.Write([]byte(ansibleCfgContent))
 }
 
 func (a *GoAnsiblePkg) generateInventoryFile() error {
@@ -262,17 +312,30 @@ kube_control_plane
 kube_node
 calico_rr
 `
-
 	// write inventory.ini
-	a.inventory = strings.Join([]string{a.cmdRunDir, "inventory.ini"}, "/")
-	return os.WriteFile(a.inventory, []byte(inventory), 0644)
+	file, err := utils.NewFile(a.cmdRunDir, "inventory.ini", true)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	err = file.ClearFileContent()
+	if err != nil {
+		return err
+	}
+	err = file.Write([]byte(inventory))
+	if err != nil {
+		return err
+	}
+	a.inventory = file.GetFileName()
+	return nil
 }
 
 // Playbook represents an Ansible Playbook
 type Playbook struct {
-	Name  string `yaml:"name"`
-	Hosts string `yaml:"hosts"`
-	Tasks []Task `yaml:"tasks"`
+	Name        string `yaml:"name"`
+	Hosts       string `yaml:"hosts"`
+	GatherFacts string `yaml:"gather_facts,omitempty"`
+	Tasks       []Task `yaml:"tasks"`
 }
 
 // Task represents a task in the Ansible Playbook
@@ -292,6 +355,8 @@ type Task struct {
 	Shell         string             `yaml:"shell,omitempty"`
 	Register      string             `yaml:"register,omitempty"`
 	IgnoreErrors  string             `yaml:"ignore_errors,omitempty"`
+	Command       string             `yaml:"command,omitempty"`
+	Debug         *Debug             `yaml:"debug,omitempty"`
 }
 
 // AptTask represents an apt task
@@ -353,6 +418,10 @@ type GetUrl struct {
 	Mode string `yaml:"mode,omitempty"`
 }
 
+type Debug struct {
+	Msg string `yaml:"msg,omitempty"`
+}
+
 type Community struct {
 	Docker Docker `yaml:"docker,omitempty"`
 }
@@ -382,22 +451,30 @@ func (p *Playbook) AddSynchronize(name, src, dest string) {
 	})
 }
 
-func SavePlaybook(dir string, playbook *Playbook) (path string, err error) {
+func savePlaybook(dir string, playbook *Playbook) (path string, err error) {
 	playbooks := []Playbook{*playbook}
 	playbookData, err := yaml.Marshal(playbooks)
 	if err != nil {
 		return "", err
 	}
 	fileContent := fmt.Sprintf("---\n%s", string(playbookData))
-	path = strings.Join([]string{dir, playbook.Name + ".yml"}, "/")
-	err = os.WriteFile(path, []byte(fileContent), 0644)
+	file, err := utils.NewFile(dir, playbook.Name+".yml", true)
 	if err != nil {
 		return "", err
 	}
-	return path, nil
+	defer file.Close()
+	err = file.ClearFileContent()
+	if err != nil {
+		return "", err
+	}
+	err = file.Write([]byte(fileContent))
+	if err != nil {
+		return "", err
+	}
+	return file.GetFileName(), nil
 }
 
-func GetServerInitPlaybook() *Playbook {
+func getServerInitPlaybook() *Playbook {
 	return &Playbook{
 		Name:  "serverinit",
 		Hosts: "all",
@@ -446,7 +523,7 @@ func GetServerInitPlaybook() *Playbook {
 	}
 }
 
-func GetMigratePlaybook() *Playbook {
+func getMigratePlaybook() *Playbook {
 	playbook := &Playbook{
 		Name:  "migrate",
 		Hosts: "all",
@@ -550,4 +627,89 @@ func GetMigratePlaybook() *Playbook {
 	}
 	playbook.AddTask(task)
 	return playbook
+}
+
+type OutputKey string
+
+func (o OutputKey) String() string {
+	return string(o)
+}
+
+const (
+	StartOutputKey OutputKey = "oceanstart"
+	EndOutputKey   OutputKey = "oceanend"
+)
+
+func getSystemInformation() *Playbook {
+	return &Playbook{
+		Name:        "systeminfo",
+		Hosts:       "all",
+		GatherFacts: "no",
+		Tasks: []Task{
+			{
+				Name: "Install pciutils",
+				Apt: &AptTask{
+					Name:  []string{"pciutils"},
+					State: "present",
+				},
+			},
+			{
+				Name:         "Get GPU number",
+				Shell:        "lspci | grep -i 'NVIDIA' | wc -l", // 英伟达提供了kuberentes插件
+				Register:     "gpu_number",
+				IgnoreErrors: "yes",
+			},
+			{
+				Name:         "Get GPU specification",
+				Shell:        "lspci | grep -i 'NVIDIA' | awk -F 'VGA compatible controller:' '{print $2;exit}'", // 只保留一行数据
+				Register:     "gpu_spec",
+				IgnoreErrors: "yes",
+			},
+			{
+				Name:     "Get CPU number",
+				Shell:    "lscpu | grep '^CPU(s):' | awk '{print $2;exit}'",
+				Register: "cpu_number",
+			},
+			{
+				Name:     "Get memory",
+				Shell:    `free -m | awk '/^Mem:/ {printf "%.0f\n", $2 / 1024}'`,
+				Register: "memory",
+			},
+			{
+				Name:     "Get disk",
+				Shell:    `df -h | awk '/^\/dev/ {print $2}' | awk 'function convert(size) {n = substr(size, 1, length(size)-1); unit = substr(size, length(size), 1); if (unit == "G") {return n} else if (unit == "M") {return n / 1024} else if (unit == "K") {return n / (1024*1024)} else if (unit == "T") {return n * 1024} return 0} {sum += convert($1)} END {print int(sum)}'`,
+				Register: "disk",
+			},
+			{
+				Name:     "Get network information",
+				Shell:    `default_ip=$(ip addr show $(ip route | grep default | awk '{print $5}') | grep 'inet ' | awk '{print $2}' | cut -d/ -f1) && echo $default_ip`,
+				Register: "ip",
+			},
+			{
+				Name:     "Get OS information",
+				Shell:    `cat /etc/os-release | grep '^PRETTY_NAME=' | cut -d '=' -f 2 | tr -d '"'`,
+				Register: "os_info",
+			},
+			{
+				Name:     "Get kernel information",
+				Shell:    "uname -a",
+				Register: "kernel_info",
+			},
+			{
+				Name:         "Get Container runtime version",
+				Shell:        "containerd --version",
+				Register:     "container_version",
+				IgnoreErrors: "yes",
+			},
+			{
+				Name: "Print system information",
+				Debug: &Debug{
+					Msg: fmt.Sprintf("%s%s%s",
+						StartOutputKey.String(),
+						`{"node_id":"{{ inventory_hostname }}","gpu_number": "{{ gpu_number.stdout }}", "gpu_spec": "{{ gpu_spec.stdout }}", "cpu_number": "{{ cpu_number.stdout }}", "memory": "{{ memory.stdout }}", "disk": "{{ disk.stdout }}", "ip": "{{ ip.stdout }}", "os_info": "{{ os_info.stdout }}", "kernel_info": "{{ kernel_info.stdout }}", "container_version": "{{ container_version.stdout }}"}`,
+						EndOutputKey.String()),
+				},
+			},
+		},
+	}
 }

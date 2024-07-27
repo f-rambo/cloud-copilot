@@ -23,8 +23,6 @@ etcd:
   password: ''
   endpoints:
     - ''
-    - ''
-    - ''
 log:
   path: logs
   filename: log.log
@@ -81,7 +79,7 @@ ansible:
     stdout_callback: default
     display_skipped_hosts: no
     library: './library'
-    callbacks_enabled: 'profile_tasks,ara_default'
+    callbacks_enabled: 'profile_tasks'
     roles_path: 'roles:$VIRTUAL_ENV/usr/local/share/kubespray/roles:$VIRTUAL_ENV/usr/local/share/ansible/roles:/usr/share/kubespray/roles'
     deprecation_warnings: false
     inventory_ignore_extensions: '~, .orig, .bak, .ini, .cfg, .retry, .pyc, .pyo, .creds, .gpg'

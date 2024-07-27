@@ -25,6 +25,7 @@ func NewClusterInfrastructure(c *conf.Bootstrap, logger log.Logger) biz.Infrastr
 	}
 }
 
+// 在云厂商创建服务器
 func (c *ClusterInfrastructure) SaveServers(ctx context.Context, cluster *biz.Cluster) error {
 	if cluster.GetType() == biz.ClusterTypeLocal {
 		return nil
@@ -41,6 +42,7 @@ func (c *ClusterInfrastructure) SaveServers(ctx context.Context, cluster *biz.Cl
 	return errors.New("not support cluster type")
 }
 
+// 删除云厂商服务器
 func (c *ClusterInfrastructure) DeleteServers(ctx context.Context, cluster *biz.Cluster) error {
 	if cluster.GetType() == biz.ClusterTypeLocal {
 		return nil
@@ -57,42 +59,12 @@ func (c *ClusterInfrastructure) DeleteServers(ctx context.Context, cluster *biz.
 	return nil
 }
 
+// 创建阿里云服务器
 func (c *ClusterInfrastructure) alicloudServers(ctx context.Context, cluster *biz.Cluster, delete ...bool) error {
-	args := AlicloudClusterArgs{
-		Name:      cluster.Name,
-		PublicKey: cluster.PublicKey,
-		Nodes:     make([]AlicloudNodeArgs, 0),
-	}
-	for _, node := range cluster.Nodes {
-		labels := make(map[string]string)
-		if node.Labels != "" {
-			err := json.Unmarshal([]byte(node.Labels), &labels)
-			if err != nil {
-				return err
-			}
-		}
-		if node.NodeGroup == nil {
-			return errors.New("node group is nil")
-		}
-		args.Nodes = append(args.Nodes, AlicloudNodeArgs{
-			Name:                    node.Name,
-			InstanceType:            node.NodeGroup.InstanceType,
-			CPU:                     node.NodeGroup.CPU,
-			Memory:                  node.NodeGroup.Memory,
-			GPU:                     node.NodeGroup.GPU,
-			GpuSpec:                 node.NodeGroup.GpuSpec,
-			OSImage:                 node.NodeGroup.OSImage,
-			InternetMaxBandwidthOut: node.NodeGroup.InternetMaxBandwidthOut,
-			SystemDisk:              node.NodeGroup.SystemDisk,
-			DataDisk:                node.NodeGroup.DataDisk,
-			NodeInitScript:          node.NodeGroup.NodeInitScript,
-			Labels:                  labels,
-		})
-	}
 	var pulumiFunc PulumiFunc
-	pulumiFunc = StartAlicloudCluster(args).StartServers
+	pulumiFunc = StartAlicloudCluster(cluster).StartServers
 	if len(delete) > 0 {
-		pulumiFunc = StartAlicloudCluster(args).Clear
+		pulumiFunc = StartAlicloudCluster(cluster).Clear
 	}
 	g := new(errgroup.Group)
 	bostionHost := &biz.BostionHost{}
@@ -116,6 +88,7 @@ func (c *ClusterInfrastructure) alicloudServers(ctx context.Context, cluster *bi
 		if err != nil {
 			return err
 		}
+		// 解析pulumi输出
 		outputMap := make(map[string]interface{})
 		err = json.Unmarshal([]byte(output), &outputMap)
 		if err != nil {

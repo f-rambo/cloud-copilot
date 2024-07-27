@@ -10,10 +10,128 @@ import (
 	"gorm.io/gorm"
 )
 
+type Cluster struct {
+	ID               int64        `json:"id" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
+	Name             string       `json:"name" gorm:"column:name; default:''; NOT NULL"` // *
+	ServerVersion    string       `json:"server_version" gorm:"column:server_version; default:''; NOT NULL"`
+	ApiServerAddress string       `json:"api_server_address" gorm:"column:api_server_address; default:''; NOT NULL"`
+	Config           string       `json:"config" gorm:"column:config; default:''; NOT NULL;"`
+	Addons           string       `json:"addons" gorm:"column:addons; default:''; NOT NULL;"`
+	AddonsConfig     string       `json:"addons_config" gorm:"column:addons_config; default:''; NOT NULL;"`
+	Status           uint8        `json:"status" gorm:"column:status; default:0; NOT NULL;"`
+	Type             string       `json:"type" gorm:"column:type; default:''; NOT NULL;"` //*  aws google cloud azure alicloud local
+	KubeConfig       string       `json:"kube_config" gorm:"column:kube_config; default:''; NOT NULL; type:json"`
+	PublicKey        string       `json:"public_key" gorm:"column:public_key; default:''; NOT NULL;"` // *
+	Region           string       `json:"region" gorm:"column:region; default:''; NOT NULL;"`         // *
+	VpcID            string       `json:"vpc_id" gorm:"column:vpc_id; default:''; NOT NULL;"`
+	ExternalIP       string       `json:"external_ip" gorm:"column:external_ip; default:''; NOT NULL;"`
+	AccessID         string       `json:"access_id" gorm:"column:access_id; default:''; NOT NULL;"`   // *
+	AccessKey        string       `json:"access_key" gorm:"column:access_key; default:''; NOT NULL;"` // *
+	BostionHost      *BostionHost `json:"bostion_host" gorm:"-"`
+	Logs             string       `json:"logs" gorm:"-"` // logs data from localfile
+	Nodes            []*Node      `json:"nodes" gorm:"-"`
+	NodeGroups       []*NodeGroup `json:"node_groups" gorm:"-"`
+	GPULabel         string       `json:"gpu_label" gorm:"column:gpu_label; default:''; NOT NULL;"`
+	GPUTypes         string       `json:"gpu_types" gorm:"column:gpu_types; default:''; NOT NULL;"` // examlpe: 1080ti,2080ti,3090
+	gorm.Model
+}
+
+type NodeGroup struct {
+	ID                      int64   `json:"id" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
+	Name                    string  `json:"name" gorm:"column:name; default:''; NOT NULL"`
+	Type                    string  `json:"type" gorm:"column:type; default:''; NOT NULL;"`                  // normal cpu gpu High Memory Large hard disk
+	InstanceType            string  `json:"instance_type" gorm:"column:instance_type; default:''; NOT NULL"` // cloud provider instance type
+	OSImage                 string  `json:"os_image" gorm:"column:os_image; default:''; NOT NULL"`
+	CPU                     int32   `json:"cpu" gorm:"column:cpu; default:0; NOT NULL"`
+	Memory                  float64 `json:"memory" gorm:"column:memory; default:0; NOT NULL"`
+	GPU                     int32   `json:"gpu" gorm:"column:gpu; default:0; NOT NULL"`
+	GpuSpec                 string  `json:"gpu_spec" gorm:"column:gpu_spec; default:''; NOT NULL"`      // NVIDIA Tesla V100（训练）、NVIDIA A100 Tensor Core、NVIDIA T4 GPU（推理）、NVIDIA A10G Tensor Core
+	SystemDisk              int32   `json:"system_disk" gorm:"column:system_disk; default:0; NOT NULL"` // 随着服务释放掉的存储空间
+	DataDisk                int32   `json:"data_disk" gorm:"column:data_disk; default:0; NOT NULL"`     // 挂载的存储空间
+	InternetMaxBandwidthOut int32   `json:"internet_max_bandwidth_out" gorm:"column:internet_max_bandwidth_out; default:0; NOT NULL"`
+	NodeInitScript          string  `json:"cloud_init_script" gorm:"column:cloud_init_script; default:''; NOT NULL"`
+	MinSize                 int32   `json:"min_size" gorm:"column:min_size; default:0; NOT NULL"`
+	MaxSize                 int32   `json:"max_size" gorm:"column:max_size; default:0; NOT NULL"`
+	TargetSize              int32   `json:"target_size" gorm:"column:target_size; default:0; NOT NULL"`
+	ClusterID               int64   `json:"cluster_id" gorm:"column:cluster_id; default:0; NOT NULL"`
+}
+
+type Node struct {
+	ID          int64      `json:"id" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
+	Name        string     `json:"name" gorm:"column:name; default:''; NOT NULL"`
+	Labels      string     `json:"labels" gorm:"column:labels; default:''; NOT NULL"` // map[string]string json
+	Kernel      string     `json:"kernel" gorm:"column:kernel; default:''; NOT NULL"`
+	Container   string     `json:"container" gorm:"column:container; default:''; NOT NULL"`
+	Kubelet     string     `json:"kubelet" gorm:"column:kubelet; default:''; NOT NULL"`
+	KubeProxy   string     `json:"kube_proxy" gorm:"column:kube_proxy; default:''; NOT NULL"`
+	InternalIP  string     `json:"internal_ip" gorm:"column:internal_ip; default:''; NOT NULL"`
+	ExternalIP  string     `json:"external_ip" gorm:"column:external_ip; default:''; NOT NULL"`
+	User        string     `json:"user" gorm:"column:user; default:''; NOT NULL"`
+	Role        string     `json:"role" gorm:"column:role; default:''; NOT NULL;"` // master worker edge
+	Status      uint8      `json:"status" gorm:"column:status; default:0; NOT NULL;"`
+	ErrorInfo   string     `json:"error_info" gorm:"column:error_info; default:''; NOT NULL"`
+	ClusterID   int64      `json:"cluster_id" gorm:"column:cluster_id; default:0; NOT NULL"`
+	NodeGroup   *NodeGroup `json:"node_group" gorm:"-"`
+	NodeGroupID int64      `json:"node_group_id" gorm:"column:node_group_id; default:0; NOT NULL"`
+	NodePrice   float64    `json:"node_price" gorm:"column:node_price; default:0; NOT NULL;"` // 节点价格
+	PodPrice    float64    `json:"pod_price" gorm:"column:pod_price; default:0; NOT NULL;"`   // 节点上pod的价格
+	gorm.Model
+}
+
+type BostionHost struct {
+	ID         int64  `json:"id" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
+	InstanceID string `json:"instance_id" gorm:"column:instance_id; default:''; NOT NULL"`
+	Hostname   string `json:"hostname" gorm:"column:hostname; default:''; NOT NULL"`
+	ExternalIP string `json:"external_ip" gorm:"column:external_ip; default:''; NOT NULL"`
+	PublicIP   string `json:"public_ip" gorm:"column:public_ip; default:''; NOT NULL"`
+	PrivateIP  string `json:"private_ip" gorm:"column:private_ip; default:''; NOT NULL"`
+	ClusterID  int64  `json:"cluster_id" gorm:"column:cluster_id; default:0; NOT NULL"`
+	CPU        int32  `json:"cpu" gorm:"column:cpu; default:0; NOT NULL"`
+	Memory     int32  `json:"memory" gorm:"column:memory; default:0; NOT NULL"`
+	gorm.Model
+}
+
+// 持久化
+type ClusterRepo interface {
+	Save(context.Context, *Cluster) error
+	Get(context.Context, int64) (*Cluster, error)
+	GetByName(context.Context, string) (*Cluster, error)
+	List(context.Context, *Cluster) ([]*Cluster, error)
+	Delete(context.Context, int64) error
+	Put(ctx context.Context, cluster *Cluster) error
+	Watch(ctx context.Context) (*Cluster, error)
+}
+
+// 基础建设
+type Infrastructure interface {
+	SaveServers(context.Context, *Cluster) error
+	DeleteServers(context.Context, *Cluster) error
+}
+
+// 集群配置
+type ClusterConstruct interface {
+	MigrateToBostionHost(context.Context, *Cluster) error
+	InstallCluster(context.Context, *Cluster) error
+	UnInstallCluster(context.Context, *Cluster) error
+	AddNodes(context.Context, *Cluster, []*Node) error
+	RemoveNodes(context.Context, *Cluster, []*Node) error
+	GenerateInitialCluster(context.Context, *Cluster) error
+	GenerateNodeLables(context.Context, *Cluster, *NodeGroup) (lables string, err error)
+}
+
+// 运行时集群
+type ClusterRuntime interface {
+	CurrentCluster(context.Context, *Cluster) error
+}
+
 var ErrClusterNotFound error = errors.New("cluster not found")
 var ErrClusterApiServerAddressEmpty error = errors.New("cluster api server address is empty")
 
 type ClusterType string
+
+func (c ClusterType) String() string {
+	return string(c)
+}
 
 const (
 	ClusterTypeLocal    ClusterType = "local"
@@ -51,33 +169,32 @@ var (
 	}
 )
 
-type Cluster struct {
-	ID               int64        `json:"id" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
-	Name             string       `json:"name" gorm:"column:name; default:''; NOT NULL"` // *
-	ServerVersion    string       `json:"server_version" gorm:"column:server_version; default:''; NOT NULL"`
-	ApiServerAddress string       `json:"api_server_address" gorm:"column:api_server_address; default:''; NOT NULL"`
-	Config           string       `json:"config" gorm:"column:config; default:''; NOT NULL;"`
-	Addons           string       `json:"addons" gorm:"column:addons; default:''; NOT NULL;"`
-	AddonsConfig     string       `json:"addons_config" gorm:"column:addons_config; default:''; NOT NULL;"`
-	Status           uint8        `json:"status" gorm:"column:status; default:0; NOT NULL;"`
-	Type             string       `json:"type" gorm:"column:type; default:''; NOT NULL;"` //*  aws google cloud azure alicloud local
-	KubeConfig       []byte       `json:"kube_config" gorm:"column:kube_config; default:''; NOT NULL; type:json"`
-	PublicKey        string       `json:"public_key" gorm:"column:public_key; default:''; NOT NULL;"` // *
-	Region           string       `json:"region" gorm:"column:region; default:''; NOT NULL;"`         // *
-	VpcID            string       `json:"vpc_id" gorm:"column:vpc_id; default:''; NOT NULL;"`
-	ExternalIP       string       `json:"external_ip" gorm:"column:external_ip; default:''; NOT NULL;"`
-	AccessID         string       `json:"access_id" gorm:"column:access_id; default:''; NOT NULL;"`   // *
-	AccessKey        string       `json:"access_key" gorm:"column:access_key; default:''; NOT NULL;"` // *
-	BostionHost      *BostionHost `json:"bostion_host" gorm:"-"`
-	Logs             string       `json:"logs" gorm:"-"` // logs data from localfile
-	Nodes            []*Node      `json:"nodes" gorm:"-"`
-	NodeGroups       []*NodeGroup `json:"node_groups" gorm:"-"`
-	GPULabel         string       `json:"gpu_label" gorm:"column:gpu_label; default:''; NOT NULL;"`
-	GPUTypes         string       `json:"gpu_types" gorm:"column:gpu_types; default:''; NOT NULL;"` // examlpe: 1080ti,2080ti,3090
-	gorm.Model
+type Nodes []*Node
+
+func (n Nodes) Len() int {
+	return len(n)
+}
+
+func (n Nodes) Swap(i, j int) {
+	n[i], n[j] = n[j], n[i]
+}
+
+// 从小到大排序
+func (n Nodes) Less(i, j int) bool {
+	if n[i].NodeGroup == nil || n[j].NodeGroup == nil {
+		return false
+	}
+	if n[i].NodeGroup.Memory == n[j].NodeGroup.Memory {
+		return n[i].NodeGroup.CPU < n[j].NodeGroup.CPU
+	}
+	return n[i].NodeGroup.Memory < n[j].NodeGroup.Memory
 }
 
 type NodeGroupType string
+
+func (n NodeGroupType) String() string {
+	return string(n)
+}
 
 const (
 	NodeGroupTypeNormal        NodeGroupType = "normal"
@@ -87,25 +204,19 @@ const (
 	NodeGroupTypeLargeHardDisk NodeGroupType = "largeHardDisk"
 )
 
-type NodeGroup struct {
-	ID                      int64   `json:"id" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
-	Name                    string  `json:"name" gorm:"column:name; default:''; NOT NULL"`
-	Type                    string  `json:"type" gorm:"column:type; default:''; NOT NULL;"` // normal cpu gpu High Memory Large hard disk
-	InstanceType            string  `json:"instance_type" gorm:"column:instance_type; default:''; NOT NULL"`
-	OSImage                 string  `json:"os_image" gorm:"column:os_image; default:''; NOT NULL"`
-	CPU                     int32   `json:"cpu" gorm:"column:cpu; default:0; NOT NULL"`
-	Memory                  float64 `json:"memory" gorm:"column:memory; default:0; NOT NULL"`
-	GPU                     int32   `json:"gpu" gorm:"column:gpu; default:0; NOT NULL"`
-	GpuSpec                 string  `json:"gpu_spec" gorm:"column:gpu_spec; default:''; NOT NULL"`      // 1080ti 2080ti 3090
-	SystemDisk              int32   `json:"system_disk" gorm:"column:system_disk; default:0; NOT NULL"` // 随着服务释放掉的存储空间
-	DataDisk                int32   `json:"data_disk" gorm:"column:data_disk; default:0; NOT NULL"`
-	InternetMaxBandwidthOut int32   `json:"internet_max_bandwidth_out" gorm:"column:internet_max_bandwidth_out; default:0; NOT NULL"`
-	NodeInitScript          string  `json:"cloud_init_script" gorm:"column:cloud_init_script; default:''; NOT NULL"`
-	MinSize                 int32   `json:"min_size" gorm:"column:min_size; default:0; NOT NULL"`
-	MaxSize                 int32   `json:"max_size" gorm:"column:max_size; default:0; NOT NULL"`
-	TargetSize              int32   `json:"target_size" gorm:"column:target_size; default:0; NOT NULL"`
-	ClusterID               int64   `json:"cluster_id" gorm:"column:cluster_id; default:0; NOT NULL"`
+type NodeSize int32
+
+func (n NodeSize) Int32() int32 {
+	return int32(n)
 }
+
+func (n NodeSize) Int() int {
+	return int(n)
+}
+
+const (
+	NodeMinSize NodeSize = 5
+)
 
 type NodeRole string
 
@@ -151,39 +262,6 @@ var (
 	}
 )
 
-type Node struct {
-	ID          int64      `json:"id" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
-	Name        string     `json:"name" gorm:"column:name; default:''; NOT NULL"`
-	Labels      string     `json:"labels" gorm:"column:labels; default:''; NOT NULL"` // map[string]string json
-	Kernel      string     `json:"kernel" gorm:"column:kernel; default:''; NOT NULL"`
-	Container   string     `json:"container" gorm:"column:container; default:''; NOT NULL"`
-	Kubelet     string     `json:"kubelet" gorm:"column:kubelet; default:''; NOT NULL"`
-	KubeProxy   string     `json:"kube_proxy" gorm:"column:kube_proxy; default:''; NOT NULL"`
-	InternalIP  string     `json:"internal_ip" gorm:"column:internal_ip; default:''; NOT NULL"`
-	ExternalIP  string     `json:"external_ip" gorm:"column:external_ip; default:''; NOT NULL"`
-	User        string     `json:"user" gorm:"column:user; default:''; NOT NULL"`
-	Role        string     `json:"role" gorm:"column:role; default:''; NOT NULL;"` // master worker edge
-	Status      uint8      `json:"status" gorm:"column:status; default:0; NOT NULL;"`
-	ErrorInfo   string     `json:"error_info" gorm:"column:error_info; default:''; NOT NULL"`
-	ClusterID   int64      `json:"cluster_id" gorm:"column:cluster_id; default:0; NOT NULL"`
-	NodeGroup   *NodeGroup `json:"node_group" gorm:"-"`
-	NodeGroupID int64      `json:"node_group_id" gorm:"column:node_group_id; default:0; NOT NULL"`
-	NodePrice   float64    `json:"node_price" gorm:"column:node_price; default:0; NOT NULL;"` // 节点价格
-	PodPrice    float64    `json:"pod_price" gorm:"column:pod_price; default:0; NOT NULL;"`   // 节点上pod的价格
-	gorm.Model
-}
-
-type BostionHost struct {
-	ID         int64  `json:"id" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
-	InstanceID string `json:"instance_id" gorm:"column:instance_id; default:''; NOT NULL"`
-	Hostname   string `json:"hostname" gorm:"column:hostname; default:''; NOT NULL"`
-	ExternalIP string `json:"external_ip" gorm:"column:external_ip; default:''; NOT NULL"`
-	PublicIP   string `json:"public_ip" gorm:"column:public_ip; default:''; NOT NULL"`
-	PrivateIP  string `json:"private_ip" gorm:"column:private_ip; default:''; NOT NULL"`
-	ClusterID  int64  `json:"cluster_id" gorm:"column:cluster_id; default:0; NOT NULL"`
-	gorm.Model
-}
-
 func isClusterEmpty(c *Cluster) bool {
 	if c == nil {
 		return true
@@ -217,39 +295,6 @@ func (c *Cluster) GetType() ClusterType {
 
 func (n *Node) GetStatus() NodeStatus {
 	return NodeStatus(n.Status)
-}
-
-// 持久化
-type ClusterRepo interface {
-	Save(context.Context, *Cluster) error
-	Get(context.Context, int64) (*Cluster, error)
-	GetByName(context.Context, string) (*Cluster, error)
-	List(context.Context, *Cluster) ([]*Cluster, error)
-	Delete(context.Context, int64) error
-	Put(ctx context.Context, cluster *Cluster) error
-	Watch(ctx context.Context) (*Cluster, error)
-}
-
-// 基础建设
-type Infrastructure interface {
-	SaveServers(context.Context, *Cluster) error
-	DeleteServers(context.Context, *Cluster) error
-}
-
-// 集群配置
-type ClusterConstruct interface {
-	MigrateToBostionHost(context.Context, *Cluster) error
-	InstallCluster(context.Context, *Cluster) error
-	UnInstallCluster(context.Context, *Cluster) error
-	AddNodes(context.Context, *Cluster, []*Node) error
-	RemoveNodes(context.Context, *Cluster, []*Node) error
-	GenerateInitialCluster(context.Context, *Cluster) error
-	GenerateNodeLables(context.Context, *Cluster, *NodeGroup) (lables string, err error)
-}
-
-// 运行时集群
-type ClusterRuntime interface {
-	CurrentCluster(context.Context, *Cluster) error
 }
 
 type ClusterUsecase struct {
@@ -322,10 +367,6 @@ func (uc *ClusterUsecase) Save(ctx context.Context, cluster *Cluster) error {
 func (uc *ClusterUsecase) GetCurrentCluster(ctx context.Context) (*Cluster, error) {
 	cluster := &Cluster{}
 	err := uc.clusterRuntime.CurrentCluster(ctx, cluster)
-	if err != nil {
-		return nil, err
-	}
-	cluster, err = uc.clusterRepo.GetByName(ctx, cluster.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -409,9 +450,6 @@ func (uc *ClusterUsecase) Refresh(ctx context.Context) error {
 }
 
 func (uc *ClusterUsecase) Apply(ctx context.Context, cluster *Cluster) (err error) {
-	if ClusterStatus(cluster.Status) == ClusterStatusUnspecified {
-		return nil
-	}
 	if ClusterStatus(cluster.Status) == ClusterStatucCreating {
 		err = uc.clusterConstruct.GenerateInitialCluster(ctx, cluster)
 		if err != nil {
@@ -429,16 +467,16 @@ func (uc *ClusterUsecase) Watch(ctx context.Context) (*Cluster, error) {
 	return uc.clusterRepo.Watch(ctx)
 }
 
-func (uc *ClusterUsecase) Reconcile(ctx context.Context, cluster *Cluster) (err error) {
+func (uc *ClusterUsecase) Reconcile(ctx context.Context, cluster *Cluster) error {
 	defer func() {
-		err = uc.clusterRepo.Save(ctx, cluster)
+		err := uc.clusterRepo.Save(ctx, cluster)
 		if err != nil {
 			uc.log.Errorf("Reconcile save cluster error: %v", err)
 			return
 		}
 	}()
 	if cluster.IsDeleteed() {
-		err = uc.clusterConstruct.UnInstallCluster(ctx, cluster)
+		err := uc.clusterConstruct.UnInstallCluster(ctx, cluster)
 		if err != nil {
 			return err
 		}
@@ -448,7 +486,7 @@ func (uc *ClusterUsecase) Reconcile(ctx context.Context, cluster *Cluster) (err 
 		}
 		return nil
 	}
-	err = uc.clusterRuntime.CurrentCluster(ctx, cluster)
+	currentCluster, err := uc.GetCurrentCluster(ctx)
 	if errors.Is(err, ErrClusterNotFound) {
 		err = uc.infrastructure.SaveServers(ctx, cluster)
 		if err != nil {
@@ -471,12 +509,41 @@ func (uc *ClusterUsecase) Reconcile(ctx context.Context, cluster *Cluster) (err 
 	if err != nil {
 		return err
 	}
-	err = uc.clusterRuntime.CurrentCluster(ctx, cluster)
+	err = uc.handlerAddNode(ctx, cluster, currentCluster)
 	if err != nil {
 		return err
 	}
+	err = uc.handlerRemoveNode(ctx, cluster, currentCluster)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (uc *ClusterUsecase) handlerAddNode(ctx context.Context, cluster, runingCluster *Cluster) error {
+	addNodes := make([]*Node, 0)
+	for _, node := range cluster.Nodes {
+		nodeExist := false
+		for _, currentNode := range runingCluster.Nodes {
+			if node.Name == currentNode.Name {
+				nodeExist = true
+				break
+			}
+		}
+		if !nodeExist {
+			addNodes = append(addNodes, node)
+		}
+	}
+	err := uc.clusterConstruct.AddNodes(ctx, runingCluster, addNodes)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (uc *ClusterUsecase) handlerRemoveNode(ctx context.Context, cluster, runingCluster *Cluster) error {
 	removeNodes := make([]*Node, 0)
-	for _, currentNode := range cluster.Nodes {
+	for _, currentNode := range runingCluster.Nodes {
 		nodeExist := false
 		for _, node := range cluster.Nodes {
 			if currentNode.Name == node.Name {
@@ -488,24 +555,7 @@ func (uc *ClusterUsecase) Reconcile(ctx context.Context, cluster *Cluster) (err 
 			removeNodes = append(removeNodes, currentNode)
 		}
 	}
-	err = uc.clusterConstruct.RemoveNodes(ctx, cluster, removeNodes)
-	if err != nil {
-		return err
-	}
-	addNodes := make([]*Node, 0)
-	for _, node := range cluster.Nodes {
-		nodeExist := false
-		for _, currentNode := range cluster.Nodes {
-			if node.Name == currentNode.Name {
-				nodeExist = true
-				break
-			}
-		}
-		if !nodeExist {
-			addNodes = append(addNodes, node)
-		}
-	}
-	err = uc.clusterConstruct.AddNodes(ctx, cluster, addNodes)
+	err := uc.clusterConstruct.RemoveNodes(ctx, runingCluster, removeNodes)
 	if err != nil {
 		return err
 	}

@@ -33,7 +33,7 @@ const (
 		    "Action": "sts:AssumeRole"
 		}]
 	  }`
-	nodeGroupRoleArgsAssumeRolePolicy = `{
+	eksNodeGroupRoleArgsAssumeRolePolicy = `{
 		"Version": "2012-10-17",
 		"Statement": [{
 		    "Sid": "",
@@ -124,7 +124,7 @@ func (a *AwsEksCluster) Start(ctx *pulumi.Context) error {
 
 	// Create the EC2 NodeGroup Role
 	nodeGroupRole, err := iam.NewRole(ctx, eskNodeGroupRoleName, &iam.RoleArgs{
-		AssumeRolePolicy: pulumi.String(nodeGroupRoleArgsAssumeRolePolicy),
+		AssumeRolePolicy: pulumi.String(eksNodeGroupRoleArgsAssumeRolePolicy),
 	})
 	if err != nil {
 		return err

@@ -10,6 +10,7 @@ import (
 	"github.com/f-rambo/ocean/internal/conf"
 	"github.com/f-rambo/ocean/utils"
 	"github.com/go-kratos/kratos/v2/log"
+	"github.com/pkg/errors"
 	"gorm.io/gorm"
 )
 
@@ -31,19 +32,59 @@ func NewClusterRepo(data *Data, c *conf.Bootstrap, logger log.Logger) biz.Cluste
 
 func (c *clusterRepo) Save(ctx context.Context, cluster *biz.Cluster) error {
 	cluster.Type = strings.ToLower(cluster.Type)
-	// 开始事务
 	tx := c.data.db.Begin()
 	defer func() {
 		if r := recover(); r != nil {
 			tx.Rollback()
 		}
 	}()
-	// 保存集群信息
 	err := tx.Model(&biz.Cluster{}).Where("id = ?", cluster.ID).Save(cluster).Error
 	if err != nil {
 		return err
 	}
-	// 保存节点信息
+	for _, nodeGroup := range cluster.NodeGroups {
+		nodeGroup.ClusterID = cluster.ID
+		err = tx.Model(&biz.NodeGroup{}).Where("id = ?", nodeGroup.ID).Save(nodeGroup).Error
+		if err != nil {
+			return err
+		}
+	}
+	nodeGroups := make([]*biz.NodeGroup, 0)
+	err = tx.Model(&biz.NodeGroup{}).Where("cluster_id = ?", cluster.ID).Find(&nodeGroups).Error
+	if err != nil {
+		return err
+	}
+	for _, nodeGroup := range nodeGroups {
+		ok := false
+		for _, nodeGroup2 := range cluster.NodeGroups {
+			if nodeGroup.ID == nodeGroup2.ID {
+				ok = true
+				break
+			}
+		}
+		if !ok {
+			err = tx.Model(&biz.NodeGroup{}).Where("id = ?", nodeGroup.ID).Delete(nodeGroup).Error
+			if err != nil {
+				return err
+			}
+		}
+	}
+	for _, node := range cluster.Nodes {
+		node.ClusterID = cluster.ID
+		if node.NodeGroup == nil {
+			return errors.New("node group is nil")
+		}
+		for _, nodeGroup := range cluster.NodeGroups {
+			if node.NodeGroup.Name == nodeGroup.Name {
+				node.NodeGroupID = nodeGroup.ID
+				break
+			}
+		}
+		err = tx.Model(&biz.Node{}).Where("id = ?", node.ID).Save(node).Error
+		if err != nil {
+			return err
+		}
+	}
 	nodes := make([]*biz.Node, 0)
 	err = tx.Model(&biz.Node{}).Where("cluster_id = ?", cluster.ID).Find(&nodes).Error
 	if err != nil {
@@ -62,13 +103,6 @@ func (c *clusterRepo) Save(ctx context.Context, cluster *biz.Cluster) error {
 			if err != nil {
 				return err
 			}
-		}
-	}
-	for _, node := range cluster.Nodes {
-		node.ClusterID = cluster.ID
-		err = tx.Model(&biz.Node{}).Where("id = ?", node.ID).Save(node).Error
-		if err != nil {
-			return err
 		}
 	}
 	err = tx.Commit().Error
