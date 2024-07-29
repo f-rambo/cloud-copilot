@@ -10,7 +10,7 @@ import (
 
 // alicloud managed kubernetes cluster
 func (a *AlicloudCluster) Startkubernetes(ctx *pulumi.Context) error {
-	if err := a.init(ctx); err != nil {
+	if err := a.infrastructural(ctx); err != nil {
 		return err
 	}
 	var nodeInstanceType string

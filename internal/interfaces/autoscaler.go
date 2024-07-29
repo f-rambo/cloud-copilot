@@ -39,7 +39,7 @@ func pdNodeGroup(nodeGroup *biz.NodeGroup) *autoscaler.NodeGroup {
 		Id:      cast.ToString(nodeGroup.ID),
 		MinSize: nodeGroup.MinSize,
 		MaxSize: nodeGroup.MaxSize,
-		Debug:   nodeGroup.Type,
+		Debug:   nodeGroup.Type.String(),
 	}
 }
 

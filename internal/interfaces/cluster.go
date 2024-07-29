@@ -2,6 +2,7 @@ package interfaces
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/f-rambo/ocean/api/cluster/v1alpha1"
 	"github.com/f-rambo/ocean/internal/biz"
@@ -47,6 +48,7 @@ func (uc *ClusterInterface) StartReconcile(ctx context.Context) error {
 }
 
 func (uc *ClusterInterface) StopReconcile(ctx context.Context) error {
+	fmt.Println("stop reconcile")
 	return nil
 }
 
@@ -90,7 +92,7 @@ func (c *ClusterInterface) Save(ctx context.Context, clusterArgs *v1alpha1.Clust
 	}
 	cluster := &biz.Cluster{
 		Name:      clusterArgs.Name,
-		Type:      clusterArgs.ServerType,
+		Type:      biz.ClusterType(clusterArgs.ServerType),
 		PublicKey: clusterArgs.PublicKey,
 		Region:    clusterArgs.Region,
 		AccessID:  clusterArgs.AccessKeyId,
@@ -113,7 +115,7 @@ func (c *ClusterInterface) Save(ctx context.Context, clusterArgs *v1alpha1.Clust
 		return nil, err
 	}
 	// first
-	cluster.Status = biz.ClusterStatucCreating.Uint8()
+	cluster.Status = biz.ClusterStatucCreating
 	err = c.clusterUc.Apply(ctx, cluster)
 	if err != nil {
 		return nil, err
@@ -176,7 +178,7 @@ func (c *ClusterInterface) bizNodeToNode(bizNode *biz.Node) *v1alpha1.Node {
 		InternalIp: bizNode.InternalIP,
 		ExternalIp: bizNode.ExternalIP,
 		User:       bizNode.User,
-		Role:       bizNode.Role,
+		Role:       bizNode.Role.String(),
 		ClusterId:  bizNode.ClusterID,
 	}
 	return node

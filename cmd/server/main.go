@@ -24,9 +24,9 @@ import (
 // go build -ldflags "-X main.Version=x.y.z"
 var (
 	// Name is the name of the compiled software.
-	Name string = "ocean"
+	Name string
 	// Version is the version of the compiled software.
-	Version string = "0.1.0"
+	Version string
 	// flagconf is the config flag.
 	flagconf string
 
@@ -66,13 +66,15 @@ func main() {
 		panic(err)
 	}
 	conf := bc
-	logConf := conf.Log
+	Name = conf.Server.Name
+	Version = conf.Server.Version
 
+	logConf := conf.Log
 	logger := log.With(log.NewStdLogger(&lumberjack.Logger{
 		Filename:   fmt.Sprintf("%s/%s", logConf.Path, logConf.Filename),
 		MaxSize:    int(logConf.MaxSize), // megabytes
 		MaxBackups: int(logConf.MaxBackups),
-		MaxAge:     int(logConf.MaxAge), //days
+		MaxAge:     int(logConf.MaxAge), // days
 		Compress:   logConf.Compress,    // disabled by default
 		LocalTime:  logConf.LocalTime,
 	}),

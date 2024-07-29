@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strings"
 
 	"github.com/f-rambo/ocean/internal/biz"
 	"github.com/f-rambo/ocean/internal/conf"
@@ -31,7 +30,6 @@ func NewClusterRepo(data *Data, c *conf.Bootstrap, logger log.Logger) biz.Cluste
 }
 
 func (c *clusterRepo) Save(ctx context.Context, cluster *biz.Cluster) error {
-	cluster.Type = strings.ToLower(cluster.Type)
 	tx := c.data.db.Begin()
 	defer func() {
 		if r := recover(); r != nil {

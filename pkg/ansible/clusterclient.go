@@ -16,9 +16,8 @@ import (
 )
 
 type ClusterConstruct struct {
-	log                        *log.Helper
-	c                          *conf.Bootstrap
-	migrateToBostionHostEnable bool
+	log *log.Helper
+	c   *conf.Bootstrap
 }
 
 func NewClusterConstruct(c *conf.Bootstrap, logger log.Logger) biz.ClusterConstruct {
@@ -30,20 +29,17 @@ func NewClusterConstruct(c *conf.Bootstrap, logger log.Logger) biz.ClusterConstr
 
 // 初始化集群
 func (cc *ClusterConstruct) GenerateInitialCluster(ctx context.Context, cluster *biz.Cluster) error {
-	if cluster.Type == biz.ClusterTypeLocal.String() && len(cluster.Nodes) < biz.NodeMinSize.Int() {
+	if cluster.Type == biz.ClusterTypeLocal && len(cluster.Nodes) < biz.NodeMinSize.Int() {
 		return errors.New("local cluster node size must be greater than 1")
 	}
 	// 云厂商集群
-	if cluster.Type != biz.ClusterTypeLocal.String() {
+	if cluster.Type != biz.ClusterTypeLocal {
 		nodeGroup := &biz.NodeGroup{
-			OSImage:                 "ubuntu 22.04",
 			CPU:                     4,
 			Memory:                  8,
 			SystemDisk:              100,
 			InternetMaxBandwidthOut: 100,
-			MinSize:                 5,
-			MaxSize:                 100,
-			InstanceType:            "", // 由云服务商决定
+			MinSize:                 2,
 			TargetSize:              5,
 		}
 		nodeGroup.Name = fmt.Sprintf("cloudproider-%s-cpu-%d-mem-%d-disk-%d", cluster.Type, nodeGroup.CPU, int(nodeGroup.Memory), nodeGroup.SystemDisk)
@@ -57,12 +53,16 @@ func (cc *ClusterConstruct) GenerateInitialCluster(ctx context.Context, cluster 
 			node := &biz.Node{
 				Name:      fmt.Sprintf("%s-%d", roleName, i),
 				Labels:    "",
-				Status:    biz.NodeStatusRunning.Uint8(),
+				Status:    biz.NodeStatusRunning,
 				ClusterID: cluster.ID,
 				NodeGroup: nodeGroup,
-				Role:      roleName,
+				Role:      biz.NodeRole(roleName),
 			}
 			cluster.Nodes = append(cluster.Nodes, node)
+		}
+		cluster.BostionHost = &biz.BostionHost{
+			Memory: 4,
+			CPU:    2,
 		}
 		return nil
 	}
@@ -79,17 +79,17 @@ func (cc *ClusterConstruct) GenerateInitialCluster(ctx context.Context, cluster 
 			return errors.New("node group is nil")
 		}
 		if node.NodeGroup.Memory >= 8 && node.NodeGroup.CPU >= 4 && masterNum < 3 {
-			node.Role = biz.NodeRoleMaster.String()
-			node.Status = biz.NodeStatusCreating.Uint8()
+			node.Role = biz.NodeRoleMaster
+			node.Status = biz.NodeStatusCreating
 			masterNum++
 			continue
 		}
 		if workNum >= 3 {
-			node.Status = biz.NodeStatusUnspecified.Uint8()
+			node.Status = biz.NodeStatusUnspecified
 			continue
 		}
-		node.Role = biz.NodeRoleWorker.String()
-		node.Status = biz.NodeStatusCreating.Uint8()
+		node.Role = biz.NodeRoleWorker
+		node.Status = biz.NodeStatusCreating
 		workNum++
 	}
 	return nil
@@ -102,7 +102,7 @@ func (cc *ClusterConstruct) getNodesInformation(ctx context.Context, cluster *bi
 	if err != nil {
 		return err
 	}
-	err = cc.exec(ctx, cluster, cc.c.Resource.GetClusterPath(), playbookPath, nil)
+	err = cc.exec(ctx, cluster, cc.c.Resource.GetClusterPath(), playbookPath, cc.generatingNodes(cluster))
 	if err != nil {
 		return err
 	}
@@ -183,10 +183,10 @@ func (cc *ClusterConstruct) getNodesInformation(ctx context.Context, cluster *bi
 func (cc *ClusterConstruct) GenerateNodeLables(ctx context.Context, cluster *biz.Cluster, nodeGroup *biz.NodeGroup) (lables string, err error) {
 	lableMap := make(map[string]string)
 	lableMap["cluster"] = cluster.Name
-	lableMap["cluster_type"] = cluster.Type
+	lableMap["cluster_type"] = cluster.Type.String()
 	lableMap["region"] = cluster.Region
 	lableMap["nodegroup"] = nodeGroup.Name
-	lableMap["nodegroup_type"] = nodeGroup.Type
+	lableMap["nodegroup_type"] = nodeGroup.Type.String()
 	lableMap["instance_type"] = nodeGroup.InstanceType
 	lablebytes, err := json.Marshal(lableMap)
 	if err != nil {
@@ -196,9 +196,9 @@ func (cc *ClusterConstruct) GenerateNodeLables(ctx context.Context, cluster *biz
 }
 
 func (cc *ClusterConstruct) MigrateToBostionHost(ctx context.Context, cluster *biz.Cluster) error {
-	cc.migrateToBostionHostEnable = true
 	defer func() {
-		cc.migrateToBostionHostEnable = false
+		// 迁移完成后，关闭服务
+		ctx.Done()
 	}()
 	oceanResource := cc.c.Resource
 	migratePlaybook := getMigratePlaybook()
@@ -210,15 +210,11 @@ func (cc *ClusterConstruct) MigrateToBostionHost(ctx context.Context, cluster *b
 	if err != nil {
 		return err
 	}
-	err = cc.exec(ctx,
-		cluster,
-		oceanResource.GetClusterPath(),
-		migratePlaybookPath,
-		nil,
-	)
+	err = cc.exec(ctx, cluster, oceanResource.GetClusterPath(), migratePlaybookPath, cc.generatingBostionHost(cluster))
 	if err != nil {
 		return err
 	}
+	// 把本地的数据迁移到bostion主机
 	return nil
 }
 
@@ -228,22 +224,22 @@ func (cc *ClusterConstruct) InstallCluster(ctx context.Context, cluster *biz.Clu
 	if err != nil {
 		return err
 	}
-	err = cc.exec(ctx, cluster, cc.c.Resource.GetClusterPath(), serversInitPlaybookPath, nil)
+	err = cc.exec(ctx, cluster, cc.c.Resource.GetClusterPath(), serversInitPlaybookPath, cc.generatingNodes(cluster))
 	if err != nil {
 		return err
 	}
-	return cc.kubespray(ctx, cluster, GetClusterPlaybookPath(), nil)
+	return cc.kubespray(ctx, cluster, GetClusterPlaybookPath())
 }
 
 func (cc *ClusterConstruct) UnInstallCluster(ctx context.Context, cluster *biz.Cluster) error {
-	return cc.kubespray(ctx, cluster, GetResetPlaybookPath(), nil)
+	return cc.kubespray(ctx, cluster, GetResetPlaybookPath())
 }
 
 func (cc *ClusterConstruct) AddNodes(ctx context.Context, cluster *biz.Cluster, nodes []*biz.Node) error {
 	for _, node := range nodes {
 		log.Info("add node", "name", node.Name, "ip", node.ExternalIP, "role", node.Role)
 	}
-	return cc.kubespray(ctx, cluster, GetScalePlaybookPath(), nil)
+	return cc.kubespray(ctx, cluster, GetScalePlaybookPath())
 }
 
 func (cc *ClusterConstruct) RemoveNodes(ctx context.Context, cluster *biz.Cluster, nodes []*biz.Node) error {
@@ -257,29 +253,44 @@ func (cc *ClusterConstruct) RemoveNodes(ctx context.Context, cluster *biz.Cluste
 	return nil
 }
 
-func (cc *ClusterConstruct) kubespray(ctx context.Context, cluster *biz.Cluster, playbook string, env map[string]string) error {
+func (cc *ClusterConstruct) kubespray(ctx context.Context, cluster *biz.Cluster, playbook string, env ...map[string]string) error {
 	oceanResource := cc.c.Resource
 	kubespray, err := NewKubespray(&oceanResource)
 	if err != nil {
 		return errors.Wrap(err, "new kubespray error")
 	}
-	return cc.exec(ctx, cluster, kubespray.GetPackagePath(), playbook, env)
+	mateDataMap := make(map[string]string)
+	for _, node := range cluster.Nodes {
+		mateDataMap[node.Name] = node.ExternalIP
+	}
+	if len(env) > 0 && env[0] != nil {
+		return cc.exec(ctx, cluster, kubespray.GetPackagePath(), playbook, cc.generatingNodes(cluster), env[0], mateDataMap)
+	}
+	return cc.exec(ctx, cluster, kubespray.GetPackagePath(), playbook, cc.generatingNodes(cluster), nil, mateDataMap)
 }
 
-func (cc *ClusterConstruct) exec(ctx context.Context, cluster *biz.Cluster, cmdRunDir string, playbook string, env map[string]string) error {
-	matedataMap := make(map[string]string)
-	servers := make([]Server, 0)
-	if cc.migrateToBostionHostEnable {
-		servers = []Server{
-			{Ip: cluster.BostionHost.ExternalIP, Username: "root", ID: cluster.BostionHost.InstanceID, Role: "bostion"},
-		}
+func (cc *ClusterConstruct) generatingBostionHost(cluster *biz.Cluster) []Server {
+	return []Server{
+		{Ip: cluster.BostionHost.ExternalIP, Username: "root", ID: cluster.BostionHost.InstanceID, Role: "bostion"},
 	}
-	if !cc.migrateToBostionHostEnable {
-		for _, node := range cluster.Nodes {
-			servers = append(servers, Server{Ip: node.ExternalIP, Username: node.User, ID: cast.ToString(node.ID), Role: node.Role})
-			matedataMap["node_id"] = cast.ToString(node.ID)
-			matedataMap["node_name"] = node.Name
-		}
+}
+
+func (cc *ClusterConstruct) generatingNodes(cluster *biz.Cluster) []Server {
+	servers := make([]Server, 0)
+	for _, node := range cluster.Nodes {
+		servers = append(servers, Server{Ip: node.ExternalIP, Username: node.User, ID: cast.ToString(node.ID), Role: node.Role.String()})
+	}
+	return servers
+}
+
+func (cc *ClusterConstruct) exec(ctx context.Context, cluster *biz.Cluster, cmdRunDir string, playbook string, servers []Server, envAndMateData ...map[string]string) error {
+	env := make(map[string]string)
+	mateData := make(map[string]string)
+	if len(envAndMateData) > 0 && envAndMateData[0] != nil {
+		env = envAndMateData[0]
+	}
+	if len(envAndMateData) > 1 && envAndMateData[1] != nil {
+		mateData = envAndMateData[1]
 	}
 	g := new(errgroup.Group)
 	ansibleLog := make(chan string, 1024)
@@ -291,6 +302,7 @@ func (cc *ClusterConstruct) exec(ctx context.Context, cluster *biz.Cluster, cmdR
 			SetServers(servers...).
 			SetCmdRunDir(cmdRunDir).
 			SetPlaybooks(playbook).
+			SetMatedataMap(mateData).
 			SetEnvMap(env).
 			ExecPlayBooks(ctx)
 	})

@@ -61,20 +61,74 @@ func (g InstanceTypeGpus) Less(i, j int) bool {
 }
 
 type AwsEc2Instance struct {
-	cluster *biz.Cluster
+	cluster    *biz.Cluster
+	vpc        *ec2.Vpc
+	zones      *aws.GetAvailabilityZonesResult
+	subnets    []*ec2.Subnet
+	igw        *ec2.InternetGateway
+	sg         *ec2.SecurityGroup
+	ec2Profile *iam.InstanceProfile
+	keyPair    *ec2.KeyPair
 }
 
-func StartEc2Instance(cluster *biz.Cluster) func(*pulumi.Context) error {
-	awsEc2Instance := &AwsEc2Instance{
+func StartEc2Instance(cluster *biz.Cluster) *AwsEc2Instance {
+	return &AwsEc2Instance{
 		cluster: cluster,
 	}
-	return awsEc2Instance.Start
 }
 
-// ec2 instance
 func (a *AwsEc2Instance) Start(ctx *pulumi.Context) error {
+	err := a.infrastructural(ctx)
+	if err != nil {
+		return err
+	}
+	err = a.bostionHost(ctx)
+	if err != nil {
+		return err
+	}
+	err = a.nodes(ctx)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (a *AwsEc2Instance) getIntanceTypeFamilies(nodeGroup *biz.NodeGroup) string {
+	if nodeGroup == nil || nodeGroup.Type == "" {
+		return "m5.*"
+	}
+	switch nodeGroup.Type {
+	case biz.NodeGroupTypeNormal:
+		return "m5.*"
+	case biz.NodeGroupTypeHighComputation:
+		return "c5.*"
+	case biz.NodeGroupTypeGPUAcceleraterd:
+		return "p3.*"
+	case biz.NodeGroupTypeHighMemory:
+		return "r5.*"
+	case biz.NodeGroupTypeLargeHardDisk:
+		return "i3.*"
+	default:
+		return "m5.*"
+	}
+}
+
+func (a *AwsEc2Instance) distributeNodeSubnetsFunc(nodeIndex int) *ec2.Subnet {
+	if len(a.subnets) == 0 {
+		return nil
+	}
+	nodeSize := len(a.cluster.Nodes)
+	subnetsSize := len(a.subnets)
+	if nodeSize <= subnetsSize {
+		return a.subnets[nodeIndex%subnetsSize]
+	}
+	interval := nodeSize / subnetsSize
+	return a.subnets[(nodeIndex/interval)%subnetsSize]
+}
+
+func (a *AwsEc2Instance) infrastructural(ctx *pulumi.Context) (err error) {
 	// Create a VPC
-	vpc, err := ec2.NewVpc(ctx, "k8s-vpc", &ec2.VpcArgs{
+	a.vpc, err = ec2.NewVpc(ctx, "k8s-vpc", &ec2.VpcArgs{
 		CidrBlock: pulumi.String(ec2VpcCidrBlock),
 		Tags: pulumi.StringMap{
 			"Name":         pulumi.String(ec2VpcName),
@@ -86,16 +140,16 @@ func (a *AwsEc2Instance) Start(ctx *pulumi.Context) error {
 	}
 
 	// Get list of availability zones
-	zones, err := aws.GetAvailabilityZones(ctx, &aws.GetAvailabilityZonesArgs{}, nil)
+	a.zones, err = aws.GetAvailabilityZones(ctx, &aws.GetAvailabilityZonesArgs{}, nil)
 	if err != nil {
 		return err
 	}
 
 	// Create a subnet in each availability zone
-	subnets := make([]*ec2.Subnet, len(zones.Names))
-	for i, zone := range zones.Names {
+	a.subnets = make([]*ec2.Subnet, len(a.zones.Names))
+	for i, zone := range a.zones.Names {
 		subnet, err := ec2.NewSubnet(ctx, "k8s-subnet-"+zone, &ec2.SubnetArgs{
-			VpcId:            vpc.ID(),
+			VpcId:            a.vpc.ID(),
 			CidrBlock:        pulumi.String(fmt.Sprintf("10.0.%d.0/24", i+1)),
 			AvailabilityZone: pulumi.String(zone),
 			Tags: pulumi.StringMap{
@@ -106,21 +160,12 @@ func (a *AwsEc2Instance) Start(ctx *pulumi.Context) error {
 		if err != nil {
 			return err
 		}
-		subnets[i] = subnet
-	}
-	distributeNodeSubnetsFunc := func(nodeIndex int) *ec2.Subnet {
-		nodeSize := len(a.cluster.Nodes)
-		subnetsSize := len(subnets)
-		if nodeSize <= subnetsSize {
-			return subnets[nodeIndex%subnetsSize]
-		}
-		interval := nodeSize / subnetsSize
-		return subnets[(nodeIndex/interval)%subnetsSize]
+		a.subnets[i] = subnet
 	}
 
 	// Create an Internet Gateway
-	igw, err := ec2.NewInternetGateway(ctx, "k8s-igw", &ec2.InternetGatewayArgs{
-		VpcId: vpc.ID(),
+	a.igw, err = ec2.NewInternetGateway(ctx, "k8s-igw", &ec2.InternetGatewayArgs{
+		VpcId: a.vpc.ID(),
 		Tags: pulumi.StringMap{
 			"Name":         pulumi.String(ec2InternetGw),
 			ec2OceanTagKey: pulumi.String(ec2OceanTagVal),
@@ -132,7 +177,7 @@ func (a *AwsEc2Instance) Start(ctx *pulumi.Context) error {
 
 	// Create a route table and a route
 	rt, err := ec2.NewRouteTable(ctx, "k8s-rt", &ec2.RouteTableArgs{
-		VpcId: vpc.ID(),
+		VpcId: a.vpc.ID(),
 		Tags: pulumi.StringMap{
 			"Name":         pulumi.String("k8s-rt"),
 			ec2OceanTagKey: pulumi.String(ec2OceanTagVal),
@@ -146,14 +191,14 @@ func (a *AwsEc2Instance) Start(ctx *pulumi.Context) error {
 	_, err = ec2.NewRoute(ctx, "k8s-route", &ec2.RouteArgs{
 		RouteTableId:         rt.ID(),
 		DestinationCidrBlock: pulumi.String("0.0.0.0/0"),
-		GatewayId:            igw.ID(),
+		GatewayId:            a.igw.ID(),
 	})
 	if err != nil {
 		return err
 	}
 
 	// Associate route table with subnets
-	for i, subnet := range subnets {
+	for i, subnet := range a.subnets {
 		_, err = ec2.NewRouteTableAssociation(ctx, "k8s-rta"+fmt.Sprint(i), &ec2.RouteTableAssociationArgs{
 			SubnetId:     subnet.ID(),
 			RouteTableId: rt.ID(),
@@ -164,8 +209,8 @@ func (a *AwsEc2Instance) Start(ctx *pulumi.Context) error {
 	}
 
 	// Security Group for Master and Worker nodes
-	sg, err := ec2.NewSecurityGroup(ctx, "k8s-sg", &ec2.SecurityGroupArgs{
-		VpcId: vpc.ID(),
+	a.sg, err = ec2.NewSecurityGroup(ctx, "k8s-sg", &ec2.SecurityGroupArgs{
+		VpcId: a.vpc.ID(),
 		Ingress: ec2.SecurityGroupIngressArray{
 			&ec2.SecurityGroupIngressArgs{
 				Protocol:   pulumi.String("tcp"),
@@ -197,17 +242,17 @@ func (a *AwsEc2Instance) Start(ctx *pulumi.Context) error {
 	// IAM Role
 	ec2Role, err := iam.NewRole(ctx, "ec2Role", &iam.RoleArgs{
 		AssumeRolePolicy: pulumi.String(`{
-	    "Version": "2012-10-17",
-	    "Statement": [
-		  {
-			"Effect": "Allow",
-			"Principal": {
-			    "Service": "ec2.amazonaws.com"
-			},
-			"Action": "sts:AssumeRole"
-		  }
-	    ]
-	}`),
+    "Version": "2012-10-17",
+    "Statement": [
+	  {
+		"Effect": "Allow",
+		"Principal": {
+		    "Service": "ec2.amazonaws.com"
+		},
+		"Action": "sts:AssumeRole"
+	  }
+    ]
+}`),
 	})
 	if err != nil {
 		return err
@@ -217,30 +262,30 @@ func (a *AwsEc2Instance) Start(ctx *pulumi.Context) error {
 	_, err = iam.NewRolePolicy(ctx, "ec2Policy", &iam.RolePolicyArgs{
 		Role: ec2Role.ID(),
 		Policy: pulumi.String(`{
-	    "Version": "2012-10-17",
-	    "Statement": [
-		  {
-			"Effect": "Allow",
-			"Action": [
-			    "ec2:Describe*",
-			    "ecr:GetDownloadUrlForLayer",
-			    "ecr:BatchGetImage",
-			    "ecr:BatchCheckLayerAvailability",
-			    "autoscaling:Describe*",
-			    "cloudwatch:PutMetricData",
-			    "logs:*",
-			    "s3:*"
-			],
-			"Resource": "*"
-		  }
-	    ]
-	}`),
+    "Version": "2012-10-17",
+    "Statement": [
+	  {
+		"Effect": "Allow",
+		"Action": [
+		    "ec2:Describe*",
+		    "ecr:GetDownloadUrlForLayer",
+		    "ecr:BatchGetImage",
+		    "ecr:BatchCheckLayerAvailability",
+		    "autoscaling:Describe*",
+		    "cloudwatch:PutMetricData",
+		    "logs:*",
+		    "s3:*"
+		],
+		"Resource": "*"
+	  }
+    ]
+}`),
 	})
 	if err != nil {
 		return err
 	}
 
-	ec2Profile, err := iam.NewInstanceProfile(ctx, "ec2Profile", &iam.InstanceProfileArgs{
+	a.ec2Profile, err = iam.NewInstanceProfile(ctx, "ec2Profile", &iam.InstanceProfileArgs{
 		Role: ec2Role.Name,
 		Tags: pulumi.StringMap{
 			"Name":         pulumi.String("ec2Profile"),
@@ -252,18 +297,20 @@ func (a *AwsEc2Instance) Start(ctx *pulumi.Context) error {
 	}
 
 	// key pair
-	keyRes, err := ec2.NewKeyPair(ctx, "k8s-keypair", &ec2.KeyPairArgs{
+	a.keyPair, err = ec2.NewKeyPair(ctx, "k8s-keypair", &ec2.KeyPairArgs{
 		KeyName:   pulumi.String("k8s-keypair"),
 		PublicKey: pulumi.String(a.cluster.PublicKey),
 	})
 	if err != nil {
 		return err
 	}
+	return nil
+}
 
-	// https://aws.amazon.com/cn/ec2/instance-types/
-	// https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_DescribeInstanceTypes.html
+// https://aws.amazon.com/cn/ec2/instance-types/
+// https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_DescribeInstanceTypes.html
 
-	//  bostionHost
+func (a *AwsEc2Instance) bostionHost(ctx *pulumi.Context) (err error) {
 	bostionHostInstanceTypes, err := ec2.GetInstanceTypes(ctx, &ec2.GetInstanceTypesArgs{
 		Filters: []ec2.GetInstanceTypesFilter{
 			{
@@ -299,11 +346,11 @@ func (a *AwsEc2Instance) Start(ctx *pulumi.Context) error {
 	}
 	bostionHostNode, err := ec2.NewInstance(ctx, "bostionHost-node", &ec2.InstanceArgs{
 		InstanceType:        pulumi.String(bostionHostInstanceType),
-		VpcSecurityGroupIds: pulumi.StringArray{sg.ID()},
-		SubnetId:            subnets[0].ID(),
+		VpcSecurityGroupIds: pulumi.StringArray{a.sg.ID()},
+		SubnetId:            a.subnets[0].ID(),
 		Ami:                 pulumi.String(ec2UbuntuAmiId),
-		IamInstanceProfile:  ec2Profile.Name,
-		KeyName:             keyRes.KeyName,
+		IamInstanceProfile:  a.ec2Profile.Name,
+		KeyName:             a.keyPair.KeyName,
 		Tags: pulumi.StringMap{
 			"Name":         pulumi.String("k8s-master-node"),
 			ec2OceanTagKey: pulumi.String(ec2OceanTagVal),
@@ -316,13 +363,12 @@ func (a *AwsEc2Instance) Start(ctx *pulumi.Context) error {
 	ctx.Export("bostionHostNode_ID", bostionHostNode)
 	ctx.Export("bostionHostNode_Pulic_IP", bostionHostNode.PublicIp)
 	ctx.Export("bostionHostNode_Private_IP", bostionHostNode.PrivateIp)
+	return nil
+}
 
-	// cluster nodes
+func (a *AwsEc2Instance) nodes(ctx *pulumi.Context) error {
 	for _, nodeGroup := range a.cluster.NodeGroups {
-		instanceTypeFamiliy := "m5.*"
-		if nodeGroup.GPU > 0 {
-			instanceTypeFamiliy = "p3.*"
-		}
+		instanceTypeFamiliy := a.getIntanceTypeFamilies(nodeGroup)
 		nodeInstanceTypes, err := ec2.GetInstanceTypes(ctx, &ec2.GetInstanceTypesArgs{
 			Filters: []ec2.GetInstanceTypesFilter{
 				{
@@ -375,14 +421,14 @@ func (a *AwsEc2Instance) Start(ctx *pulumi.Context) error {
 			if node.NodeGroupID != nodeGroup.ID {
 				continue
 			}
-			subnet := distributeNodeSubnetsFunc(index)
+			subnet := a.distributeNodeSubnetsFunc(index)
 			nodeRes, err := ec2.NewInstance(ctx, node.Name, &ec2.InstanceArgs{
 				InstanceType:        pulumi.String(nodeGroup.InstanceType),
-				VpcSecurityGroupIds: pulumi.StringArray{sg.ID()},
+				VpcSecurityGroupIds: pulumi.StringArray{a.sg.ID()},
 				SubnetId:            subnet.ID(),
 				Ami:                 pulumi.String(ec2UbuntuAmiId),
-				IamInstanceProfile:  ec2Profile.Name,
-				KeyName:             keyRes.KeyName,
+				IamInstanceProfile:  a.ec2Profile.Name,
+				KeyName:             a.keyPair.KeyName,
 				RootBlockDevice: &ec2.InstanceRootBlockDeviceArgs{
 					VolumeSize: pulumi.Int(nodeGroup.SystemDisk),
 				},
@@ -421,5 +467,9 @@ func (a *AwsEc2Instance) Start(ctx *pulumi.Context) error {
 			}
 		}
 	}
+	return nil
+}
+
+func (a *AwsEc2Instance) Clear(ctx *pulumi.Context) error {
 	return nil
 }

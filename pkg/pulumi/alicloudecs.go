@@ -72,8 +72,28 @@ func StartAlicloudCluster(cluster *biz.Cluster) *AlicloudCluster {
 	}
 }
 
+func (a *AlicloudCluster) getIntanceTypeFamilies(nodeGroup *biz.NodeGroup) string {
+	if nodeGroup == nil {
+		return "ecs.g6"
+	}
+	switch nodeGroup.Type {
+	case biz.NodeGroupTypeNormal:
+		return "ecs.g6"
+	case biz.NodeGroupTypeHighComputation:
+		return "ecs.c6"
+	case biz.NodeGroupTypeGPUAcceleraterd:
+		return "ecs.gn6i"
+	case biz.NodeGroupTypeHighMemory:
+		return "ecs.r6"
+	case biz.NodeGroupTypeLargeHardDisk:
+		return "ecs.g6" // 支持挂载大磁盘
+	default:
+		return "ecs.g6"
+	}
+}
+
 func (a *AlicloudCluster) StartServers(ctx *pulumi.Context) error {
-	err := a.init(ctx)
+	err := a.infrastructural(ctx)
 	if err != nil {
 		return errors.Wrap(err, "alicloud cluster init failed")
 	}
@@ -81,7 +101,7 @@ func (a *AlicloudCluster) StartServers(ctx *pulumi.Context) error {
 	if err != nil {
 		return errors.Wrap(err, "start bostion host failed")
 	}
-	err = a.servers(ctx)
+	err = a.nodes(ctx)
 	if err != nil {
 		return errors.Wrap(err, "start ecs failed")
 	}
@@ -92,7 +112,7 @@ func (a *AlicloudCluster) StartServers(ctx *pulumi.Context) error {
 	return nil
 }
 
-func (a *AlicloudCluster) init(ctx *pulumi.Context) error {
+func (a *AlicloudCluster) infrastructural(ctx *pulumi.Context) error {
 	// 创建资源组
 	res, err := resourcemanager.NewResourceGroup(ctx, resourceGroupName, &resourcemanager.ResourceGroupArgs{
 		ResourceGroupName: pulumi.String(resourceGroupName),
@@ -323,7 +343,7 @@ func (a *AlicloudCluster) bostionHost(ctx *pulumi.Context) error {
 	return nil
 }
 
-func (a *AlicloudCluster) servers(ctx *pulumi.Context) error {
+func (a *AlicloudCluster) nodes(ctx *pulumi.Context) error {
 	images, err := ecs.GetImages(ctx, &ecs.GetImagesArgs{
 		NameRegex: pulumi.StringRef("^ubuntu_22_04_x64*"),
 		Owners:    pulumi.StringRef("system"),
@@ -337,10 +357,7 @@ func (a *AlicloudCluster) servers(ctx *pulumi.Context) error {
 	imageID := images.Images[0].Id
 	for _, nodeGroup := range a.cluster.NodeGroups {
 		nodeGroup.OSImage = imageID
-		instanceTypeFamilies := "ecs.g8a"
-		if nodeGroup.GPU > 0 {
-			instanceTypeFamilies = "ecs.gn6i"
-		}
+		instanceTypeFamilies := a.getIntanceTypeFamilies(nodeGroup)
 		nodeInstanceTypes, err := ecs.GetInstanceTypes(ctx, &ecs.GetInstanceTypesArgs{
 			InstanceTypeFamily: pulumi.StringRef(instanceTypeFamilies),
 		}, nil)

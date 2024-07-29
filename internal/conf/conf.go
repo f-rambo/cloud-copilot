@@ -136,23 +136,15 @@ func (r Resource) GetPulumiPath() string {
 }
 
 type Server struct {
-	Name   string `json:"name,omitempty"`
-	HTTP   HTTP   `json:"http,omitempty"`
-	GRPC   GRPC   `json:"grpc,omitempty"`
-	STATIC STATIC `json:"static,omitempty"`
+	Name    string `json:"name,omitempty"`
+	Version string `json:"version,omitempty"`
+	HTTP    HTTP   `json:"http,omitempty"`
+	GRPC    GRPC   `json:"grpc,omitempty"`
 }
 
 type HTTP struct {
 	Network string `json:"network,omitempty"`
 	Addr    string `json:"addr,omitempty"`
-}
-
-func (s Server) GetName() string {
-	name := os.Getenv("SERVER_NAME")
-	if name != "" {
-		return name
-	}
-	return s.Name
 }
 
 func (h HTTP) GetNetwork() string {
@@ -190,27 +182,6 @@ func (g GRPC) GetAddr() string {
 		return addr
 	}
 	return g.Addr
-}
-
-type STATIC struct {
-	Network string `json:"network,omitempty"`
-	Addr    string `json:"addr,omitempty"`
-}
-
-func (s STATIC) GetNetwork() string {
-	netWork := os.Getenv("STATIC_NETWORK")
-	if netWork != "" {
-		return netWork
-	}
-	return s.Network
-}
-
-func (s STATIC) GetAddr() string {
-	addr := os.Getenv("STATIC_ADDR")
-	if addr != "" {
-		return addr
-	}
-	return s.Addr
 }
 
 type Data struct {

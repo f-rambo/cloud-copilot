@@ -212,6 +212,7 @@ func newDB(c conf.Data) (*gorm.DB, error) {
 	err = client.AutoMigrate(
 		&biz.Cluster{},
 		&biz.Node{},
+		&biz.NodeGroup{},
 		&biz.Project{},
 		&biz.App{},
 		&biz.AppType{},

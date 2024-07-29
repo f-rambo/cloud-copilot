@@ -9,7 +9,7 @@ import (
 	"github.com/f-rambo/ocean/internal/conf"
 	"github.com/f-rambo/ocean/utils"
 	"github.com/go-kratos/kratos/v2/log"
-	jwtv5 "github.com/golang-jwt/jwt/v5" // gorm customize data type
+	jwtv5 "github.com/golang-jwt/jwt/v5"
 	"github.com/pkg/errors"
 	"github.com/spf13/cast"
 	"gorm.io/gorm"
@@ -89,19 +89,19 @@ func (u *UserRepo) DeleteUser(ctx context.Context, id int64) error {
 	return u.data.db.Delete(&biz.User{}, "id = ?", id).Error
 }
 
-func (u *UserRepo) SignIn(ctx context.Context, user *biz.User) error {
-	ok, err := u.adminSignIn(user)
+func (u *UserRepo) SignIn(ctx context.Context, userParam *biz.User) error {
+	ok, err := u.adminSignIn(userParam)
 	if err != nil || ok {
 		return err
 	}
-	user, err = u.GetUserInfoByEmail(ctx, user.Email)
+	user, err := u.GetUserInfoByEmail(ctx, userParam.Email)
 	if err != nil {
 		return err
 	}
 	if user == nil || user.ID == 0 {
 		return errors.New("user not exist")
 	}
-	if user.PassWord != user.PassWord {
+	if userParam.PassWord != user.PassWord {
 		return errors.New("password error")
 	}
 	user.AccessToken, err = u.encodeToken(user)
@@ -153,7 +153,7 @@ func (u *UserRepo) GetUserEmail(ctx context.Context, token string) (string, erro
 	return user.Email, nil
 }
 
-func (u *UserRepo) decodeToken(ctx context.Context, t string) (*biz.User, error) {
+func (u *UserRepo) decodeToken(_ context.Context, t string) (*biz.User, error) {
 	token, err := jwtv5.Parse(t, func(token *jwtv5.Token) (any, error) {
 		if _, ok := token.Method.(*jwtv5.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])

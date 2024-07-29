@@ -325,15 +325,3 @@ func (s *ServicesInterface) bizCiTointerface(ci *biz.CI) *v1alpha1.CI {
 	}
 	return ciInterface
 }
-
-func (s *ServicesInterface) interfaceCiToBiz(ci *v1alpha1.CI) *biz.CI {
-	return &biz.CI{
-		ID:          ci.ID,
-		Version:     ci.Version,
-		Branch:      ci.Branch,
-		Tag:         ci.Tag,
-		Description: ci.Description,
-		ServiceID:   ci.ServiceID,
-		UserID:      ci.UserId,
-	}
-}
