@@ -104,18 +104,19 @@ type ClusterRepo interface {
 
 // 基础建设
 type Infrastructure interface {
-	SaveServers(context.Context, *Cluster) error
-	DeleteServers(context.Context, *Cluster) error
+	Start(context.Context, *Cluster) error
+	Stop(context.Context, *Cluster) error
+	Get(context.Context, *Cluster) error
 }
 
 // 集群配置
 type ClusterConstruct interface {
 	MigrateToBostionHost(context.Context, *Cluster) error
-	InstallCluster(context.Context, *Cluster) error
-	UnInstallCluster(context.Context, *Cluster) error
+	Install(context.Context, *Cluster) error
+	UnInstall(context.Context, *Cluster) error
 	AddNodes(context.Context, *Cluster, []*Node) error
 	RemoveNodes(context.Context, *Cluster, []*Node) error
-	GenerateInitialCluster(context.Context, *Cluster) error
+	GenerateInitial(context.Context, *Cluster) error
 	GenerateNodeLables(context.Context, *Cluster, *NodeGroup) (lables string, err error)
 }
 
@@ -126,6 +127,7 @@ type ClusterRuntime interface {
 
 var ErrClusterNotFound error = errors.New("cluster not found")
 var ErrClusterApiServerAddressEmpty error = errors.New("cluster api server address is empty")
+var ErrInfrastructureNotFound error = errors.New("infrastructure not found")
 
 type ClusterType string
 
@@ -451,7 +453,7 @@ func (uc *ClusterUsecase) Refresh(ctx context.Context) error {
 
 func (uc *ClusterUsecase) Apply(ctx context.Context, cluster *Cluster) (err error) {
 	if ClusterStatus(cluster.Status) == ClusterStatucCreating {
-		err = uc.clusterConstruct.GenerateInitialCluster(ctx, cluster)
+		err = uc.clusterConstruct.GenerateInitial(ctx, cluster)
 		if err != nil {
 			return err
 		}
@@ -467,36 +469,35 @@ func (uc *ClusterUsecase) Watch(ctx context.Context) (*Cluster, error) {
 	return uc.clusterRepo.Watch(ctx)
 }
 
-func (uc *ClusterUsecase) Reconcile(ctx context.Context, cluster *Cluster) error {
-	defer func() {
-		err := uc.clusterRepo.Save(ctx, cluster)
-		if err != nil {
-			uc.log.Errorf("Reconcile save cluster error: %v", err)
-			return
-		}
-	}()
+func (uc *ClusterUsecase) Reconcile(ctx context.Context, cluster *Cluster) (err error) {
 	if cluster.IsDeleteed() {
-		err := uc.clusterConstruct.UnInstallCluster(ctx, cluster)
+		err = uc.clusterConstruct.UnInstall(ctx, cluster)
 		if err != nil {
 			return err
 		}
-		err = uc.infrastructure.DeleteServers(ctx, cluster)
+		err = uc.infrastructure.Stop(ctx, cluster)
 		if err != nil {
 			return err
 		}
 		return nil
 	}
-	currentCluster, err := uc.GetCurrentCluster(ctx)
-	if errors.Is(err, ErrClusterNotFound) {
-		err = uc.infrastructure.SaveServers(ctx, cluster)
+	err = uc.infrastructure.Get(ctx, cluster)
+	if errors.Is(err, ErrInfrastructureNotFound) {
+		ctx, cancel := context.WithCancel(ctx)
+		defer func() {
+			if err == nil {
+				cancel()
+			}
+		}()
+		err = uc.infrastructure.Start(ctx, cluster)
+		if err != nil {
+			return err
+		}
+		err = uc.clusterRepo.Save(ctx, cluster)
 		if err != nil {
 			return err
 		}
 		err = uc.clusterConstruct.MigrateToBostionHost(ctx, cluster)
-		if err != nil {
-			return err
-		}
-		err = uc.clusterConstruct.InstallCluster(ctx, cluster)
 		if err != nil {
 			return err
 		}
@@ -505,7 +506,19 @@ func (uc *ClusterUsecase) Reconcile(ctx context.Context, cluster *Cluster) error
 	if err != nil {
 		return err
 	}
-	err = uc.infrastructure.SaveServers(ctx, cluster)
+	currentCluster := new(Cluster)
+	err = uc.clusterRuntime.CurrentCluster(ctx, currentCluster)
+	if errors.Is(err, ErrClusterNotFound) {
+		err = uc.clusterConstruct.Install(ctx, cluster)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	err = uc.infrastructure.Start(ctx, cluster)
 	if err != nil {
 		return err
 	}

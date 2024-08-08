@@ -149,13 +149,13 @@ func clusterRepo(controller *gomock.Controller) biz.ClusterRepo {
 
 func clusterInfrastructure(controller *gomock.Controller) biz.Infrastructure {
 	mc := mocks.NewMockInfrastructure(controller)
-	mc.EXPECT().DeleteServers(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(func(ctx context.Context, cluster *biz.Cluster) error {
+	mc.EXPECT().Stop(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(func(ctx context.Context, cluster *biz.Cluster) error {
 		if cluster == nil {
 			return fmt.Errorf("cluster is nil")
 		}
 		return nil
 	})
-	mc.EXPECT().SaveServers(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(func(ctx context.Context, cluster *biz.Cluster) error {
+	mc.EXPECT().Start(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(func(ctx context.Context, cluster *biz.Cluster) error {
 		if cluster == nil {
 			return fmt.Errorf("cluster is nil")
 		}
@@ -166,13 +166,13 @@ func clusterInfrastructure(controller *gomock.Controller) biz.Infrastructure {
 
 func clusterConstruct(controller *gomock.Controller) biz.ClusterConstruct {
 	mc := mocks.NewMockClusterConstruct(controller)
-	mc.EXPECT().GenerateInitialCluster(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(func(ctx context.Context, cluster *biz.Cluster) error {
+	mc.EXPECT().GenerateInitial(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(func(ctx context.Context, cluster *biz.Cluster) error {
 		if cluster == nil {
 			return fmt.Errorf("cluster is nil")
 		}
 		return nil
 	})
-	mc.EXPECT().UnInstallCluster(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(func(ctx context.Context, cluster *biz.Cluster) error {
+	mc.EXPECT().UnInstall(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(func(ctx context.Context, cluster *biz.Cluster) error {
 		if cluster == nil {
 			return fmt.Errorf("cluster is nil")
 		}
@@ -184,7 +184,7 @@ func clusterConstruct(controller *gomock.Controller) biz.ClusterConstruct {
 		}
 		return nil
 	})
-	mc.EXPECT().InstallCluster(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(func(ctx context.Context, cluster *biz.Cluster) error {
+	mc.EXPECT().Install(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(func(ctx context.Context, cluster *biz.Cluster) error {
 		if cluster == nil {
 			return fmt.Errorf("cluster is nil")
 		}

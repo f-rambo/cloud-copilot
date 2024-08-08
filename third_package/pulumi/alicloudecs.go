@@ -17,8 +17,8 @@ import (
 )
 
 const (
-	AlicloudProjectName = "ocean-project"
-	AlicloudStackName   = "ocean-stack"
+	AlicloudProjectName = "ocean-alicloud-project"
+	AlicloudStackName   = "ocean-alicloud-stack"
 )
 
 const (
@@ -259,6 +259,10 @@ func (a *AlicloudCluster) infrastructural(ctx *pulumi.Context) error {
 	ctx.Export("key_pair_name", key.KeyPairName)
 
 	return nil
+}
+
+func (a *AlicloudCluster) Get() {
+
 }
 
 func (a *AlicloudCluster) Clear(ctx *pulumi.Context) error {

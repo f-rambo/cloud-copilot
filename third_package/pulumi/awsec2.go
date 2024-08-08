@@ -13,6 +13,11 @@ import (
 )
 
 const (
+	AwsProjectName = "ocean-aws-project"
+	AwsStackName   = "ocean-aws-stack"
+)
+
+const (
 	ec2OceanTagKey  = "ocean-key"
 	ec2OceanTagVal  = "ocean-cluster"
 	ec2VpcName      = "ocean-vpc"

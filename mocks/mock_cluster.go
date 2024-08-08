@@ -160,32 +160,46 @@ func (m *MockInfrastructure) EXPECT() *MockInfrastructureMockRecorder {
 	return m.recorder
 }
 
-// DeleteServers mocks base method.
-func (m *MockInfrastructure) DeleteServers(arg0 context.Context, arg1 *biz.Cluster) error {
+// Get mocks base method.
+func (m *MockInfrastructure) Get(arg0 context.Context, arg1 *biz.Cluster) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteServers", arg0, arg1)
+	ret := m.ctrl.Call(m, "Get", arg0, arg1)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// DeleteServers indicates an expected call of DeleteServers.
-func (mr *MockInfrastructureMockRecorder) DeleteServers(arg0, arg1 interface{}) *gomock.Call {
+// Get indicates an expected call of Get.
+func (mr *MockInfrastructureMockRecorder) Get(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteServers", reflect.TypeOf((*MockInfrastructure)(nil).DeleteServers), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockInfrastructure)(nil).Get), arg0, arg1)
 }
 
-// SaveServers mocks base method.
-func (m *MockInfrastructure) SaveServers(arg0 context.Context, arg1 *biz.Cluster) error {
+// Start mocks base method.
+func (m *MockInfrastructure) Start(arg0 context.Context, arg1 *biz.Cluster) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SaveServers", arg0, arg1)
+	ret := m.ctrl.Call(m, "Start", arg0, arg1)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// SaveServers indicates an expected call of SaveServers.
-func (mr *MockInfrastructureMockRecorder) SaveServers(arg0, arg1 interface{}) *gomock.Call {
+// Start indicates an expected call of Start.
+func (mr *MockInfrastructureMockRecorder) Start(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveServers", reflect.TypeOf((*MockInfrastructure)(nil).SaveServers), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Start", reflect.TypeOf((*MockInfrastructure)(nil).Start), arg0, arg1)
+}
+
+// Stop mocks base method.
+func (m *MockInfrastructure) Stop(arg0 context.Context, arg1 *biz.Cluster) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Stop", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Stop indicates an expected call of Stop.
+func (mr *MockInfrastructureMockRecorder) Stop(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Stop", reflect.TypeOf((*MockInfrastructure)(nil).Stop), arg0, arg1)
 }
 
 // MockClusterConstruct is a mock of ClusterConstruct interface.
@@ -225,18 +239,18 @@ func (mr *MockClusterConstructMockRecorder) AddNodes(arg0, arg1, arg2 interface{
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddNodes", reflect.TypeOf((*MockClusterConstruct)(nil).AddNodes), arg0, arg1, arg2)
 }
 
-// GenerateInitialCluster mocks base method.
-func (m *MockClusterConstruct) GenerateInitialCluster(arg0 context.Context, arg1 *biz.Cluster) error {
+// GenerateInitial mocks base method.
+func (m *MockClusterConstruct) GenerateInitial(arg0 context.Context, arg1 *biz.Cluster) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GenerateInitialCluster", arg0, arg1)
+	ret := m.ctrl.Call(m, "GenerateInitial", arg0, arg1)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// GenerateInitialCluster indicates an expected call of GenerateInitialCluster.
-func (mr *MockClusterConstructMockRecorder) GenerateInitialCluster(arg0, arg1 interface{}) *gomock.Call {
+// GenerateInitial indicates an expected call of GenerateInitial.
+func (mr *MockClusterConstructMockRecorder) GenerateInitial(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GenerateInitialCluster", reflect.TypeOf((*MockClusterConstruct)(nil).GenerateInitialCluster), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GenerateInitial", reflect.TypeOf((*MockClusterConstruct)(nil).GenerateInitial), arg0, arg1)
 }
 
 // GenerateNodeLables mocks base method.
@@ -254,18 +268,18 @@ func (mr *MockClusterConstructMockRecorder) GenerateNodeLables(arg0, arg1, arg2 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GenerateNodeLables", reflect.TypeOf((*MockClusterConstruct)(nil).GenerateNodeLables), arg0, arg1, arg2)
 }
 
-// InstallCluster mocks base method.
-func (m *MockClusterConstruct) InstallCluster(arg0 context.Context, arg1 *biz.Cluster) error {
+// Install mocks base method.
+func (m *MockClusterConstruct) Install(arg0 context.Context, arg1 *biz.Cluster) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "InstallCluster", arg0, arg1)
+	ret := m.ctrl.Call(m, "Install", arg0, arg1)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// InstallCluster indicates an expected call of InstallCluster.
-func (mr *MockClusterConstructMockRecorder) InstallCluster(arg0, arg1 interface{}) *gomock.Call {
+// Install indicates an expected call of Install.
+func (mr *MockClusterConstructMockRecorder) Install(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InstallCluster", reflect.TypeOf((*MockClusterConstruct)(nil).InstallCluster), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Install", reflect.TypeOf((*MockClusterConstruct)(nil).Install), arg0, arg1)
 }
 
 // MigrateToBostionHost mocks base method.
@@ -296,18 +310,18 @@ func (mr *MockClusterConstructMockRecorder) RemoveNodes(arg0, arg1, arg2 interfa
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveNodes", reflect.TypeOf((*MockClusterConstruct)(nil).RemoveNodes), arg0, arg1, arg2)
 }
 
-// UnInstallCluster mocks base method.
-func (m *MockClusterConstruct) UnInstallCluster(arg0 context.Context, arg1 *biz.Cluster) error {
+// UnInstall mocks base method.
+func (m *MockClusterConstruct) UnInstall(arg0 context.Context, arg1 *biz.Cluster) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UnInstallCluster", arg0, arg1)
+	ret := m.ctrl.Call(m, "UnInstall", arg0, arg1)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// UnInstallCluster indicates an expected call of UnInstallCluster.
-func (mr *MockClusterConstructMockRecorder) UnInstallCluster(arg0, arg1 interface{}) *gomock.Call {
+// UnInstall indicates an expected call of UnInstall.
+func (mr *MockClusterConstructMockRecorder) UnInstall(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UnInstallCluster", reflect.TypeOf((*MockClusterConstruct)(nil).UnInstallCluster), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UnInstall", reflect.TypeOf((*MockClusterConstruct)(nil).UnInstall), arg0, arg1)
 }
 
 // MockClusterRuntime is a mock of ClusterRuntime interface.

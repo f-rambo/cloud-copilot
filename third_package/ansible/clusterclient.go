@@ -28,7 +28,7 @@ func NewClusterConstruct(c *conf.Bootstrap, logger log.Logger) biz.ClusterConstr
 }
 
 // 初始化集群
-func (cc *ClusterConstruct) GenerateInitialCluster(ctx context.Context, cluster *biz.Cluster) error {
+func (cc *ClusterConstruct) GenerateInitial(ctx context.Context, cluster *biz.Cluster) error {
 	if cluster.Type == biz.ClusterTypeLocal && len(cluster.Nodes) < biz.NodeMinSize.Int() {
 		return errors.New("local cluster node size must be greater than 1")
 	}
@@ -218,7 +218,7 @@ func (cc *ClusterConstruct) MigrateToBostionHost(ctx context.Context, cluster *b
 	return nil
 }
 
-func (cc *ClusterConstruct) InstallCluster(ctx context.Context, cluster *biz.Cluster) error {
+func (cc *ClusterConstruct) Install(ctx context.Context, cluster *biz.Cluster) error {
 	serversInitPlaybook := getServerInitPlaybook()
 	serversInitPlaybookPath, err := savePlaybook(cc.c.Resource.GetClusterPath(), serversInitPlaybook)
 	if err != nil {
@@ -231,7 +231,7 @@ func (cc *ClusterConstruct) InstallCluster(ctx context.Context, cluster *biz.Clu
 	return cc.kubespray(ctx, cluster, GetClusterPlaybookPath())
 }
 
-func (cc *ClusterConstruct) UnInstallCluster(ctx context.Context, cluster *biz.Cluster) error {
+func (cc *ClusterConstruct) UnInstall(ctx context.Context, cluster *biz.Cluster) error {
 	return cc.kubespray(ctx, cluster, GetResetPlaybookPath())
 }
 
