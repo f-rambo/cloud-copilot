@@ -12,12 +12,11 @@ import (
 	"github.com/f-rambo/ocean/internal/data"
 	"github.com/f-rambo/ocean/internal/interfaces"
 	"github.com/f-rambo/ocean/internal/server"
-	"github.com/f-rambo/ocean/third_package/ansible"
 	"github.com/f-rambo/ocean/third_package/argoworkflows"
 	"github.com/f-rambo/ocean/third_package/githubapi"
 	"github.com/f-rambo/ocean/third_package/helm"
+	"github.com/f-rambo/ocean/third_package/infrastructure"
 	"github.com/f-rambo/ocean/third_package/kubernetes"
-	"github.com/f-rambo/ocean/third_package/pulumi"
 	"github.com/f-rambo/ocean/third_package/sailor"
 	"github.com/go-kratos/kratos/v2"
 	"github.com/go-kratos/kratos/v2/log"
@@ -37,10 +36,9 @@ func wireApp(bootstrap *conf.Bootstrap, logger log.Logger) (*kratos.App, func(),
 		return nil, nil, err
 	}
 	clusterRepo := data.NewClusterRepo(dataData, bootstrap, logger)
-	infrastructure := pulumi.NewClusterInfrastructure(bootstrap, logger)
-	clusterConstruct := ansible.NewClusterConstruct(bootstrap, logger)
+	clusterInfrastructure := infrastructure.NewClusterInfrastructure(bootstrap, logger)
 	clusterRuntime := kubernetes.NewClusterRuntime(bootstrap, logger)
-	clusterUsecase := biz.NewClusterUseCase(clusterRepo, infrastructure, clusterConstruct, clusterRuntime, logger)
+	clusterUsecase := biz.NewClusterUseCase(clusterRepo, clusterInfrastructure, clusterRuntime, logger)
 	projectRepo := data.NewProjectRepo(dataData, bootstrap, logger)
 	clusterPorjectRepo := kubernetes.NewProjectClient(bootstrap, logger)
 	projectUsecase := biz.NewProjectUseCase(projectRepo, clusterPorjectRepo, logger)
@@ -63,7 +61,7 @@ func wireApp(bootstrap *conf.Bootstrap, logger log.Logger) (*kratos.App, func(),
 	autoscaler := interfaces.NewAutoscaler(clusterUsecase, bootstrap, logger)
 	grpcServer := server.NewGRPCServer(bootstrap, clusterInterface, appInterface, servicesInterface, userInterface, projectInterface, autoscaler, logger)
 	httpServer := server.NewHTTPServer(bootstrap, clusterInterface, appInterface, servicesInterface, userInterface, projectInterface, logger)
-	otherServer := server.NewOtherServer(clusterInterface)
+	otherServer := server.NewInternalLogic(clusterInterface)
 	app := newApp(logger, grpcServer, httpServer, otherServer)
 	return app, func() {
 		cleanup()

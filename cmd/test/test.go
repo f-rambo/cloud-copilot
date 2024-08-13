@@ -37,7 +37,6 @@ func wireApp(controller *gomock.Controller, bootstrap *conf.Bootstrap, logger lo
 	// cluster
 	clusterRepo := clusterRepo(controller)
 	infrastructure := clusterInfrastructure(controller)
-	clusterConstruct := clusterConstruct(controller)
 	clusterRuntime := clusterRuntime(controller)
 	// project
 	projectRepo := projectRepo(controller)
@@ -54,7 +53,7 @@ func wireApp(controller *gomock.Controller, bootstrap *conf.Bootstrap, logger lo
 	servicesRepo := servicesRepo(controller)
 	workflowRepo := workflowRepo(controller)
 	// biz
-	clusterUsecase := biz.NewClusterUseCase(clusterRepo, infrastructure, clusterConstruct, clusterRuntime, logger)
+	clusterUsecase := biz.NewClusterUseCase(clusterRepo, infrastructure, clusterRuntime, logger)
 	servicesUseCase := biz.NewServicesUseCase(servicesRepo, workflowRepo, logger)
 	userUseCase := biz.NewUseUser(userRepo, thirdparty, logger)
 	appUsecase := biz.NewAppUsecase(appRepo, clusterRepo, projectRepo, sailorRepo, appRuntime, appConstruct, logger, bootstrap)
@@ -106,8 +105,6 @@ var node *biz.Node = &biz.Node{
 	ErrorInfo:   "testErrorInfo",
 	ClusterID:   1,
 	NodeGroupID: 1,
-	NodePrice:   1.0,
-	PodPrice:    1.0,
 }
 
 var cluster *biz.Cluster = &biz.Cluster{
@@ -122,8 +119,6 @@ var cluster *biz.Cluster = &biz.Cluster{
 	ExternalIP: "testExternalIP",
 	AccessID:   "testAccessID",
 	AccessKey:  "testAccessKey",
-	GPULabel:   "testGPULabel",
-	GPUTypes:   "testGPUTypes",
 }
 
 func clusterRepo(controller *gomock.Controller) biz.ClusterRepo {
@@ -147,8 +142,8 @@ func clusterRepo(controller *gomock.Controller) biz.ClusterRepo {
 	return mc
 }
 
-func clusterInfrastructure(controller *gomock.Controller) biz.Infrastructure {
-	mc := mocks.NewMockInfrastructure(controller)
+func clusterInfrastructure(controller *gomock.Controller) biz.ClusterInfrastructure {
+	mc := mocks.NewMockClusterInfrastructure(controller)
 	mc.EXPECT().Stop(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(func(ctx context.Context, cluster *biz.Cluster) error {
 		if cluster == nil {
 			return fmt.Errorf("cluster is nil")
@@ -156,47 +151,6 @@ func clusterInfrastructure(controller *gomock.Controller) biz.Infrastructure {
 		return nil
 	})
 	mc.EXPECT().Start(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(func(ctx context.Context, cluster *biz.Cluster) error {
-		if cluster == nil {
-			return fmt.Errorf("cluster is nil")
-		}
-		return nil
-	})
-	return mc
-}
-
-func clusterConstruct(controller *gomock.Controller) biz.ClusterConstruct {
-	mc := mocks.NewMockClusterConstruct(controller)
-	mc.EXPECT().GenerateInitial(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(func(ctx context.Context, cluster *biz.Cluster) error {
-		if cluster == nil {
-			return fmt.Errorf("cluster is nil")
-		}
-		return nil
-	})
-	mc.EXPECT().UnInstall(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(func(ctx context.Context, cluster *biz.Cluster) error {
-		if cluster == nil {
-			return fmt.Errorf("cluster is nil")
-		}
-		return nil
-	})
-	mc.EXPECT().MigrateToBostionHost(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(func(ctx context.Context, cluster *biz.Cluster) error {
-		if cluster == nil {
-			return fmt.Errorf("cluster is nil")
-		}
-		return nil
-	})
-	mc.EXPECT().Install(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(func(ctx context.Context, cluster *biz.Cluster) error {
-		if cluster == nil {
-			return fmt.Errorf("cluster is nil")
-		}
-		return nil
-	})
-	mc.EXPECT().AddNodes(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(func(ctx context.Context, cluster *biz.Cluster, nodes []*biz.Node) error {
-		if cluster == nil {
-			return fmt.Errorf("cluster is nil")
-		}
-		return nil
-	})
-	mc.EXPECT().RemoveNodes(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(func(ctx context.Context, cluster *biz.Cluster, nodes []*biz.Node) error {
 		if cluster == nil {
 			return fmt.Errorf("cluster is nil")
 		}

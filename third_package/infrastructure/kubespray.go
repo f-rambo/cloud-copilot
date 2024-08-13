@@ -1,4 +1,4 @@
-package ansible
+package infrastructure
 
 import (
 	"regexp"

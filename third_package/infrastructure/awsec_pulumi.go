@@ -1,8 +1,9 @@
-package pulumi
+package infrastructure
 
 import (
 	"fmt"
 	"sort"
+	"strings"
 
 	"github.com/f-rambo/ocean/internal/biz"
 	"github.com/pulumi/pulumi-aws/sdk/v6/go/aws"
@@ -13,17 +14,74 @@ import (
 )
 
 const (
-	AwsProjectName = "ocean-aws-project"
-	AwsStackName   = "ocean-aws-stack"
+	AWS_PROJECT = "aws-project"
+	AWS_STACK   = "aws-stack"
 )
 
 const (
-	ec2OceanTagKey  = "ocean-key"
-	ec2OceanTagVal  = "ocean-cluster"
-	ec2VpcName      = "ocean-vpc"
-	ec2VpcCidrBlock = "192.168.0.0/16"
-	ec2InternetGw   = "ocean-igw"
-	ec2UbuntuAmiId  = "ami-04a81a99f5ec58529"
+	TAG_KEY       = "ocean-key"
+	TAG_VAL       = "ocean-cluster"
+	UBUNTU_AMI_ID = "ami-04a81a99f5ec58529"
+)
+
+// cluster key
+const (
+	// PublicKey
+	CLUSTER_PUBLIC_KEY = "cluster_public_key"
+	// Region
+	CLUSTER_REGION = "cluster_region"
+	// VpcID
+	CLUSTER_VPC_ID = "cluster_vpc_id"
+	// ResourceGroupID
+	CLUSTER_RESOURCE_GROUP_ID = "cluster_resource_group_id"
+	// SecurityGroupIDs
+	CLUSTER_SECURITY_GROUP_IDS = "cluster_security_group_ids"
+	// ExternalIP
+	CLUSTER_EXTERNAL_IP = "cluster_external_ip"
+)
+
+// nodegroup key
+const (
+	// InstanceType
+	NODEGROUP_INSTANCE_TYPE = "nodegroup_instance_type"
+	// OSImage
+	NODEGROUP_OS_IMAGE = "nodegroup_os_image"
+	// CPU
+	NODEGROUP_CPU = "nodegroup_cpu"
+	// Memory
+	NODEGROUP_MEMORY = "nodegroup_memory"
+	// GPU
+	NODEGROUP_GPU = "nodegroup_gpu"
+	// GpuSpec
+	NODEGROUP_GPU_SPEC = "nodegroup_gpu_spec"
+	// SystemDisk
+	NODEGROUP_SYSTEM_DISK = "nodegroup_system_disk"
+	// DataDisk
+	NODEGROUP_DATA_DISK = "nodegroup_data_disk"
+	// InternetMaxBandwidthOut
+	NODEGROUP_INTERNET_MAX_BANDWIDTH_OUT = "nodegroup_internet_max_bandwidth_out"
+	// NodePrice
+	NODEGROUP_NODE_PRICE = "nodegroup_node_price"
+)
+
+// node key
+const (
+	// InstanceID
+	NODE_INSTANCE_ID = "node_instance_id"
+	// Labels
+	NODE_LABELS = "node_labels"
+	// Kernel
+	NODE_KERNEL = "node_kernel"
+	// InternalIP
+	NODE_INTERNAL_IP = "node_internal_ip"
+	// ExternalIP
+	NODE_EXTERNAL_IP = "node_external_ip"
+	// Status
+	NODE_STATUS = "node_status"
+	// SwitchId
+	NODE_SWITCH_ID = "node_switch_id"
+	// ZoneId
+	NODE_ZONE_ID = "node_zone_id"
 )
 
 type GetInstanceTypeResults []*ec2.GetInstanceTypeResult
@@ -134,10 +192,10 @@ func (a *AwsEc2Instance) distributeNodeSubnetsFunc(nodeIndex int) *ec2.Subnet {
 func (a *AwsEc2Instance) infrastructural(ctx *pulumi.Context) (err error) {
 	// Create a VPC
 	a.vpc, err = ec2.NewVpc(ctx, "k8s-vpc", &ec2.VpcArgs{
-		CidrBlock: pulumi.String(ec2VpcCidrBlock),
+		CidrBlock: pulumi.String(a.cluster.VpcCidrBlock),
 		Tags: pulumi.StringMap{
-			"Name":         pulumi.String(ec2VpcName),
-			ec2OceanTagKey: pulumi.String(ec2OceanTagVal),
+			"Name":  pulumi.String(a.cluster.Name + "-vpc"),
+			TAG_KEY: pulumi.String(TAG_VAL),
 		},
 	})
 	if err != nil {
@@ -158,8 +216,8 @@ func (a *AwsEc2Instance) infrastructural(ctx *pulumi.Context) (err error) {
 			CidrBlock:        pulumi.String(fmt.Sprintf("10.0.%d.0/24", i+1)),
 			AvailabilityZone: pulumi.String(zone),
 			Tags: pulumi.StringMap{
-				"Name":         pulumi.String("k8s-subnet-" + zone),
-				ec2OceanTagKey: pulumi.String(ec2OceanTagVal),
+				"Name":  pulumi.String("k8s-subnet-" + zone),
+				TAG_KEY: pulumi.String(TAG_VAL),
 			},
 		})
 		if err != nil {
@@ -172,8 +230,8 @@ func (a *AwsEc2Instance) infrastructural(ctx *pulumi.Context) (err error) {
 	a.igw, err = ec2.NewInternetGateway(ctx, "k8s-igw", &ec2.InternetGatewayArgs{
 		VpcId: a.vpc.ID(),
 		Tags: pulumi.StringMap{
-			"Name":         pulumi.String(ec2InternetGw),
-			ec2OceanTagKey: pulumi.String(ec2OceanTagVal),
+			"Name":  pulumi.String(a.cluster.Name + "-igw"),
+			TAG_KEY: pulumi.String(TAG_VAL),
 		},
 	})
 	if err != nil {
@@ -184,8 +242,8 @@ func (a *AwsEc2Instance) infrastructural(ctx *pulumi.Context) (err error) {
 	rt, err := ec2.NewRouteTable(ctx, "k8s-rt", &ec2.RouteTableArgs{
 		VpcId: a.vpc.ID(),
 		Tags: pulumi.StringMap{
-			"Name":         pulumi.String("k8s-rt"),
-			ec2OceanTagKey: pulumi.String(ec2OceanTagVal),
+			"Name":  pulumi.String("k8s-rt"),
+			TAG_KEY: pulumi.String(TAG_VAL),
 		},
 	})
 	if err != nil {
@@ -293,8 +351,8 @@ func (a *AwsEc2Instance) infrastructural(ctx *pulumi.Context) (err error) {
 	a.ec2Profile, err = iam.NewInstanceProfile(ctx, "ec2Profile", &iam.InstanceProfileArgs{
 		Role: ec2Role.Name,
 		Tags: pulumi.StringMap{
-			"Name":         pulumi.String("ec2Profile"),
-			ec2OceanTagKey: pulumi.String(ec2OceanTagVal),
+			"Name":  pulumi.String("ec2Profile"),
+			TAG_KEY: pulumi.String(TAG_VAL),
 		},
 	})
 	if err != nil {
@@ -353,13 +411,13 @@ func (a *AwsEc2Instance) bostionHost(ctx *pulumi.Context) (err error) {
 		InstanceType:        pulumi.String(bostionHostInstanceType),
 		VpcSecurityGroupIds: pulumi.StringArray{a.sg.ID()},
 		SubnetId:            a.subnets[0].ID(),
-		Ami:                 pulumi.String(ec2UbuntuAmiId),
+		Ami:                 pulumi.String(UBUNTU_AMI_ID),
 		IamInstanceProfile:  a.ec2Profile.Name,
 		KeyName:             a.keyPair.KeyName,
 		Tags: pulumi.StringMap{
-			"Name":         pulumi.String("k8s-master-node"),
-			ec2OceanTagKey: pulumi.String(ec2OceanTagVal),
-			"NodeRole":     pulumi.String("BostionHost"),
+			"Name":     pulumi.String("k8s-master-node"),
+			TAG_KEY:    pulumi.String(TAG_VAL),
+			"NodeRole": pulumi.String("BostionHost"),
 		},
 	})
 	if err != nil {
@@ -431,16 +489,16 @@ func (a *AwsEc2Instance) nodes(ctx *pulumi.Context) error {
 				InstanceType:        pulumi.String(nodeGroup.InstanceType),
 				VpcSecurityGroupIds: pulumi.StringArray{a.sg.ID()},
 				SubnetId:            subnet.ID(),
-				Ami:                 pulumi.String(ec2UbuntuAmiId),
+				Ami:                 pulumi.String(UBUNTU_AMI_ID),
 				IamInstanceProfile:  a.ec2Profile.Name,
 				KeyName:             a.keyPair.KeyName,
 				RootBlockDevice: &ec2.InstanceRootBlockDeviceArgs{
 					VolumeSize: pulumi.Int(nodeGroup.SystemDisk),
 				},
 				Tags: pulumi.StringMap{
-					"Name":         pulumi.String(nodeGroup.Name),
-					ec2OceanTagKey: pulumi.String(ec2OceanTagVal),
-					"NodeRole":     pulumi.String(node.Role),
+					"Name":     pulumi.String(nodeGroup.Name),
+					TAG_KEY:    pulumi.String(TAG_VAL),
+					"NodeRole": pulumi.String(node.Role),
 				},
 			})
 			if err != nil {
@@ -472,6 +530,83 @@ func (a *AwsEc2Instance) nodes(ctx *pulumi.Context) error {
 			}
 		}
 	}
+	return nil
+}
+
+func (a *AwsEc2Instance) Get(ctx *pulumi.Context) error {
+	instances, err := ec2.GetInstances(ctx, &ec2.GetInstancesArgs{})
+	if err != nil {
+		return err
+	}
+	subnetIds := make([]string, 0)
+	instanceTypes := make([]string, 0)
+	for _, instanceID := range instances.Ids {
+		instance, err := ec2.GetInstance(ctx, "", pulumi.ID(instanceID), nil)
+		if err != nil {
+			return err
+		}
+		// cluster
+		ctx.Export(strings.Join([]string{instanceID, CLUSTER_PUBLIC_KEY}, ","), instance.KeyName)
+		ctx.Export(strings.Join([]string{instanceID, CLUSTER_SECURITY_GROUP_IDS}, ","), instance.VpcSecurityGroupIds)
+		// nodegroup
+		ctx.Export(strings.Join([]string{instanceID, NODEGROUP_INSTANCE_TYPE}, ","), instance.InstanceType)
+		instance.InstanceType.ApplyT(func(v string) string {
+			for _, vv := range instanceTypes {
+				if vv == v {
+					return v
+				}
+			}
+			instanceTypes = append(instanceTypes, v)
+			return v
+		})
+		ctx.Export(strings.Join([]string{instanceID, NODEGROUP_OS_IMAGE}, ","), instance.Ami)
+		// node
+		ctx.Export(strings.Join([]string{instanceID, NODE_INTERNAL_IP}, ","), instance.PrivateIp)
+		ctx.Export(strings.Join([]string{instanceID, NODE_EXTERNAL_IP}, ","), instance.PublicIp)
+		ctx.Export(strings.Join([]string{instanceID, NODE_STATUS}, ","), instance.InstanceState)
+		ctx.Export(strings.Join([]string{instanceID, NODE_ZONE_ID}, ","), instance.AvailabilityZone)
+		ctx.Export(strings.Join([]string{instanceID, NODE_SWITCH_ID}, ","), instance.SubnetId)
+		instance.SubnetId.ApplyT(func(v string) string {
+			for _, vv := range subnetIds {
+				if vv == v {
+					return v
+				}
+			}
+			subnetIds = append(subnetIds, v)
+			return v
+		})
+	}
+	vpcID := ""
+	for i, subnetID := range subnetIds {
+		subnet, err := ec2.GetSubnet(ctx, fmt.Sprintf("subnet-%d", i), pulumi.ID(subnetID), nil)
+		if err != nil {
+			return err
+		}
+		if vpcID == "" {
+			subnet.VpcId.ApplyT(func(v string) string {
+				vpcID = v
+				return v
+			})
+		}
+	}
+	for i, instanceType := range instanceTypes {
+		instanceTypeRes, err := ec2.GetInstanceType(ctx, &ec2.GetInstanceTypeArgs{InstanceType: instanceType})
+		if err != nil {
+			return err
+		}
+		ctx.Export(strings.Join([]string{string(i), NODEGROUP_CPU}, ","), pulumi.Int(instanceTypeRes.DefaultVcpus))
+		ctx.Export(strings.Join([]string{string(i), NODEGROUP_MEMORY}, ","), pulumi.Int(instanceTypeRes.MemorySize))
+		for _, gpues := range instanceTypeRes.Gpuses {
+			ctx.Export(strings.Join([]string{string(i), NODEGROUP_GPU_SPEC}, ","), pulumi.String(gpues.Name))
+			ctx.Export(strings.Join([]string{string(i), NODEGROUP_GPU}, ","), pulumi.Int(gpues.Count))
+		}
+		ctx.Export(strings.Join([]string{string(i), NODEGROUP_DATA_DISK}, ","), pulumi.Int(instanceTypeRes.TotalInstanceStorage))
+	}
+	return nil
+}
+
+func (a *AwsEc2Instance) DecodeClusterInfomation(cluster *biz.Cluster, output string) error {
+
 	return nil
 }
 

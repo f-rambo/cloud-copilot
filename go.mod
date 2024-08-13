@@ -2,8 +2,6 @@ module github.com/f-rambo/ocean
 
 go 1.22
 
-toolchain go1.22.3
-
 require (
 	github.com/apenella/go-ansible/v2 v2.0.0
 	github.com/argoproj/argo-workflows/v3 v3.5.1

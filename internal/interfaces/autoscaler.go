@@ -3,7 +3,6 @@ package interfaces
 import (
 	"context"
 	"encoding/json"
-	"strings"
 
 	autoscaler "github.com/f-rambo/ocean/api/autoscaler"
 	"github.com/f-rambo/ocean/internal/biz"
@@ -143,7 +142,7 @@ func (a *Autoscaler) PricingNodePrice(ctx context.Context, in *autoscaler.Pricin
 	if resNode == nil {
 		return nil, errors.New("node not found")
 	}
-	return &autoscaler.PricingNodePriceResponse{Price: resNode.NodePrice}, nil
+	return &autoscaler.PricingNodePriceResponse{Price: resNode.NodeGroup.NodePrice}, nil
 }
 
 // PricingPodPrice：返回在指定时间段内运行一个 Pod 的理论最低价格。
@@ -161,7 +160,7 @@ func (a *Autoscaler) PricingPodPrice(ctx context.Context, in *autoscaler.Pricing
 	if resNode == nil {
 		return nil, errors.New("node not found")
 	}
-	return &autoscaler.PricingPodPriceResponse{Price: resNode.PodPrice}, nil
+	return &autoscaler.PricingPodPriceResponse{Price: resNode.NodeGroup.NodePrice}, nil
 }
 
 // GPULabel：返回添加到具有 GPU 资源的节点的标签。
@@ -172,7 +171,14 @@ func (a *Autoscaler) GPULabel(ctx context.Context, in *autoscaler.GPULabelReques
 	if err != nil {
 		return nil, err
 	}
-	return &autoscaler.GPULabelResponse{Label: cluster.GPULabel}, nil
+	gpuLable := ""
+	for _, ng := range cluster.NodeGroups {
+		if ng.GpuSpec != "" {
+			gpuLable = ng.GpuSpec
+			break
+		}
+	}
+	return &autoscaler.GPULabelResponse{Label: gpuLable}, nil
 }
 
 // GetAvailableGPUTypes：返回云提供商支持的所有 GPU 类型。
@@ -183,16 +189,12 @@ func (a *Autoscaler) GetAvailableGPUTypes(ctx context.Context, in *autoscaler.Ge
 	if err != nil {
 		return nil, err
 	}
-	if cluster.GPUTypes == "" {
-		return nil, errors.New("gpu type is empty")
-	}
 	pbGpuTypes := make(map[string]*anypb.Any)
-	gputypes := strings.Split(cluster.GPUTypes, ",")
-	for _, gputype := range gputypes {
-		if gputype == "" {
+	for _, ng := range cluster.NodeGroups {
+		if ng.GpuSpec == "" {
 			continue
 		}
-		pbGpuTypes[gputype] = nil
+		pbGpuTypes[ng.GpuSpec] = nil
 	}
 	return &autoscaler.GetAvailableGPUTypesResponse{
 		GpuTypes: pbGpuTypes,

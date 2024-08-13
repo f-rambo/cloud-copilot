@@ -2,7 +2,6 @@ package interfaces
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/f-rambo/ocean/api/cluster/v1alpha1"
 	"github.com/f-rambo/ocean/internal/biz"
@@ -31,7 +30,7 @@ func NewClusterInterface(clusterUc *biz.ClusterUsecase, projectUc *biz.ProjectUs
 	}
 }
 
-func (uc *ClusterInterface) StartReconcile(ctx context.Context) error {
+func (uc *ClusterInterface) StartReconcile(ctx context.Context) (err error) {
 	for {
 		cluser, err := uc.clusterUc.Watch(ctx)
 		if err != nil {
@@ -48,7 +47,19 @@ func (uc *ClusterInterface) StartReconcile(ctx context.Context) error {
 }
 
 func (uc *ClusterInterface) StopReconcile(ctx context.Context) error {
-	fmt.Println("stop reconcile")
+	return nil
+}
+
+func (uc *ClusterInterface) StartMock(ctx context.Context) error {
+	cluster := &biz.Cluster{}
+	err := uc.clusterUc.Reconcile(ctx, cluster)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (uc *ClusterInterface) StopMock(ctx context.Context) error {
 	return nil
 }
 

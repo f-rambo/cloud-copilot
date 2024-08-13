@@ -1,9 +1,10 @@
-package pulumi
+package infrastructure
 
 import (
 	"encoding/json"
 	"fmt"
 	"sort"
+	"strings"
 
 	"github.com/f-rambo/ocean/internal/biz"
 	"github.com/pkg/errors"
@@ -151,14 +152,14 @@ func (a *AlicloudCluster) infrastructural(ctx *pulumi.Context) error {
 	ctx.Export("vpc_id", a.vpcID)
 
 	// 创建交换机
-	foo, err := alicloud.GetZones(ctx, &alicloud.GetZonesArgs{
+	zones, err := alicloud.GetZones(ctx, &alicloud.GetZonesArgs{
 		AvailableResourceCreation: pulumi.StringRef("VSwitch"),
 	}, nil)
 	if err != nil {
 		return err
 	}
 	zoneIds := make([]string, 0)
-	for i, zone := range foo.Zones {
+	for i, zone := range zones.Zones {
 		zoneIds = append(zoneIds, zone.Id)
 		ctx.Export(fmt.Sprintf("zoneId-%d", i), pulumi.String(zone.Id))
 	}
@@ -258,15 +259,6 @@ func (a *AlicloudCluster) infrastructural(ctx *pulumi.Context) error {
 	}
 	ctx.Export("key_pair_name", key.KeyPairName)
 
-	return nil
-}
-
-func (a *AlicloudCluster) Get() {
-
-}
-
-func (a *AlicloudCluster) Clear(ctx *pulumi.Context) error {
-	// 清理资源
 	return nil
 }
 
@@ -458,4 +450,102 @@ func (a *AlicloudCluster) distributeNodeVswitches(nodeIndex int) *vpc.Switch {
 	}
 	interval := nodeSize / vSwitchSize
 	return a.vSwitchs[(nodeIndex/interval)%vSwitchSize]
+}
+
+func (a *AlicloudCluster) Get(ctx *pulumi.Context) error {
+	instances, err := ecs.GetInstances(ctx, &ecs.GetInstancesArgs{
+		Status: pulumi.StringRef("Running"),
+	})
+	if err != nil {
+		return err
+	}
+	var vpcId, resourceGroupID, sgIDs, eipID string
+	instanceTypes := make(map[string]struct{})
+	nodeGroupsByNodes := make(map[string]*biz.NodeGroup)
+	for _, node := range a.cluster.Nodes {
+		for _, instance := range instances.Instances {
+			if node.InternalIP == instance.PrivateIp {
+				node.InstanceID = instance.Id
+				node.SwitchId = instance.VswitchId
+				node.ZoneId = instance.AvailabilityZone
+				node.ExternalIP = instance.PublicIp
+				vpcId = instance.VpcId
+				resourceGroupID = instance.ResourceGroupId
+				sgIDs = strings.Join(instance.SecurityGroups, ",")
+				if instance.Eip != "" {
+					eipID = instance.Eip
+				}
+				instanceTypes[instance.InstanceType] = struct{}{}
+				ng := &biz.NodeGroup{
+					OSImage:                 instance.ImageId,
+					InstanceType:            instance.InstanceType,
+					InternetMaxBandwidthOut: int32(instance.InternetMaxBandwidthOut),
+				}
+				for _, v := range instance.DiskDeviceMappings {
+					if v.Type == "system disk" {
+						ng.SystemDisk += int32(v.Size)
+					}
+					if v.Type == "data disk" {
+						ng.DataDisk += int32(v.Size)
+					}
+				}
+				nodeGroupsByNodes[node.InstanceID] = ng
+				break
+			}
+		}
+	}
+	a.cluster.VpcID = vpcId
+	a.cluster.ResourceGroupID = resourceGroupID
+	a.cluster.SecurityGroupIDs = sgIDs
+	a.cluster.ApiServerAddress = eipID
+	nodeGroups := make([]*biz.NodeGroup, 0)
+	for instanceType := range instanceTypes {
+		nodeGroup := &biz.NodeGroup{}
+		for _, ng := range a.cluster.NodeGroups {
+			if ng.InstanceType == instanceType {
+				nodeGroup = ng
+				nodeGroup.InstanceType = instanceType
+				break
+			}
+		}
+		instanceTypes, err := ecs.GetInstanceTypes(ctx, &ecs.GetInstanceTypesArgs{
+			InstanceType: pulumi.StringRef(instanceType),
+		})
+		if err != nil {
+			return err
+		}
+		for _, v := range instanceTypes.InstanceTypes {
+			if v.Gpu.Amount != "" {
+				nodeGroup.GPU = cast.ToInt32(v.Gpu.Amount)
+				nodeGroup.GpuSpec = v.Gpu.Category
+				nodeGroup.Type = biz.NodeGroupTypeGPUAcceleraterd
+			} else {
+				nodeGroup.Type = biz.NodeGroupTypeNormal
+			}
+			nodeGroup.CPU = int32(v.CpuCoreCount)
+			nodeGroup.Memory = v.MemorySize
+			nodeGroup.NodePrice = cast.ToFloat64(v.Price)
+		}
+		nodeGroups = append(nodeGroups, nodeGroup)
+	}
+	for _, ng := range nodeGroups {
+		for _, v := range nodeGroupsByNodes {
+			if v.InstanceType == ng.InstanceType {
+				ng.OSImage = v.OSImage
+				ng.SystemDisk = v.SystemDisk
+				ng.DataDisk = v.DataDisk
+				ng.InternetMaxBandwidthOut = v.InternetMaxBandwidthOut
+			}
+		}
+	}
+	a.cluster.NodeGroups = nodeGroups
+	return nil
+}
+
+func (a *AlicloudCluster) DecodeClusterInfomation(cluster *biz.Cluster, output string) error {
+	return nil
+}
+
+func (a *AlicloudCluster) Clear(ctx *pulumi.Context) error {
+	return nil
 }

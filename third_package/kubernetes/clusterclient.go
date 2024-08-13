@@ -8,6 +8,7 @@ import (
 	"github.com/f-rambo/ocean/internal/conf"
 	"github.com/f-rambo/ocean/utils"
 	"github.com/go-kratos/kratos/v2/log"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
@@ -53,12 +54,14 @@ func (cr *ClusterRuntime) CurrentCluster(ctx context.Context, cluster *biz.Clust
 	}
 	restConfig, err := getKubeConfig(&ConfigArgs{KubeConfig: cluster.KubeConfig})
 	if err != nil {
-		return err
+		cr.log.Errorf("get kubeconfig error: %v", err)
+		return biz.ErrClusterNotFound
 	}
 	cluster.ApiServerAddress = restConfig.Host
 	clientSet, err := kubernetes.NewForConfig(restConfig)
 	if err != nil {
-		return err
+		cr.log.Errorf("create clientset error: %v", err)
+		return biz.ErrClusterNotFound
 	}
 	// get cluster information kubectl cluster-info dump
 	versionInfo, err := clientSet.Discovery().ServerVersion()
@@ -70,10 +73,6 @@ func (cr *ClusterRuntime) CurrentCluster(ctx context.Context, cluster *biz.Clust
 	if err != nil {
 		return err
 	}
-	err = cr.getNodeGroupInfo(ctx, clientSet, cluster)
-	if err != nil {
-		return err
-	}
 	err = cr.getNodes(ctx, clientSet, cluster)
 	if err != nil {
 		return err
@@ -82,7 +81,6 @@ func (cr *ClusterRuntime) CurrentCluster(ctx context.Context, cluster *biz.Clust
 }
 
 func (cr *ClusterRuntime) getClusterInfo(ctx context.Context, clientSet *kubernetes.Clientset, cluster *biz.Cluster) error {
-	// cluster infomation in configmap
 	configMap, err := clientSet.CoreV1().ConfigMaps("kube-system").Get(ctx, ClusterInformation.String(), metav1.GetOptions{})
 	if err != nil {
 		return err
@@ -97,32 +95,43 @@ func (cr *ClusterRuntime) getClusterInfo(ctx context.Context, clientSet *kuberne
 	return nil
 }
 
-func (cr *ClusterRuntime) getNodeGroupInfo(ctx context.Context, clientSet *kubernetes.Clientset, cluster *biz.Cluster) error {
-	// nodegroup infomation in configmap
-	configMap, err := clientSet.CoreV1().ConfigMaps("kube-system").Get(ctx, NodegroupInformation.String(), metav1.GetOptions{})
-	if err != nil {
-		return err
-	}
-	if _, ok := configMap.Data[NodegroupInformation.String()]; !ok {
-		return nil
-	}
-	nodegroups := make([]*biz.NodeGroup, 0)
-	err = json.Unmarshal([]byte(configMap.Data[NodegroupInformation.String()]), &nodegroups)
-	if err != nil {
-		return err
-	}
-	cluster.NodeGroups = nodegroups
-	return nil
-}
-
 func (cr *ClusterRuntime) getNodes(ctx context.Context, clientSet *kubernetes.Clientset, cluster *biz.Cluster) error {
-	nodes := make([]*biz.Node, 0)
 	nodeRes, err := clientSet.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return err
 	}
 	for _, node := range nodeRes.Items {
 		n := &biz.Node{}
+		clusterNodeIndex := -1
+		for index, v := range cluster.Nodes {
+			if v.Name == node.Name {
+				n = v
+				clusterNodeIndex = index
+				break
+			}
+		}
+		n.Name = node.Name
+		for _, v := range node.Status.Addresses {
+			if v.Address == "" {
+				continue
+			}
+			if v.Type == "InternalIP" {
+				n.InternalIP = v.Address
+			}
+			if v.Type == "ExternalIP" {
+				n.ExternalIP = v.Address
+			}
+		}
+		n.Kubelet = node.Status.NodeInfo.KubeletVersion
+		n.Container = node.Status.NodeInfo.ContainerRuntimeVersion
+		n.Kernel = node.Status.NodeInfo.KernelVersion
+		n.KubeProxy = node.Status.NodeInfo.KubeProxyVersion
+		n.Status = biz.NodeStatusUnspecified
+		for _, v := range node.Status.Conditions {
+			if v.Status == corev1.ConditionStatus(corev1.NodeReady) {
+				n.Status = biz.NodeStatusRunning
+			}
+		}
 		nodeLables, err := json.Marshal(node)
 		if err != nil {
 			return err
@@ -131,12 +140,12 @@ func (cr *ClusterRuntime) getNodes(ctx context.Context, clientSet *kubernetes.Cl
 		if err != nil {
 			return err
 		}
-		if n.Name == "" {
-			n.Name = node.Name
-		}
 		n.Labels = string(nodeLables)
-		nodes = append(nodes, n)
+		if clusterNodeIndex == -1 {
+			cluster.Nodes = append(cluster.Nodes, n)
+		} else {
+			cluster.Nodes[clusterNodeIndex] = n
+		}
 	}
-	cluster.Nodes = nodes
 	return nil
 }

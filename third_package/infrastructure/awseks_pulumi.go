@@ -1,4 +1,4 @@
-package pulumi
+package infrastructure
 
 import (
 	"fmt"

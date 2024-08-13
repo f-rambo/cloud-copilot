@@ -24,6 +24,9 @@ type Cluster struct {
 	PublicKey        string        `json:"public_key" gorm:"column:public_key; default:''; NOT NULL;"` // *
 	Region           string        `json:"region" gorm:"column:region; default:''; NOT NULL;"`         // *
 	VpcID            string        `json:"vpc_id" gorm:"column:vpc_id; default:''; NOT NULL;"`
+	VpcCidrBlock     string        `json:"vpc_cidr_block" gorm:"column:vpc_cidr_block; default:''; NOT NULL;"`
+	ResourceGroupID  string        `json:"resource_group_id" gorm:"column:resource_group_id; default:''; NOT NULL;"`
+	SecurityGroupIDs string        `json:"security_group_ids" gorm:"column:security_group_ids; default:''; NOT NULL;"`
 	ExternalIP       string        `json:"external_ip" gorm:"column:external_ip; default:''; NOT NULL;"`
 	AccessID         string        `json:"access_id" gorm:"column:access_id; default:''; NOT NULL;"`   // *
 	AccessKey        string        `json:"access_key" gorm:"column:access_key; default:''; NOT NULL;"` // *
@@ -31,8 +34,6 @@ type Cluster struct {
 	Logs             string        `json:"logs" gorm:"-"` // logs data from localfile
 	Nodes            []*Node       `json:"nodes" gorm:"-"`
 	NodeGroups       []*NodeGroup  `json:"node_groups" gorm:"-"`
-	GPULabel         string        `json:"gpu_label" gorm:"column:gpu_label; default:''; NOT NULL;"`
-	GPUTypes         string        `json:"gpu_types" gorm:"column:gpu_types; default:''; NOT NULL;"` // examlpe: 1080ti,2080ti,3090
 	gorm.Model
 }
 
@@ -53,11 +54,14 @@ type NodeGroup struct {
 	MinSize                 int32         `json:"min_size" gorm:"column:min_size; default:0; NOT NULL"`
 	MaxSize                 int32         `json:"max_size" gorm:"column:max_size; default:0; NOT NULL"`
 	TargetSize              int32         `json:"target_size" gorm:"column:target_size; default:0; NOT NULL"`
+	NodePrice               float64       `json:"node_price" gorm:"column:node_price; default:0; NOT NULL;"` // 节点价格
+	PodPrice                float64       `json:"pod_price" gorm:"column:pod_price; default:0; NOT NULL;"`   // 节点上pod的价格
 	ClusterID               int64         `json:"cluster_id" gorm:"column:cluster_id; default:0; NOT NULL"`
 }
 
 type Node struct {
 	ID          int64      `json:"id" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
+	InstanceID  string     `json:"instance_id" gorm:"column:instance_id; default:''; NOT NULL"`
 	Name        string     `json:"name" gorm:"column:name; default:''; NOT NULL"`
 	Labels      string     `json:"labels" gorm:"column:labels; default:''; NOT NULL"` // map[string]string json
 	Kernel      string     `json:"kernel" gorm:"column:kernel; default:''; NOT NULL"`
@@ -73,8 +77,8 @@ type Node struct {
 	ClusterID   int64      `json:"cluster_id" gorm:"column:cluster_id; default:0; NOT NULL"`
 	NodeGroup   *NodeGroup `json:"node_group" gorm:"-"`
 	NodeGroupID int64      `json:"node_group_id" gorm:"column:node_group_id; default:0; NOT NULL"`
-	NodePrice   float64    `json:"node_price" gorm:"column:node_price; default:0; NOT NULL;"` // 节点价格
-	PodPrice    float64    `json:"pod_price" gorm:"column:pod_price; default:0; NOT NULL;"`   // 节点上pod的价格
+	SwitchId    string     `json:"switch_id" gorm:"column:switch_id; default:''; NOT NULL"`
+	ZoneId      string     `json:"zone_id" gorm:"column:zone_id; default:''; NOT NULL"`
 	gorm.Model
 }
 
@@ -103,14 +107,10 @@ type ClusterRepo interface {
 }
 
 // 基础建设
-type Infrastructure interface {
+type ClusterInfrastructure interface {
 	Start(context.Context, *Cluster) error
 	Stop(context.Context, *Cluster) error
 	Get(context.Context, *Cluster) error
-}
-
-// 集群配置
-type ClusterConstruct interface {
 	MigrateToBostionHost(context.Context, *Cluster) error
 	Install(context.Context, *Cluster) error
 	UnInstall(context.Context, *Cluster) error
@@ -300,20 +300,18 @@ func (n *Node) GetStatus() NodeStatus {
 }
 
 type ClusterUsecase struct {
-	clusterRepo      ClusterRepo
-	infrastructure   Infrastructure
-	clusterConstruct ClusterConstruct
-	clusterRuntime   ClusterRuntime
-	log              *log.Helper
+	clusterRepo           ClusterRepo
+	clusterInfrastructure ClusterInfrastructure
+	clusterRuntime        ClusterRuntime
+	log                   *log.Helper
 }
 
-func NewClusterUseCase(clusterRepo ClusterRepo, infrastructure Infrastructure, clusterConstruct ClusterConstruct, clusterRuntime ClusterRuntime, logger log.Logger) *ClusterUsecase {
+func NewClusterUseCase(clusterRepo ClusterRepo, clusterInfrastructure ClusterInfrastructure, clusterRuntime ClusterRuntime, logger log.Logger) *ClusterUsecase {
 	c := &ClusterUsecase{
-		clusterRepo:      clusterRepo,
-		infrastructure:   infrastructure,
-		clusterConstruct: clusterConstruct,
-		clusterRuntime:   clusterRuntime,
-		log:              log.NewHelper(logger),
+		clusterRepo:           clusterRepo,
+		clusterInfrastructure: clusterInfrastructure,
+		clusterRuntime:        clusterRuntime,
+		log:                   log.NewHelper(logger),
 	}
 	return c
 }
@@ -405,7 +403,7 @@ func (uc *ClusterUsecase) DeleteNodes(ctx context.Context, cluster *Cluster, nod
 
 // 预测一个节点配置，也就是根据当前节点组目前还可以配置的节点
 func (uc *ClusterUsecase) NodeGroupTemplateNodeInfo(ctx context.Context, cluster *Cluster, nodeGroup *NodeGroup) (*Node, error) {
-	nodeLables, err := uc.clusterConstruct.GenerateNodeLables(ctx, cluster, nodeGroup)
+	nodeLables, err := uc.clusterInfrastructure.GenerateNodeLables(ctx, cluster, nodeGroup)
 	if err != nil {
 		return nil, err
 	}
@@ -453,7 +451,7 @@ func (uc *ClusterUsecase) Refresh(ctx context.Context) error {
 
 func (uc *ClusterUsecase) Apply(ctx context.Context, cluster *Cluster) (err error) {
 	if ClusterStatus(cluster.Status) == ClusterStatucCreating {
-		err = uc.clusterConstruct.GenerateInitial(ctx, cluster)
+		err = uc.clusterInfrastructure.GenerateInitial(ctx, cluster)
 		if err != nil {
 			return err
 		}
@@ -470,46 +468,48 @@ func (uc *ClusterUsecase) Watch(ctx context.Context) (*Cluster, error) {
 }
 
 func (uc *ClusterUsecase) Reconcile(ctx context.Context, cluster *Cluster) (err error) {
-	if cluster.IsDeleteed() {
-		err = uc.clusterConstruct.UnInstall(ctx, cluster)
-		if err != nil {
-			return err
-		}
-		err = uc.infrastructure.Stop(ctx, cluster)
-		if err != nil {
-			return err
-		}
-		return nil
-	}
-	err = uc.infrastructure.Get(ctx, cluster)
-	if errors.Is(err, ErrInfrastructureNotFound) {
-		ctx, cancel := context.WithCancel(ctx)
-		defer func() {
-			if err == nil {
-				cancel()
-			}
-		}()
-		err = uc.infrastructure.Start(ctx, cluster)
-		if err != nil {
-			return err
-		}
+	defer func() {
 		err = uc.clusterRepo.Save(ctx, cluster)
+	}()
+	if cluster.IsDeleteed() {
+		err = uc.clusterInfrastructure.UnInstall(ctx, cluster)
 		if err != nil {
 			return err
 		}
-		err = uc.clusterConstruct.MigrateToBostionHost(ctx, cluster)
+		err = uc.clusterInfrastructure.Stop(ctx, cluster)
 		if err != nil {
 			return err
 		}
 		return nil
 	}
-	if err != nil {
-		return err
-	}
-	currentCluster := new(Cluster)
-	err = uc.clusterRuntime.CurrentCluster(ctx, currentCluster)
+	err = uc.clusterRuntime.CurrentCluster(ctx, cluster)
 	if errors.Is(err, ErrClusterNotFound) {
-		err = uc.clusterConstruct.Install(ctx, cluster)
+		err = uc.clusterInfrastructure.Get(ctx, cluster)
+		if errors.Is(err, ErrInfrastructureNotFound) {
+			ctx, cancel := context.WithCancel(ctx)
+			defer func() {
+				if err == nil {
+					cancel()
+				}
+			}()
+			err = uc.clusterInfrastructure.Start(ctx, cluster)
+			if err != nil {
+				return err
+			}
+			err = uc.clusterRepo.Save(ctx, cluster)
+			if err != nil {
+				return err
+			}
+			err = uc.clusterInfrastructure.MigrateToBostionHost(ctx, cluster)
+			if err != nil {
+				return err
+			}
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		err = uc.clusterInfrastructure.Install(ctx, cluster)
 		if err != nil {
 			return err
 		}
@@ -518,59 +518,65 @@ func (uc *ClusterUsecase) Reconcile(ctx context.Context, cluster *Cluster) (err 
 	if err != nil {
 		return err
 	}
-	err = uc.infrastructure.Start(ctx, cluster)
+	err = uc.clusterInfrastructure.Start(ctx, cluster)
 	if err != nil {
 		return err
 	}
-	err = uc.handlerAddNode(ctx, cluster, currentCluster)
+	err = uc.handlerAddNode(ctx, cluster)
 	if err != nil {
 		return err
 	}
-	err = uc.handlerRemoveNode(ctx, cluster, currentCluster)
+	err = uc.handlerRemoveNode(ctx, cluster)
 	if err != nil {
 		return err
 	}
-	return nil
+	return
 }
 
-func (uc *ClusterUsecase) handlerAddNode(ctx context.Context, cluster, runingCluster *Cluster) error {
+func (uc *ClusterUsecase) handlerAddNode(ctx context.Context, cluster *Cluster) error {
 	addNodes := make([]*Node, 0)
 	for _, node := range cluster.Nodes {
-		nodeExist := false
-		for _, currentNode := range runingCluster.Nodes {
-			if node.Name == currentNode.Name {
-				nodeExist = true
-				break
-			}
-		}
-		if !nodeExist {
+		if node.Status == NodeStatusCreating {
 			addNodes = append(addNodes, node)
 		}
 	}
-	err := uc.clusterConstruct.AddNodes(ctx, runingCluster, addNodes)
+	err := uc.clusterInfrastructure.AddNodes(ctx, cluster, addNodes)
 	if err != nil {
 		return err
+	}
+	for _, node := range cluster.Nodes {
+		for _, n := range addNodes {
+			if node.Name == n.Name {
+				node.Status = NodeStatusRunning
+			}
+		}
 	}
 	return nil
 }
 
-func (uc *ClusterUsecase) handlerRemoveNode(ctx context.Context, cluster, runingCluster *Cluster) error {
+func (uc *ClusterUsecase) handlerRemoveNode(ctx context.Context, cluster *Cluster) error {
 	removeNodes := make([]*Node, 0)
-	for _, currentNode := range runingCluster.Nodes {
-		nodeExist := false
-		for _, node := range cluster.Nodes {
-			if currentNode.Name == node.Name {
-				nodeExist = true
-				break
-			}
-		}
-		if !nodeExist {
-			removeNodes = append(removeNodes, currentNode)
+	for _, node := range cluster.Nodes {
+		if node.Status == NodeStatusDeleting {
+			removeNodes = append(removeNodes, node)
 		}
 	}
-	err := uc.clusterConstruct.RemoveNodes(ctx, runingCluster, removeNodes)
+	err := uc.clusterInfrastructure.RemoveNodes(ctx, cluster, removeNodes)
 	if err != nil {
 		return err
 	}
+	newNodes := make([]*Node, 0)
+	for _, node := range cluster.Nodes {
+		ok := false
+		for _, n := range removeNodes {
+			if node.Name == n.Name {
+				ok = true
+			}
+		}
+		if !ok {
+			newNodes = append(newNodes, node)
+		}
+	}
+	cluster.Nodes = newNodes
 	return nil
 }
