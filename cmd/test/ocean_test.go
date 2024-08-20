@@ -1,7 +1,6 @@
 package test
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/f-rambo/ocean/internal/conf"
@@ -12,10 +11,8 @@ import (
 )
 
 func TestOCean(t *testing.T) {
-	fmt.Println("Starting TestOCean.....")
 	ctl := gomock.NewController(t)
 	defer ctl.Finish()
-	fmt.Println("New Controller.....")
 	c := config.New(
 		config.WithSource(
 			file.NewSource("../../configs/"),

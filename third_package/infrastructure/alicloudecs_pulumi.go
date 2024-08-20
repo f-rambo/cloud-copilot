@@ -466,8 +466,8 @@ func (a *AlicloudCluster) Get(ctx *pulumi.Context) error {
 		for _, instance := range instances.Instances {
 			if node.InternalIP == instance.PrivateIp {
 				node.InstanceID = instance.Id
-				node.SwitchId = instance.VswitchId
-				node.ZoneId = instance.AvailabilityZone
+				node.SubnetId = instance.VswitchId
+				node.Zone = instance.AvailabilityZone
 				node.ExternalIP = instance.PublicIp
 				vpcId = instance.VpcId
 				resourceGroupID = instance.ResourceGroupId
@@ -542,7 +542,7 @@ func (a *AlicloudCluster) Get(ctx *pulumi.Context) error {
 	return nil
 }
 
-func (a *AlicloudCluster) DecodeClusterInfomation(cluster *biz.Cluster, output string) error {
+func (a *AlicloudCluster) Import(ctx *pulumi.Context) error {
 	return nil
 }
 

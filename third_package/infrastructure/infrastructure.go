@@ -15,6 +15,55 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+/*
+	1. AWS：EKS & EC2
+	2. 阿里云：ECS & EKS
+	3. Google：GKE & GCE
+	4. 腾讯云：CVM & TKE
+	5. 物理机：K8S
+*/
+
+// PUBLIC PRIVATE
+
+const (
+	TAG_KEY = "ocean-key"
+	TAG_VAL = "ocean-cluster"
+
+	VPC_STACK = "vpc-stack"
+
+	PRIVATE_SUBNET_STACK = "private-subnet-stack-" // + zone
+	PUBLIC_SUBNET_STACK  = "public-subnet-stack"
+
+	INTERNETGATEWAY_STACK = "internetgateway-stack"
+
+	PUBLIC_NATGATEWAY_EIP_STACK = "public-natgateway-eip-stack"
+	BOSTIONHOST_EIP_STACK       = "bostionhost-eip-stack"
+
+	PRIVATE_NATGATEWAY_STACK = "private-natgateway-stack" // + zone
+	PUBLIC_NATGATEWAY_STACK  = "public-natgateway-stack"
+
+	PUBLIC_NATGATEWAY_ROUTE_TABLE                  = "public-natgateway-route-table"
+	PUBLIC__INTERNETGATEWAY_ROUTE_TABLE            = "public-internetgateway-route-table"
+	PUBLIC_NATGATEWAY_ROUTE_TABLE_ASSOCIATION      = "public-natgateway-route-table-association"
+	PUBLIC_INTERNETGATEWAY_ROUTE_TABLE_ASSOCIATION = "public-internetgateway-route-table-association"
+
+	SECURITY_GROUP_STACK = "security-group-stack"
+
+	EC2_ROLE_STACK         = "ec2-role-stack"
+	EC2_ROLE_POLICY_STACK  = "ec2-role-policy-stack"
+	EC2_ROLE_PROFILE_STACK = "ec2-role-profile-stack"
+
+	EC2_INSTANCE_STACK = "ec2-instance-stack"
+
+	KEY_PAIR_STACK = "key-pair-stack"
+
+	BOSTIONHOST_STACK                   = "bostionhost-stack"
+	BOSTIONHOST_NETWORK_INTERFACE_STACK = "bostionhost-network-interface-stack"
+	BOSTIONHOST_EIP_ASSOCIATION_STACK   = "bostionhost-eip-association-stack"
+
+	VPC_CIDR = "10.0.0.0/16"
+)
+
 type ClusterInfrastructure struct {
 	log         *log.Helper
 	c           *conf.Bootstrap
@@ -87,6 +136,7 @@ func (c *ClusterInfrastructure) Start(ctx context.Context, cluster *biz.Cluster)
 			return err
 		}
 		cluster.Logs = log
+		return nil
 	}
 	if cluster.GetType() == biz.ClusterTypeAWS {
 		c.buildAwsCloudParam(cluster)
@@ -95,6 +145,7 @@ func (c *ClusterInfrastructure) Start(ctx context.Context, cluster *biz.Cluster)
 			return err
 		}
 		cluster.Logs = log
+		return nil
 	}
 	return errors.New("not support cluster type")
 }
@@ -111,6 +162,7 @@ func (c *ClusterInfrastructure) Stop(ctx context.Context, cluster *biz.Cluster) 
 			return err
 		}
 		cluster.Logs = log
+		return nil
 	}
 	if cluster.GetType() == biz.ClusterTypeAWS {
 		c.buildAwsCloudParam(cluster)
@@ -119,37 +171,39 @@ func (c *ClusterInfrastructure) Stop(ctx context.Context, cluster *biz.Cluster) 
 			return err
 		}
 		cluster.Logs = log
+		return nil
 	}
-	return nil
+	return errors.New("not support cluster type")
 }
 
-// 获取当前集群的服务器信息，如果未安装则返回 not found
-func (c *ClusterInfrastructure) Get(ctx context.Context, cluster *biz.Cluster) error {
+func (c *ClusterInfrastructure) Import(ctx context.Context, cluster *biz.Cluster) error {
 	if cluster.GetType() == biz.ClusterTypeLocal {
+		err := c.getNodesInformation(ctx, cluster)
+		if err != nil {
+			return err
+		}
 		return nil
 	}
 	if cluster.GetType() == biz.ClusterTypeAliCloud {
 		c.buildAliCloudParam(cluster)
-		_, log, err := c.pulumiExec(ctx, StartAlicloudCluster(cluster).Get)
+		_, log, err := c.pulumiExec(ctx, StartAlicloudCluster(cluster).Import)
 		if err != nil {
 			return err
 		}
 		cluster.Logs = log
+		return nil
 	}
 	if cluster.GetType() == biz.ClusterTypeAWS {
 		ec2InstanceObj := StartEc2Instance(cluster)
 		c.buildAwsCloudParam(cluster)
-		output, log, err := c.pulumiExec(ctx, ec2InstanceObj.Get)
+		_, log, err := c.pulumiExec(ctx, ec2InstanceObj.Import)
 		if err != nil {
 			return err
 		}
 		cluster.Logs = log
-		err = ec2InstanceObj.DecodeClusterInfomation(cluster, output)
-		if err != nil {
-			return err
-		}
+		return nil
 	}
-	return nil
+	return errors.New("not support cluster type")
 }
 
 func (c *ClusterInfrastructure) pulumiExec(ctx context.Context, pulumiFunc PulumiFunc) (output, processLog string, err error) {
@@ -182,6 +236,7 @@ func (c *ClusterInfrastructure) pulumiExec(ctx context.Context, pulumiFunc Pulum
 					return nil
 				}
 				processLog += log
+				c.log.Info(log)
 			case <-ctx.Done():
 				return ctx.Err()
 			}

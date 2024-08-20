@@ -24,7 +24,7 @@ type Cluster struct {
 	PublicKey        string        `json:"public_key" gorm:"column:public_key; default:''; NOT NULL;"` // *
 	Region           string        `json:"region" gorm:"column:region; default:''; NOT NULL;"`         // *
 	VpcID            string        `json:"vpc_id" gorm:"column:vpc_id; default:''; NOT NULL;"`
-	VpcCidrBlock     string        `json:"vpc_cidr_block" gorm:"column:vpc_cidr_block; default:''; NOT NULL;"`
+	VpcCidr          string        `json:"vpc_cidr" gorm:"column:vpc_cidr; default:''; NOT NULL;"`
 	ResourceGroupID  string        `json:"resource_group_id" gorm:"column:resource_group_id; default:''; NOT NULL;"`
 	SecurityGroupIDs string        `json:"security_group_ids" gorm:"column:security_group_ids; default:''; NOT NULL;"`
 	ExternalIP       string        `json:"external_ip" gorm:"column:external_ip; default:''; NOT NULL;"`
@@ -42,6 +42,7 @@ type NodeGroup struct {
 	Name                    string        `json:"name" gorm:"column:name; default:''; NOT NULL"`
 	Type                    NodeGroupType `json:"type" gorm:"column:type; default:''; NOT NULL;"`
 	InstanceType            string        `json:"instance_type" gorm:"column:instance_type; default:''; NOT NULL"`
+	ImageID                 string        `json:"image_id" gorm:"column:image_id; default:''; NOT NULL"`
 	OSImage                 string        `json:"os_image" gorm:"column:os_image; default:''; NOT NULL"`
 	CPU                     int32         `json:"cpu" gorm:"column:cpu; default:0; NOT NULL"`
 	Memory                  float64       `json:"memory" gorm:"column:memory; default:0; NOT NULL"`
@@ -75,23 +76,27 @@ type Node struct {
 	Status      NodeStatus `json:"status" gorm:"column:status; default:0; NOT NULL;"`
 	ErrorInfo   string     `json:"error_info" gorm:"column:error_info; default:''; NOT NULL"`
 	ClusterID   int64      `json:"cluster_id" gorm:"column:cluster_id; default:0; NOT NULL"`
-	NodeGroup   *NodeGroup `json:"node_group" gorm:"-"`
 	NodeGroupID int64      `json:"node_group_id" gorm:"column:node_group_id; default:0; NOT NULL"`
-	SwitchId    string     `json:"switch_id" gorm:"column:switch_id; default:''; NOT NULL"`
-	ZoneId      string     `json:"zone_id" gorm:"column:zone_id; default:''; NOT NULL"`
+	Zone        string     `json:"zone" gorm:"column:zone; default:''; NOT NULL"`
+	SubnetId    string     `json:"subnet_id" gorm:"column:subnet_id; default:''; NOT NULL"`
+	SubnetCidr  string     `json:"subnet_cidr" gorm:"column:subnet_cidr; default:''; NOT NULL"`
+	PublicKey   string     `json:"public_key" gorm:"column:public_key; default:''; NOT NULL;"` // *
+	NodeGroup   *NodeGroup `json:"node_group" gorm:"-"`
 	gorm.Model
 }
 
 type BostionHost struct {
-	ID         int64  `json:"id" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
-	InstanceID string `json:"instance_id" gorm:"column:instance_id; default:''; NOT NULL"`
-	Hostname   string `json:"hostname" gorm:"column:hostname; default:''; NOT NULL"`
-	ExternalIP string `json:"external_ip" gorm:"column:external_ip; default:''; NOT NULL"`
-	PublicIP   string `json:"public_ip" gorm:"column:public_ip; default:''; NOT NULL"`
-	PrivateIP  string `json:"private_ip" gorm:"column:private_ip; default:''; NOT NULL"`
-	ClusterID  int64  `json:"cluster_id" gorm:"column:cluster_id; default:0; NOT NULL"`
-	CPU        int32  `json:"cpu" gorm:"column:cpu; default:0; NOT NULL"`
-	Memory     int32  `json:"memory" gorm:"column:memory; default:0; NOT NULL"`
+	ID           int64   `json:"id" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
+	InstanceType string  `json:"instance_type" gorm:"column:instance_type; default:''; NOT NULL"`
+	InstanceID   string  `json:"instance_id" gorm:"column:instance_id; default:''; NOT NULL"`
+	ImageID      string  `json:"image_id" gorm:"column:image_id; default:''; NOT NULL"`
+	Hostname     string  `json:"hostname" gorm:"column:hostname; default:''; NOT NULL"`
+	ExternalIP   string  `json:"external_ip" gorm:"column:external_ip; default:''; NOT NULL"`
+	PublicIP     string  `json:"public_ip" gorm:"column:public_ip; default:''; NOT NULL"`
+	PrivateIP    string  `json:"private_ip" gorm:"column:private_ip; default:''; NOT NULL"`
+	ClusterID    int64   `json:"cluster_id" gorm:"column:cluster_id; default:0; NOT NULL"`
+	CPU          int32   `json:"cpu" gorm:"column:cpu; default:0; NOT NULL"`
+	Memory       float64 `json:"memory" gorm:"column:memory; default:0; NOT NULL"`
 	gorm.Model
 }
 
@@ -110,7 +115,7 @@ type ClusterRepo interface {
 type ClusterInfrastructure interface {
 	Start(context.Context, *Cluster) error
 	Stop(context.Context, *Cluster) error
-	Get(context.Context, *Cluster) error
+	Import(context.Context, *Cluster) error
 	MigrateToBostionHost(context.Context, *Cluster) error
 	Install(context.Context, *Cluster) error
 	UnInstall(context.Context, *Cluster) error
@@ -126,8 +131,6 @@ type ClusterRuntime interface {
 }
 
 var ErrClusterNotFound error = errors.New("cluster not found")
-var ErrClusterApiServerAddressEmpty error = errors.New("cluster api server address is empty")
-var ErrInfrastructureNotFound error = errors.New("infrastructure not found")
 
 type ClusterType string
 
@@ -467,8 +470,20 @@ func (uc *ClusterUsecase) Watch(ctx context.Context) (*Cluster, error) {
 	return uc.clusterRepo.Watch(ctx)
 }
 
+// 第一次在集群中运行，导入资源
+func (uc *ClusterUsecase) ImportResource(ctx context.Context, cluster *Cluster) error {
+	err := uc.clusterInfrastructure.Import(ctx, cluster)
+	if err != nil {
+		return err
+	}
+	return uc.clusterRepo.Save(ctx, cluster)
+}
+
 func (uc *ClusterUsecase) Reconcile(ctx context.Context, cluster *Cluster) (err error) {
 	defer func() {
+		if err != nil {
+			return
+		}
 		err = uc.clusterRepo.Save(ctx, cluster)
 	}()
 	if cluster.IsDeleteed() {
@@ -484,28 +499,11 @@ func (uc *ClusterUsecase) Reconcile(ctx context.Context, cluster *Cluster) (err 
 	}
 	err = uc.clusterRuntime.CurrentCluster(ctx, cluster)
 	if errors.Is(err, ErrClusterNotFound) {
-		err = uc.clusterInfrastructure.Get(ctx, cluster)
-		if errors.Is(err, ErrInfrastructureNotFound) {
-			ctx, cancel := context.WithCancel(ctx)
-			defer func() {
-				if err == nil {
-					cancel()
-				}
-			}()
-			err = uc.clusterInfrastructure.Start(ctx, cluster)
-			if err != nil {
-				return err
-			}
-			err = uc.clusterRepo.Save(ctx, cluster)
-			if err != nil {
-				return err
-			}
-			err = uc.clusterInfrastructure.MigrateToBostionHost(ctx, cluster)
-			if err != nil {
-				return err
-			}
-			return nil
+		err = uc.clusterInfrastructure.Start(ctx, cluster)
+		if err != nil {
+			return err
 		}
+		err = uc.clusterInfrastructure.MigrateToBostionHost(ctx, cluster)
 		if err != nil {
 			return err
 		}

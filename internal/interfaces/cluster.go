@@ -32,14 +32,15 @@ func NewClusterInterface(clusterUc *biz.ClusterUsecase, projectUc *biz.ProjectUs
 
 func (uc *ClusterInterface) StartReconcile(ctx context.Context) (err error) {
 	for {
-		cluser, err := uc.clusterUc.Watch(ctx)
+		uc.log.Info("start watching reconcile...")
+		cluster, err := uc.clusterUc.Watch(ctx)
 		if err != nil {
 			return err
 		}
-		if cluser == nil {
+		if cluster == nil {
 			continue
 		}
-		err = uc.clusterUc.Reconcile(ctx, cluser)
+		err = uc.clusterUc.Reconcile(ctx, cluster)
 		if err != nil {
 			return err
 		}
@@ -47,15 +48,11 @@ func (uc *ClusterInterface) StartReconcile(ctx context.Context) (err error) {
 }
 
 func (uc *ClusterInterface) StopReconcile(ctx context.Context) error {
+	uc.log.Info("stop watching reconcile...")
 	return nil
 }
 
 func (uc *ClusterInterface) StartMock(ctx context.Context) error {
-	cluster := &biz.Cluster{}
-	err := uc.clusterUc.Reconcile(ctx, cluster)
-	if err != nil {
-		return err
-	}
 	return nil
 }
 
@@ -158,6 +155,21 @@ func (c *ClusterInterface) Delete(ctx context.Context, clusterID *v1alpha1.Clust
 		return nil, err
 	}
 	return &v1alpha1.Msg{}, nil
+}
+
+func (c *ClusterInterface) ImportResouce(ctx context.Context, clusterArgs *v1alpha1.ClusterID) (*v1alpha1.Msg, error) {
+	if clusterArgs == nil || clusterArgs.Id == 0 {
+		return nil, errors.New("cluster id is required")
+	}
+	cluster, err := c.clusterUc.Get(ctx, clusterArgs.Id)
+	if err != nil {
+		return nil, err
+	}
+	err = c.clusterUc.ImportResource(ctx, cluster)
+	if err != nil {
+		return nil, err
+	}
+	return nil, nil
 }
 
 func (c *ClusterInterface) bizCLusterToCluster(bizCluster *biz.Cluster) *v1alpha1.Cluster {

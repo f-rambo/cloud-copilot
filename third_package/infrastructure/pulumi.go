@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 
-	"github.com/blang/semver"
 	"github.com/pkg/errors"
 	"github.com/pulumi/pulumi/sdk/v3/go/auto"
 	"github.com/pulumi/pulumi/sdk/v3/go/auto/optdestroy"
@@ -58,14 +58,7 @@ func NewPulumiAPI(ctx context.Context, output chan string) *PulumiAPI {
 
 func (p *PulumiAPI) autoInstallPulumiCli(ctx context.Context) (err error) {
 	p.outPut <- "Installing Pulumi CLI \n"
-	tempDir, err := os.MkdirTemp("", "pulumi_cli_installation")
-	if err != nil {
-		return errors.Wrap(err, "failed to create temp dir")
-	}
-	p.pulumiCommand, err = auto.InstallPulumiCommand(ctx, &auto.PulumiCommandOptions{
-		Version: semver.MustParse(pulumiCliVersion),
-		Root:    tempDir,
-	})
+	p.pulumiCommand, err = auto.InstallPulumiCommand(ctx, nil)
 	if err != nil {
 		return errors.Wrap(err, "failed to install pulumi command")
 	}
@@ -120,14 +113,18 @@ func (p *PulumiAPI) buildPulumiResources(ctx context.Context) (err error) {
 	if len(p.plugins) == 0 {
 		return errors.New("plugin and pluginVersion must be set")
 	}
-
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return err
+	}
+	backendFilePath := "file://" + filepath.Join(home, ".pulumi")
 	p.stack, err = auto.UpsertStackInlineSource(ctx, p.stackName, p.projectName, p.deployFunc,
 		auto.Pulumi(p.pulumiCommand), auto.EnvVars(p.env),
 		auto.Project(workspace.Project{
 			Name:    tokens.PackageName(pulumiOrg),
 			Runtime: workspace.NewProjectRuntimeInfo("go", nil),
 			Backend: &workspace.ProjectBackend{
-				URL: "file://~/.pulumi",
+				URL: backendFilePath,
 			},
 		}))
 	if err != nil {

@@ -350,11 +350,24 @@ func CheckAndCreateDir(dir string) error {
 		if err != nil {
 			return fmt.Errorf("failed to create directory: %v", err)
 		}
-		fmt.Printf("Directory created: %s\n", dir)
 	} else if err != nil {
 		return fmt.Errorf("failed to check directory: %v", err)
-	} else {
-		fmt.Printf("Directory already exists: %s\n", dir)
 	}
 	return nil
+}
+
+// 字符串数组去重
+func RemoveDuplicateString(arr []string) []string {
+	m := make(map[string]bool)
+	for _, v := range arr {
+		if v == "" {
+			continue
+		}
+		m[v] = true
+	}
+	var result []string
+	for k := range m {
+		result = append(result, k)
+	}
+	return result
 }

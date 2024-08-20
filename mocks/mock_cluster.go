@@ -203,18 +203,18 @@ func (mr *MockClusterInfrastructureMockRecorder) GenerateNodeLables(arg0, arg1, 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GenerateNodeLables", reflect.TypeOf((*MockClusterInfrastructure)(nil).GenerateNodeLables), arg0, arg1, arg2)
 }
 
-// Get mocks base method.
-func (m *MockClusterInfrastructure) Get(arg0 context.Context, arg1 *biz.Cluster) error {
+// Import mocks base method.
+func (m *MockClusterInfrastructure) Import(arg0 context.Context, arg1 *biz.Cluster) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Get", arg0, arg1)
+	ret := m.ctrl.Call(m, "Import", arg0, arg1)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// Get indicates an expected call of Get.
-func (mr *MockClusterInfrastructureMockRecorder) Get(arg0, arg1 interface{}) *gomock.Call {
+// Import indicates an expected call of Import.
+func (mr *MockClusterInfrastructureMockRecorder) Import(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockClusterInfrastructure)(nil).Get), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Import", reflect.TypeOf((*MockClusterInfrastructure)(nil).Import), arg0, arg1)
 }
 
 // Install mocks base method.
