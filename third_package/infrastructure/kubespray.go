@@ -1,64 +1,52 @@
 package infrastructure
 
 import (
-	"regexp"
+	"path/filepath"
 
-	"github.com/f-rambo/ocean/internal/conf"
 	"github.com/f-rambo/ocean/utils"
-	"github.com/pkg/errors"
+)
+
+const (
+	kubesprayPackageName = "kubespray"
+	kubesprayUrl         = ""
 )
 
 type Kubespray struct {
 	packagePath string
 }
 
-func NewKubespray(c *conf.Resource) (*Kubespray, error) {
-	k := &Kubespray{}
-	// 检查文件是否存储
-	k.packagePath = c.GetClusterPath() + "kubespray"
-	if utils.IsFileExist(k.packagePath) {
-		return k, nil
-	}
-	// 下载kubespray
-	fileName := "kubespray.tar.gz"
-	err := utils.DownloadFile(c.GetKubesprayUrl(), c.GetClusterPath(), fileName)
-	if err != nil {
-		return nil, err
-	}
-	// 解压kubespray
-	err = utils.Decompress(c.GetClusterPath()+fileName, c.GetClusterPath())
-	if err != nil {
-		return nil, err
-	}
-	version := ""
-	re := regexp.MustCompile(`v(\d+\.\d+\.\d+)`)
-	match := re.FindStringSubmatch(c.GetKubesprayUrl())
-	if len(match) > 1 {
-		version = match[1]
-	} else {
-		return nil, errors.New("kubespray version not found")
-	}
-	// 重命名kubespray
-	err = utils.RenameFile(c.GetClusterPath()+"kubespray-"+version, k.packagePath)
-	if err != nil {
-		return nil, err
-	}
-	err = k.generateConfig()
+func NewKubespray() (k *Kubespray, err error) {
+	k = &Kubespray{}
+	err = k.autoInstallKubespray()
 	if err != nil {
 		return nil, err
 	}
 	return k, nil
 }
 
-// 生成配置文件
-func (k *Kubespray) generateConfig() error {
-	k.readClusterConfig()
-	k.readClusterAddons()
-	k.readClusterAddonsConfig()
+func (k *Kubespray) autoInstallKubespray() (err error) {
+	// 检查文件是否存储
+	k.packagePath, err = utils.GetPackageStorePathByNames(kubesprayPackageName)
+	if err != nil {
+		return err
+	}
+	if utils.IsFileExist(k.packagePath) {
+		return nil
+	}
+	// 下载kubespray
+	err = utils.DownloadFile(kubesprayUrl, k.packagePath)
+	if err != nil {
+		return err
+	}
+	// 解压kubespray
+	err = utils.Decompress(filepath.Join(k.packagePath, utils.GetFileNameByUrl(kubesprayUrl)), k.packagePath)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
-func (k *Kubespray) readClusterConfig() (string, error) {
+func (k *Kubespray) ReadClusterConfig() (string, error) {
 	defaultClusterConfig := k.packagePath + "/inventory/sample/group_vars/all/all.yml"
 	fileData, err := utils.ReadFile(defaultClusterConfig)
 	if err != nil {
@@ -67,7 +55,7 @@ func (k *Kubespray) readClusterConfig() (string, error) {
 	return string(fileData), nil
 }
 
-func (k *Kubespray) readClusterAddons() (string, error) {
+func (k *Kubespray) ReadClusterAddons() (string, error) {
 	defaultClusterAddons := k.packagePath + "/inventory/sample/group_vars/k8s_cluster/addons.yml"
 	fileData, err := utils.ReadFile(defaultClusterAddons)
 	if err != nil {
@@ -76,7 +64,7 @@ func (k *Kubespray) readClusterAddons() (string, error) {
 	return string(fileData), nil
 }
 
-func (k *Kubespray) readClusterAddonsConfig() (string, error) {
+func (k *Kubespray) ReadClusterAddonsConfig() (string, error) {
 	defaultClusterAddonsConfig := k.packagePath + "/inventory/sample/group_vars/k8s_cluster/k8s-cluster.yml"
 	fileData, err := utils.ReadFile(defaultClusterAddonsConfig)
 	if err != nil {
@@ -86,7 +74,6 @@ func (k *Kubespray) readClusterAddonsConfig() (string, error) {
 }
 
 func (k *Kubespray) GetPackagePath() string {
-	// cmd dir
 	return k.packagePath
 }
 

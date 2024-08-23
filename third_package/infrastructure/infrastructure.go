@@ -4,26 +4,17 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"sort"
 	"strings"
 
 	"github.com/f-rambo/ocean/internal/biz"
 	"github.com/f-rambo/ocean/internal/conf"
+	"github.com/f-rambo/ocean/utils"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/pkg/errors"
 	"github.com/spf13/cast"
-	"golang.org/x/sync/errgroup"
 )
-
-/*
-	1. AWS：EKS & EC2
-	2. 阿里云：ECS & EKS
-	3. Google：GKE & GCE
-	4. 腾讯云：CVM & TKE
-	5. 物理机：K8S
-*/
-
-// PUBLIC PRIVATE
 
 const (
 	TAG_KEY = "ocean-key"
@@ -62,6 +53,14 @@ const (
 	BOSTIONHOST_EIP_ASSOCIATION_STACK   = "bostionhost-eip-association-stack"
 
 	VPC_CIDR = "10.0.0.0/16"
+)
+
+const (
+	// BOSTIONHOST
+	BOSTIONHOST_EIP         = "bostionHostEip"
+	BOSTIONHOST_INSTANCE_ID = "bostionHostInstanceId"
+	BOSTIONHOST_PRIVATE_IP  = "bostionHostPrivateIp"
+	BOSTIONHOST_USERNAME    = "bostionHostUsername"
 )
 
 type ClusterInfrastructure struct {
@@ -131,20 +130,44 @@ func (c *ClusterInfrastructure) Start(ctx context.Context, cluster *biz.Cluster)
 	}
 	if cluster.GetType() == biz.ClusterTypeAliCloud {
 		c.buildAliCloudParam(cluster)
-		_, log, err := c.pulumiExec(ctx, StartAlicloudCluster(cluster).StartServers)
+		_, err := c.pulumiExec(ctx, StartAlicloudCluster(cluster).StartServers, cluster)
 		if err != nil {
 			return err
 		}
-		cluster.Logs = log
 		return nil
 	}
 	if cluster.GetType() == biz.ClusterTypeAWS {
 		c.buildAwsCloudParam(cluster)
-		_, log, err := c.pulumiExec(ctx, StartEc2Instance(cluster).Start)
+		output, err := c.pulumiExec(ctx, StartEc2Instance(cluster).Start, cluster)
 		if err != nil {
 			return err
 		}
-		cluster.Logs = log
+		if output == "" {
+			return nil
+		}
+		outputMap := make(map[string]interface{})
+		json.Unmarshal([]byte(output), &outputMap)
+		for k, v := range outputMap {
+			if v == nil {
+				continue
+			}
+			m := make(map[string]interface{})
+			vJson, _ := json.Marshal(v)
+			json.Unmarshal(vJson, &m)
+			if _, ok := m["Value"]; !ok {
+				continue
+			}
+			switch k {
+			case BOSTIONHOST_EIP:
+				cluster.BostionHost.ExternalIP = cast.ToString(m["Value"])
+			case BOSTIONHOST_INSTANCE_ID:
+				cluster.BostionHost.InstanceID = cast.ToString(m["Value"])
+			case BOSTIONHOST_PRIVATE_IP:
+				cluster.BostionHost.PrivateIP = cast.ToString(m["Value"])
+			case BOSTIONHOST_USERNAME:
+				cluster.BostionHost.Username = cast.ToString(m["Value"])
+			}
+		}
 		return nil
 	}
 	return errors.New("not support cluster type")
@@ -157,20 +180,18 @@ func (c *ClusterInfrastructure) Stop(ctx context.Context, cluster *biz.Cluster) 
 	}
 	if cluster.GetType() == biz.ClusterTypeAliCloud {
 		c.buildAliCloudParam(cluster)
-		_, log, err := c.pulumiExec(ctx, StartAlicloudCluster(cluster).Clear)
+		_, err := c.pulumiExec(ctx, StartAlicloudCluster(cluster).Clear, cluster)
 		if err != nil {
 			return err
 		}
-		cluster.Logs = log
 		return nil
 	}
 	if cluster.GetType() == biz.ClusterTypeAWS {
 		c.buildAwsCloudParam(cluster)
-		_, log, err := c.pulumiExec(ctx, StartEc2Instance(cluster).Clear)
+		_, err := c.pulumiExec(ctx, StartEc2Instance(cluster).Clear, cluster)
 		if err != nil {
 			return err
 		}
-		cluster.Logs = log
 		return nil
 	}
 	return errors.New("not support cluster type")
@@ -186,64 +207,41 @@ func (c *ClusterInfrastructure) Import(ctx context.Context, cluster *biz.Cluster
 	}
 	if cluster.GetType() == biz.ClusterTypeAliCloud {
 		c.buildAliCloudParam(cluster)
-		_, log, err := c.pulumiExec(ctx, StartAlicloudCluster(cluster).Import)
+		_, err := c.pulumiExec(ctx, StartAlicloudCluster(cluster).Import, cluster)
 		if err != nil {
 			return err
 		}
-		cluster.Logs = log
 		return nil
 	}
 	if cluster.GetType() == biz.ClusterTypeAWS {
 		ec2InstanceObj := StartEc2Instance(cluster)
 		c.buildAwsCloudParam(cluster)
-		_, log, err := c.pulumiExec(ctx, ec2InstanceObj.Import)
+		_, err := c.pulumiExec(ctx, ec2InstanceObj.Import, cluster)
 		if err != nil {
 			return err
 		}
-		cluster.Logs = log
 		return nil
 	}
 	return errors.New("not support cluster type")
 }
 
-func (c *ClusterInfrastructure) pulumiExec(ctx context.Context, pulumiFunc PulumiFunc) (output, processLog string, err error) {
-	g := new(errgroup.Group)
-	pulumiProcessLog := make(chan string, 1024)
-	g.Go(func() error {
-		defer func() {
-			if err := recover(); err != nil {
-				log.Errorf("pulumi error: %s", err)
-			}
-			close(pulumiProcessLog)
-		}()
-		output, err = NewPulumiAPI(ctx, pulumiProcessLog).
-			ProjectName(c.projectName).
-			StackName(c.stack).
-			Plugin(c.plugins...).
-			Env(c.env).
-			RegisterDeployFunc(pulumiFunc).
-			Up(ctx)
-		if err != nil {
-			return err
-		}
-		return nil
-	})
-	g.Go(func() error {
-		for {
-			select {
-			case log, ok := <-pulumiProcessLog:
-				if !ok {
-					return nil
-				}
-				processLog += log
-				c.log.Info(log)
-			case <-ctx.Done():
-				return ctx.Err()
-			}
-		}
-	})
-	err = g.Wait()
-	return output, processLog, err
+// preview is true, only preview the pulumi resources
+func (c *ClusterInfrastructure) pulumiExec(ctx context.Context, pulumiFunc PulumiFunc, w io.Writer, preview ...bool) (output string, err error) {
+	pulumiObj := NewPulumiAPI(ctx, w).
+		ProjectName(c.projectName).
+		StackName(c.stack).
+		Plugin(c.plugins...).
+		Env(c.env).
+		RegisterDeployFunc(pulumiFunc)
+	if len(preview) > 0 && preview[0] {
+		output, err = pulumiObj.Preview(ctx)
+	} else {
+		output, err = pulumiObj.Up(ctx)
+	}
+	if err != nil {
+		return "", err
+	}
+	return output, err
 }
 
 // 初始化集群
@@ -317,22 +315,25 @@ func (cc *ClusterInfrastructure) GenerateInitial(ctx context.Context, cluster *b
 // 获取集群节点信息，配置信息
 func (cc *ClusterInfrastructure) getNodesInformation(ctx context.Context, cluster *biz.Cluster) error {
 	playbook := getSystemInformation()
-	playbookPath, err := savePlaybook(cc.c.Resource.GetClusterPath(), playbook)
+	clusterPath, err := utils.GetPackageStorePathByNames(biz.ClusterPackageName)
 	if err != nil {
 		return err
 	}
-	err = cc.ansibleExec(ctx, cluster, cc.c.Resource.GetClusterPath(), playbookPath, cc.generatingNodes(cluster))
+	playbookPath, err := savePlaybook(clusterPath, playbook)
+	if err != nil {
+		return err
+	}
+	output, err := cc.ansibleExec(ctx, cluster, clusterPath, playbookPath, cc.generatingNodes(cluster))
 	if err != nil {
 		return err
 	}
 	resultMaps := make([]map[string]interface{}, 0)
-	remaining := cluster.Logs
 	for {
-		startIndex := strings.Index(remaining, StartOutputKey.String())
+		startIndex := strings.Index(output, StartOutputKey.String())
 		if startIndex == -1 {
 			break
 		}
-		endIndex := strings.Index(remaining, EndOutputKey.String())
+		endIndex := strings.Index(output, EndOutputKey.String())
 		if endIndex == -1 {
 			break
 		}
@@ -340,7 +341,7 @@ func (cc *ClusterInfrastructure) getNodesInformation(ctx context.Context, cluste
 		if startIndex >= endIndex {
 			break
 		}
-		result := remaining[startIndex:endIndex]
+		result := output[startIndex:endIndex]
 		if result != "" {
 			unescapedResult := strings.ReplaceAll(result, `\"`, `"`)
 			resultMap := make(map[string]interface{})
@@ -350,7 +351,7 @@ func (cc *ClusterInfrastructure) getNodesInformation(ctx context.Context, cluste
 			}
 			resultMaps = append(resultMaps, resultMap)
 		}
-		remaining = remaining[endIndex+len(EndOutputKey.String()):]
+		output = output[endIndex+len(EndOutputKey.String()):]
 	}
 	getNodeResult := func(nodeID int64) map[string]interface{} {
 		for _, resultMap := range resultMaps {
@@ -415,56 +416,72 @@ func (cc *ClusterInfrastructure) GenerateNodeLables(ctx context.Context, cluster
 }
 
 func (cc *ClusterInfrastructure) MigrateToBostionHost(ctx context.Context, cluster *biz.Cluster) error {
-	defer func() {
-		// 迁移完成后，关闭服务
-		ctx.Done()
-	}()
-	oceanResource := cc.c.Resource
+	cluster.Write([]byte("start migrate to bostion host...."))
+	serverStorePath, err := utils.GetPackageStorePathByNames()
+	if err != nil {
+		return err
+	}
 	migratePlaybook := getMigratePlaybook()
-	databasePath := cc.c.Data.GetDBFilePath()
-	pulumiPath := cc.c.Resource.GetPulumiPath()
-	migratePlaybook.AddSynchronize("database", databasePath, databasePath)
-	migratePlaybook.AddSynchronize("pulumi", pulumiPath, pulumiPath)
-	migratePlaybookPath, err := savePlaybook(oceanResource.GetClusterPath(), migratePlaybook)
+	migratePlaybook.AddSynchronize("server", serverStorePath, serverStorePath)
+	clusterPath, err := utils.GetPackageStorePathByNames(biz.ClusterPackageName)
 	if err != nil {
 		return err
 	}
-	err = cc.ansibleExec(ctx, cluster, oceanResource.GetClusterPath(), migratePlaybookPath, cc.generatingBostionHost(cluster))
+	migratePlaybookPath, err := savePlaybook(clusterPath, migratePlaybook)
 	if err != nil {
 		return err
 	}
-	// 把本地的数据迁移到bostion主机
+	_, err = cc.ansibleExec(ctx, cluster, clusterPath, migratePlaybookPath, cc.generatingBostionHost(cluster))
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
 func (cc *ClusterInfrastructure) Install(ctx context.Context, cluster *biz.Cluster) error {
 	serversInitPlaybook := getServerInitPlaybook()
-	serversInitPlaybookPath, err := savePlaybook(cc.c.Resource.GetClusterPath(), serversInitPlaybook)
+	clusterPath, err := utils.GetPackageStorePathByNames(biz.ClusterPackageName)
 	if err != nil {
 		return err
 	}
-	err = cc.ansibleExec(ctx, cluster, cc.c.Resource.GetClusterPath(), serversInitPlaybookPath, cc.generatingNodes(cluster))
+	serversInitPlaybookPath, err := savePlaybook(clusterPath, serversInitPlaybook)
 	if err != nil {
 		return err
 	}
-	return cc.kubespray(ctx, cluster, GetClusterPlaybookPath())
+	_, err = cc.ansibleExec(ctx, cluster, clusterPath, serversInitPlaybookPath, cc.generatingNodes(cluster))
+	if err != nil {
+		return err
+	}
+	_, err = cc.kubespray(ctx, cluster, GetClusterPlaybookPath())
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (cc *ClusterInfrastructure) UnInstall(ctx context.Context, cluster *biz.Cluster) error {
-	return cc.kubespray(ctx, cluster, GetResetPlaybookPath())
+	_, err := cc.kubespray(ctx, cluster, GetResetPlaybookPath())
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (cc *ClusterInfrastructure) AddNodes(ctx context.Context, cluster *biz.Cluster, nodes []*biz.Node) error {
 	for _, node := range nodes {
 		log.Info("add node", "name", node.Name, "ip", node.ExternalIP, "role", node.Role)
 	}
-	return cc.kubespray(ctx, cluster, GetScalePlaybookPath())
+	_, err := cc.kubespray(ctx, cluster, GetScalePlaybookPath())
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (cc *ClusterInfrastructure) RemoveNodes(ctx context.Context, cluster *biz.Cluster, nodes []*biz.Node) error {
 	for _, node := range nodes {
 		log.Info("remove node", "name", node.Name, "ip", node.ExternalIP, "role", node.Role)
-		err := cc.kubespray(ctx, cluster, GetRemoveNodePlaybookPath(), map[string]string{"node": node.Name})
+		_, err := cc.kubespray(ctx, cluster, GetRemoveNodePlaybookPath(), map[string]string{"node": node.Name})
 		if err != nil {
 			return err
 		}
@@ -472,11 +489,14 @@ func (cc *ClusterInfrastructure) RemoveNodes(ctx context.Context, cluster *biz.C
 	return nil
 }
 
-func (cc *ClusterInfrastructure) kubespray(ctx context.Context, cluster *biz.Cluster, playbook string, env ...map[string]string) error {
-	oceanResource := cc.c.Resource
-	kubespray, err := NewKubespray(&oceanResource)
+func (cc *ClusterInfrastructure) GetServerEnv(context.Context) conf.Env {
+	return cc.c.Server.GetEnv()
+}
+
+func (cc *ClusterInfrastructure) kubespray(ctx context.Context, cluster *biz.Cluster, playbook string, env ...map[string]string) (string, error) {
+	kubespray, err := NewKubespray()
 	if err != nil {
-		return errors.Wrap(err, "new kubespray error")
+		return "", errors.Wrap(err, "new kubespray error")
 	}
 	mateDataMap := make(map[string]string)
 	for _, node := range cluster.Nodes {
@@ -490,7 +510,7 @@ func (cc *ClusterInfrastructure) kubespray(ctx context.Context, cluster *biz.Clu
 
 func (cc *ClusterInfrastructure) generatingBostionHost(cluster *biz.Cluster) []Server {
 	return []Server{
-		{Ip: cluster.BostionHost.ExternalIP, Username: "root", ID: cluster.BostionHost.InstanceID, Role: "bostion"},
+		{Ip: cluster.BostionHost.ExternalIP, Username: cluster.BostionHost.Username, ID: cluster.BostionHost.InstanceID, Role: "bostion"},
 	}
 }
 
@@ -502,7 +522,7 @@ func (cc *ClusterInfrastructure) generatingNodes(cluster *biz.Cluster) []Server 
 	return servers
 }
 
-func (cc *ClusterInfrastructure) ansibleExec(ctx context.Context, cluster *biz.Cluster, cmdRunDir string, playbook string, servers []Server, envAndMateData ...map[string]string) error {
+func (cc *ClusterInfrastructure) ansibleExec(ctx context.Context, cluster *biz.Cluster, cmdRunDir string, playbook string, servers []Server, envAndMateData ...map[string]string) (string, error) {
 	env := make(map[string]string)
 	mateData := make(map[string]string)
 	if len(envAndMateData) > 0 && envAndMateData[0] != nil {
@@ -511,37 +531,19 @@ func (cc *ClusterInfrastructure) ansibleExec(ctx context.Context, cluster *biz.C
 	if len(envAndMateData) > 1 && envAndMateData[1] != nil {
 		mateData = envAndMateData[1]
 	}
-	g := new(errgroup.Group)
-	ansibleLog := make(chan string, 1024)
-	g.Go(func() error {
-		defer close(ansibleLog)
-		return NewGoAnsiblePkg(cc.c.Ansible).
-			SetAnsiblePlaybookBinary(cc.c.Resource.GetAnsibleCli()).
-			SetLogChan(ansibleLog).
-			SetServers(servers...).
-			SetCmdRunDir(cmdRunDir).
-			SetPlaybooks(playbook).
-			SetMatedataMap(mateData).
-			SetEnvMap(env).
-			ExecPlayBooks(ctx)
-	})
-	g.Go(func() error {
-		for {
-			select {
-			case log, ok := <-ansibleLog:
-				if !ok {
-					return nil
-				}
-				cluster.Logs += log
-				cc.log.Info(log)
-			case <-ctx.Done():
-				return ctx.Err()
-			}
-		}
-	})
-	err := g.Wait()
+	ansibleObj, err := NewGoAnsiblePkg(cluster)
 	if err != nil {
-		return err
+		return "", err
 	}
-	return nil
+	output, err := ansibleObj.
+		SetServers(servers...).
+		SetCmdRunDir(cmdRunDir).
+		SetPlaybooks(playbook).
+		SetMatedataMap(mateData).
+		SetEnvMap(env).
+		ExecPlayBooks(ctx)
+	if err != nil {
+		return "", err
+	}
+	return output, nil
 }

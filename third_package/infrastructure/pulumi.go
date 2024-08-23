@@ -2,10 +2,10 @@ package infrastructure
 
 import (
 	"context"
-	"fmt"
-	"os"
-	"path/filepath"
+	"encoding/json"
+	"io"
 
+	"github.com/f-rambo/ocean/utils"
 	"github.com/pkg/errors"
 	"github.com/pulumi/pulumi/sdk/v3/go/auto"
 	"github.com/pulumi/pulumi/sdk/v3/go/auto/optdestroy"
@@ -17,9 +17,7 @@ import (
 )
 
 const (
-	configPassphrase = "a8F3zQpL9wXyT6kBn4UvJhR2Vc0M1sCd"
-	pulumiOrg        = "ocean"
-	pulumiCliVersion = "3.117.0"
+	PulumiPackageName = "pulumi"
 )
 
 type PulumiAPI struct {
@@ -31,7 +29,7 @@ type PulumiAPI struct {
 	stack         auto.Stack
 	pulumiCommand auto.PulumiCommand
 	env           map[string]string
-	outPut        chan string
+	w             io.Writer
 }
 
 type PulumiPlugin struct {
@@ -41,28 +39,25 @@ type PulumiPlugin struct {
 
 type PulumiFunc func(ctx *pulumi.Context) error
 
-func NewPulumiAPI(ctx context.Context, output chan string) *PulumiAPI {
-	if output == nil {
-		return nil
-	}
+func NewPulumiAPI(ctx context.Context, w io.Writer) *PulumiAPI {
 	p := &PulumiAPI{
-		outPut: output,
+		w: w,
 		env: map[string]string{
-			"PULUMI_CONFIG_PASSPHRASE": configPassphrase,
+			"PULUMI_CONFIG_PASSPHRASE": "a8F3zQpL9wXyT6kBn4UvJhR2Vc0M1sCd",
 		},
 	}
-	p.outPut <- "Initializing Pulumi API \n"
+	w.Write([]byte("Initializing Pulumi API \n"))
 	p.autoInstallPulumiCli(ctx)
 	return p
 }
 
 func (p *PulumiAPI) autoInstallPulumiCli(ctx context.Context) (err error) {
-	p.outPut <- "Installing Pulumi CLI \n"
+	p.w.Write([]byte("Installing Pulumi CLI \n"))
 	p.pulumiCommand, err = auto.InstallPulumiCommand(ctx, nil)
 	if err != nil {
 		return errors.Wrap(err, "failed to install pulumi command")
 	}
-	p.outPut <- "Pulumi CLI installed successfully \n"
+	p.w.Write([]byte("Pulumi CLI installed successfully \n"))
 	return nil
 }
 
@@ -113,16 +108,21 @@ func (p *PulumiAPI) buildPulumiResources(ctx context.Context) (err error) {
 	if len(p.plugins) == 0 {
 		return errors.New("plugin and pluginVersion must be set")
 	}
-	home, err := os.UserHomeDir()
+	pulumiStorePath, err := utils.GetPackageStorePathByNames(PulumiPackageName)
 	if err != nil {
 		return err
 	}
-	backendFilePath := "file://" + filepath.Join(home, ".pulumi")
+	stackConfigDir, err := utils.GetPackageStorePathByNames(PulumiPackageName, "stacks", p.stackName)
+	if err != nil {
+		return err
+	}
+	backendFilePath := "file://" + pulumiStorePath
 	p.stack, err = auto.UpsertStackInlineSource(ctx, p.stackName, p.projectName, p.deployFunc,
 		auto.Pulumi(p.pulumiCommand), auto.EnvVars(p.env),
 		auto.Project(workspace.Project{
-			Name:    tokens.PackageName(pulumiOrg),
-			Runtime: workspace.NewProjectRuntimeInfo("go", nil),
+			Name:           tokens.PackageName(p.projectName),
+			Runtime:        workspace.NewProjectRuntimeInfo("go", nil),
+			StackConfigDir: stackConfigDir,
 			Backend: &workspace.ProjectBackend{
 				URL: backendFilePath,
 			},
@@ -131,7 +131,7 @@ func (p *PulumiAPI) buildPulumiResources(ctx context.Context) (err error) {
 		return errors.Errorf("Failed to create or update stack %s: %v", p.stackName, err)
 	}
 
-	p.outPut <- fmt.Sprintf("Stack %s created or updated successfully\n", p.stackName)
+	p.w.Write([]byte("Setting stack config \n"))
 
 	if p.config != nil {
 		for k, v := range p.config {
@@ -144,12 +144,10 @@ func (p *PulumiAPI) buildPulumiResources(ctx context.Context) (err error) {
 		return errors.New("Failed to get workspace")
 	}
 
-	p.outPut <- "Installing plugins \n"
+	p.w.Write([]byte("Installing plugins \n"))
 	for _, plugin := range p.plugins {
 		workspace.InstallPlugin(ctx, plugin.Kind, plugin.Version)
 	}
-
-	p.outPut <- "Plugin installed successfully \n"
 
 	_, err = p.stack.Refresh(ctx)
 	if err != nil {
@@ -166,14 +164,17 @@ func (p *PulumiAPI) Up(ctx context.Context) (outPut string, err error) {
 		return "", err
 	}
 
-	stdoutStreamer := optup.ProgressStreams(os.Stdout, p)
+	stdoutStreamer := optup.ProgressStreams(p.w)
 
 	res, err := p.stack.Up(ctx, stdoutStreamer)
 	if err != nil {
 		return "", errors.Errorf("Failed to update stack %s: %v", p.stackName, err)
 	}
-
-	return res.StdOut, nil
+	output, err := json.Marshal(res.Outputs)
+	if err != nil {
+		return "", errors.Errorf("Failed to marshal stack %s outputs: %v", p.stackName, err)
+	}
+	return string(output), nil
 }
 
 func (p *PulumiAPI) Destroy(ctx context.Context) (outPut string, err error) {
@@ -182,7 +183,7 @@ func (p *PulumiAPI) Destroy(ctx context.Context) (outPut string, err error) {
 		return "", err
 	}
 
-	stdoutStreamer := optdestroy.ProgressStreams(os.Stdout, p)
+	stdoutStreamer := optdestroy.ProgressStreams(p.w)
 
 	res, err := p.stack.Destroy(ctx, stdoutStreamer)
 	if err != nil {
@@ -203,7 +204,7 @@ func (p *PulumiAPI) Preview(ctx context.Context) (outPut string, err error) {
 		return "", err
 	}
 
-	stdoutStreamer := optpreview.ProgressStreams(os.Stdout, p)
+	stdoutStreamer := optpreview.ProgressStreams(p.w)
 
 	res, err := p.stack.Preview(ctx, stdoutStreamer)
 	if err != nil {
@@ -211,9 +212,4 @@ func (p *PulumiAPI) Preview(ctx context.Context) (outPut string, err error) {
 	}
 
 	return res.StdOut, nil
-}
-
-func (p *PulumiAPI) Write(content []byte) (int, error) {
-	p.outPut <- string(content)
-	return len(content), nil
 }

@@ -15,6 +15,12 @@ import (
 	"gorm.io/gorm"
 )
 
+const (
+	AppPackageName     = "app"
+	AppPackageRepoName = "repo"
+	AppPathckageIcon   = "icon"
+)
+
 type AppType struct {
 	ID   int64  `json:"id" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
 	Name string `json:"name" gorm:"column:name; default:''; NOT NULL"`

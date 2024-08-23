@@ -3,11 +3,9 @@ package data
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 
 	"github.com/f-rambo/ocean/internal/biz"
 	"github.com/f-rambo/ocean/internal/conf"
-	"github.com/f-rambo/ocean/utils"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/pkg/errors"
 	"gorm.io/gorm"
@@ -39,6 +37,17 @@ func (c *clusterRepo) Save(ctx context.Context, cluster *biz.Cluster) error {
 	err := tx.Model(&biz.Cluster{}).Where("id = ?", cluster.ID).Save(cluster).Error
 	if err != nil {
 		return err
+	}
+	err = tx.Model(&biz.BostionHost{}).Where("cluster_id = ?", cluster.ID).Delete(&biz.BostionHost{}).Error
+	if err != nil {
+		return err
+	}
+	if cluster.BostionHost != nil {
+		cluster.BostionHost.ClusterID = cluster.ID
+		err = tx.Model(&biz.BostionHost{}).Where("id = ?", cluster.BostionHost.ID).Save(cluster.BostionHost).Error
+		if err != nil {
+			return err
+		}
 	}
 	for _, nodeGroup := range cluster.NodeGroups {
 		nodeGroup.ClusterID = cluster.ID
@@ -107,7 +116,6 @@ func (c *clusterRepo) Save(ctx context.Context, cluster *biz.Cluster) error {
 	if err != nil {
 		return err
 	}
-	c.writeClusterLog(cluster)
 	return nil
 }
 
@@ -117,13 +125,32 @@ func (c *clusterRepo) Get(ctx context.Context, id int64) (*biz.Cluster, error) {
 	if err != nil {
 		return nil, err
 	}
+	bostionHost := &biz.BostionHost{}
+	err = c.data.db.Model(&biz.BostionHost{}).Where("cluster_id = ?", cluster.ID).First(bostionHost).Error
+	if err != nil && err != gorm.ErrRecordNotFound {
+		return nil, err
+	}
+	cluster.BostionHost = bostionHost
+	nodeGroups := make([]*biz.NodeGroup, 0)
+	err = c.data.db.Model(&biz.NodeGroup{}).Where("cluster_id = ?", cluster.ID).Find(&nodeGroups).Error
+	if err != nil {
+		return nil, err
+	}
 	nodes := make([]*biz.Node, 0)
 	err = c.data.db.Model(&biz.Node{}).Where("cluster_id = ?", cluster.ID).Find(&nodes).Error
 	if err != nil {
 		return nil, err
 	}
+	cluster.NodeGroups = append(cluster.NodeGroups, nodeGroups...)
+	for _, node := range nodes {
+		for _, nodeGroup := range cluster.NodeGroups {
+			if node.NodeGroupID == nodeGroup.ID {
+				node.NodeGroup = nodeGroup
+				break
+			}
+		}
+	}
 	cluster.Nodes = append(cluster.Nodes, nodes...)
-	c.readClusterLog(cluster)
 	return cluster, nil
 }
 
@@ -174,6 +201,16 @@ func (c *clusterRepo) Delete(ctx context.Context, id int64) error {
 	if err != nil {
 		return err
 	}
+	// 删除节点组信息
+	err = tx.Model(&biz.NodeGroup{}).Where("cluster_id = ?", id).Delete(&biz.NodeGroup{}).Error
+	if err != nil {
+		return err
+	}
+	// 删除跳板机
+	err = tx.Model(&biz.BostionHost{}).Where("cluster_id = ?", id).Delete(&biz.BostionHost{}).Error
+	if err != nil {
+		return err
+	}
 	return tx.Commit().Error
 }
 
@@ -199,34 +236,4 @@ func (c *clusterRepo) Watch(ctx context.Context) (*biz.Cluster, error) {
 		return nil, err
 	}
 	return cluster, nil
-}
-
-func (c *clusterRepo) readClusterLog(cluster *biz.Cluster) {
-	clog := c.c.Log
-	logPath := fmt.Sprintf("%s/cluster-%d.log", clog.GetPath(), cluster.ID)
-	if utils.IsFileExist(logPath) {
-		logs, err := utils.ReadFile(logPath)
-		if err != nil {
-			c.log.Errorf("read cluster log error: %v", err)
-			return
-		}
-		cluster.Logs = string(logs)
-	}
-}
-
-func (c *clusterRepo) writeClusterLog(cluster *biz.Cluster) {
-	clog := c.c.Log
-	file, err := utils.NewFile(clog.GetPath(),
-		fmt.Sprintf("cluster-%d.log", cluster.ID), true)
-	if err != nil {
-		c.log.Errorf("write cluster log error: %v", err)
-		return
-	}
-	defer file.Close()
-	err = file.Write([]byte(cluster.Logs))
-	if err != nil {
-		c.log.Errorf("write cluster log error: %v", err)
-		return
-	}
-	cluster.Logs = ""
 }

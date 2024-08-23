@@ -180,7 +180,6 @@ func (c *ClusterInterface) bizCLusterToCluster(bizCluster *biz.Cluster) *v1alpha
 		ApiServerAddress: bizCluster.ApiServerAddress,
 		Config:           bizCluster.Config,
 		Addons:           bizCluster.Addons,
-		Logs:             bizCluster.Logs,
 	}
 	for _, node := range bizCluster.Nodes {
 		cluster.Nodes = append(cluster.Nodes, c.bizNodeToNode(node))

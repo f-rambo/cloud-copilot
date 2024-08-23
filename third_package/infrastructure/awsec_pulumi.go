@@ -755,7 +755,6 @@ func (b *AwsBostionHost) startBostionHost(ctx *pulumi.Context) (*AwsNode, error)
 			}
 		}
 	}
-	ctx.Export("bostionHostInstanceType", pulumi.String(b.cluster.BostionHost.InstanceType))
 	// create eip
 	eip, err := ec2.NewEip(ctx, BOSTIONHOST_EIP_STACK, &ec2.EipArgs{
 		Domain:             pulumi.String("vpc"),
@@ -781,7 +780,7 @@ func (b *AwsBostionHost) startBostionHost(ctx *pulumi.Context) (*AwsNode, error)
 	if err != nil {
 		return nil, err
 	}
-	_, err = ec2.NewInstance(ctx, BOSTIONHOST_STACK, &ec2.InstanceArgs{
+	bostionHost, err := ec2.NewInstance(ctx, BOSTIONHOST_STACK, &ec2.InstanceArgs{
 		InstanceType: pulumi.String(b.cluster.BostionHost.InstanceType),
 		NetworkInterfaces: ec2.InstanceNetworkInterfaceArray{&ec2.InstanceNetworkInterfaceArgs{
 			NetworkInterfaceId: bostionHostNodeNi.ID(),
@@ -806,6 +805,10 @@ func (b *AwsBostionHost) startBostionHost(ctx *pulumi.Context) (*AwsNode, error)
 	if err != nil {
 		return nil, err
 	}
+	ctx.Export(BOSTIONHOST_EIP, eip.PublicIp)
+	ctx.Export(BOSTIONHOST_INSTANCE_ID, bostionHost.ID())
+	ctx.Export(BOSTIONHOST_USERNAME, pulumi.String("ubuntu"))
+	ctx.Export(BOSTIONHOST_PRIVATE_IP, bostionHost.PrivateIp)
 	return &AwsNode{
 		cluster:        b.cluster,
 		privateSubnets: b.privateSubnets,

@@ -128,8 +128,11 @@ func (a *AppInterface) UploadApp(ctx context.Context, req *v1alpha1.FileUploadRe
 	if filepath.Ext(req.GetFileName()) != ".tgz" {
 		return nil, errors.New("file type is not supported")
 	}
-	cresource := a.c.Resource
-	filePathName, err := a.upload(cresource.GetAppPath(), req.GetFileName(), req.GetChunk())
+	appPath, err := utils.GetPackageStorePathByNames(biz.AppPackageName)
+	if err != nil {
+		return nil, err
+	}
+	filePathName, err := a.upload(appPath, req.GetFileName(), req.GetChunk())
 	if err != nil {
 		return nil, err
 	}

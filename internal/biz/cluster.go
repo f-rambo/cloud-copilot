@@ -4,10 +4,16 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/f-rambo/ocean/internal/conf"
 	"github.com/f-rambo/ocean/utils"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/pkg/errors"
+	"gopkg.in/natefinch/lumberjack.v2"
 	"gorm.io/gorm"
+)
+
+const (
+	ClusterPackageName = "cluster"
 )
 
 type Cluster struct {
@@ -31,9 +37,9 @@ type Cluster struct {
 	AccessID         string        `json:"access_id" gorm:"column:access_id; default:''; NOT NULL;"`   // *
 	AccessKey        string        `json:"access_key" gorm:"column:access_key; default:''; NOT NULL;"` // *
 	BostionHost      *BostionHost  `json:"bostion_host" gorm:"-"`
-	Logs             string        `json:"logs" gorm:"-"` // logs data from localfile
 	Nodes            []*Node       `json:"nodes" gorm:"-"`
 	NodeGroups       []*NodeGroup  `json:"node_groups" gorm:"-"`
+	log              *log.Helper   `json:"-"`
 	gorm.Model
 }
 
@@ -89,10 +95,10 @@ type BostionHost struct {
 	ID           int64   `json:"id" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
 	InstanceType string  `json:"instance_type" gorm:"column:instance_type; default:''; NOT NULL"`
 	InstanceID   string  `json:"instance_id" gorm:"column:instance_id; default:''; NOT NULL"`
+	Username     string  `json:"username" gorm:"column:username; default:''; NOT NULL"`
 	ImageID      string  `json:"image_id" gorm:"column:image_id; default:''; NOT NULL"`
 	Hostname     string  `json:"hostname" gorm:"column:hostname; default:''; NOT NULL"`
 	ExternalIP   string  `json:"external_ip" gorm:"column:external_ip; default:''; NOT NULL"`
-	PublicIP     string  `json:"public_ip" gorm:"column:public_ip; default:''; NOT NULL"`
 	PrivateIP    string  `json:"private_ip" gorm:"column:private_ip; default:''; NOT NULL"`
 	ClusterID    int64   `json:"cluster_id" gorm:"column:cluster_id; default:0; NOT NULL"`
 	CPU          int32   `json:"cpu" gorm:"column:cpu; default:0; NOT NULL"`
@@ -116,6 +122,7 @@ type ClusterInfrastructure interface {
 	Start(context.Context, *Cluster) error
 	Stop(context.Context, *Cluster) error
 	Import(context.Context, *Cluster) error
+	GetServerEnv(context.Context) conf.Env
 	MigrateToBostionHost(context.Context, *Cluster) error
 	Install(context.Context, *Cluster) error
 	UnInstall(context.Context, *Cluster) error
@@ -266,6 +273,23 @@ var (
 		"instanceDeleting": 3,
 	}
 )
+
+func (c *Cluster) logPath() string {
+	return fmt.Sprintf("logs/cluster-%d.log", c.ID)
+}
+
+func (c *Cluster) Write(content []byte) (int, error) {
+	if c.log == nil {
+		logger := log.With(log.NewStdLogger(&lumberjack.Logger{
+			Filename:  c.logPath(),
+			MaxAge:    int(7),
+			LocalTime: true,
+		}), "ts", log.DefaultTimestamp)
+		c.log = log.NewHelper(logger)
+	}
+	c.log.Info(string(content))
+	return len(content), nil
+}
 
 func isClusterEmpty(c *Cluster) bool {
 	if c == nil {
@@ -499,13 +523,16 @@ func (uc *ClusterUsecase) Reconcile(ctx context.Context, cluster *Cluster) (err 
 	}
 	err = uc.clusterRuntime.CurrentCluster(ctx, cluster)
 	if errors.Is(err, ErrClusterNotFound) {
-		err = uc.clusterInfrastructure.Start(ctx, cluster)
+		err = uc.clusterInfrastructure.Stop(ctx, cluster)
 		if err != nil {
 			return err
 		}
-		err = uc.clusterInfrastructure.MigrateToBostionHost(ctx, cluster)
-		if err != nil {
-			return err
+		if uc.clusterInfrastructure.GetServerEnv(ctx) == conf.EnvLocal {
+			err = uc.clusterInfrastructure.MigrateToBostionHost(ctx, cluster)
+			if err != nil {
+				return err
+			}
+			return nil
 		}
 		err = uc.clusterInfrastructure.Install(ctx, cluster)
 		if err != nil {

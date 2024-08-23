@@ -10,6 +10,7 @@ import (
 	"io"
 	"math/rand"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -215,30 +216,39 @@ func IsFileExist(path string) bool {
 	return err == nil || os.IsExist(err)
 }
 
-func IsHttpUrl(url string) bool {
-	return url[:4] == "http"
+func IsValidURL(toTest string) bool {
+	_, err := url.ParseRequestURI(toTest)
+	if err != nil {
+		return false
+	}
+
+	u, err := url.Parse(toTest)
+	if err != nil || u.Scheme == "" || u.Host == "" {
+		return false
+	}
+	return true
 }
 
 // 通过http url下 获取文件名字
 func GetFileNameByUrl(url string) string {
-	if !IsHttpUrl(url) {
+	if !IsValidURL(url) {
 		return ""
 	}
 	return url[strings.LastIndex(url, "/")+1:]
 }
 
 // 通过一个http url下载文件， 文件路径和文件名字
-func DownloadFile(url, path, name string) error {
-	if !IsHttpUrl(url) {
+func DownloadFile(url, filePath string) error {
+	if !IsValidURL(url) {
 		return fmt.Errorf("url is not http url")
 	}
-	if !IsFileExist(path) {
-		err := os.MkdirAll(path, os.ModePerm)
+	if !IsFileExist(filePath) {
+		err := os.MkdirAll(filePath, os.ModePerm)
 		if err != nil {
 			return err
 		}
 	}
-	file, err := os.Create(path + name)
+	file, err := os.Create(filePath)
 	if err != nil {
 		return err
 	}
@@ -246,13 +256,16 @@ func DownloadFile(url, path, name string) error {
 	return DownloadFileToWriter(url, file)
 }
 
-// 通过一个http url下载文件， 文件路径和文件名字
 func DownloadFileToWriter(url string, writer io.Writer) error {
 	response, err := http.Get(url)
 	if err != nil {
 		return err
 	}
 	defer response.Body.Close()
+
+	if response.StatusCode != http.StatusOK {
+		return fmt.Errorf("failed to download file: %s", response.Status)
+	}
 
 	_, err = io.Copy(writer, response.Body)
 	if err != nil {
@@ -370,4 +383,13 @@ func RemoveDuplicateString(arr []string) []string {
 		result = append(result, k)
 	}
 	return result
+}
+
+func GetPackageStorePathByNames(packageNames ...string) (string, error) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", err
+	}
+	packageNames = append([]string{home, ".ocean"}, packageNames...)
+	return filepath.Join(packageNames...), nil
 }

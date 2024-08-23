@@ -4,9 +4,11 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/f-rambo/ocean/internal/conf"
 	"github.com/f-rambo/ocean/internal/server"
+	"github.com/f-rambo/ocean/utils"
 
 	"github.com/go-kratos/kratos/v2"
 	"github.com/go-kratos/kratos/v2/config"
@@ -70,8 +72,12 @@ func main() {
 	Version = conf.Server.Version
 
 	logConf := conf.Log
+	logPath, err := utils.GetPackageStorePathByNames("log")
+	if err != nil {
+		panic(err)
+	}
 	logger := log.With(log.NewStdLogger(&lumberjack.Logger{
-		Filename:   fmt.Sprintf("%s/%s", logConf.Path, logConf.Filename),
+		Filename:   filepath.Join(logPath, fmt.Sprintf("%s.log", Name)),
 		MaxSize:    int(logConf.MaxSize), // megabytes
 		MaxBackups: int(logConf.MaxBackups),
 		MaxAge:     int(logConf.MaxAge), // days

@@ -10,7 +10,6 @@ import (
 	"github.com/f-rambo/ocean/utils"
 	"github.com/go-kratos/kratos/v2/log"
 	"google.golang.org/protobuf/types/known/emptypb"
-	"gopkg.in/yaml.v2"
 )
 
 type ProjectInterface struct {
@@ -112,18 +111,6 @@ func (p *ProjectInterface) GetProjectMockData(ctx context.Context, _ *emptypb.Em
 		Namespace:   "projectNamespace",
 		Description: "project description",
 		State:       biz.ProjectStateInit,
-	}
-	business := p.c.Business
-	if business == nil {
-		return nil, errors.New("business technology is required")
-	}
-	businessYamlByte, err := yaml.Marshal(business)
-	if err != nil {
-		return nil, err
-	}
-	err = yaml.Unmarshal(businessYamlByte, &bizProject.Business)
-	if err != nil {
-		return nil, err
 	}
 	return p.bizProjectToProject(bizProject)
 }

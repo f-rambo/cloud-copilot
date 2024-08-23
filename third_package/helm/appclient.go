@@ -3,7 +3,7 @@ package helm
 import (
 	"context"
 	"encoding/json"
-	"fmt"
+	"path/filepath"
 	"strings"
 
 	"github.com/f-rambo/ocean/internal/biz"
@@ -30,8 +30,11 @@ func NewAppConstructRepo(c *conf.Bootstrap, logger log.Logger) biz.AppConstruct 
 }
 
 func (r *AppConstructRepo) GetAppVersionChartInfomation(ctx context.Context, appVersion *biz.AppVersion) error {
-	cresource := r.c.Resource
-	charInfo, err := GetLocalChartInfo(appVersion.AppName, cresource.GetAppPath(), appVersion.Chart)
+	appPath, err := utils.GetPackageStorePathByNames(biz.AppPackageName)
+	if err != nil {
+		return err
+	}
+	charInfo, err := GetLocalChartInfo(appVersion.AppName, appPath, appVersion.Chart)
 	if err != nil {
 		return err
 	}
@@ -59,10 +62,13 @@ func (r *AppConstructRepo) DeployingApp(ctx context.Context, appDeployed *biz.De
 	if err != nil {
 		return err
 	}
-	cresource := r.c.Resource
-	chart := fmt.Sprintf("%s%s", cresource.GetAppPath(), appDeployed.Chart)
+	appPath, err := utils.GetPackageStorePathByNames(biz.AppPackageName)
+	if err != nil {
+		return err
+	}
+	chartPath := filepath.Join(appPath, appDeployed.Chart)
 	if appDeployed.AppTypeID == biz.AppTypeRepo {
-		chart = fmt.Sprintf("%s%s/%s", cresource.GetRepoPath(), appDeployed.AppName, appDeployed.Chart)
+		chartPath = filepath.Join(chartPath, biz.AppPackageRepoName, appDeployed.AppName, appDeployed.Chart)
 	}
 	install.ReleaseName = appDeployed.ReleaseName
 	install.Namespace = appDeployed.Namespace
@@ -72,7 +78,7 @@ func (r *AppConstructRepo) DeployingApp(ctx context.Context, appDeployed *biz.De
 	install.DryRun = appDeployed.IsTest
 	install.Atomic = true
 	install.Wait = true
-	release, err := helmPkg.RunInstall(ctx, install, chart, appDeployed.Config)
+	release, err := helmPkg.RunInstall(ctx, install, chartPath, appDeployed.Config)
 	appDeployed.Logs = helmPkg.GetLogs()
 	if err != nil {
 		return err
@@ -114,7 +120,7 @@ func (r *AppConstructRepo) UnDeployingApp(ctx context.Context, appDeployed *biz.
 	return nil
 }
 
-func (r *AppConstructRepo) AddAppRepo(ctx context.Context, helmRepo *biz.AppHelmRepo) error {
+func (r *AppConstructRepo) AddAppRepo(ctx context.Context, helmRepo *biz.AppHelmRepo) (err error) {
 	settings := cli.New()
 	res, err := repo.NewChartRepository(&repo.Entry{
 		Name: helmRepo.Name,
@@ -123,8 +129,10 @@ func (r *AppConstructRepo) AddAppRepo(ctx context.Context, helmRepo *biz.AppHelm
 	if err != nil {
 		return err
 	}
-	cresource := r.c.Resource
-	res.CachePath = cresource.GetRepoPath()
+	res.CachePath, err = utils.GetPackageStorePathByNames(biz.AppPackageName, biz.AppPackageRepoName)
+	if err != nil {
+		return err
+	}
 	indexFile, err := res.DownloadIndexFile()
 	if err != nil {
 		return err
@@ -212,22 +220,28 @@ func (r *AppConstructRepo) GetAppsByRepo(ctx context.Context, helmRepo *biz.AppH
 }
 
 func (r *AppConstructRepo) DeleteAppChart(ctx context.Context, app *biz.App, versionId int64) (err error) {
-	cresource := r.c.Resource
-	if app.Icon != "" && utils.IsFileExist(cresource.GetIconPath()+app.Icon) && versionId == 0 {
-		err = utils.DeleteFile(cresource.GetIconPath() + app.Icon)
+	appPath, err := utils.GetPackageStorePathByNames(biz.AppPackageName)
+	if err != nil {
+		return err
+	}
+	appIconPath := filepath.Join(appPath, biz.AppPathckageIcon, app.Icon)
+	if app.Icon != "" && utils.IsFileExist(appIconPath) && versionId == 0 {
+		err = utils.DeleteFile(appIconPath)
 		if err != nil {
 			return err
 		}
 	}
+
 	for _, v := range app.Versions {
-		if v.Chart != "" && utils.IsFileExist(cresource.GetAppPath()+v.Chart) && versionId == 0 {
-			err = utils.DeleteFile(cresource.GetAppPath() + v.Chart)
+		chartPath := filepath.Join(appPath, v.Chart)
+		if v.Chart != "" && utils.IsFileExist(chartPath) && versionId == 0 {
+			err = utils.DeleteFile(chartPath)
 			if err != nil {
 				return err
 			}
 		}
-		if v.Chart != "" && utils.IsFileExist(cresource.GetAppPath()+v.Chart) && versionId == v.ID {
-			err = utils.DeleteFile(cresource.GetAppPath() + v.Chart)
+		if v.Chart != "" && utils.IsFileExist(chartPath) && versionId == v.ID {
+			err = utils.DeleteFile(chartPath)
 			if err != nil {
 				return err
 			}

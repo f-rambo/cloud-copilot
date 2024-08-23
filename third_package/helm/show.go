@@ -2,6 +2,7 @@ package helm
 
 import (
 	"fmt"
+	"path/filepath"
 
 	"github.com/f-rambo/ocean/utils"
 	"github.com/pkg/errors"
@@ -25,11 +26,11 @@ func GetLocalChartInfo(appName, path, chart string) (*ChartInfo, error) {
 	if chart == "" {
 		return nil, errors.New("chart is empty")
 	}
-	if utils.IsHttpUrl(chart) {
+	if utils.IsValidURL(chart) {
 		path = fmt.Sprintf("%s%s/", path, appName)
 		fileName := utils.GetFileNameByUrl(chart)
 		if !utils.IsFileExist(path + fileName) {
-			err := utils.DownloadFile(chart, path, fileName)
+			err := utils.DownloadFile(chart, filepath.Join(path, fileName))
 			if err != nil {
 				return nil, errors.WithMessage(err, "download chart fail")
 			}

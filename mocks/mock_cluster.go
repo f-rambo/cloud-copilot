@@ -9,6 +9,7 @@ import (
 	reflect "reflect"
 
 	biz "github.com/f-rambo/ocean/internal/biz"
+	conf "github.com/f-rambo/ocean/internal/conf"
 	gomock "github.com/golang/mock/gomock"
 )
 
@@ -201,6 +202,20 @@ func (m *MockClusterInfrastructure) GenerateNodeLables(arg0 context.Context, arg
 func (mr *MockClusterInfrastructureMockRecorder) GenerateNodeLables(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GenerateNodeLables", reflect.TypeOf((*MockClusterInfrastructure)(nil).GenerateNodeLables), arg0, arg1, arg2)
+}
+
+// GetServerEnv mocks base method.
+func (m *MockClusterInfrastructure) GetServerEnv(arg0 context.Context) conf.Env {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetServerEnv", arg0)
+	ret0, _ := ret[0].(conf.Env)
+	return ret0
+}
+
+// GetServerEnv indicates an expected call of GetServerEnv.
+func (mr *MockClusterInfrastructureMockRecorder) GetServerEnv(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetServerEnv", reflect.TypeOf((*MockClusterInfrastructure)(nil).GetServerEnv), arg0)
 }
 
 // Import mocks base method.

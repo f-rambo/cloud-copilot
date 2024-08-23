@@ -191,7 +191,7 @@ func newDB(c conf.Data) (*gorm.DB, error) {
 		}
 	}
 	if (c.GetDriver() != "mysql" && c.GetDriver() != "postgres") || c.GetDriver() == "sqlite" {
-		dbFilePath := c.GetDBFilePath()
+		dbFilePath, err := utils.GetPackageStorePathByNames("database", "ocean.db")
 		if dbFilePath != "" && !utils.IsFileExist(dbFilePath) {
 			path, filename := utils.GetFilePathAndName(dbFilePath)
 			file, err := utils.NewFile(path, filename, true)
@@ -211,8 +211,9 @@ func newDB(c conf.Data) (*gorm.DB, error) {
 	// AutoMigrate
 	err = client.AutoMigrate(
 		&biz.Cluster{},
-		&biz.Node{},
 		&biz.NodeGroup{},
+		&biz.BostionHost{},
+		&biz.Node{},
 		&biz.Project{},
 		&biz.App{},
 		&biz.AppType{},

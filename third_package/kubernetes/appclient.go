@@ -25,7 +25,7 @@ func NewAppDeployedResource(c *conf.Bootstrap, logger log.Logger) biz.AppRuntime
 
 func (a *AppDeployedRuntime) GetPodResources(ctx context.Context, appDeployed *biz.DeployApp) ([]*biz.AppDeployedResource, error) {
 	resources := make([]*biz.AppDeployedResource, 0)
-	clusterClient, err := getKubeClientSet()
+	clusterClient, err := getKubeClient("")
 	if err != nil {
 		return nil, err
 	}
@@ -58,7 +58,7 @@ func (a *AppDeployedRuntime) GetPodResources(ctx context.Context, appDeployed *b
 
 func (a *AppDeployedRuntime) GetNetResouces(ctx context.Context, appDeployed *biz.DeployApp) ([]*biz.AppDeployedResource, error) {
 	resources := make([]*biz.AppDeployedResource, 0)
-	clusterClient, err := getKubeClientSet()
+	clusterClient, err := getKubeClient("")
 	if err != nil {
 		return nil, err
 	}
@@ -132,7 +132,7 @@ func (a *AppDeployedRuntime) GetNetResouces(ctx context.Context, appDeployed *bi
 
 func (a *AppDeployedRuntime) GetAppsReouces(ctx context.Context, appDeployed *biz.DeployApp) ([]*biz.AppDeployedResource, error) {
 	resources := make([]*biz.AppDeployedResource, 0)
-	clusterClient, err := getKubeClientSet()
+	clusterClient, err := getKubeClient("")
 	if err != nil {
 		return nil, err
 	}

@@ -16,8 +16,10 @@ import (
 )
 
 const (
-	AdminID   = -1
-	AdminName = "admin"
+	AdminID    = -1
+	AdminName  = "admin"
+	AdminEmail = "admin@admin.com"
+	AdminPass  = "admin"
 )
 
 type UserRepo struct {
@@ -112,14 +114,14 @@ func (u *UserRepo) SignIn(ctx context.Context, userParam *biz.User) error {
 }
 
 func (u *UserRepo) adminSignIn(user *biz.User) (bool, error) {
-	if user.Email == u.c.Auth.Email && user.PassWord == utils.Md5(u.c.Auth.PassWord) {
+	if user.Email == AdminEmail && user.PassWord == utils.Md5(AdminEmail) {
 		accessToken, err := u.encodeToken(u.getAdmin())
 		if err != nil {
 			return true, err
 		}
 		user.ID = AdminID
 		user.Name = AdminName
-		user.Email = u.c.Auth.Email
+		user.Email = AdminEmail
 		user.AccessToken = accessToken
 		return true, nil
 	}
@@ -130,7 +132,7 @@ func (u *UserRepo) getAdmin() *biz.User {
 	return &biz.User{
 		ID:    AdminID,
 		Name:  AdminName,
-		Email: u.c.Auth.Email,
+		Email: AdminEmail,
 	}
 }
 

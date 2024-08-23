@@ -6,12 +6,10 @@ import (
 
 	"github.com/f-rambo/ocean/internal/biz"
 	"github.com/f-rambo/ocean/internal/conf"
-	"github.com/f-rambo/ocean/utils"
 	"github.com/go-kratos/kratos/v2/log"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/clientcmd"
 )
 
 type CLusterRuntimeConfigMapKey string
@@ -38,42 +36,22 @@ func NewClusterRuntime(c *conf.Bootstrap, logger log.Logger) biz.ClusterRuntime 
 	}
 }
 
-func (cr *ClusterRuntime) CurrentCluster(ctx context.Context, cluster *biz.Cluster) error {
-	if cluster.KubeConfig == "" {
-		exist := utils.IsFileExist(clientcmd.RecommendedHomeFile)
-		if exist {
-			cluster.KubeConfig = clientcmd.RecommendedHomeFile
-		}
-	}
-	if cluster.KubeConfig == "" {
-		config, err := clientcmd.LoadFromFile(cluster.KubeConfig)
-		if err != nil {
-			return err
-		}
-		cluster.Name = config.CurrentContext
-	}
-	restConfig, err := getKubeConfig(&ConfigArgs{KubeConfig: cluster.KubeConfig})
+func (cr *ClusterRuntime) CurrentCluster(ctx context.Context, cluster *biz.Cluster) (err error) {
+	kubeClient, err := getKubeClient(cluster.KubeConfig)
 	if err != nil {
-		cr.log.Errorf("get kubeconfig error: %v", err)
-		return biz.ErrClusterNotFound
-	}
-	cluster.ApiServerAddress = restConfig.Host
-	clientSet, err := kubernetes.NewForConfig(restConfig)
-	if err != nil {
-		cr.log.Errorf("create clientset error: %v", err)
 		return biz.ErrClusterNotFound
 	}
 	// get cluster information kubectl cluster-info dump
-	versionInfo, err := clientSet.Discovery().ServerVersion()
+	versionInfo, err := kubeClient.Discovery().ServerVersion()
 	if err != nil {
 		return err
 	}
 	cluster.ServerVersion = versionInfo.String()
-	err = cr.getClusterInfo(ctx, clientSet, cluster)
+	err = cr.getClusterInfo(ctx, kubeClient, cluster)
 	if err != nil {
 		return err
 	}
-	err = cr.getNodes(ctx, clientSet, cluster)
+	err = cr.getNodes(ctx, kubeClient, cluster)
 	if err != nil {
 		return err
 	}

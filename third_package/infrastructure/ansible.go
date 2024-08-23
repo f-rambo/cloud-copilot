@@ -17,17 +17,23 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+const (
+	ansibleCliPackageName = "ansible"
+	ansibleCliUrl         = "https://github.com/ansible/ansible/archive/refs/tags/v2.17.3.tar.gz"
+)
+
 type GoAnsiblePkg struct {
-	ansibleConfig         any
-	logPrefix             string
-	ansiblePlaybookBinary string
-	LogChan               chan string
-	cmdRunDir             string
-	inventory             string
-	playbooks             []string
-	env                   map[string]string
-	servers               []Server
-	mateData              map[string]string
+	ansiblePath   string
+	ansibleConfig string
+	logPrefix     string
+	cmdRunDir     string
+	inventory     string
+	playbooks     []string
+	env           map[string]string
+	servers       []Server
+	mateData      map[string]string
+	w             io.Writer
+	output        string
 }
 
 type Server struct {
@@ -37,21 +43,91 @@ type Server struct {
 	Role     string
 }
 
-func NewGoAnsiblePkg(ansibleConfig any) *GoAnsiblePkg {
-	return &GoAnsiblePkg{
-		ansibleConfig:         ansibleConfig,
-		ansiblePlaybookBinary: playbook.DefaultAnsiblePlaybookBinary,
+func NewGoAnsiblePkg(w io.Writer) (*GoAnsiblePkg, error) {
+	a := &GoAnsiblePkg{
+		ansibleConfig: `
+ansible:
+  ssh_connection:
+    pipelining: true
+    ansible_ssh_args: '-o ControlMaster=auto -o ControlPersist=30m -o ConnectionAttempts=100 -o UserKnownHostsFile=/dev/null'
+  defaults:
+    timeout: 300
+    ask_pass: false
+    ask_become_pass: false
+    force_valid_group_names: ignore
+    host_key_checking: false
+    gathering: smart
+    fact_caching: jsonfile
+    fact_caching_connection: /tmp
+    fact_caching_timeout: 86400
+    stdout_callback: default
+    display_skipped_hosts: no
+    library: './library'
+    callbacks_enabled: 'profile_tasks'
+    roles_path: 'roles:$VIRTUAL_ENV/usr/local/share/kubespray/roles:$VIRTUAL_ENV/usr/local/share/ansible/roles:/usr/share/kubespray/roles'
+    deprecation_warnings: false
+    inventory_ignore_extensions: '~, .orig, .bak, .ini, .cfg, .retry, .pyc, .pyo, .creds, .gpg'
+  inventory:
+    ignore_patterns: 'artifacts, credentials'`,
+		w:      w,
+		output: "",
 	}
+	err := a.autoInstallPython()
+	if err != nil {
+		return nil, err
+	}
+	err = a.autoInstallAnsibleCli()
+	if err != nil {
+		return nil, err
+	}
+	return a, nil
 }
 
-func (a *GoAnsiblePkg) Write(p []byte) (n int, err error) {
-	return len(p), nil
+func (a *GoAnsiblePkg) autoInstallPython() (err error) {
+	// 检查文件是否存储
+	pythonPath, err := utils.GetPackageStorePathByNames("python")
+	if err != nil {
+		return err
+	}
+	if utils.IsFileExist(pythonPath) {
+		return nil
+	}
+	// 下载python
+	err = utils.DownloadFile("https://www.python.org/ftp/python/3.9.7/Python-3.9.7.tgz", pythonPath)
+	if err != nil {
+		return err
+	}
+	// 解压python
+	err = utils.Decompress(pythonPath, pythonPath)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (a *GoAnsiblePkg) autoInstallAnsibleCli() (err error) {
+	// 检查文件是否存储
+	a.ansiblePath, err = utils.GetPackageStorePathByNames(ansibleCliPackageName)
+	if err != nil {
+		return err
+	}
+	if utils.IsFileExist(a.ansiblePath) {
+		return nil
+	}
+	// 下载ansible
+	err = utils.DownloadFile(ansibleCliUrl, a.ansiblePath)
+	if err != nil {
+		return err
+	}
+	// 解压ansible
+	err = utils.Decompress(a.ansiblePath, a.ansiblePath)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (a *GoAnsiblePkg) Print(ctx context.Context, reader io.Reader, writer io.Writer, options ...result.OptionsFunc) error {
-	if a.LogChan == nil {
-		return nil
-	}
 	for {
 		buf := make([]byte, 1024)
 		n, err := reader.Read(buf)
@@ -62,28 +138,25 @@ func (a *GoAnsiblePkg) Print(ctx context.Context, reader io.Reader, writer io.Wr
 			return err
 		}
 		if n > 0 {
-			a.LogChan <- string(buf[:n])
+			_, err = writer.Write(buf[:n])
+			if err != nil {
+				return err
+			}
+			a.output += string(buf[:n])
 		}
 	}
 	return nil
 }
 
 func (a *GoAnsiblePkg) Enrich(err error) error {
-	return nil
-}
-
-func (a *GoAnsiblePkg) SetLogChan(logchan chan string) *GoAnsiblePkg {
-	a.LogChan = logchan
-	return a
+	if err == nil {
+		return nil
+	}
+	return errors.Wrap(err, "ansible error")
 }
 
 func (a *GoAnsiblePkg) SetLogPrefix(logPrefix string) *GoAnsiblePkg {
 	a.logPrefix = logPrefix
-	return a
-}
-
-func (a *GoAnsiblePkg) SetAnsiblePlaybookBinary(ansiblePlaybookBinary string) *GoAnsiblePkg {
-	a.ansiblePlaybookBinary = ansiblePlaybookBinary
 	return a
 }
 
@@ -142,26 +215,23 @@ func (a *GoAnsiblePkg) SetMatedataMap(mateData map[string]string) *GoAnsiblePkg 
 	return a
 }
 
-func (a *GoAnsiblePkg) ExecPlayBooks(ctx context.Context) error {
+func (a *GoAnsiblePkg) ExecPlayBooks(ctx context.Context) (string, error) {
 	if a.cmdRunDir == "" {
-		return errors.New("cmdRunDir is required")
+		return "", errors.New("cmdRunDir is required")
 	}
 	if len(a.playbooks) == 0 {
-		return errors.New("playbooks is required")
-	}
-	if a.LogChan == nil {
-		return errors.New("log channel is required")
+		return "", errors.New("playbooks is required")
 	}
 	if len(a.servers) == 0 {
-		return errors.New("servers is required")
+		return "", errors.New("servers is required")
 	}
 	err := a.generateAnsibleCfg()
 	if err != nil {
-		return err
+		return "", err
 	}
 	err = a.generateInventoryFile()
 	if err != nil {
-		return err
+		return "", err
 	}
 	ansiblePlaybookOptions := &playbook.AnsiblePlaybookOptions{
 		Inventory:    a.inventory,
@@ -172,22 +242,26 @@ func (a *GoAnsiblePkg) ExecPlayBooks(ctx context.Context) error {
 	playbookCmd := playbook.NewAnsiblePlaybookCmd(
 		playbook.WithPlaybooks(a.playbooks...),
 		playbook.WithPlaybookOptions(ansiblePlaybookOptions),
-		playbook.WithBinary(a.ansiblePlaybookBinary),
+		playbook.WithBinary(playbook.DefaultAnsiblePlaybookBinary),
 	)
 
 	exec := execute.NewDefaultExecute(
 		execute.WithCmd(playbookCmd),
 		execute.WithCmdRunDir(a.cmdRunDir),
 		execute.WithErrorEnrich(a),
-		execute.WithWrite(a),
+		execute.WithWrite(a.w),
 		execute.WithOutput(a),
-		execute.WithWriteError(a),
+		execute.WithWriteError(a.w),
 		execute.WithEnvVars(a.env),
 		execute.WithTransformers(
 			transformer.Prepend(a.logPrefix),
 		),
 	)
-	return exec.Execute(ctx)
+	err = exec.Execute(ctx)
+	if err != nil {
+		return "", err
+	}
+	return a.output, nil
 }
 
 func (a *GoAnsiblePkg) generateAnsibleCfg() error {
