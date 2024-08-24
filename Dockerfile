@@ -3,7 +3,11 @@ FROM golang:1.22 AS builder
 COPY . /src
 WORKDIR /src
 
-RUN GOPROXY=https://goproxy.cn GOPRIVATE=github.com/f-rambo/ make build
+ENV GO111MODULE=on
+ENV GOPROXY=https://goproxy.cn
+ENV GOPRIVATE=github.com/f-rambo/
+
+RUN make build
 
 FROM debian:stable-slim
 
@@ -15,4 +19,4 @@ EXPOSE 8000
 EXPOSE 9000
 VOLUME /data/conf
 
-CMD ["./bin/server", "-conf", "/data/conf"]
+CMD ["./server", "-conf", "/data/conf"]

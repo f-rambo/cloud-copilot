@@ -14,9 +14,9 @@ MOCK_FILES := $(patsubst $(PACKAGE_PATH)/%.go,$(DESTINATION_DIR)/mock_%.go,$(GO_
 GOHOSTOS:=$(shell go env GOHOSTOS)
 GOPATH:=$(shell go env GOPATH)
 VERSION=0.0.1
-IMG=frambos/ocean:$(VERSION)
-TESTVERSION=0.0.1
-TESTIMG=frambos/oceantestserver:$(TESTVERSION)
+SERVER_NAME=ocean
+AUTHOR=frambos
+IMG=$(AUTHOR)/$(SERVER_NAME):$(VERSION)
 
 ifeq ($(GOHOSTOS), windows)
 	#the `find.exe` is different from `find` in bash/shell.
@@ -58,10 +58,27 @@ api:
 build:
 	mkdir -p bin/ && go build -ldflags "-X main.Version=$(VERSION)" -o ./bin/ ./...
 
+.PHONY: generate
+# generate
+generate:
+	go mod tidy
+	@cd cmd/server && wire && cd -
+
+
 .PHONY: docker-build
 # docker-build
 docker-build:
 	docker build -t $(IMG) -f Dockerfile .
+
+.PHONY: docker-run
+# docker-run
+docker-run:
+	docker run -it -d --rm -p 8000:8000 -p 9000:9000 -v ./configs/:/data/conf --name $(SERVER_NAME)-$(VERSION) $(IMG) 
+
+.PHONY: docker-stop
+# docker-stop
+docker-stop:
+	docker stop $(SERVER_NAME)-$(VERSION)
 
 .PHONY: docker-push
 # docker-push
@@ -73,20 +90,13 @@ docker-push:
 run:
 	go run ./cmd/server -conf ./configs/
 
-.PHONY: generate
-# generate
-generate:
-	go mod tidy
-	@cd cmd/server && wire && cd -
-# 生成 mock
 .PHONY: mock
 mock: $(MOCK_FILES)
-
 $(DESTINATION_DIR)/mock_%.go: $(PACKAGE_PATH)/%.go
 	@mkdir -p $(DESTINATION_DIR)
 	mockgen -source=$< -destination=$@ -package=mocks -write_package_comment
 
-.PHONY: test
+.PHONY: testcase
 test:
 	go test -v ./mocks/...
 
@@ -94,21 +104,9 @@ test:
 testserver:
 	go test -v -count=1 -timeout=3h ./cmd/test/...
 
-.PHONY: cleantest
+.PHONY: cleantestcache
 cleantest:
 	go clean -testcache
-
-.PHONY: buildtest
-buildtest:
-	docker build -t $(TESTIMG) -f testdockerfile .
-
-.PHONY: runtest
-runtest:
-	docker run -it -d --rm -p 8000:8000 -p 9000:9000 $(TESTIMG)
-
-.PHONY: pushtest
-pushtest:
-	docker push $(TESTIMG)
 
 .PHONY: all
 # generate all
