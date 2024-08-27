@@ -61,8 +61,8 @@ func wireApp(bootstrap *conf.Bootstrap, logger log.Logger) (*kratos.App, func(),
 	autoscaler := interfaces.NewAutoscaler(clusterUsecase, bootstrap, logger)
 	grpcServer := server.NewGRPCServer(bootstrap, clusterInterface, appInterface, servicesInterface, userInterface, projectInterface, autoscaler, logger)
 	httpServer := server.NewHTTPServer(bootstrap, clusterInterface, appInterface, servicesInterface, userInterface, projectInterface, logger)
-	otherServer := server.NewInternalLogic(clusterInterface)
-	app := newApp(logger, grpcServer, httpServer, otherServer)
+	internalLogic := server.NewInternalLogic(clusterInterface)
+	app := newApp(logger, grpcServer, httpServer, internalLogic)
 	return app, func() {
 		cleanup()
 	}, nil

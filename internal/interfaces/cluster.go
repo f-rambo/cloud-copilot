@@ -52,14 +52,6 @@ func (uc *ClusterInterface) StopReconcile(ctx context.Context) error {
 	return nil
 }
 
-func (uc *ClusterInterface) StartMock(ctx context.Context) error {
-	return nil
-}
-
-func (uc *ClusterInterface) StopMock(ctx context.Context) error {
-	return nil
-}
-
 func (c *ClusterInterface) Ping(ctx context.Context, _ *emptypb.Empty) (*v1alpha1.Msg, error) {
 	return &v1alpha1.Msg{Message: "pong"}, nil
 }

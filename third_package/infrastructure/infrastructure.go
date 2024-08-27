@@ -63,6 +63,17 @@ const (
 	BOSTIONHOST_USERNAME    = "bostionHostUsername"
 )
 
+const (
+	PULUMI_ALICLOUD         = "alicloud"
+	PULUMI_ALICLOUD_VERSION = "3.56.0"
+
+	PULUMI_AWS         = "aws"
+	PULUMI_AWS_VERSION = "6.38.0"
+
+	PULUMI_KUBERNETES         = "kubernetes"
+	PULUMI_KUBERNETES_VERSION = "4.12.0"
+)
+
 type ClusterInfrastructure struct {
 	log         *log.Helper
 	c           *conf.Bootstrap
@@ -108,7 +119,7 @@ func (c *ClusterInfrastructure) SetEnv(key, val string) *ClusterInfrastructure {
 func (c *ClusterInfrastructure) buildAliCloudParam(cluster *biz.Cluster) {
 	c.SetProjectName(AlicloudProjectName).
 		SetStackName(AlicloudStackName).
-		SetPlugin(PulumiPlugin{Kind: "alicloud", Version: "3.56.0"}, PulumiPlugin{Kind: "kubernetes", Version: "4.12.0"}).
+		SetPlugin(PulumiPlugin{Kind: PULUMI_ALICLOUD, Version: PULUMI_ALICLOUD_VERSION}, PulumiPlugin{Kind: PULUMI_KUBERNETES, Version: PULUMI_KUBERNETES_VERSION}).
 		SetEnv("ALICLOUD_ACCESS_KEY", cluster.AccessID).
 		SetEnv("ALICLOUD_SECRET_KEY", cluster.AccessKey).
 		SetEnv("ALICLOUD_REGION", cluster.Region)
@@ -117,7 +128,7 @@ func (c *ClusterInfrastructure) buildAliCloudParam(cluster *biz.Cluster) {
 func (c *ClusterInfrastructure) buildAwsCloudParam(cluster *biz.Cluster) {
 	c.SetProjectName(AWS_PROJECT).
 		SetStackName(AWS_STACK).
-		SetPlugin(PulumiPlugin{Kind: "aws", Version: "6.38.0"}, PulumiPlugin{Kind: "kubernetes", Version: "4.12.0"}).
+		SetPlugin(PulumiPlugin{Kind: PULUMI_AWS, Version: PULUMI_AWS_VERSION}, PulumiPlugin{Kind: PULUMI_KUBERNETES, Version: PULUMI_KUBERNETES_VERSION}).
 		SetEnv("AWS_ACCESS_KEY_ID", cluster.AccessID).
 		SetEnv("AWS_SECRET_ACCESS_KEY", cluster.AccessKey).
 		SetEnv("AWS_DEFAULT_REGION", cluster.Region)
@@ -415,6 +426,9 @@ func (cc *ClusterInfrastructure) GenerateNodeLables(ctx context.Context, cluster
 	return string(lablebytes), nil
 }
 
+/*
+新建一个哨兵（海军）项目，负责下载海军项目，并且把海军项目发送到各个服务器上；
+*/
 func (cc *ClusterInfrastructure) MigrateToBostionHost(ctx context.Context, cluster *biz.Cluster) error {
 	cluster.Write([]byte("start migrate to bostion host...."))
 	serverStorePath, err := utils.GetPackageStorePathByNames()

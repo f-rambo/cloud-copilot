@@ -62,7 +62,7 @@ build:
 # generate
 generate:
 	go mod tidy
-	@cd cmd/server && wire && cd -
+	@cd cmd/ocean && wire && cd -
 
 
 .PHONY: docker-build
@@ -88,7 +88,7 @@ docker-push:
 .PHONY: run
 # run
 run:
-	go run ./cmd/server -conf ./configs/
+	go run ./cmd/ocean -conf ./configs/
 
 .PHONY: mock
 mock: $(MOCK_FILES)

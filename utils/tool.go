@@ -196,6 +196,7 @@ func getRandomTimeString() string {
 	timePart := time.Now().Format("20060102150405") // Get the current time in the format YYYYMMDDHHMMSS
 	return fmt.Sprintf("%s%d", timePart, randPart)
 }
+
 func ReadFile(path string) ([]byte, error) {
 	return os.ReadFile(path)
 }
