@@ -37,9 +37,5 @@ bin/
 .idea/
 *.swp
 
-# log
-logs/
-
-/resource/
-
+# copilot
 copilot/
