@@ -2,11 +2,14 @@ package interfaces
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/f-rambo/ocean/api/cluster/v1alpha1"
 	"github.com/f-rambo/ocean/internal/biz"
 	"github.com/f-rambo/ocean/internal/conf"
+	"github.com/go-kratos/kratos/v2"
 	"github.com/go-kratos/kratos/v2/log"
+	"github.com/go-kratos/kratos/v2/metadata"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
@@ -53,6 +56,12 @@ func (uc *ClusterInterface) StopReconcile(ctx context.Context) error {
 }
 
 func (c *ClusterInterface) Ping(ctx context.Context, _ *emptypb.Empty) (*v1alpha1.Msg, error) {
+	if appInfo, ok := kratos.FromContext(ctx); ok {
+		fmt.Println(appInfo.Metadata())
+	}
+	if md, ok := metadata.FromServerContext(ctx); ok {
+		fmt.Println(md)
+	}
 	return &v1alpha1.Msg{Message: "pong"}, nil
 }
 

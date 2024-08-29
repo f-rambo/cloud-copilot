@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 
 	"github.com/f-rambo/ocean/internal/conf"
 	"github.com/f-rambo/ocean/internal/server"
@@ -44,7 +45,10 @@ func newApp(logger log.Logger, gs *grpc.Server, hs *http.Server, internalLogic *
 		kratos.ID(id),
 		kratos.Name(Name),
 		kratos.Version(Version),
-		kratos.Metadata(map[string]string{}),
+		kratos.Metadata(map[string]string{
+			"os":   runtime.GOOS,
+			"arch": runtime.GOARCH,
+		}),
 		kratos.Logger(logger),
 		kratos.Server(
 			gs,

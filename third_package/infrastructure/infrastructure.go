@@ -427,7 +427,8 @@ func (cc *ClusterInfrastructure) GenerateNodeLables(ctx context.Context, cluster
 }
 
 /*
-新建一个哨兵（海军）项目，负责下载海军项目，并且把海军项目发送到各个服务器上；
+ship项目打包成github release
+使用ssh命令在远程服务器上下载文件，然后执行文件；ssh user@192.168.1.100 'sudo bash -s' < script.sh arg1 arg2
 */
 func (cc *ClusterInfrastructure) MigrateToBostionHost(ctx context.Context, cluster *biz.Cluster) error {
 	cluster.Write([]byte("start migrate to bostion host...."))

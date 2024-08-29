@@ -11,6 +11,7 @@ import (
 	"github.com/f-rambo/ocean/internal/conf"
 	"github.com/f-rambo/ocean/internal/interfaces"
 	"github.com/go-kratos/kratos/v2/log"
+	"github.com/go-kratos/kratos/v2/middleware/metadata"
 	"github.com/go-kratos/kratos/v2/middleware/recovery"
 	"github.com/go-kratos/kratos/v2/middleware/selector"
 	"github.com/go-kratos/kratos/v2/transport/http"
@@ -29,6 +30,7 @@ func NewHTTPServer(c *conf.Bootstrap,
 		http.Middleware(
 			selector.Server(NewAuthServer(user)).Match(NewWhiteListMatcher()).Build(),
 			recovery.Recovery(),
+			metadata.Server(),
 		),
 		http.Timeout(10 * time.Minute),
 	}
