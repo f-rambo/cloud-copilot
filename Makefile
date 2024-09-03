@@ -59,7 +59,7 @@ api:
 .PHONY: build
 # build
 build:
-	mkdir -p bin/ && CGO_ENABLED=1 go build -ldflags "-X main.Version=$(VERSION)" -o ./bin/ ./cmd/ocean
+	mkdir -p bin/ && go build -ldflags "-X main.Version=$(VERSION)" -o ./bin/ ./cmd/ocean
 
 .PHONY: generate
 # generate
@@ -140,6 +140,7 @@ multi-platform-build-release:
 		echo "Building for platform $$platform_formatted to container $$container_name"; \
 		docker run -it -d --rm --name $$container_name $$platform/$(IMG) ; \
 		docker cp $$container_name:/app.tar.gz ./built/$$container_name.tar.gz ; \
+		docker cp $$container_name:/app.tar.gz.sha256sum ./built/$$container_name.tar.gz.sha256sum ; \
 		docker stop $$container_name; \
 	done
 

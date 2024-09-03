@@ -6,11 +6,12 @@ WORKDIR /src
 ENV GO111MODULE=on
 ENV GOPROXY=https://goproxy.cn
 ENV GOPRIVATE=github.com/f-rambo/
+ENV CGO_ENABLED=1
 
 RUN make build && mkdir -p /app && cp -r bin /app/ && cp -r configs /app/
 
-FROM alpine:latest
+FROM debian:stable-slim
 
 COPY --from=builder /app /app
 
-RUN tar -czvf /app.tar.gz /app
+RUN tar -czvf /app.tar.gz /app && sha256sum /app.tar.gz > /app.tar.gz.sha256sum

@@ -3,6 +3,7 @@ package utils
 import (
 	"archive/tar"
 	"compress/gzip"
+	"context"
 	"crypto/md5"
 	"encoding/hex"
 	"encoding/json"
@@ -16,6 +17,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-kratos/kratos/v2"
 	"gopkg.in/yaml.v2"
 )
 
@@ -386,11 +388,34 @@ func RemoveDuplicateString(arr []string) []string {
 	return result
 }
 
+const (
+	PackageStoreDirName = ".ocean"
+)
+
 func GetPackageStorePathByNames(packageNames ...string) (string, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return "", err
 	}
-	packageNames = append([]string{home, ".ocean"}, packageNames...)
+	if len(packageNames) == 0 {
+		return filepath.Join(home, PackageStoreDirName), nil
+	}
+	packageNames = append([]string{home, PackageStoreDirName}, packageNames...)
 	return filepath.Join(packageNames...), nil
+}
+
+func GetAppVersionFromContext(ctx context.Context) (string, string, error) {
+	appInfo, ok := kratos.FromContext(ctx)
+	if !ok {
+		return "", "", nil
+	}
+	oceanAppVersion, ok := appInfo.Metadata()["version"]
+	if !ok {
+		return "", "", nil
+	}
+	shipAppVersion, ok := appInfo.Metadata()["ship_version"]
+	if !ok {
+		return "", "", nil
+	}
+	return oceanAppVersion, shipAppVersion, nil
 }

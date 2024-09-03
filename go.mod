@@ -7,7 +7,6 @@ require (
 	github.com/argoproj/argo-workflows/v3 v3.5.1
 	github.com/f-rambo/sailor v0.0.0-20240328021241-d6662a9d12fe
 	github.com/go-kratos/kratos/v2 v2.8.0
-	github.com/go-resty/resty/v2 v2.10.0
 	github.com/golang-jwt/jwt/v5 v5.1.0
 	github.com/golang/mock v1.6.0
 	github.com/google/go-github/v62 v62.0.0
@@ -34,7 +33,6 @@ require (
 	k8s.io/api v0.29.0
 	k8s.io/apimachinery v0.29.0
 	k8s.io/client-go v0.29.0
-	golang.org/x/sync v0.6.0
 )
 
 require (
@@ -230,6 +228,7 @@ require (
 	golang.org/x/mod v0.14.0 // indirect
 	golang.org/x/net v0.25.0 // indirect
 	golang.org/x/oauth2 v0.17.0 // indirect
+	golang.org/x/sync v0.6.0 // indirect
 	golang.org/x/sys v0.20.0 // indirect
 	golang.org/x/term v0.20.0 // indirect
 	golang.org/x/text v0.15.0 // indirect

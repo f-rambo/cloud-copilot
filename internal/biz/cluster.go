@@ -2,6 +2,7 @@ package biz
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/f-rambo/ocean/internal/conf"
@@ -77,6 +78,7 @@ type Node struct {
 	Container   string     `json:"container" gorm:"column:container; default:''; NOT NULL"`
 	Kubelet     string     `json:"kubelet" gorm:"column:kubelet; default:''; NOT NULL"`
 	KubeProxy   string     `json:"kube_proxy" gorm:"column:kube_proxy; default:''; NOT NULL"`
+	Port        int32      `json:"port" gorm:"column:port; default:0; NOT NULL"`
 	InternalIP  string     `json:"internal_ip" gorm:"column:internal_ip; default:''; NOT NULL"`
 	ExternalIP  string     `json:"external_ip" gorm:"column:external_ip; default:''; NOT NULL"`
 	User        string     `json:"user" gorm:"column:user; default:''; NOT NULL"`
@@ -134,8 +136,6 @@ type ClusterInfrastructure interface {
 	UnInstall(context.Context, *Cluster) error
 	AddNodes(context.Context, *Cluster, []*Node) error
 	RemoveNodes(context.Context, *Cluster, []*Node) error
-	GenerateInitial(context.Context, *Cluster) error
-	GenerateNodeLables(context.Context, *Cluster, *NodeGroup) (lables string, err error)
 }
 
 // 运行时集群
@@ -279,6 +279,18 @@ var (
 		"instanceDeleting": 3,
 	}
 )
+
+func (c *Cluster) generateNodeLables(nodeGroup *NodeGroup) string {
+	lableMap := make(map[string]string)
+	lableMap["cluster"] = c.Name
+	lableMap["cluster_type"] = c.Type.String()
+	lableMap["region"] = c.Region
+	lableMap["nodegroup"] = nodeGroup.Name
+	lableMap["nodegroup_type"] = nodeGroup.Type.String()
+	lableMap["instance_type"] = nodeGroup.InstanceType
+	lablebytes, _ := json.Marshal(lableMap)
+	return string(lablebytes)
+}
 
 func (c *Cluster) logPath() string {
 	return fmt.Sprintf("logs/cluster-%d.log", c.ID)
@@ -436,17 +448,13 @@ func (uc *ClusterUsecase) DeleteNodes(ctx context.Context, cluster *Cluster, nod
 
 // 预测一个节点配置，也就是根据当前节点组目前还可以配置的节点
 func (uc *ClusterUsecase) NodeGroupTemplateNodeInfo(ctx context.Context, cluster *Cluster, nodeGroup *NodeGroup) (*Node, error) {
-	nodeLables, err := uc.clusterInfrastructure.GenerateNodeLables(ctx, cluster, nodeGroup)
-	if err != nil {
-		return nil, err
-	}
 	return &Node{
 		Name:        fmt.Sprintf("%s-%s", cluster.Name, utils.GetRandomString()),
 		Role:        NodeRoleWorker,
 		Status:      NodeStatusCreating,
 		ClusterID:   cluster.ID,
 		NodeGroupID: nodeGroup.ID,
-		Labels:      nodeLables,
+		Labels:      cluster.generateNodeLables(nodeGroup),
 	}, nil
 }
 
@@ -482,18 +490,8 @@ func (uc *ClusterUsecase) Refresh(ctx context.Context) error {
 	return nil
 }
 
-func (uc *ClusterUsecase) Apply(ctx context.Context, cluster *Cluster) (err error) {
-	if ClusterStatus(cluster.Status) == ClusterStatucCreating {
-		err = uc.clusterInfrastructure.GenerateInitial(ctx, cluster)
-		if err != nil {
-			return err
-		}
-	}
-	err = uc.clusterRepo.Put(ctx, cluster)
-	if err != nil {
-		return err
-	}
-	return nil
+func (uc *ClusterUsecase) Apply(ctx context.Context, cluster *Cluster) error {
+	return uc.clusterRepo.Put(ctx, cluster)
 }
 
 func (uc *ClusterUsecase) Watch(ctx context.Context) (*Cluster, error) {
@@ -529,7 +527,7 @@ func (uc *ClusterUsecase) Reconcile(ctx context.Context, cluster *Cluster) (err 
 	}
 	err = uc.clusterRuntime.CurrentCluster(ctx, cluster)
 	if errors.Is(err, ErrClusterNotFound) {
-		err = uc.clusterInfrastructure.Stop(ctx, cluster)
+		err = uc.clusterInfrastructure.Start(ctx, cluster)
 		if err != nil {
 			return err
 		}

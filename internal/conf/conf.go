@@ -15,11 +15,12 @@ type Bootstrap struct {
 }
 
 type Server struct {
-	Name    string `json:"name,omitempty"`
-	Version string `json:"version,omitempty"`
-	HTTP    HTTP   `json:"http,omitempty"`
-	GRPC    GRPC   `json:"grpc,omitempty"`
-	Env     string `json:"env,omitempty"`
+	Name        string `json:"name,omitempty"`
+	Version     string `json:"version,omitempty"`
+	ShipVersion string `json:"ship_version,omitempty"`
+	HTTP        HTTP   `json:"http,omitempty"`
+	GRPC        GRPC   `json:"grpc,omitempty"`
+	Env         string `json:"env,omitempty"`
 }
 
 type HTTP struct {
