@@ -49,7 +49,9 @@ type NodeGroup struct {
 	Type                    NodeGroupType `json:"type" gorm:"column:type; default:''; NOT NULL;"`
 	InstanceType            string        `json:"instance_type" gorm:"column:instance_type; default:''; NOT NULL"`
 	ImageID                 string        `json:"image_id" gorm:"column:image_id; default:''; NOT NULL"`
-	OSImage                 string        `json:"os_image" gorm:"column:os_image; default:''; NOT NULL"`
+	Image                   string        `json:"image" gorm:"column:image; default:''; NOT NULL"`
+	OS                      string        `json:"os" gorm:"column:os; default:''; NOT NULL"`
+	ARCH                    string        `json:"arch" gorm:"column:arch; default:''; NOT NULL"`
 	CPU                     int32         `json:"cpu" gorm:"column:cpu; default:0; NOT NULL"`
 	Memory                  float64       `json:"memory" gorm:"column:memory; default:0; NOT NULL"`
 	GPU                     int32         `json:"gpu" gorm:"column:gpu; default:0; NOT NULL"`
@@ -97,8 +99,12 @@ type BostionHost struct {
 	InstanceID   string  `json:"instance_id" gorm:"column:instance_id; default:''; NOT NULL"`
 	Username     string  `json:"username" gorm:"column:username; default:''; NOT NULL"`
 	ImageID      string  `json:"image_id" gorm:"column:image_id; default:''; NOT NULL"`
+	Image        string  `json:"image" gorm:"column:image; default:''; NOT NULL"`
+	OS           string  `json:"os" gorm:"column:os; default:''; NOT NULL"`
+	ARCH         string  `json:"arch" gorm:"column:arch; default:''; NOT NULL"`
 	Hostname     string  `json:"hostname" gorm:"column:hostname; default:''; NOT NULL"`
 	ExternalIP   string  `json:"external_ip" gorm:"column:external_ip; default:''; NOT NULL"`
+	Port         int32   `json:"port" gorm:"column:port; default:0; NOT NULL"`
 	PrivateIP    string  `json:"private_ip" gorm:"column:private_ip; default:''; NOT NULL"`
 	ClusterID    int64   `json:"cluster_id" gorm:"column:cluster_id; default:0; NOT NULL"`
 	CPU          int32   `json:"cpu" gorm:"column:cpu; default:0; NOT NULL"`
@@ -604,4 +610,8 @@ func (uc *ClusterUsecase) handlerRemoveNode(ctx context.Context, cluster *Cluste
 	}
 	cluster.Nodes = newNodes
 	return nil
+}
+
+func (uc *ClusterUsecase) MigrateToBostionHost(ctx context.Context, cluster *Cluster) error {
+	return uc.clusterInfrastructure.MigrateToBostionHost(ctx, cluster)
 }

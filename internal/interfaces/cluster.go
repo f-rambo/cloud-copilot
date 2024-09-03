@@ -193,7 +193,7 @@ func (c *ClusterInterface) bizNodeToNode(bizNode *biz.Node) *v1alpha1.Node {
 		Id:         bizNode.ID,
 		Name:       bizNode.Name,
 		Labels:     bizNode.Labels,
-		OsImage:    bizNode.NodeGroup.OSImage,
+		OsImage:    bizNode.NodeGroup.OS,
 		Kernel:     bizNode.Kernel,
 		Container:  bizNode.Container,
 		Kubelet:    bizNode.Kubelet,

@@ -79,7 +79,7 @@ var nodeGroup *biz.NodeGroup = &biz.NodeGroup{
 	MaxSize:                 6,
 	Type:                    "testType",
 	InstanceType:            "testInstanceType",
-	OSImage:                 "testOSImage",
+	OS:                      "testOSImage",
 	CPU:                     1,
 	Memory:                  1.0,
 	GPU:                     1,

@@ -9,7 +9,6 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -32,14 +31,6 @@ func getKubeConfig() (config *rest.Config, err error) {
 		}
 	}
 	return
-}
-
-func getKubeClientSet() (clientset *kubernetes.Clientset, err error) {
-	config, err := getKubeConfig()
-	if err != nil {
-		return nil, err
-	}
-	return kubernetes.NewForConfig(config)
 }
 
 func newForConfig(c *rest.Config) (*WorkflowV1Alpha1Client, error) {

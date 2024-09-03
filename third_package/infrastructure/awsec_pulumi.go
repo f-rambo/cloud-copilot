@@ -1113,7 +1113,7 @@ func (a *AwsEc2Instance) Import(ctx *pulumi.Context) error {
 		}
 		ng.ClusterID = a.cluster.ID
 		ng.InstanceType = instanceType
-		ng.OSImage = instanceTypeOsMap[instanceType]
+		ng.OS = instanceTypeOsMap[instanceType]
 		ng.CPU = int32(instanceTypeRes.DefaultVcpus)
 		ng.Memory = float64(instanceTypeRes.MemorySize)
 		ng.DataDisk = int32(instanceTypeRes.TotalInstanceStorage)

@@ -46,8 +46,13 @@ func newApp(logger log.Logger, gs *grpc.Server, hs *http.Server, internalLogic *
 		kratos.Name(Name),
 		kratos.Version(Version),
 		kratos.Metadata(map[string]string{
-			"os":   runtime.GOOS,
-			"arch": runtime.GOARCH,
+			"service":      Name,
+			"version":      Version,
+			"ship_version": "0.0.1",
+			"runtime":      runtime.Version(),
+			"os":           runtime.GOOS,
+			"arch":         runtime.GOARCH,
+			"conf":         flagconf,
 		}),
 		kratos.Logger(logger),
 		kratos.Server(

@@ -34,9 +34,8 @@ require (
 	k8s.io/api v0.29.0
 	k8s.io/apimachinery v0.29.0
 	k8s.io/client-go v0.29.0
+	golang.org/x/sync v0.6.0
 )
-
-require golang.org/x/sync v0.6.0 // indirect
 
 require (
 	dario.cat/mergo v1.0.0 // indirect

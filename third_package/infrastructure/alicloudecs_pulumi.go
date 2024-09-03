@@ -352,7 +352,7 @@ func (a *AlicloudCluster) nodes(ctx *pulumi.Context) error {
 	}
 	imageID := images.Images[0].Id
 	for _, nodeGroup := range a.cluster.NodeGroups {
-		nodeGroup.OSImage = imageID
+		nodeGroup.OS = imageID
 		instanceTypeFamilies := a.getIntanceTypeFamilies(nodeGroup)
 		nodeInstanceTypes, err := ecs.GetInstanceTypes(ctx, &ecs.GetInstanceTypesArgs{
 			InstanceTypeFamily: pulumi.StringRef(instanceTypeFamilies),
@@ -477,7 +477,7 @@ func (a *AlicloudCluster) Get(ctx *pulumi.Context) error {
 				}
 				instanceTypes[instance.InstanceType] = struct{}{}
 				ng := &biz.NodeGroup{
-					OSImage:                 instance.ImageId,
+					OS:                      instance.ImageId,
 					InstanceType:            instance.InstanceType,
 					InternetMaxBandwidthOut: int32(instance.InternetMaxBandwidthOut),
 				}
@@ -531,7 +531,7 @@ func (a *AlicloudCluster) Get(ctx *pulumi.Context) error {
 	for _, ng := range nodeGroups {
 		for _, v := range nodeGroupsByNodes {
 			if v.InstanceType == ng.InstanceType {
-				ng.OSImage = v.OSImage
+				ng.OS = v.OS
 				ng.SystemDisk = v.SystemDisk
 				ng.DataDisk = v.DataDisk
 				ng.InternetMaxBandwidthOut = v.InternetMaxBandwidthOut

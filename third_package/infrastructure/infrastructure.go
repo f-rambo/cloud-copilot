@@ -5,15 +5,20 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"os"
+	"os/exec"
+	"path/filepath"
 	"sort"
 	"strings"
 
 	"github.com/f-rambo/ocean/internal/biz"
 	"github.com/f-rambo/ocean/internal/conf"
 	"github.com/f-rambo/ocean/utils"
+	"github.com/go-kratos/kratos/v2"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/pkg/errors"
 	"github.com/spf13/cast"
+	"golang.org/x/sync/errgroup"
 )
 
 const (
@@ -295,7 +300,11 @@ func (cc *ClusterInfrastructure) GenerateInitial(ctx context.Context, cluster *b
 		return nil
 	}
 	// 本地集群
-	err := cc.getNodesInformation(ctx, cluster)
+	err := cc.installShipToNode(ctx, cluster)
+	if err != nil {
+		return err
+	}
+	err = cc.getNodesInformation(ctx, cluster)
 	if err != nil {
 		return err
 	}
@@ -319,6 +328,90 @@ func (cc *ClusterInfrastructure) GenerateInitial(ctx context.Context, cluster *b
 		node.Role = biz.NodeRoleWorker
 		node.Status = biz.NodeStatusCreating
 		workNum++
+	}
+	return nil
+}
+
+func (cc *ClusterInfrastructure) createScript(fileName, content string) (string, error) {
+	dir, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+	shellDir := filepath.Join(filepath.Dir(dir), "shell")
+	output, err := exec.Command("mkdir", "-p", shellDir).CombinedOutput()
+	if err != nil {
+		return "", errors.Wrap(err, string(output))
+	}
+	filepath := filepath.Join(shellDir, fileName)
+	output, err = exec.Command("echo", content, ">", filepath).CombinedOutput()
+	if err != nil {
+		return "", errors.Wrap(err, string(output))
+	}
+	return filepath, nil
+}
+
+// ssh user@ip 'sudo bash -s' < script.sh arg1 arg2
+func (cc *ClusterInfrastructure) MigrateToBostionHost(ctx context.Context, cluster *biz.Cluster) error {
+	appInfo, ok := kratos.FromContext(ctx)
+	if !ok {
+		return nil
+	}
+	oceanAppVersion, ok := appInfo.Metadata()["version"]
+	if !ok {
+		return nil
+	}
+	shipAppVersion, ok := appInfo.Metadata()["ship_version"]
+	if !ok {
+		return nil
+	}
+	scriptPath, err := cc.createScript("autoinstall.sh", InstallScript)
+	if err != nil {
+		return err
+	}
+	output, err := exec.Command("ssh",
+		fmt.Sprintf("%s@%s -p %d", cluster.BostionHost.Username, cluster.BostionHost.ExternalIP, cluster.BostionHost.Port),
+		"sudo bash", "<", scriptPath,
+		cluster.BostionHost.ARCH, oceanAppVersion, shipAppVersion).CombinedOutput()
+	if err != nil {
+		return errors.Wrap(err, string(output))
+	}
+	return nil
+}
+
+func (cc *ClusterInfrastructure) installShipToNode(ctx context.Context, cluster *biz.Cluster) error {
+	dir, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+	shipPath := filepath.Join(filepath.Dir(dir), "ship")
+	eg, _ := errgroup.WithContext(ctx)
+	for _, node := range cluster.Nodes {
+		eg.Go(func() error {
+			// create app directory
+			output, err := exec.Command("ssh", fmt.Sprintf("%s@%s", node.User, node.ExternalIP), "sudo mkdir", "-p", "/app").CombinedOutput()
+			if err != nil {
+				return errors.Wrap(err, string(output))
+			}
+			// scp ship to node
+			output, err = exec.Command("scp", "-r", shipPath, fmt.Sprintf("%s@%s:/app", node.User, node.ExternalIP)).CombinedOutput()
+			if err != nil {
+				return errors.Wrap(err, string(output))
+			}
+			// create ship shell
+			shipShellPath, err := cc.createScript("ship.sh", ShipShell)
+			if err != nil {
+				return err
+			}
+			// run ship shell
+			output, err = exec.Command("ssh", fmt.Sprintf("%s@%s", node.User, node.InternalIP), "sudo bash", "<", shipShellPath, "/app/ship").CombinedOutput()
+			if err != nil {
+				return errors.Wrap(err, string(output))
+			}
+			return nil
+		})
+	}
+	if err := eg.Wait(); err != nil {
+		return err
 	}
 	return nil
 }
@@ -388,7 +481,7 @@ func (cc *ClusterInfrastructure) getNodesInformation(ctx context.Context, cluste
 			case "disk":
 				nodeGroup.SystemDisk = cast.ToInt32(v)
 			case "os_info":
-				nodeGroup.OSImage = cast.ToString(v)
+				nodeGroup.OS = cast.ToString(v)
 			}
 		}
 		node.NodeGroup = nodeGroup
@@ -424,33 +517,6 @@ func (cc *ClusterInfrastructure) GenerateNodeLables(ctx context.Context, cluster
 		return "", err
 	}
 	return string(lablebytes), nil
-}
-
-/*
-ship项目打包成github release
-使用ssh命令在远程服务器上下载文件，然后执行文件；ssh user@192.168.1.100 'sudo bash -s' < script.sh arg1 arg2
-*/
-func (cc *ClusterInfrastructure) MigrateToBostionHost(ctx context.Context, cluster *biz.Cluster) error {
-	cluster.Write([]byte("start migrate to bostion host...."))
-	serverStorePath, err := utils.GetPackageStorePathByNames()
-	if err != nil {
-		return err
-	}
-	migratePlaybook := getMigratePlaybook()
-	migratePlaybook.AddSynchronize("server", serverStorePath, serverStorePath)
-	clusterPath, err := utils.GetPackageStorePathByNames(biz.ClusterPackageName)
-	if err != nil {
-		return err
-	}
-	migratePlaybookPath, err := savePlaybook(clusterPath, migratePlaybook)
-	if err != nil {
-		return err
-	}
-	_, err = cc.ansibleExec(ctx, cluster, clusterPath, migratePlaybookPath, cc.generatingBostionHost(cluster))
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 func (cc *ClusterInfrastructure) Install(ctx context.Context, cluster *biz.Cluster) error {
