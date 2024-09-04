@@ -690,6 +690,18 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/app.v1alpha1.App'
+    /api/v1alpha1/cloud/ping:
+        get:
+            tags:
+                - CloudInterface
+            operationId: CloudInterface_Ping
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/cloud.v1alpha1.Msg'
     /api/v1alpha1/cluster:
         get:
             tags:
@@ -1249,6 +1261,18 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/service.v1alpha1.Msg'
+    /api/v1alpha1/system/ping:
+        get:
+            tags:
+                - SystemInterface
+            operationId: SystemInterface_Ping
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/system.v1alpha1.Msg'
     /api/v1alpha1/user:
         get:
             tags:
@@ -1668,6 +1692,14 @@ components:
                     format: enum
                 Message:
                     type: string
+        cloud.v1alpha1.Msg:
+            type: object
+            properties:
+                Reason:
+                    type: integer
+                    format: enum
+                Message:
+                    type: string
         cluster.v1alpha1.Cluster:
             type: object
             properties:
@@ -2027,6 +2059,14 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/service.v1alpha1.WfTemplate'
+        system.v1alpha1.Msg:
+            type: object
+            properties:
+                Reason:
+                    type: integer
+                    format: enum
+                Message:
+                    type: string
         user.v1alpha1.Msg:
             type: object
             properties:
@@ -2077,7 +2117,9 @@ components:
                     format: int32
 tags:
     - name: AppInterface
+    - name: CloudInterface
     - name: ClusterInterface
     - name: ProjectService
     - name: ServiceInterface
+    - name: SystemInterface
     - name: UserInterface

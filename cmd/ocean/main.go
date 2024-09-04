@@ -93,6 +93,10 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	err = os.MkdirAll(logPath, 0755)
+	if err != nil {
+		panic(err)
+	}
 	logger := log.With(log.NewStdLogger(&lumberjack.Logger{
 		Filename:   filepath.Join(logPath, fmt.Sprintf("%s.log", Name)),
 		MaxSize:    int(logConf.MaxSize), // megabytes

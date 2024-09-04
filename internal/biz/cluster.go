@@ -78,7 +78,7 @@ type Node struct {
 	Container   string     `json:"container" gorm:"column:container; default:''; NOT NULL"`
 	Kubelet     string     `json:"kubelet" gorm:"column:kubelet; default:''; NOT NULL"`
 	KubeProxy   string     `json:"kube_proxy" gorm:"column:kube_proxy; default:''; NOT NULL"`
-	Port        int32      `json:"port" gorm:"column:port; default:0; NOT NULL"`
+	SshPort     int32      `json:"ssh_port" gorm:"column:ssh_port; default:0; NOT NULL"`
 	InternalIP  string     `json:"internal_ip" gorm:"column:internal_ip; default:''; NOT NULL"`
 	ExternalIP  string     `json:"external_ip" gorm:"column:external_ip; default:''; NOT NULL"`
 	User        string     `json:"user" gorm:"column:user; default:''; NOT NULL"`
@@ -106,7 +106,7 @@ type BostionHost struct {
 	ARCH         string  `json:"arch" gorm:"column:arch; default:''; NOT NULL"`
 	Hostname     string  `json:"hostname" gorm:"column:hostname; default:''; NOT NULL"`
 	ExternalIP   string  `json:"external_ip" gorm:"column:external_ip; default:''; NOT NULL"`
-	Port         int32   `json:"port" gorm:"column:port; default:0; NOT NULL"`
+	SshPort      int32   `json:"ssh_port" gorm:"column:ssh_port; default:0; NOT NULL"`
 	PrivateIP    string  `json:"private_ip" gorm:"column:private_ip; default:''; NOT NULL"`
 	ClusterID    int64   `json:"cluster_id" gorm:"column:cluster_id; default:0; NOT NULL"`
 	CPU          int32   `json:"cpu" gorm:"column:cpu; default:0; NOT NULL"`

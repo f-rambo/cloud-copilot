@@ -3,6 +3,8 @@ package data
 import (
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/f-rambo/ocean/internal/biz"
@@ -16,18 +18,36 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 // ProviderSet is data providers.
 var ProviderSet = wire.NewSet(NewData, NewClusterRepo, NewAppRepo, NewServicesRepo, NewUserRepo, NewProjectRepo)
 
+type DBDriver string
+
+const (
+	DBDriverMySQL    DBDriver = "mysql"
+	DBDriverPostgres DBDriver = "postgres"
+	DBDriverSQLite   DBDriver = "sqlite"
+)
+
+func (d DBDriver) String() string {
+	return string(d)
+}
+
+const (
+	DatabaseName = "ocean.db"
+)
+
 type Data struct {
-	databaseConf *conf.Data
-	etcdConf     *conf.ETCD
-	log          *log.Helper
-	db           *gorm.DB
-	etcd         *clientv3.Client
-	kvStore      *utils.KVStore
+	databaseConf  *conf.Data
+	etcdConf      *conf.ETCD
+	log           *log.Helper
+	dbLoggerLevel logger.LogLevel
+	db            *gorm.DB
+	etcd          *clientv3.Client
+	kvStore       *utils.KVStore
 }
 
 func NewData(c *conf.Bootstrap, logger log.Logger) (*Data, func(), error) {
@@ -40,11 +60,11 @@ func NewData(c *conf.Bootstrap, logger log.Logger) (*Data, func(), error) {
 		log:          log.NewHelper(logger),
 	}
 
-	data.db, err = newDB(cdata)
+	err = data.newDB(cdata)
 	if err != nil {
 		return nil, nil, err
 	}
-	data.etcd, err = newEtcd(etcd)
+	err = data.newEtcd(etcd)
 	if err != nil {
 		data.kvStore = utils.NewKVStore()
 	}
@@ -147,7 +167,7 @@ func (d *Data) Delete(ctx context.Context, key string) error {
 	return nil
 }
 
-func newEtcd(c conf.ETCD) (*clientv3.Client, error) {
+func (d *Data) newEtcd(c conf.ETCD) (err error) {
 	endpoints := make([]string, 0)
 	for _, endpoint := range c.GetETCDEndpoints() {
 		if endpoint == "" {
@@ -156,60 +176,63 @@ func newEtcd(c conf.ETCD) (*clientv3.Client, error) {
 		endpoints = append(endpoints, endpoint)
 	}
 	if len(endpoints) == 0 {
-		return nil, errors.New("etcd endpoints is empty")
+		return errors.New("etcd endpoints is empty")
 	}
-	cli, err := clientv3.New(clientv3.Config{
+	d.etcd, err = clientv3.New(clientv3.Config{
 		Username:    c.GetUsername(),
 		Password:    c.GetPassword(),
 		Endpoints:   endpoints,
 		DialTimeout: 5 * time.Second,
 	})
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return cli, nil
+	return nil
 }
 
-func newDB(c conf.Data) (*gorm.DB, error) {
-	var client *gorm.DB
-	var err error
-	if c.GetDriver() == "mysql" {
+func (d *Data) newDB(c conf.Data) (err error) {
+	d.LogMode(logger.Warn)
+	switch DBDriver(c.GetDriver()) {
+	case DBDriverMySQL:
 		dns := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8&parseTime=True&loc=Local",
 			c.GetUsername(), c.GetPassword(), c.GetHost(), c.GetPort(), c.GetDatabase())
-		client, err = gorm.Open(mysql.Open(dns), &gorm.Config{})
+		d.db, err = gorm.Open(mysql.Open(dns), &gorm.Config{
+			Logger: d,
+		})
 		if err != nil {
-			return nil, err
+			return err
 		}
-		client = client.Set("gorm:table_options", "ENGINE=InnoDB DEFAULT CHARSET=utf8")
-	}
-	if c.GetDriver() == "postgres" {
+		d.db = d.db.Set("gorm:table_options", "ENGINE=InnoDB DEFAULT CHARSET=utf8")
+	case DBDriverPostgres:
 		dns := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%d sslmode=disable TimeZone=Asia/Shanghai",
 			c.GetHost(), c.GetUsername(), c.GetPassword(), c.GetDatabase(), c.GetPort())
-		client, err = gorm.Open(postgres.Open(dns), &gorm.Config{})
+		d.db, err = gorm.Open(postgres.Open(dns), &gorm.Config{
+			Logger: d,
+		})
 		if err != nil {
-			return nil, err
+			return err
 		}
-	}
-	if (c.GetDriver() != "mysql" && c.GetDriver() != "postgres") || c.GetDriver() == "sqlite" {
-		dbFilePath, err := utils.GetPackageStorePathByNames("database", "ocean.db")
+	default:
+		dbFilePath, err := utils.GetPackageStorePathByNames(DBDriverSQLite.String(), DatabaseName)
+		if err != nil {
+			return err
+		}
 		if dbFilePath != "" && !utils.IsFileExist(dbFilePath) {
-			path, filename := utils.GetFilePathAndName(dbFilePath)
-			file, err := utils.NewFile(path, filename, true)
+			dir, _ := filepath.Split(dbFilePath)
+			os.MkdirAll(dir, 0755)
+			file, err := os.Create(dbFilePath)
 			if err != nil {
-				return nil, err
+				return err
 			}
 			file.Close()
 		}
-		if dbFilePath == "" {
-			dbFilePath = "file::memory:?cache=shared"
-		}
-		client, err = gorm.Open(sqlite.Open(dbFilePath), &gorm.Config{})
+		d.db, err = gorm.Open(sqlite.Open(dbFilePath), &gorm.Config{})
 		if err != nil {
-			return nil, err
+			return err
 		}
 	}
 	// AutoMigrate
-	err = client.AutoMigrate(
+	err = d.db.AutoMigrate(
 		&biz.Cluster{},
 		&biz.NodeGroup{},
 		&biz.BostionHost{},
@@ -225,7 +248,37 @@ func newDB(c conf.Data) (*gorm.DB, error) {
 		&biz.AppHelmRepo{},
 	)
 	if err != nil {
-		return client, err
+		return err
 	}
-	return client, nil
+	return nil
+}
+
+func (d *Data) LogMode(level logger.LogLevel) logger.Interface {
+	d.dbLoggerLevel = level
+	return d
+}
+
+func (d *Data) Info(ctx context.Context, msg string, args ...interface{}) {
+	if d.dbLoggerLevel >= logger.Info {
+		d.log.WithContext(ctx).Infof(msg, args...)
+	}
+}
+
+func (d *Data) Warn(ctx context.Context, msg string, args ...interface{}) {
+	if d.dbLoggerLevel >= logger.Warn {
+		d.log.WithContext(ctx).Warnf(msg, args...)
+	}
+}
+
+func (d *Data) Error(ctx context.Context, msg string, args ...interface{}) {
+	if d.dbLoggerLevel >= logger.Error {
+		d.log.WithContext(ctx).Errorf(msg, args...)
+	}
+}
+
+func (d *Data) Trace(ctx context.Context, begin time.Time, fc func() (sql string, rowsAffected int64), err error) {
+	if d.dbLoggerLevel >= logger.Info {
+		sql, rows := fc()
+		d.log.WithContext(ctx).Infof("begin: %s, sql: %s, rows: %d, err: %v", begin.Format("2006-01-02 15:04:05"), sql, rows, err)
+	}
 }

@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package cloud.v1alpha1;
+
+import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
+import "api/cloud/v1alpha1/error_reason.proto";
+import "api/cloud/v1alpha1/message.proto";
+
+option go_package = "api/cloud/v1alpha1;v1alpha1";
+
+service CloudInterface {
+      rpc Ping(google.protobuf.Empty) returns (cloud.v1alpha1.Msg) {
+            option (google.api.http) = {
+              get: "/api/v1alpha1/cloud/ping"
+            };
+      }
+}

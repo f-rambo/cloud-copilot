@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"os/exec"
 	"path/filepath"
 	"sort"
@@ -83,12 +82,8 @@ var ARCH_MAP = map[string]string{
 }
 
 type ClusterInfrastructure struct {
-	log         *log.Helper
-	c           *conf.Bootstrap
-	projectName string
-	stack       string
-	plugins     []PulumiPlugin
-	env         map[string]string
+	log *log.Helper
+	c   *conf.Bootstrap
 }
 
 func NewClusterInfrastructure(c *conf.Bootstrap, logger log.Logger) biz.ClusterInfrastructure {
@@ -98,65 +93,19 @@ func NewClusterInfrastructure(c *conf.Bootstrap, logger log.Logger) biz.ClusterI
 	}
 }
 
-func (c *ClusterInfrastructure) SetProjectName(projectName string) *ClusterInfrastructure {
-	c.projectName = projectName
-	return c
-}
-
-func (c *ClusterInfrastructure) SetStackName(stackName string) *ClusterInfrastructure {
-	c.stack = stackName
-	return c
-}
-
-func (c *ClusterInfrastructure) SetPlugin(plugins ...PulumiPlugin) *ClusterInfrastructure {
-	if c.plugins == nil {
-		c.plugins = make([]PulumiPlugin, 0)
-	}
-	c.plugins = append(c.plugins, plugins...)
-	return c
-}
-
-func (c *ClusterInfrastructure) SetEnv(key, val string) *ClusterInfrastructure {
-	if c.env == nil {
-		c.env = make(map[string]string)
-	}
-	c.env[key] = val
-	return c
-}
-
-func (c *ClusterInfrastructure) buildAliCloudParam(cluster *biz.Cluster) {
-	c.SetProjectName(AlicloudProjectName).
-		SetStackName(AlicloudStackName).
-		SetPlugin(PulumiPlugin{Kind: PULUMI_ALICLOUD, Version: PULUMI_ALICLOUD_VERSION}, PulumiPlugin{Kind: PULUMI_KUBERNETES, Version: PULUMI_KUBERNETES_VERSION}).
-		SetEnv("ALICLOUD_ACCESS_KEY", cluster.AccessID).
-		SetEnv("ALICLOUD_SECRET_KEY", cluster.AccessKey).
-		SetEnv("ALICLOUD_REGION", cluster.Region)
-}
-
-func (c *ClusterInfrastructure) buildAwsCloudParam(cluster *biz.Cluster) {
-	c.SetProjectName(AWS_PROJECT).
-		SetStackName(AWS_STACK).
-		SetPlugin(PulumiPlugin{Kind: PULUMI_AWS, Version: PULUMI_AWS_VERSION}, PulumiPlugin{Kind: PULUMI_KUBERNETES, Version: PULUMI_KUBERNETES_VERSION}).
-		SetEnv("AWS_ACCESS_KEY_ID", cluster.AccessID).
-		SetEnv("AWS_SECRET_ACCESS_KEY", cluster.AccessKey).
-		SetEnv("AWS_DEFAULT_REGION", cluster.Region)
-}
-
 func (c *ClusterInfrastructure) Start(ctx context.Context, cluster *biz.Cluster) error {
 	if cluster.GetType() == biz.ClusterTypeLocal {
 		return nil
 	}
 	if cluster.GetType() == biz.ClusterTypeAliCloud {
-		c.buildAliCloudParam(cluster)
-		_, err := c.pulumiExec(ctx, StartAlicloudCluster(cluster).StartServers, cluster)
+		_, err := c.pulumiExec(ctx, cluster, StartAlicloudCluster(cluster).StartServers)
 		if err != nil {
 			return err
 		}
 		return nil
 	}
 	if cluster.GetType() == biz.ClusterTypeAWS {
-		c.buildAwsCloudParam(cluster)
-		output, err := c.pulumiExec(ctx, StartEc2Instance(cluster).Start, cluster)
+		output, err := c.pulumiExec(ctx, cluster, StartEc2Instance(cluster).Start)
 		if err != nil {
 			return err
 		}
@@ -196,16 +145,14 @@ func (c *ClusterInfrastructure) Stop(ctx context.Context, cluster *biz.Cluster) 
 		return nil
 	}
 	if cluster.GetType() == biz.ClusterTypeAliCloud {
-		c.buildAliCloudParam(cluster)
-		_, err := c.pulumiExec(ctx, StartAlicloudCluster(cluster).Clear, cluster)
+		_, err := c.pulumiExec(ctx, cluster, StartAlicloudCluster(cluster).Clear)
 		if err != nil {
 			return err
 		}
 		return nil
 	}
 	if cluster.GetType() == biz.ClusterTypeAWS {
-		c.buildAwsCloudParam(cluster)
-		_, err := c.pulumiExec(ctx, StartEc2Instance(cluster).Clear, cluster)
+		_, err := c.pulumiExec(ctx, cluster, StartEc2Instance(cluster).Clear)
 		if err != nil {
 			return err
 		}
@@ -223,42 +170,20 @@ func (c *ClusterInfrastructure) Import(ctx context.Context, cluster *biz.Cluster
 		return nil
 	}
 	if cluster.GetType() == biz.ClusterTypeAliCloud {
-		c.buildAliCloudParam(cluster)
-		_, err := c.pulumiExec(ctx, StartAlicloudCluster(cluster).Import, cluster)
+		_, err := c.pulumiExec(ctx, cluster, StartAlicloudCluster(cluster).Import)
 		if err != nil {
 			return err
 		}
 		return nil
 	}
 	if cluster.GetType() == biz.ClusterTypeAWS {
-		ec2InstanceObj := StartEc2Instance(cluster)
-		c.buildAwsCloudParam(cluster)
-		_, err := c.pulumiExec(ctx, ec2InstanceObj.Import, cluster)
+		_, err := c.pulumiExec(ctx, cluster, StartEc2Instance(cluster).Import)
 		if err != nil {
 			return err
 		}
 		return nil
 	}
 	return errors.New("not support cluster type")
-}
-
-// preview is true, only preview the pulumi resources
-func (c *ClusterInfrastructure) pulumiExec(ctx context.Context, pulumiFunc PulumiFunc, w io.Writer, preview ...bool) (output string, err error) {
-	pulumiObj := NewPulumiAPI(ctx, w).
-		ProjectName(c.projectName).
-		StackName(c.stack).
-		Plugin(c.plugins...).
-		Env(c.env).
-		RegisterDeployFunc(pulumiFunc)
-	if len(preview) > 0 && preview[0] {
-		output, err = pulumiObj.Preview(ctx)
-	} else {
-		output, err = pulumiObj.Up(ctx)
-	}
-	if err != nil {
-		return "", err
-	}
-	return output, err
 }
 
 func (cc *ClusterInfrastructure) MigrateToBostionHost(ctx context.Context, cluster *biz.Cluster) error {
@@ -272,8 +197,8 @@ func (cc *ClusterInfrastructure) MigrateToBostionHost(ctx context.Context, clust
 	if cluster.BostionHost.ExternalIP == "" {
 		return errors.New("bostion host external ip is empty")
 	}
-	if cluster.BostionHost.Port == 0 {
-		cluster.BostionHost.Port = 22
+	if cluster.BostionHost.SshPort == 0 {
+		cluster.BostionHost.SshPort = 22
 	}
 	if cluster.BostionHost.ARCH == "" {
 		output, err := exec.Command("uname", "-i").CombinedOutput()
@@ -300,19 +225,19 @@ func (cc *ClusterInfrastructure) MigrateToBostionHost(ctx context.Context, clust
 		return errors.Wrap(err, string(output))
 	}
 	// scp to bostion host
-	output, err = exec.Command("scp", "-r", "-P", fmt.Sprintf("%d", cluster.BostionHost.Port), oceanDataTargzPackagePath,
+	output, err = exec.Command("scp", "-r", "-P", fmt.Sprintf("%d", cluster.BostionHost.SshPort), oceanDataTargzPackagePath,
 		fmt.Sprintf("%s@%s:%s", cluster.BostionHost.Username, cluster.BostionHost.ExternalIP, oceanDataTargzPackagePath)).CombinedOutput()
 	if err != nil {
 		return errors.Wrap(err, string(output))
 	}
 	// scp to bostion host
-	output, err = exec.Command("scp", "-r", "-P", fmt.Sprintf("%d", cluster.BostionHost.Port), oceanDataTsha256sumFilePath,
+	output, err = exec.Command("scp", "-r", "-P", fmt.Sprintf("%d", cluster.BostionHost.SshPort), oceanDataTsha256sumFilePath,
 		fmt.Sprintf("%s@%s:%s", cluster.BostionHost.Username, cluster.BostionHost.ExternalIP, oceanDataTsha256sumFilePath)).CombinedOutput()
 	if err != nil {
 		return errors.Wrap(err, string(output))
 	}
 	output, err = exec.Command("echo", installScript, "|", "ssh",
-		fmt.Sprintf("%s@%s -p %d", cluster.BostionHost.Username, cluster.BostionHost.ExternalIP, cluster.BostionHost.Port),
+		fmt.Sprintf("%s@%s -p %d", cluster.BostionHost.Username, cluster.BostionHost.ExternalIP, cluster.BostionHost.SshPort),
 		"sudo bash -s %s %s %s", cluster.BostionHost.ARCH, oceanAppVersion, shipAppVersion).CombinedOutput()
 	if err != nil {
 		return errors.Wrap(err, string(output))
@@ -331,53 +256,22 @@ func (cc *ClusterInfrastructure) Install(ctx context.Context, cluster *biz.Clust
 			return err
 		}
 	}
-	serversInitPlaybook := getServerInitPlaybook()
-	clusterPath, err := utils.GetPackageStorePathByNames(biz.ClusterPackageName)
-	if err != nil {
-		return err
-	}
-	serversInitPlaybookPath, err := savePlaybook(clusterPath, serversInitPlaybook)
-	if err != nil {
-		return err
-	}
-	_, err = cc.ansibleExec(ctx, cluster, clusterPath, serversInitPlaybookPath, cc.generatingNodes(cluster))
-	if err != nil {
-		return err
-	}
-	_, err = cc.kubespray(ctx, cluster, GetClusterPlaybookPath())
-	if err != nil {
-		return err
-	}
+	//...
 	return nil
 }
 
 func (cc *ClusterInfrastructure) UnInstall(ctx context.Context, cluster *biz.Cluster) error {
-	_, err := cc.kubespray(ctx, cluster, GetResetPlaybookPath())
-	if err != nil {
-		return err
-	}
+
 	return nil
 }
 
 func (cc *ClusterInfrastructure) AddNodes(ctx context.Context, cluster *biz.Cluster, nodes []*biz.Node) error {
-	for _, node := range nodes {
-		log.Info("add node", "name", node.Name, "ip", node.ExternalIP, "role", node.Role)
-	}
-	_, err := cc.kubespray(ctx, cluster, GetScalePlaybookPath())
-	if err != nil {
-		return err
-	}
+
 	return nil
 }
 
 func (cc *ClusterInfrastructure) RemoveNodes(ctx context.Context, cluster *biz.Cluster, nodes []*biz.Node) error {
-	for _, node := range nodes {
-		log.Info("remove node", "name", node.Name, "ip", node.ExternalIP, "role", node.Role)
-		_, err := cc.kubespray(ctx, cluster, GetRemoveNodePlaybookPath(), map[string]string{"node": node.Name})
-		if err != nil {
-			return err
-		}
-	}
+
 	return nil
 }
 
@@ -397,12 +291,12 @@ func (cc *ClusterInfrastructure) distributeShipServer(ctx context.Context, clust
 			if node.User == "" {
 				return errors.New("node user is empty")
 			}
-			if node.Port == 0 {
-				node.Port = 22
+			if node.SshPort == 0 {
+				node.SshPort = 22
 			}
 			arch := node.NodeGroup.ARCH
 			if arch == "" {
-				output, err := exec.Command("echo", "uname -i", "|", "ssh", fmt.Sprintf("%s@%s -p %d", node.User, node.InternalIP, node.Port),
+				output, err := exec.Command("echo", "uname -i", "|", "ssh", fmt.Sprintf("%s@%s -p %d", node.User, node.InternalIP, node.SshPort),
 					"sudo bash -s").CombinedOutput()
 				if err != nil {
 					return errors.Wrap(err, string(output))
@@ -417,18 +311,17 @@ func (cc *ClusterInfrastructure) distributeShipServer(ctx context.Context, clust
 				return errors.New("node arch is empty")
 			}
 			shipArchPath := fmt.Sprintf("%s/%s", shipPath, node.NodeGroup.ARCH)
-			output, err := exec.Command("scp", "-r", "-P", fmt.Sprintf("%d", node.Port), shipArchPath,
+			output, err := exec.Command("scp", "-r", "-P", fmt.Sprintf("%d", node.SshPort), shipArchPath,
 				fmt.Sprintf("%s@%s:%s", node.User, node.InternalIP, shipPath)).CombinedOutput()
 			if err != nil {
 				return errors.Wrap(err, string(output))
 			}
 			output, err = exec.Command("echo", shipStartScript, "|", "ssh",
-				fmt.Sprintf("%s@%s -p %d", node.User, node.InternalIP, node.Port),
+				fmt.Sprintf("%s@%s -p %d", node.User, node.InternalIP, node.SshPort),
 				"sudo bash -s %s", shipPath).CombinedOutput()
 			if err != nil {
 				return errors.Wrap(err, string(output))
 			}
-			// grpc connect....
 			return nil
 		})
 	}
@@ -512,138 +405,50 @@ func (cc *ClusterInfrastructure) generateInitialLocal(ctx context.Context, clust
 	return nil
 }
 
-func (cc *ClusterInfrastructure) getNodesInformation(ctx context.Context, cluster *biz.Cluster) error {
-	playbook := getSystemInformation()
-	clusterPath, err := utils.GetPackageStorePathByNames(biz.ClusterPackageName)
-	if err != nil {
-		return err
-	}
-	playbookPath, err := savePlaybook(clusterPath, playbook)
-	if err != nil {
-		return err
-	}
-	output, err := cc.ansibleExec(ctx, cluster, clusterPath, playbookPath, cc.generatingNodes(cluster))
-	if err != nil {
-		return err
-	}
-	resultMaps := make([]map[string]interface{}, 0)
-	for {
-		startIndex := strings.Index(output, StartOutputKey.String())
-		if startIndex == -1 {
-			break
-		}
-		endIndex := strings.Index(output, EndOutputKey.String())
-		if endIndex == -1 {
-			break
-		}
-		startIndex += len(StartOutputKey.String())
-		if startIndex >= endIndex {
-			break
-		}
-		result := output[startIndex:endIndex]
-		if result != "" {
-			unescapedResult := strings.ReplaceAll(result, `\"`, `"`)
-			resultMap := make(map[string]interface{})
-			err = json.Unmarshal([]byte(unescapedResult), &resultMap)
-			if err != nil {
-				return err
-			}
-			resultMaps = append(resultMaps, resultMap)
-		}
-		output = output[endIndex+len(EndOutputKey.String()):]
-	}
-	getNodeResult := func(nodeID int64) map[string]interface{} {
-		for _, resultMap := range resultMaps {
-			if _, ok := resultMap["node_id"]; ok && cast.ToInt64(resultMap["node_id"]) == nodeID {
-				return resultMap
-			}
-		}
-		return nil
-	}
+func (cc *ClusterInfrastructure) getNodesInformation(_ context.Context, cluster *biz.Cluster) error {
 	for _, node := range cluster.Nodes {
-		resultMap := getNodeResult(node.ID)
-		nodeGroup := &biz.NodeGroup{}
-		for k, v := range resultMap {
-			switch k {
-			case "gpu_number":
-				nodeGroup.GPU = cast.ToInt32(v)
-			case "gpu_spec":
-				nodeGroup.GpuSpec = cast.ToString(v)
-			case "cpu_number":
-				nodeGroup.CPU = cast.ToInt32(v)
-			case "memory":
-				nodeGroup.Memory = cast.ToFloat64(v)
-			case "disk":
-				nodeGroup.SystemDisk = cast.ToInt32(v)
-			case "os_info":
-				nodeGroup.OS = cast.ToString(v)
-			}
-		}
-		node.NodeGroup = nodeGroup
-		node.Kernel = cast.ToString(resultMap["kernel_info"])
-		node.Container = cast.ToString(resultMap["container_version"])
-		node.InternalIP = cast.ToString(resultMap["ip"])
+		fmt.Println(node)
 	}
-	nodeGroupMap := make(map[string]*biz.NodeGroup)
-	for _, node := range cluster.Nodes {
-		nodeGroupName := fmt.Sprintf("gpu-%d-gpu_spec-%s-cpu-%d-mem-%d-disk-%d",
-			node.NodeGroup.GPU, node.NodeGroup.GpuSpec, node.NodeGroup.CPU, int(node.NodeGroup.Memory), node.NodeGroup.DataDisk)
-		node.NodeGroup.Name = nodeGroupName
-		nodeGroupMap[nodeGroupName] = node.NodeGroup
-	}
-	nodeGroups := make([]*biz.NodeGroup, 0)
-	for _, nodeGroup := range nodeGroupMap {
-		nodeGroups = append(nodeGroups, nodeGroup)
-	}
-	cluster.NodeGroups = nodeGroups
 	return nil
 }
 
-func (cc *ClusterInfrastructure) kubespray(ctx context.Context, cluster *biz.Cluster, playbook string, env ...map[string]string) (string, error) {
-	kubespray, err := NewKubespray()
-	if err != nil {
-		return "", errors.Wrap(err, "new kubespray error")
+// preview is true, only preview the pulumi resources
+func (c *ClusterInfrastructure) pulumiExec(ctx context.Context, cluster *biz.Cluster, pulumiFunc PulumiFunc, preview ...bool) (output string, err error) {
+	pulumiObj := NewPulumiAPI(ctx, cluster)
+	if cluster.Type == biz.ClusterTypeAliCloud {
+		pulumiObj.ProjectName(AlicloudProjectName).
+			StackName(AlicloudStackName).
+			Plugin([]PulumiPlugin{
+				{Kind: PULUMI_ALICLOUD, Version: PULUMI_ALICLOUD_VERSION},
+				{Kind: PULUMI_KUBERNETES, Version: PULUMI_KUBERNETES_VERSION},
+			}...).
+			Env(map[string]string{
+				"ALICLOUD_ACCESS_KEY": cluster.AccessID,
+				"ALICLOUD_SECRET_KEY": cluster.AccessKey,
+				"ALICLOUD_REGION":     cluster.Region,
+			})
 	}
-	mateDataMap := make(map[string]string)
-	for _, node := range cluster.Nodes {
-		mateDataMap[node.Name] = node.ExternalIP
+	if cluster.Type == biz.ClusterTypeAWS {
+		pulumiObj.ProjectName(AWS_PROJECT).
+			StackName(AWS_STACK).
+			Plugin([]PulumiPlugin{
+				{Kind: PULUMI_AWS, Version: PULUMI_AWS_VERSION},
+				{Kind: PULUMI_KUBERNETES, Version: PULUMI_KUBERNETES_VERSION},
+			}...).
+			Env(map[string]string{
+				"AWS_ACCESS_KEY_ID":     cluster.AccessID,
+				"AWS_SECRET_ACCESS_KEY": cluster.AccessKey,
+				"AWS_DEFAULT_REGION":    cluster.Region,
+			})
 	}
-	if len(env) > 0 && env[0] != nil {
-		return cc.ansibleExec(ctx, cluster, kubespray.GetPackagePath(), playbook, cc.generatingNodes(cluster), env[0], mateDataMap)
+	pulumiObj.RegisterDeployFunc(pulumiFunc)
+	if len(preview) > 0 && preview[0] {
+		output, err = pulumiObj.Preview(ctx)
+	} else {
+		output, err = pulumiObj.Up(ctx)
 	}
-	return cc.ansibleExec(ctx, cluster, kubespray.GetPackagePath(), playbook, cc.generatingNodes(cluster), nil, mateDataMap)
-}
-
-func (cc *ClusterInfrastructure) generatingNodes(cluster *biz.Cluster) []Server {
-	servers := make([]Server, 0)
-	for _, node := range cluster.Nodes {
-		servers = append(servers, Server{Ip: node.ExternalIP, Username: node.User, ID: cast.ToString(node.ID), Role: node.Role.String()})
-	}
-	return servers
-}
-
-func (cc *ClusterInfrastructure) ansibleExec(ctx context.Context, cluster *biz.Cluster, cmdRunDir string, playbook string, servers []Server, envAndMateData ...map[string]string) (string, error) {
-	env := make(map[string]string)
-	mateData := make(map[string]string)
-	if len(envAndMateData) > 0 && envAndMateData[0] != nil {
-		env = envAndMateData[0]
-	}
-	if len(envAndMateData) > 1 && envAndMateData[1] != nil {
-		mateData = envAndMateData[1]
-	}
-	ansibleObj, err := NewGoAnsiblePkg(cluster)
-	if err != nil {
-		return "", err
-	}
-	output, err := ansibleObj.
-		SetServers(servers...).
-		SetCmdRunDir(cmdRunDir).
-		SetPlaybooks(playbook).
-		SetMatedataMap(mateData).
-		SetEnvMap(env).
-		ExecPlayBooks(ctx)
 	if err != nil {
 		return "", err
 	}
-	return output, nil
+	return output, err
 }
