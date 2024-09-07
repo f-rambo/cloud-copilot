@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/f-rambo/ocean/internal/conf"
 	"github.com/f-rambo/ocean/utils"
@@ -20,7 +21,7 @@ const (
 type Cluster struct {
 	ID               int64         `json:"id" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
 	Name             string        `json:"name" gorm:"column:name; default:''; NOT NULL"` // *
-	ServerVersion    string        `json:"server_version" gorm:"column:server_version; default:''; NOT NULL"`
+	Version          string        `json:"version" gorm:"column:version; default:''; NOT NULL"`
 	ApiServerAddress string        `json:"api_server_address" gorm:"column:api_server_address; default:''; NOT NULL"`
 	Config           string        `json:"config" gorm:"column:config; default:''; NOT NULL;"`
 	Addons           string        `json:"addons" gorm:"column:addons; default:''; NOT NULL;"`
@@ -45,53 +46,51 @@ type Cluster struct {
 }
 
 type NodeGroup struct {
-	ID                      int64         `json:"id" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
-	Name                    string        `json:"name" gorm:"column:name; default:''; NOT NULL"`
-	Type                    NodeGroupType `json:"type" gorm:"column:type; default:''; NOT NULL;"`
-	InstanceType            string        `json:"instance_type" gorm:"column:instance_type; default:''; NOT NULL"`
-	ImageID                 string        `json:"image_id" gorm:"column:image_id; default:''; NOT NULL"`
-	Image                   string        `json:"image" gorm:"column:image; default:''; NOT NULL"`
-	OS                      string        `json:"os" gorm:"column:os; default:''; NOT NULL"`
-	ARCH                    string        `json:"arch" gorm:"column:arch; default:''; NOT NULL"`
-	CPU                     int32         `json:"cpu" gorm:"column:cpu; default:0; NOT NULL"`
-	Memory                  float64       `json:"memory" gorm:"column:memory; default:0; NOT NULL"`
-	GPU                     int32         `json:"gpu" gorm:"column:gpu; default:0; NOT NULL"`
-	GpuSpec                 string        `json:"gpu_spec" gorm:"column:gpu_spec; default:''; NOT NULL"`      // NVIDIA Tesla V100（训练）、NVIDIA A100 Tensor Core、NVIDIA T4 GPU（推理）、NVIDIA A10G Tensor Core
-	SystemDisk              int32         `json:"system_disk" gorm:"column:system_disk; default:0; NOT NULL"` // 随着服务释放掉的存储空间
-	DataDisk                int32         `json:"data_disk" gorm:"column:data_disk; default:0; NOT NULL"`     // 挂载的存储空间
-	InternetMaxBandwidthOut int32         `json:"internet_max_bandwidth_out" gorm:"column:internet_max_bandwidth_out; default:0; NOT NULL"`
-	NodeInitScript          string        `json:"cloud_init_script" gorm:"column:cloud_init_script; default:''; NOT NULL"`
-	MinSize                 int32         `json:"min_size" gorm:"column:min_size; default:0; NOT NULL"`
-	MaxSize                 int32         `json:"max_size" gorm:"column:max_size; default:0; NOT NULL"`
-	TargetSize              int32         `json:"target_size" gorm:"column:target_size; default:0; NOT NULL"`
-	NodePrice               float64       `json:"node_price" gorm:"column:node_price; default:0; NOT NULL;"` // 节点价格
-	PodPrice                float64       `json:"pod_price" gorm:"column:pod_price; default:0; NOT NULL;"`   // 节点上pod的价格
-	ClusterID               int64         `json:"cluster_id" gorm:"column:cluster_id; default:0; NOT NULL"`
+	ID             int64         `json:"id" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
+	Name           string        `json:"name" gorm:"column:name; default:''; NOT NULL"`
+	Type           NodeGroupType `json:"type" gorm:"column:type; default:''; NOT NULL;"`
+	InstanceType   string        `json:"instance_type" gorm:"column:instance_type; default:''; NOT NULL"`
+	Image          string        `json:"image" gorm:"column:image; default:''; NOT NULL"`
+	OS             string        `json:"os" gorm:"column:os; default:''; NOT NULL"`        //*
+	ARCH           string        `json:"arch" gorm:"column:arch; default:''; NOT NULL"`    //*
+	CPU            int32         `json:"cpu" gorm:"column:cpu; default:0; NOT NULL"`       //*
+	Memory         float64       `json:"memory" gorm:"column:memory; default:0; NOT NULL"` //*
+	GPU            int32         `json:"gpu" gorm:"column:gpu; default:0; NOT NULL"`       //*
+	NodeInitScript string        `json:"cloud_init_script" gorm:"column:cloud_init_script; default:''; NOT NULL"`
+	MinSize        int32         `json:"min_size" gorm:"column:min_size; default:0; NOT NULL"`
+	MaxSize        int32         `json:"max_size" gorm:"column:max_size; default:0; NOT NULL"`
+	TargetSize     int32         `json:"target_size" gorm:"column:target_size; default:0; NOT NULL"`
+	ClusterID      int64         `json:"cluster_id" gorm:"column:cluster_id; default:0; NOT NULL"`
 }
 
 type Node struct {
-	ID          int64      `json:"id" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
-	InstanceID  string     `json:"instance_id" gorm:"column:instance_id; default:''; NOT NULL"`
-	Name        string     `json:"name" gorm:"column:name; default:''; NOT NULL"`
-	Labels      string     `json:"labels" gorm:"column:labels; default:''; NOT NULL"` // map[string]string json
-	Kernel      string     `json:"kernel" gorm:"column:kernel; default:''; NOT NULL"`
-	Container   string     `json:"container" gorm:"column:container; default:''; NOT NULL"`
-	Kubelet     string     `json:"kubelet" gorm:"column:kubelet; default:''; NOT NULL"`
-	KubeProxy   string     `json:"kube_proxy" gorm:"column:kube_proxy; default:''; NOT NULL"`
-	SshPort     int32      `json:"ssh_port" gorm:"column:ssh_port; default:0; NOT NULL"`
-	InternalIP  string     `json:"internal_ip" gorm:"column:internal_ip; default:''; NOT NULL"`
-	ExternalIP  string     `json:"external_ip" gorm:"column:external_ip; default:''; NOT NULL"`
-	User        string     `json:"user" gorm:"column:user; default:''; NOT NULL"`
-	Role        NodeRole   `json:"role" gorm:"column:role; default:''; NOT NULL;"` // master worker edge
-	Status      NodeStatus `json:"status" gorm:"column:status; default:0; NOT NULL;"`
-	ErrorInfo   string     `json:"error_info" gorm:"column:error_info; default:''; NOT NULL"`
-	ClusterID   int64      `json:"cluster_id" gorm:"column:cluster_id; default:0; NOT NULL"`
-	NodeGroupID int64      `json:"node_group_id" gorm:"column:node_group_id; default:0; NOT NULL"`
-	Zone        string     `json:"zone" gorm:"column:zone; default:''; NOT NULL"`
-	SubnetId    string     `json:"subnet_id" gorm:"column:subnet_id; default:''; NOT NULL"`
-	SubnetCidr  string     `json:"subnet_cidr" gorm:"column:subnet_cidr; default:''; NOT NULL"`
-	PublicKey   string     `json:"public_key" gorm:"column:public_key; default:''; NOT NULL;"` // *
-	NodeGroup   *NodeGroup `json:"node_group" gorm:"-"`
+	ID                      int64      `json:"id" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
+	InstanceID              string     `json:"instance_id" gorm:"column:instance_id; default:''; NOT NULL"`
+	Name                    string     `json:"name" gorm:"column:name; default:''; NOT NULL"`
+	Labels                  string     `json:"labels" gorm:"column:labels; default:''; NOT NULL"` // map[string]string json
+	Kernel                  string     `json:"kernel" gorm:"column:kernel; default:''; NOT NULL"`
+	ContainerRuntime        string     `json:"container_runtime" gorm:"column:container_runtime; default:''; NOT NULL"`
+	Kubelet                 string     `json:"kubelet" gorm:"column:kubelet; default:''; NOT NULL"`
+	KubeProxy               string     `json:"kube_proxy" gorm:"column:kube_proxy; default:''; NOT NULL"`
+	SshPort                 int32      `json:"ssh_port" gorm:"column:ssh_port; default:0; NOT NULL"`
+	InternalIP              string     `json:"internal_ip" gorm:"column:internal_ip; default:''; NOT NULL"`
+	ExternalIP              string     `json:"external_ip" gorm:"column:external_ip; default:''; NOT NULL"`
+	User                    string     `json:"user" gorm:"column:user; default:''; NOT NULL"`
+	Role                    NodeRole   `json:"role" gorm:"column:role; default:''; NOT NULL;"` // master worker edge
+	Status                  NodeStatus `json:"status" gorm:"column:status; default:0; NOT NULL;"`
+	ErrorInfo               string     `json:"error_info" gorm:"column:error_info; default:''; NOT NULL"`
+	Zone                    string     `json:"zone" gorm:"column:zone; default:''; NOT NULL"`
+	SubnetId                string     `json:"subnet_id" gorm:"column:subnet_id; default:''; NOT NULL"`
+	SubnetCidr              string     `json:"subnet_cidr" gorm:"column:subnet_cidr; default:''; NOT NULL"`
+	PublicKey               string     `json:"public_key" gorm:"column:public_key; default:''; NOT NULL;"`
+	SystemDisk              int32      `json:"system_disk" gorm:"column:system_disk; default:0; NOT NULL"`
+	GpuSpec                 string     `json:"gpu_spec" gorm:"column:gpu_spec; default:''; NOT NULL"`
+	DataDisk                int32      `json:"data_disk" gorm:"column:data_disk; default:0; NOT NULL"`
+	NodePrice               float64    `json:"node_price" gorm:"column:node_price; default:0; NOT NULL;"` // 节点价格
+	PodPrice                float64    `json:"pod_price" gorm:"column:pod_price; default:0; NOT NULL;"`   // 节点上pod的价格
+	InternetMaxBandwidthOut int32      `json:"internet_max_bandwidth_out" gorm:"column:internet_max_bandwidth_out; default:0; NOT NULL"`
+	ClusterID               int64      `json:"cluster_id" gorm:"column:cluster_id; default:0; NOT NULL"`
+	NodeGroupID             int64      `json:"node_group_id" gorm:"column:node_group_id; default:0; NOT NULL"`
 	gorm.Model
 }
 
@@ -187,25 +186,25 @@ var (
 	}
 )
 
-type Nodes []*Node
+type NodeGroups []*NodeGroup
 
-func (n Nodes) Len() int {
+func (n NodeGroups) Len() int {
 	return len(n)
 }
 
-func (n Nodes) Swap(i, j int) {
+func (n NodeGroups) Swap(i, j int) {
 	n[i], n[j] = n[j], n[i]
 }
 
 // 从小到大排序
-func (n Nodes) Less(i, j int) bool {
-	if n[i].NodeGroup == nil || n[j].NodeGroup == nil {
+func (n NodeGroups) Less(i, j int) bool {
+	if n[i] == nil || n[j] == nil {
 		return false
 	}
-	if n[i].NodeGroup.Memory == n[j].NodeGroup.Memory {
-		return n[i].NodeGroup.CPU < n[j].NodeGroup.CPU
+	if n[i].Memory == n[j].Memory {
+		return n[i].CPU < n[j].CPU
 	}
-	return n[i].NodeGroup.Memory < n[j].NodeGroup.Memory
+	return n[i].Memory < n[j].Memory
 }
 
 type NodeGroupType string
@@ -342,6 +341,19 @@ func (c *Cluster) GetType() ClusterType {
 
 func (n *Node) GetStatus() NodeStatus {
 	return NodeStatus(n.Status)
+}
+
+func (c *Cluster) GetNodeGroup(nodeGroupId int64) *NodeGroup {
+	for _, nodeGroup := range c.NodeGroups {
+		if nodeGroup.ID == nodeGroupId {
+			return nodeGroup
+		}
+	}
+	return nil
+}
+
+func (c *Cluster) GenerateNodeGroupName(nodeGroup *NodeGroup) string {
+	return strings.Join([]string{c.Name, nodeGroup.Name, nodeGroup.Type.String()}, "-")
 }
 
 type ClusterUsecase struct {

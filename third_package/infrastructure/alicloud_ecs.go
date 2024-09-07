@@ -392,10 +392,10 @@ func (a *AlicloudCluster) nodes(ctx *pulumi.Context) error {
 				SecurityGroups:          pulumi.StringArray{a.sgID},
 				InstanceType:            pulumi.String(nodeGroup.InstanceType),
 				ImageId:                 pulumi.String(imageID),
-				InternetMaxBandwidthOut: pulumi.Int(nodeGroup.InternetMaxBandwidthOut), // 出网带宽
+				InternetMaxBandwidthOut: pulumi.Int(node.InternetMaxBandwidthOut), // 出网带宽
 				SystemDiskCategory:      pulumi.String("cloudEssd"),
 				SystemDiskName:          pulumi.String(fmt.Sprintf("system_disk_%s", node.Name)),
-				SystemDiskSize:          pulumi.Int(nodeGroup.SystemDisk),
+				SystemDiskSize:          pulumi.Int(node.SystemDisk),
 				KeyName:                 pulumi.String(keyPairName),
 				ResourceGroupId:         a.resourceGroupID,
 			}
@@ -414,10 +414,10 @@ func (a *AlicloudCluster) nodes(ctx *pulumi.Context) error {
 				}
 				instanceArgs.Tags = tags
 			}
-			if nodeGroup.DataDisk != 0 {
+			if node.DataDisk != 0 {
 				instanceArgs.DataDisks = ecs.InstanceDataDiskArray{
 					&ecs.InstanceDataDiskArgs{
-						Size:     pulumi.Int(nodeGroup.DataDisk),
+						Size:     pulumi.Int(node.DataDisk),
 						Category: pulumi.String("cloudEssd"),
 						Name:     pulumi.String(fmt.Sprintf("data_disk_%s", node.Name)),
 						Device:   pulumi.String(fmt.Sprintf("/dev/vdb%s", node.Name)),
@@ -461,7 +461,6 @@ func (a *AlicloudCluster) Get(ctx *pulumi.Context) error {
 	}
 	var vpcId, resourceGroupID, sgIDs, eipID string
 	instanceTypes := make(map[string]struct{})
-	nodeGroupsByNodes := make(map[string]*biz.NodeGroup)
 	for _, node := range a.cluster.Nodes {
 		for _, instance := range instances.Instances {
 			if node.InternalIP == instance.PrivateIp {
@@ -476,20 +475,14 @@ func (a *AlicloudCluster) Get(ctx *pulumi.Context) error {
 					eipID = instance.Eip
 				}
 				instanceTypes[instance.InstanceType] = struct{}{}
-				ng := &biz.NodeGroup{
-					OS:                      instance.ImageId,
-					InstanceType:            instance.InstanceType,
-					InternetMaxBandwidthOut: int32(instance.InternetMaxBandwidthOut),
-				}
 				for _, v := range instance.DiskDeviceMappings {
 					if v.Type == "system disk" {
-						ng.SystemDisk += int32(v.Size)
+						node.SystemDisk += int32(v.Size)
 					}
 					if v.Type == "data disk" {
-						ng.DataDisk += int32(v.Size)
+						node.DataDisk += int32(v.Size)
 					}
 				}
-				nodeGroupsByNodes[node.InstanceID] = ng
 				break
 			}
 		}
@@ -517,26 +510,14 @@ func (a *AlicloudCluster) Get(ctx *pulumi.Context) error {
 		for _, v := range instanceTypes.InstanceTypes {
 			if v.Gpu.Amount != "" {
 				nodeGroup.GPU = cast.ToInt32(v.Gpu.Amount)
-				nodeGroup.GpuSpec = v.Gpu.Category
 				nodeGroup.Type = biz.NodeGroupTypeGPUAcceleraterd
 			} else {
 				nodeGroup.Type = biz.NodeGroupTypeNormal
 			}
 			nodeGroup.CPU = int32(v.CpuCoreCount)
 			nodeGroup.Memory = v.MemorySize
-			nodeGroup.NodePrice = cast.ToFloat64(v.Price)
 		}
 		nodeGroups = append(nodeGroups, nodeGroup)
-	}
-	for _, ng := range nodeGroups {
-		for _, v := range nodeGroupsByNodes {
-			if v.InstanceType == ng.InstanceType {
-				ng.OS = v.OS
-				ng.SystemDisk = v.SystemDisk
-				ng.DataDisk = v.DataDisk
-				ng.InternetMaxBandwidthOut = v.InternetMaxBandwidthOut
-			}
-		}
 	}
 	a.cluster.NodeGroups = nodeGroups
 	return nil

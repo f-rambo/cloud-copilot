@@ -147,6 +147,8 @@ supervisorctl status
 
 var shipStartScript string = `#!/bin/bash
 
+# ship server not network
+
 SHIP_TARGET_DIR=$1
 
 if [ -z "$SHIP_TARGET_DIR" ]; then
@@ -154,44 +156,35 @@ if [ -z "$SHIP_TARGET_DIR" ]; then
     exit 1
 fi
 
-install_tools() {
-    if [ -f /etc/debian_version ]; then
-        apt update
-        apt install -y supervisor net-tools || { echo "Failed to install tools"; exit 1; }
-    elif [ -f /etc/redhat-release ]; then
-        yum update -y
-        yum install -y supervisor net-tools || { echo "Failed to install tools"; exit 1; }
-    else
-        echo "unknown system type"
-        exit 1
-    fi
-}
-
-install_tools
-
 chmod +x $SHIP_TARGET_DIR/bin/ship
 
-# Create supervisor configuration for ship
-SUPERVISOR_CONF_DIR="/etc/supervisor/conf.d"
-SHIP_SUPERVISOR_CONF="$SUPERVISOR_CONF_DIR/ship.conf"
+# Start the ship service
+$SHIP_TARGET_DIR/bin/ship -conf $SHIP_TARGET_DIR/configs/ &
 
-cat <<EOF > $SHIP_SUPERVISOR_CONF
-[program:ship]
-command=$SHIP_TARGET_DIR/bin/ship -conf $SHIP_TARGET_DIR/configs/
-autostart=true
-autorestart=true
-stderr_logfile=/var/log/ship.err.log
-stdout_logfile=/var/log/ship.out.log
-EOF
+# Check if the ship service started successfully
+if [ $? -eq 0 ]; then
+    echo "Ship service started successfully."
+else
+    echo "Failed to start ship service."
+    exit 1
+fi`
 
-# Start supervisord
-supervisord -c /etc/supervisor/supervisord.conf
+var downloadAndCopyScript string = `#!/bin/bash
 
-# Reload supervisor to apply the new configuration
-supervisorctl reread
-supervisorctl update
-supervisorctl start ship
+# Parameters
+DOWNLOAD_URL=$1
+FILE_NAME=$2
+SERVER_IP=$3
+USER_NAME=$4
+PORT=$5
+SERVER_FILE_PATH=$6
 
-# Query the status of all services managed by supervisor
-supervisorctl status
+# Download the file
+wget -O $FILE_NAME $DOWNLOAD_URL
+
+# Copy the file to the specified path on the server
+scp -P $PORT $FILE_NAME $USER_NAME@$SERVER_IP:$SERVER_FILE_PATH/$FILE_NAME
+
+# Clean up the downloaded file
+rm $FILE_NAME
 `

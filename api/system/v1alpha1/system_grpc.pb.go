@@ -20,7 +20,8 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	SystemInterface_Ping_FullMethodName = "/system.v1alpha1.SystemInterface/Ping"
+	SystemInterface_Ping_FullMethodName      = "/system.v1alpha1.SystemInterface/Ping"
+	SystemInterface_GetSystem_FullMethodName = "/system.v1alpha1.SystemInterface/GetSystem"
 )
 
 // SystemInterfaceClient is the client API for SystemInterface service.
@@ -28,6 +29,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type SystemInterfaceClient interface {
 	Ping(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*Msg, error)
+	GetSystem(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*System, error)
 }
 
 type systemInterfaceClient struct {
@@ -48,11 +50,22 @@ func (c *systemInterfaceClient) Ping(ctx context.Context, in *emptypb.Empty, opt
 	return out, nil
 }
 
+func (c *systemInterfaceClient) GetSystem(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*System, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(System)
+	err := c.cc.Invoke(ctx, SystemInterface_GetSystem_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // SystemInterfaceServer is the server API for SystemInterface service.
 // All implementations must embed UnimplementedSystemInterfaceServer
 // for forward compatibility.
 type SystemInterfaceServer interface {
 	Ping(context.Context, *emptypb.Empty) (*Msg, error)
+	GetSystem(context.Context, *emptypb.Empty) (*System, error)
 	mustEmbedUnimplementedSystemInterfaceServer()
 }
 
@@ -65,6 +78,9 @@ type UnimplementedSystemInterfaceServer struct{}
 
 func (UnimplementedSystemInterfaceServer) Ping(context.Context, *emptypb.Empty) (*Msg, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Ping not implemented")
+}
+func (UnimplementedSystemInterfaceServer) GetSystem(context.Context, *emptypb.Empty) (*System, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetSystem not implemented")
 }
 func (UnimplementedSystemInterfaceServer) mustEmbedUnimplementedSystemInterfaceServer() {}
 func (UnimplementedSystemInterfaceServer) testEmbeddedByValue()                         {}
@@ -105,6 +121,24 @@ func _SystemInterface_Ping_Handler(srv interface{}, ctx context.Context, dec fun
 	return interceptor(ctx, in, info, handler)
 }
 
+func _SystemInterface_GetSystem_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(emptypb.Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SystemInterfaceServer).GetSystem(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SystemInterface_GetSystem_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SystemInterfaceServer).GetSystem(ctx, req.(*emptypb.Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // SystemInterface_ServiceDesc is the grpc.ServiceDesc for SystemInterface service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -115,6 +149,10 @@ var SystemInterface_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Ping",
 			Handler:    _SystemInterface_Ping_Handler,
+		},
+		{
+			MethodName: "GetSystem",
+			Handler:    _SystemInterface_GetSystem_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

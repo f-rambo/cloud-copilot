@@ -74,27 +74,22 @@ func wireApp(controller *gomock.Controller, bootstrap *conf.Bootstrap, logger lo
 // cluster
 
 var nodeGroup *biz.NodeGroup = &biz.NodeGroup{
-	ID:                      1,
-	MinSize:                 3,
-	MaxSize:                 6,
-	Type:                    "testType",
-	InstanceType:            "testInstanceType",
-	OS:                      "testOSImage",
-	CPU:                     1,
-	Memory:                  1.0,
-	GPU:                     1,
-	GpuSpec:                 "testGpuSpec",
-	SystemDisk:              1,
-	DataDisk:                1,
-	InternetMaxBandwidthOut: 1,
-	NodeInitScript:          "testNodeInitScript",
-	TargetSize:              3,
-	ClusterID:               1,
+	ID:             1,
+	MinSize:        3,
+	MaxSize:        6,
+	Type:           "testType",
+	InstanceType:   "testInstanceType",
+	OS:             "testOSImage",
+	CPU:            1,
+	Memory:         1.0,
+	GPU:            1,
+	NodeInitScript: "testNodeInitScript",
+	TargetSize:     3,
+	ClusterID:      1,
 }
 
 var node *biz.Node = &biz.Node{
 	ID:          1,
-	NodeGroup:   nodeGroup,
 	Name:        "minikube",
 	Status:      biz.NodeStatusRunning,
 	Role:        "master",
@@ -102,7 +97,6 @@ var node *biz.Node = &biz.Node{
 	ExternalIP:  "127.0.0.1",
 	User:        "testUser",
 	Labels:      "testLabels",
-	ErrorInfo:   "testErrorInfo",
 	ClusterID:   1,
 	NodeGroupID: 1,
 }

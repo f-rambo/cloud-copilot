@@ -7,7 +7,6 @@ import (
 	"github.com/f-rambo/ocean/internal/biz"
 	"github.com/f-rambo/ocean/internal/conf"
 	"github.com/go-kratos/kratos/v2/log"
-	"github.com/pkg/errors"
 	"gorm.io/gorm"
 )
 
@@ -77,16 +76,6 @@ func (c *clusterRepo) Save(ctx context.Context, cluster *biz.Cluster) error {
 		}
 	}
 	for _, node := range cluster.Nodes {
-		node.ClusterID = cluster.ID
-		if node.NodeGroup == nil {
-			return errors.New("node group is nil")
-		}
-		for _, nodeGroup := range cluster.NodeGroups {
-			if node.NodeGroup.Name == nodeGroup.Name {
-				node.NodeGroupID = nodeGroup.ID
-				break
-			}
-		}
 		err = tx.Model(&biz.Node{}).Where("id = ?", node.ID).Save(node).Error
 		if err != nil {
 			return err
@@ -142,14 +131,6 @@ func (c *clusterRepo) Get(ctx context.Context, id int64) (*biz.Cluster, error) {
 		return nil, err
 	}
 	cluster.NodeGroups = append(cluster.NodeGroups, nodeGroups...)
-	for _, node := range nodes {
-		for _, nodeGroup := range cluster.NodeGroups {
-			if node.NodeGroupID == nodeGroup.ID {
-				node.NodeGroup = nodeGroup
-				break
-			}
-		}
-	}
 	cluster.Nodes = append(cluster.Nodes, nodes...)
 	return cluster, nil
 }
@@ -176,8 +157,8 @@ func (c *clusterRepo) List(ctx context.Context, cluster *biz.Cluster) ([]*biz.Cl
 	if cluster.Name != "" {
 		clusterModelObj = clusterModelObj.Where("name = ?", cluster.Name)
 	}
-	if cluster.ServerVersion != "" {
-		clusterModelObj = clusterModelObj.Where("server_version = ?", cluster.ServerVersion)
+	if cluster.Version != "" {
+		clusterModelObj = clusterModelObj.Where("server_version = ?", cluster.Version)
 	}
 	err := clusterModelObj.Find(&clusters).Error
 	return clusters, err

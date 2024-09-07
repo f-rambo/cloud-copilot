@@ -6,16 +6,21 @@ import (
 	"fmt"
 	"os/exec"
 	"path/filepath"
-	"sort"
 	"strings"
 
+	cloudv1alpha1 "github.com/f-rambo/ocean/api/cloud/v1alpha1"
+	systemv1alpha1 "github.com/f-rambo/ocean/api/system/v1alpha1"
 	"github.com/f-rambo/ocean/internal/biz"
 	"github.com/f-rambo/ocean/internal/conf"
 	"github.com/f-rambo/ocean/utils"
 	"github.com/go-kratos/kratos/v2/log"
+	"github.com/go-kratos/kratos/v2/metadata"
+	mmd "github.com/go-kratos/kratos/v2/middleware/metadata"
+	"github.com/go-kratos/kratos/v2/transport/grpc"
 	"github.com/pkg/errors"
 	"github.com/spf13/cast"
 	"golang.org/x/sync/errgroup"
+	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 const (
@@ -187,7 +192,11 @@ func (c *ClusterInfrastructure) Import(ctx context.Context, cluster *biz.Cluster
 }
 
 func (cc *ClusterInfrastructure) MigrateToBostionHost(ctx context.Context, cluster *biz.Cluster) error {
-	oceanAppVersion, shipAppVersion, err := utils.GetAppVersionFromContext(ctx)
+	oceanAppVersion, err := utils.GetFromContextByKey(ctx, "version")
+	if err != nil {
+		return err
+	}
+	shipAppVersion, err := utils.GetFromContextByKey(ctx, "ship_version")
 	if err != nil {
 		return err
 	}
@@ -251,12 +260,71 @@ func (cc *ClusterInfrastructure) Install(ctx context.Context, cluster *biz.Clust
 		if err != nil {
 			return err
 		}
-		err = cc.generateInitial(ctx, cluster)
-		if err != nil {
-			return err
-		}
 	}
-	//...
+	errGroup, ctx := errgroup.WithContext(ctx)
+	for _, node := range cluster.Nodes {
+		node := node
+		errGroup.Go(func() error {
+			err := cc.downloadAndCopy(ctx, cluster, node)
+			if err != nil {
+				return err
+			}
+			// grpc to ship server
+			conn, err := grpc.DialInsecure(
+				ctx,
+				grpc.WithEndpoint(fmt.Sprintf("%s:%d", node.InternalIP, 9000)),
+				grpc.WithMiddleware(
+					mmd.Client(),
+				),
+			)
+			if err != nil {
+				return err
+			}
+			defer conn.Close()
+			client := cloudv1alpha1.NewCloudInterfaceClient(conn)
+			_, err = client.SetingIpv4Forward(ctx, &emptypb.Empty{})
+			if err != nil {
+				return err
+			}
+			_, err = client.CloseSwap(ctx, &emptypb.Empty{})
+			if err != nil {
+				return err
+			}
+			_, err = client.CloseFirewall(ctx, &emptypb.Empty{})
+			if err != nil {
+				return err
+			}
+			nodeGroup := cluster.GetNodeGroup(node.NodeGroupID)
+			if nodeGroup == nil {
+				return errors.New("node group is nil")
+			}
+			_, err = client.InstallKubeadmKubeletCriO(ctx, &cloudv1alpha1.Cloud{
+				Arch:        nodeGroup.ARCH,
+				CrioVersion: node.ContainerRuntime,
+			})
+			if err != nil {
+				return err
+			}
+			_, err = client.AddKubeletServiceAndSettingKubeadmConfig(ctx, &cloudv1alpha1.Cloud{
+				KubeadmConfig:  utils.KubeadmConfig,
+				KubeletService: utils.KubeletService,
+			})
+			if err != nil {
+				return err
+			}
+			_, err = client.InitKubeadm(ctx, &cloudv1alpha1.Cloud{
+				KubeadmInitConfig: utils.KubeadmInitConfig,
+			})
+			if err != nil {
+				return err
+			}
+			return nil
+		})
+	}
+	err := errGroup.Wait()
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -294,23 +362,26 @@ func (cc *ClusterInfrastructure) distributeShipServer(ctx context.Context, clust
 			if node.SshPort == 0 {
 				node.SshPort = 22
 			}
-			arch := node.NodeGroup.ARCH
-			if arch == "" {
+			nodeGroup := cluster.GetNodeGroup(node.NodeGroupID)
+			if nodeGroup == nil {
+				nodeGroup = &biz.NodeGroup{}
+			}
+			if nodeGroup.ARCH == "" {
 				output, err := exec.Command("echo", "uname -i", "|", "ssh", fmt.Sprintf("%s@%s -p %d", node.User, node.InternalIP, node.SshPort),
 					"sudo bash -s").CombinedOutput()
 				if err != nil {
 					return errors.Wrap(err, string(output))
 				}
-				arch = strings.TrimSpace(string(output))
+				arch := strings.TrimSpace(string(output))
 				if _, ok := ARCH_MAP[arch]; !ok {
 					return errors.New("node arch is not supported")
 				}
-				node.NodeGroup.ARCH = ARCH_MAP[arch]
+				nodeGroup.ARCH = ARCH_MAP[arch]
 			}
-			if node.NodeGroup.ARCH == "" {
+			if nodeGroup.ARCH == "" {
 				return errors.New("node arch is empty")
 			}
-			shipArchPath := fmt.Sprintf("%s/%s", shipPath, node.NodeGroup.ARCH)
+			shipArchPath := fmt.Sprintf("%s/%s", shipPath, nodeGroup.ARCH)
 			output, err := exec.Command("scp", "-r", "-P", fmt.Sprintf("%d", node.SshPort), shipArchPath,
 				fmt.Sprintf("%s@%s:%s", node.User, node.InternalIP, shipPath)).CombinedOutput()
 			if err != nil {
@@ -332,82 +403,91 @@ func (cc *ClusterInfrastructure) distributeShipServer(ctx context.Context, clust
 	return nil
 }
 
-func (cc *ClusterInfrastructure) generateInitial(ctx context.Context, cluster *biz.Cluster) error {
-	if cluster.Type == biz.ClusterTypeLocal && len(cluster.Nodes) < biz.NodeMinSize.Int() {
-		return errors.New("local cluster node size must be greater than 1")
+func (cc *ClusterInfrastructure) getNodesInformation(ctx context.Context, cluster *biz.Cluster) error {
+	errGroup, ctx := errgroup.WithContext(ctx)
+	for _, node := range cluster.Nodes {
+		node := node
+		errGroup.Go(func() error {
+			conn, err := grpc.DialInsecure(
+				ctx,
+				grpc.WithEndpoint(fmt.Sprintf("%s:%d", node.InternalIP, 9000)),
+				grpc.WithMiddleware(
+					mmd.Client(),
+				),
+			)
+			if err != nil {
+				return err
+			}
+			defer conn.Close()
+			client := systemv1alpha1.NewSystemInterfaceClient(conn)
+			appInfo := utils.GetFromContext(ctx)
+			for k, v := range appInfo {
+				ctx = metadata.AppendToClientContext(ctx, k, v)
+			}
+			systemInfo, err := client.GetSystem(ctx, &emptypb.Empty{})
+			if err != nil {
+				return err
+			}
+			node.SystemDisk = int32(systemInfo.DataDisk)
+			node.GpuSpec = systemInfo.GpuSpec
+			node.DataDisk = systemInfo.DataDisk
+			node.Kernel = systemInfo.Kernel
+			node.ContainerRuntime = systemInfo.Container
+			node.Kubelet = systemInfo.Kubelet
+			node.KubeProxy = systemInfo.KubeProxy
+			node.InternalIP = systemInfo.InternalIp
+			return nil
+		})
 	}
-	if cluster.Type != biz.ClusterTypeLocal {
-		return cc.generateInitialCloud(ctx, cluster)
-	}
-	return cc.generateInitialLocal(ctx, cluster)
-}
-
-func (cc *ClusterInfrastructure) generateInitialCloud(_ context.Context, cluster *biz.Cluster) error {
-	nodeGroup := &biz.NodeGroup{
-		CPU:                     2,
-		Memory:                  4,
-		SystemDisk:              100,
-		InternetMaxBandwidthOut: 100,
-		MinSize:                 5,
-		TargetSize:              5,
-	}
-	nodeGroup.Name = fmt.Sprintf("cloudproider-%s-cpu-%d-mem-%d-disk-%d", cluster.Type, nodeGroup.CPU, int(nodeGroup.Memory), nodeGroup.SystemDisk)
-	cluster.NodeGroups = []*biz.NodeGroup{nodeGroup}
-	var i int32
-	for i = 0; i < nodeGroup.MinSize; i++ {
-		roleName := biz.NodeRoleMaster.String()
-		if i > 2 {
-			roleName = biz.NodeRoleWorker.String()
-		}
-		node := &biz.Node{
-			Name:      fmt.Sprintf("%s-%d", roleName, i),
-			Labels:    "",
-			Status:    biz.NodeStatusRunning,
-			ClusterID: cluster.ID,
-			NodeGroup: nodeGroup,
-			Role:      biz.NodeRole(roleName),
-		}
-		cluster.Nodes = append(cluster.Nodes, node)
-	}
-	cluster.BostionHost = &biz.BostionHost{
-		Memory: 4,
-		CPU:    2,
-	}
-	return nil
-}
-
-func (cc *ClusterInfrastructure) generateInitialLocal(ctx context.Context, cluster *biz.Cluster) error {
-	err := cc.getNodesInformation(ctx, cluster)
+	err := errGroup.Wait()
 	if err != nil {
 		return err
 	}
-	sort.Sort(biz.Nodes(cluster.Nodes))
-	masterNum := 0
-	workNum := 0
-	for _, node := range cluster.Nodes {
-		if node.NodeGroup == nil {
-			return errors.New("node group is nil")
-		}
-		if node.NodeGroup.Memory >= 8 && node.NodeGroup.CPU >= 4 && masterNum < 3 {
-			node.Role = biz.NodeRoleMaster
-			node.Status = biz.NodeStatusCreating
-			masterNum++
-			continue
-		}
-		if workNum >= 3 {
-			node.Status = biz.NodeStatusUnspecified
-			continue
-		}
-		node.Role = biz.NodeRoleWorker
-		node.Status = biz.NodeStatusCreating
-		workNum++
-	}
 	return nil
 }
 
-func (cc *ClusterInfrastructure) getNodesInformation(_ context.Context, cluster *biz.Cluster) error {
-	for _, node := range cluster.Nodes {
-		fmt.Println(node)
+// https://github.com/cri-o/cri-o/releases
+func (c *ClusterInfrastructure) downloadAndCopy(_ context.Context, cluster *biz.Cluster, node *biz.Node) error {
+	cloudSowftwareVersion := utils.GetCloudSowftwareVersion(cluster.Version)
+	crioVersion := cloudSowftwareVersion.GetCrioLatestVersion()
+	if crioVersion == "" {
+		return errors.New("crio version is empty")
+	}
+	nodeGroup := cluster.GetNodeGroup(node.NodeGroupID)
+	if nodeGroup == nil {
+		return errors.New("node group is nil")
+	}
+	crioFileName := fmt.Sprintf("crio.%s.v%s.tar.gz", nodeGroup.ARCH, crioVersion)
+	crioDownloadUrl := fmt.Sprintf("https://storage.googleapis.com/cri-o/artifacts/%s", crioFileName)
+	output, err := exec.Command("echo", downloadAndCopyScript, "|",
+		"bash -s", crioDownloadUrl, crioFileName, node.InternalIP, node.User, fmt.Sprintf("%d", node.SshPort), fmt.Sprintf("/tmp/%s", crioFileName)).
+		CombinedOutput()
+	if err != nil {
+		return errors.Wrap(err, string(output))
+	}
+	kubeadmVersion := cloudSowftwareVersion.GetKubeadmLatestVersion()
+	if kubeadmVersion == "" {
+		return errors.New("kubeadm version is empty")
+	}
+	kubeadmFileName := "kubeadm"
+	kubeadmDownloadUrl := fmt.Sprintf("https://dl.k8s.io/release/%s/bin/linux/%s/%s", kubeadmVersion, nodeGroup.ARCH, kubeadmFileName)
+	output, err = exec.Command("echo", downloadAndCopyScript, "|",
+		"bash -s", kubeadmDownloadUrl, kubeadmFileName, node.InternalIP, node.User, fmt.Sprintf("%d", node.SshPort), fmt.Sprintf("/tmp/%s", kubeadmFileName)).
+		CombinedOutput()
+	if err != nil {
+		return errors.Wrap(err, string(output))
+	}
+	kubeletVersion := cloudSowftwareVersion.GetKubeletLatestVersion()
+	if kubeletVersion == "" {
+		return errors.New("kubelet version is empty")
+	}
+	kubeletFileName := "kubelet"
+	kubeletDownloadUrl := fmt.Sprintf("https://dl.k8s.io/release/%s/bin/linux/%s/%s", kubeletVersion, nodeGroup.ARCH, kubeletFileName)
+	output, err = exec.Command("echo", downloadAndCopyScript, "|",
+		"bash -s", kubeletDownloadUrl, kubeletFileName, node.InternalIP, node.User, fmt.Sprintf("%d", node.SshPort), fmt.Sprintf("/tmp/%s", kubeletFileName)).
+		CombinedOutput()
+	if err != nil {
+		return errors.Wrap(err, string(output))
 	}
 	return nil
 }

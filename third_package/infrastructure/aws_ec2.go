@@ -647,8 +647,8 @@ type AwsAMI struct {
 func (a *AwsAMI) findAmi(ctx *pulumi.Context) (*AwsBostionHost, error) {
 	amiImageID := ""
 	for _, nodegroup := range a.cluster.NodeGroups {
-		if nodegroup.ImageID != "" {
-			amiImageID = nodegroup.ImageID
+		if nodegroup.Image != "" {
+			amiImageID = nodegroup.Image
 			break
 		}
 	}
@@ -683,8 +683,8 @@ func (a *AwsAMI) findAmi(ctx *pulumi.Context) (*AwsBostionHost, error) {
 	}
 	ctx.Export("ubuntuAmi", pulumi.String(amiImageID))
 	for _, nodegroup := range a.cluster.NodeGroups {
-		if nodegroup.ImageID == "" {
-			nodegroup.ImageID = amiImageID
+		if nodegroup.Image == "" {
+			nodegroup.Image = amiImageID
 		}
 	}
 	a.cluster.BostionHost.ImageID = amiImageID
@@ -906,11 +906,11 @@ func (n *AwsNode) startNodes(ctx *pulumi.Context) error {
 					NetworkInterfaceId: nodeNi.ID(),
 					DeviceIndex:        pulumi.Int(0),
 				}},
-				Ami:                pulumi.String(nodeGroup.ImageID),
+				Ami:                pulumi.String(nodeGroup.Image),
 				IamInstanceProfile: n.ec2Profile.Name,
 				KeyName:            n.keyPair.KeyName,
 				RootBlockDevice: &ec2.InstanceRootBlockDeviceArgs{
-					VolumeSize: pulumi.Int(nodeGroup.SystemDisk),
+					VolumeSize: pulumi.Int(node.SystemDisk),
 				},
 				Tags: pulumi.StringMap{
 					"Name":     pulumi.String(node.Name),
@@ -922,11 +922,11 @@ func (n *AwsNode) startNodes(ctx *pulumi.Context) error {
 				return err
 			}
 			ctx.Export(fmt.Sprintf("%s-instance-id", node.Name), nodeRes.ID())
-			if nodeGroup.DataDisk > 0 {
+			if node.DataDisk > 0 {
 				// Create an additional EBS volume
 				volume, err := ebs.NewVolume(ctx, fmt.Sprintf("%s-data-volume", node.Name), &ebs.VolumeArgs{
 					AvailabilityZone: nodeRes.AvailabilityZone,
-					Size:             pulumi.Int(nodeGroup.DataDisk), // Set additional disk size to 100 GiB
+					Size:             pulumi.Int(node.DataDisk), // Set additional disk size to 100 GiB
 				})
 				if err != nil {
 					return err
@@ -1023,11 +1023,6 @@ func (a *AwsEc2Instance) Import(ctx *pulumi.Context) error {
 		node.Zone = instance.AvailabilityZone
 		node.SubnetId = instance.SubnetId
 		subnetIds = append(subnetIds, instance.SubnetId)
-		if node.NodeGroup == nil {
-			node.NodeGroup = &biz.NodeGroup{InstanceType: instance.InstanceType}
-		} else {
-			node.NodeGroup.InstanceType = instance.InstanceType
-		}
 	}
 	publikeys = utils.RemoveDuplicateString(publikeys)
 	if len(publikeys) == 1 {
@@ -1116,23 +1111,12 @@ func (a *AwsEc2Instance) Import(ctx *pulumi.Context) error {
 		ng.OS = instanceTypeOsMap[instanceType]
 		ng.CPU = int32(instanceTypeRes.DefaultVcpus)
 		ng.Memory = float64(instanceTypeRes.MemorySize)
-		ng.DataDisk = int32(instanceTypeRes.TotalInstanceStorage)
 		for _, gpues := range instanceTypeRes.Gpuses {
 			ng.GPU += int32(gpues.Count)
-			ng.GpuSpec = gpues.Name
 		}
 		nodeGroups = append(nodeGroups, ng)
 	}
 	a.cluster.NodeGroups = nodeGroups
-	for _, node := range a.cluster.Nodes {
-		for _, ng := range a.cluster.NodeGroups {
-			if node.NodeGroup.InstanceType == ng.InstanceType {
-				node.NodeGroup = ng
-				node.NodeGroupID = ng.ID
-				break
-			}
-		}
-	}
 	return nil
 }
 

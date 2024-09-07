@@ -46,7 +46,7 @@ func (cr *ClusterRuntime) CurrentCluster(ctx context.Context, cluster *biz.Clust
 	if err != nil {
 		return err
 	}
-	cluster.ServerVersion = versionInfo.String()
+	cluster.Version = versionInfo.String()
 	err = cr.getClusterInfo(ctx, kubeClient, cluster)
 	if err != nil {
 		return err
@@ -101,7 +101,7 @@ func (cr *ClusterRuntime) getNodes(ctx context.Context, clientSet *kubernetes.Cl
 			}
 		}
 		n.Kubelet = node.Status.NodeInfo.KubeletVersion
-		n.Container = node.Status.NodeInfo.ContainerRuntimeVersion
+		n.ContainerRuntime = node.Status.NodeInfo.ContainerRuntimeVersion
 		n.Kernel = node.Status.NodeInfo.KernelVersion
 		n.KubeProxy = node.Status.NodeInfo.KubeProxyVersion
 		n.Status = biz.NodeStatusUnspecified

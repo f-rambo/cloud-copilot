@@ -404,18 +404,22 @@ func GetPackageStorePathByNames(packageNames ...string) (string, error) {
 	return filepath.Join(packageNames...), nil
 }
 
-func GetAppVersionFromContext(ctx context.Context) (string, string, error) {
+func GetFromContextByKey(ctx context.Context, key string) (string, error) {
 	appInfo, ok := kratos.FromContext(ctx)
 	if !ok {
-		return "", "", nil
+		return "", nil
 	}
-	oceanAppVersion, ok := appInfo.Metadata()["version"]
+	value, ok := appInfo.Metadata()[key]
 	if !ok {
-		return "", "", nil
+		return "", nil
 	}
-	shipAppVersion, ok := appInfo.Metadata()["ship_version"]
+	return value, nil
+}
+
+func GetFromContext(ctx context.Context) map[string]string {
+	appInfo, ok := kratos.FromContext(ctx)
 	if !ok {
-		return "", "", nil
+		return nil
 	}
-	return oceanAppVersion, shipAppVersion, nil
+	return appInfo.Metadata()
 }

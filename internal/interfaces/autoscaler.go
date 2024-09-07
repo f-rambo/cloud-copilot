@@ -66,10 +66,11 @@ func getNodesByNGIDAndName(nodeGroupID string, nodeName string, cluster *biz.Clu
 		return nil
 	}
 	for _, node := range cluster.Nodes {
-		if node.NodeGroup == nil {
+		nodeGroup := cluster.GetNodeGroup(node.NodeGroupID)
+		if nodeGroup == nil {
 			continue
 		}
-		if node.Name == nodeName && cast.ToString(node.NodeGroup.ID) == nodeGroupID {
+		if node.Name == nodeName && cast.ToString(nodeGroup.ID) == nodeGroupID {
 			return node
 		}
 	}
@@ -122,8 +123,12 @@ func (a *Autoscaler) NodeGroupForNode(ctx context.Context, in *autoscaler.NodeGr
 	if resNode == nil {
 		return nil, errors.New("node not found")
 	}
+	nodeGroup := cluster.GetNodeGroup(resNode.NodeGroupID)
+	if nodeGroup == nil {
+		return nil, errors.New("node group not found")
+	}
 	return &autoscaler.NodeGroupForNodeResponse{
-		NodeGroup: pdNodeGroup(resNode.NodeGroup),
+		NodeGroup: pdNodeGroup(nodeGroup),
 	}, nil
 }
 
@@ -142,7 +147,7 @@ func (a *Autoscaler) PricingNodePrice(ctx context.Context, in *autoscaler.Pricin
 	if resNode == nil {
 		return nil, errors.New("node not found")
 	}
-	return &autoscaler.PricingNodePriceResponse{Price: resNode.NodeGroup.NodePrice}, nil
+	return &autoscaler.PricingNodePriceResponse{Price: resNode.NodePrice}, nil
 }
 
 // PricingPodPrice：返回在指定时间段内运行一个 Pod 的理论最低价格。
@@ -160,7 +165,7 @@ func (a *Autoscaler) PricingPodPrice(ctx context.Context, in *autoscaler.Pricing
 	if resNode == nil {
 		return nil, errors.New("node not found")
 	}
-	return &autoscaler.PricingPodPriceResponse{Price: resNode.NodeGroup.NodePrice}, nil
+	return &autoscaler.PricingPodPriceResponse{Price: resNode.NodePrice}, nil
 }
 
 // GPULabel：返回添加到具有 GPU 资源的节点的标签。
@@ -172,9 +177,9 @@ func (a *Autoscaler) GPULabel(ctx context.Context, in *autoscaler.GPULabelReques
 		return nil, err
 	}
 	gpuLable := ""
-	for _, ng := range cluster.NodeGroups {
-		if ng.GpuSpec != "" {
-			gpuLable = ng.GpuSpec
+	for _, node := range cluster.Nodes {
+		if node.GpuSpec != "" {
+			gpuLable = node.GpuSpec
 			break
 		}
 	}
@@ -190,11 +195,11 @@ func (a *Autoscaler) GetAvailableGPUTypes(ctx context.Context, in *autoscaler.Ge
 		return nil, err
 	}
 	pbGpuTypes := make(map[string]*anypb.Any)
-	for _, ng := range cluster.NodeGroups {
-		if ng.GpuSpec == "" {
+	for _, node := range cluster.Nodes {
+		if node.GpuSpec == "" {
 			continue
 		}
-		pbGpuTypes[ng.GpuSpec] = nil
+		pbGpuTypes[node.GpuSpec] = nil
 	}
 	return &autoscaler.GetAvailableGPUTypesResponse{
 		GpuTypes: pbGpuTypes,
@@ -343,10 +348,7 @@ func (a *Autoscaler) NodeGroupNodes(ctx context.Context, in *autoscaler.NodeGrou
 	}
 	nodes := make([]*biz.Node, 0)
 	for _, node := range cluster.Nodes {
-		if node.NodeGroup == nil {
-			continue
-		}
-		if cast.ToString(node.NodeGroup.ID) == nodeGroupId {
+		if cast.ToString(node.NodeGroupID) == nodeGroupId {
 			nodes = append(nodes, node)
 		}
 	}

@@ -20,15 +20,47 @@ var _ = binding.EncodeURL
 
 const _ = http.SupportPackageIsVersion1
 
+const OperationCloudInterfaceAddKubeletServiceAndSettingKubeadmConfig = "/cloud.v1alpha1.CloudInterface/AddKubeletServiceAndSettingKubeadmConfig"
+const OperationCloudInterfaceCloseFirewall = "/cloud.v1alpha1.CloudInterface/CloseFirewall"
+const OperationCloudInterfaceCloseSwap = "/cloud.v1alpha1.CloudInterface/CloseSwap"
+const OperationCloudInterfaceInitKubeadm = "/cloud.v1alpha1.CloudInterface/InitKubeadm"
+const OperationCloudInterfaceInstallKubeadmKubeletCriO = "/cloud.v1alpha1.CloudInterface/InstallKubeadmKubeletCriO"
+const OperationCloudInterfaceJoinKubeadmWithJoinCommand = "/cloud.v1alpha1.CloudInterface/JoinKubeadmWithJoinCommand"
+const OperationCloudInterfaceJoinKubeadmWithJoinConfigFile = "/cloud.v1alpha1.CloudInterface/JoinKubeadmWithJoinConfigFile"
 const OperationCloudInterfacePing = "/cloud.v1alpha1.CloudInterface/Ping"
+const OperationCloudInterfaceSetingIpv4Forward = "/cloud.v1alpha1.CloudInterface/SetingIpv4Forward"
 
 type CloudInterfaceHTTPServer interface {
+	// AddKubeletServiceAndSettingKubeadmConfig AddKubeletServiceAndSettingKubeadmConfig
+	AddKubeletServiceAndSettingKubeadmConfig(context.Context, *Cloud) (*Msg, error)
+	// CloseFirewall CloseFirewall
+	CloseFirewall(context.Context, *emptypb.Empty) (*Msg, error)
+	// CloseSwap CloseSwap
+	CloseSwap(context.Context, *emptypb.Empty) (*Msg, error)
+	// InitKubeadm InitKubeadm
+	InitKubeadm(context.Context, *Cloud) (*Msg, error)
+	// InstallKubeadmKubeletCriO InstallKubeadmKubeletCriO
+	InstallKubeadmKubeletCriO(context.Context, *Cloud) (*Msg, error)
+	// JoinKubeadmWithJoinCommand JoinKubeadmWithJoinCommand
+	JoinKubeadmWithJoinCommand(context.Context, *Cloud) (*Msg, error)
+	// JoinKubeadmWithJoinConfigFile JoinKubeadmWithJoinConfigFile
+	JoinKubeadmWithJoinConfigFile(context.Context, *Cloud) (*Msg, error)
 	Ping(context.Context, *emptypb.Empty) (*Msg, error)
+	// SetingIpv4Forward SetingIpv4Forward
+	SetingIpv4Forward(context.Context, *emptypb.Empty) (*Msg, error)
 }
 
 func RegisterCloudInterfaceHTTPServer(s *http.Server, srv CloudInterfaceHTTPServer) {
 	r := s.Route("/")
 	r.GET("/api/v1alpha1/cloud/ping", _CloudInterface_Ping4_HTTP_Handler(srv))
+	r.POST("/api/v1alpha1/cloud/install_kubeadm_kubelet_crio", _CloudInterface_InstallKubeadmKubeletCriO0_HTTP_Handler(srv))
+	r.POST("/api/v1alpha1/cloud/add_kubelet_service_and_setting_kubeadm_config", _CloudInterface_AddKubeletServiceAndSettingKubeadmConfig0_HTTP_Handler(srv))
+	r.POST("/api/v1alpha1/cloud/join_kubeadm_with_join_command", _CloudInterface_JoinKubeadmWithJoinCommand0_HTTP_Handler(srv))
+	r.POST("/api/v1alpha1/cloud/join_kubeadm_with_join_config_file", _CloudInterface_JoinKubeadmWithJoinConfigFile0_HTTP_Handler(srv))
+	r.POST("/api/v1alpha1/cloud/init_kubeadm", _CloudInterface_InitKubeadm0_HTTP_Handler(srv))
+	r.POST("/api/v1alpha1/cloud/setting_ipv4_forward", _CloudInterface_SetingIpv4Forward0_HTTP_Handler(srv))
+	r.POST("/api/v1alpha1/cloud/close_swap", _CloudInterface_CloseSwap0_HTTP_Handler(srv))
+	r.POST("/api/v1alpha1/cloud/close_firewall", _CloudInterface_CloseFirewall0_HTTP_Handler(srv))
 }
 
 func _CloudInterface_Ping4_HTTP_Handler(srv CloudInterfaceHTTPServer) func(ctx http.Context) error {
@@ -50,8 +82,192 @@ func _CloudInterface_Ping4_HTTP_Handler(srv CloudInterfaceHTTPServer) func(ctx h
 	}
 }
 
+func _CloudInterface_InstallKubeadmKubeletCriO0_HTTP_Handler(srv CloudInterfaceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in Cloud
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationCloudInterfaceInstallKubeadmKubeletCriO)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.InstallKubeadmKubeletCriO(ctx, req.(*Cloud))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*Msg)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _CloudInterface_AddKubeletServiceAndSettingKubeadmConfig0_HTTP_Handler(srv CloudInterfaceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in Cloud
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationCloudInterfaceAddKubeletServiceAndSettingKubeadmConfig)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.AddKubeletServiceAndSettingKubeadmConfig(ctx, req.(*Cloud))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*Msg)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _CloudInterface_JoinKubeadmWithJoinCommand0_HTTP_Handler(srv CloudInterfaceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in Cloud
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationCloudInterfaceJoinKubeadmWithJoinCommand)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.JoinKubeadmWithJoinCommand(ctx, req.(*Cloud))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*Msg)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _CloudInterface_JoinKubeadmWithJoinConfigFile0_HTTP_Handler(srv CloudInterfaceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in Cloud
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationCloudInterfaceJoinKubeadmWithJoinConfigFile)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.JoinKubeadmWithJoinConfigFile(ctx, req.(*Cloud))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*Msg)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _CloudInterface_InitKubeadm0_HTTP_Handler(srv CloudInterfaceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in Cloud
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationCloudInterfaceInitKubeadm)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.InitKubeadm(ctx, req.(*Cloud))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*Msg)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _CloudInterface_SetingIpv4Forward0_HTTP_Handler(srv CloudInterfaceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in emptypb.Empty
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationCloudInterfaceSetingIpv4Forward)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.SetingIpv4Forward(ctx, req.(*emptypb.Empty))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*Msg)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _CloudInterface_CloseSwap0_HTTP_Handler(srv CloudInterfaceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in emptypb.Empty
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationCloudInterfaceCloseSwap)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.CloseSwap(ctx, req.(*emptypb.Empty))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*Msg)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _CloudInterface_CloseFirewall0_HTTP_Handler(srv CloudInterfaceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in emptypb.Empty
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationCloudInterfaceCloseFirewall)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.CloseFirewall(ctx, req.(*emptypb.Empty))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*Msg)
+		return ctx.Result(200, reply)
+	}
+}
+
 type CloudInterfaceHTTPClient interface {
+	AddKubeletServiceAndSettingKubeadmConfig(ctx context.Context, req *Cloud, opts ...http.CallOption) (rsp *Msg, err error)
+	CloseFirewall(ctx context.Context, req *emptypb.Empty, opts ...http.CallOption) (rsp *Msg, err error)
+	CloseSwap(ctx context.Context, req *emptypb.Empty, opts ...http.CallOption) (rsp *Msg, err error)
+	InitKubeadm(ctx context.Context, req *Cloud, opts ...http.CallOption) (rsp *Msg, err error)
+	InstallKubeadmKubeletCriO(ctx context.Context, req *Cloud, opts ...http.CallOption) (rsp *Msg, err error)
+	JoinKubeadmWithJoinCommand(ctx context.Context, req *Cloud, opts ...http.CallOption) (rsp *Msg, err error)
+	JoinKubeadmWithJoinConfigFile(ctx context.Context, req *Cloud, opts ...http.CallOption) (rsp *Msg, err error)
 	Ping(ctx context.Context, req *emptypb.Empty, opts ...http.CallOption) (rsp *Msg, err error)
+	SetingIpv4Forward(ctx context.Context, req *emptypb.Empty, opts ...http.CallOption) (rsp *Msg, err error)
 }
 
 type CloudInterfaceHTTPClientImpl struct {
@@ -62,6 +278,97 @@ func NewCloudInterfaceHTTPClient(client *http.Client) CloudInterfaceHTTPClient {
 	return &CloudInterfaceHTTPClientImpl{client}
 }
 
+func (c *CloudInterfaceHTTPClientImpl) AddKubeletServiceAndSettingKubeadmConfig(ctx context.Context, in *Cloud, opts ...http.CallOption) (*Msg, error) {
+	var out Msg
+	pattern := "/api/v1alpha1/cloud/add_kubelet_service_and_setting_kubeadm_config"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationCloudInterfaceAddKubeletServiceAndSettingKubeadmConfig))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *CloudInterfaceHTTPClientImpl) CloseFirewall(ctx context.Context, in *emptypb.Empty, opts ...http.CallOption) (*Msg, error) {
+	var out Msg
+	pattern := "/api/v1alpha1/cloud/close_firewall"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationCloudInterfaceCloseFirewall))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *CloudInterfaceHTTPClientImpl) CloseSwap(ctx context.Context, in *emptypb.Empty, opts ...http.CallOption) (*Msg, error) {
+	var out Msg
+	pattern := "/api/v1alpha1/cloud/close_swap"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationCloudInterfaceCloseSwap))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *CloudInterfaceHTTPClientImpl) InitKubeadm(ctx context.Context, in *Cloud, opts ...http.CallOption) (*Msg, error) {
+	var out Msg
+	pattern := "/api/v1alpha1/cloud/init_kubeadm"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationCloudInterfaceInitKubeadm))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *CloudInterfaceHTTPClientImpl) InstallKubeadmKubeletCriO(ctx context.Context, in *Cloud, opts ...http.CallOption) (*Msg, error) {
+	var out Msg
+	pattern := "/api/v1alpha1/cloud/install_kubeadm_kubelet_crio"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationCloudInterfaceInstallKubeadmKubeletCriO))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *CloudInterfaceHTTPClientImpl) JoinKubeadmWithJoinCommand(ctx context.Context, in *Cloud, opts ...http.CallOption) (*Msg, error) {
+	var out Msg
+	pattern := "/api/v1alpha1/cloud/join_kubeadm_with_join_command"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationCloudInterfaceJoinKubeadmWithJoinCommand))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *CloudInterfaceHTTPClientImpl) JoinKubeadmWithJoinConfigFile(ctx context.Context, in *Cloud, opts ...http.CallOption) (*Msg, error) {
+	var out Msg
+	pattern := "/api/v1alpha1/cloud/join_kubeadm_with_join_config_file"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationCloudInterfaceJoinKubeadmWithJoinConfigFile))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
 func (c *CloudInterfaceHTTPClientImpl) Ping(ctx context.Context, in *emptypb.Empty, opts ...http.CallOption) (*Msg, error) {
 	var out Msg
 	pattern := "/api/v1alpha1/cloud/ping"
@@ -69,6 +376,19 @@ func (c *CloudInterfaceHTTPClientImpl) Ping(ctx context.Context, in *emptypb.Emp
 	opts = append(opts, http.Operation(OperationCloudInterfacePing))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *CloudInterfaceHTTPClientImpl) SetingIpv4Forward(ctx context.Context, in *emptypb.Empty, opts ...http.CallOption) (*Msg, error) {
+	var out Msg
+	pattern := "/api/v1alpha1/cloud/setting_ipv4_forward"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationCloudInterfaceSetingIpv4Forward))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
 	if err != nil {
 		return nil, err
 	}

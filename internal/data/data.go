@@ -18,7 +18,7 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
+	gormlogger "gorm.io/gorm/logger"
 )
 
 // ProviderSet is data providers.
@@ -44,7 +44,7 @@ type Data struct {
 	databaseConf  *conf.Data
 	etcdConf      *conf.ETCD
 	log           *log.Helper
-	dbLoggerLevel logger.LogLevel
+	dbLoggerLevel gormlogger.LogLevel
 	db            *gorm.DB
 	etcd          *clientv3.Client
 	kvStore       *utils.KVStore
@@ -55,9 +55,10 @@ func NewData(c *conf.Bootstrap, logger log.Logger) (*Data, func(), error) {
 	cdata := c.Data
 	etcd := c.ETCD
 	data := &Data{
-		databaseConf: &cdata,
-		etcdConf:     &etcd,
-		log:          log.NewHelper(logger),
+		databaseConf:  &cdata,
+		etcdConf:      &etcd,
+		log:           log.NewHelper(logger),
+		dbLoggerLevel: gormlogger.Info,
 	}
 
 	err = data.newDB(cdata)
@@ -191,7 +192,6 @@ func (d *Data) newEtcd(c conf.ETCD) (err error) {
 }
 
 func (d *Data) newDB(c conf.Data) (err error) {
-	d.LogMode(logger.Warn)
 	switch DBDriver(c.GetDriver()) {
 	case DBDriverMySQL:
 		dns := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8&parseTime=True&loc=Local",
@@ -226,7 +226,9 @@ func (d *Data) newDB(c conf.Data) (err error) {
 			}
 			file.Close()
 		}
-		d.db, err = gorm.Open(sqlite.Open(dbFilePath), &gorm.Config{})
+		d.db, err = gorm.Open(sqlite.Open(dbFilePath), &gorm.Config{
+			Logger: d,
+		})
 		if err != nil {
 			return err
 		}
@@ -253,31 +255,31 @@ func (d *Data) newDB(c conf.Data) (err error) {
 	return nil
 }
 
-func (d *Data) LogMode(level logger.LogLevel) logger.Interface {
+func (d *Data) LogMode(level gormlogger.LogLevel) gormlogger.Interface {
 	d.dbLoggerLevel = level
 	return d
 }
 
 func (d *Data) Info(ctx context.Context, msg string, args ...interface{}) {
-	if d.dbLoggerLevel >= logger.Info {
+	if d.dbLoggerLevel >= gormlogger.Info {
 		d.log.WithContext(ctx).Infof(msg, args...)
 	}
 }
 
 func (d *Data) Warn(ctx context.Context, msg string, args ...interface{}) {
-	if d.dbLoggerLevel >= logger.Warn {
+	if d.dbLoggerLevel >= gormlogger.Warn {
 		d.log.WithContext(ctx).Warnf(msg, args...)
 	}
 }
 
 func (d *Data) Error(ctx context.Context, msg string, args ...interface{}) {
-	if d.dbLoggerLevel >= logger.Error {
+	if d.dbLoggerLevel >= gormlogger.Error {
 		d.log.WithContext(ctx).Errorf(msg, args...)
 	}
 }
 
 func (d *Data) Trace(ctx context.Context, begin time.Time, fc func() (sql string, rowsAffected int64), err error) {
-	if d.dbLoggerLevel >= logger.Info {
+	if d.dbLoggerLevel >= gormlogger.Info {
 		sql, rows := fc()
 		d.log.WithContext(ctx).Infof("begin: %s, sql: %s, rows: %d, err: %v", begin.Format("2006-01-02 15:04:05"), sql, rows, err)
 	}

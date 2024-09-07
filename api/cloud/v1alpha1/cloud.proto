@@ -15,4 +15,68 @@ service CloudInterface {
               get: "/api/v1alpha1/cloud/ping"
             };
       }
+
+      // InstallKubeadmKubeletCriO
+      rpc InstallKubeadmKubeletCriO(cloud.v1alpha1.Cloud) returns (cloud.v1alpha1.Msg) {
+            option (google.api.http) = {
+              post: "/api/v1alpha1/cloud/install_kubeadm_kubelet_crio"
+              body: "*"
+            };
+      }
+
+      // AddKubeletServiceAndSettingKubeadmConfig
+      rpc AddKubeletServiceAndSettingKubeadmConfig(cloud.v1alpha1.Cloud) returns (cloud.v1alpha1.Msg) {
+            option (google.api.http) = {
+              post: "/api/v1alpha1/cloud/add_kubelet_service_and_setting_kubeadm_config"
+              body: "*"
+            };
+      }
+
+      // JoinKubeadmWithJoinCommand
+      rpc JoinKubeadmWithJoinCommand(cloud.v1alpha1.Cloud) returns (cloud.v1alpha1.Msg) {
+            option (google.api.http) = {
+              post: "/api/v1alpha1/cloud/join_kubeadm_with_join_command"
+              body: "*"
+            };
+      }
+
+      // JoinKubeadmWithJoinConfigFile
+      rpc JoinKubeadmWithJoinConfigFile(cloud.v1alpha1.Cloud) returns (cloud.v1alpha1.Msg) {
+            option (google.api.http) = {
+              post: "/api/v1alpha1/cloud/join_kubeadm_with_join_config_file"
+              body: "*"
+            };
+      }
+
+      // InitKubeadm
+      rpc InitKubeadm(cloud.v1alpha1.Cloud) returns (cloud.v1alpha1.Msg) {
+            option (google.api.http) = {
+              post: "/api/v1alpha1/cloud/init_kubeadm"
+              body: "*"
+            };
+      }
+
+      // SetingIpv4Forward
+      rpc SetingIpv4Forward(google.protobuf.Empty) returns (cloud.v1alpha1.Msg) {
+            option (google.api.http) = {
+              post: "/api/v1alpha1/cloud/setting_ipv4_forward"
+              body: "*"
+            };
+      }
+
+      // CloseSwap
+      rpc CloseSwap(google.protobuf.Empty) returns (cloud.v1alpha1.Msg) {
+            option (google.api.http) = {
+              post: "/api/v1alpha1/cloud/close_swap"
+              body: "*"
+            };
+      }
+
+      // CloseFirewall
+      rpc CloseFirewall(google.protobuf.Empty) returns (cloud.v1alpha1.Msg) {
+            option (google.api.http) = {
+              post: "/api/v1alpha1/cloud/close_firewall"
+              body: "*"
+            };
+      }
 }

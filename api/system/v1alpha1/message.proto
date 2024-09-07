@@ -3,3 +3,19 @@ syntax = "proto3";
 package system.v1alpha1;
 
 option go_package = "api/system/v1alpha1;v1alpha1";
+
+message System {
+    int64 id = 1;
+    string os = 2;
+    string arch = 3;
+    int32 cpu = 4;
+    double memory = 5;
+    int32 gpu = 6;
+    string gpu_spec = 7;
+    int32 data_disk = 8;
+    string kernel = 9;
+    string container = 10;
+    string kubelet = 11;
+    string kube_proxy = 12;
+    string internal_ip = 13;
+}

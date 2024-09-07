@@ -15,4 +15,10 @@ service SystemInterface {
               get: "/api/v1alpha1/system/ping"
             };
       }
+
+      rpc GetSystem(google.protobuf.Empty) returns (system.v1alpha1.System) {
+            option (google.api.http) = {
+              get: "/api/v1alpha1/system"
+            };
+      }
 }
