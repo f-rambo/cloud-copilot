@@ -47,4 +47,18 @@ service ClusterInterface {
               body: "*"
             };
       }
+
+      rpc StartCluster(cluster.v1alpha1.ClusterID) returns (cluster.v1alpha1.Msg) {
+            option (google.api.http) = {
+              post: "/api/v1alpha1/cluster/start"
+              body: "*"
+            };
+      }
+
+      rpc CheckBostionHost(cluster.v1alpha1.CheckBostionHostRequest) returns (cluster.v1alpha1.Msg) {
+            option (google.api.http) = {
+              post: "/api/v1alpha1/cluster/check_bostion_host"
+              body: "*"
+            };
+      }
 }

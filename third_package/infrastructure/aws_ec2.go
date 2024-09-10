@@ -155,7 +155,7 @@ type AwsEc2Instance struct {
 	cluster *biz.Cluster
 }
 
-func StartEc2Instance(cluster *biz.Cluster) *AwsEc2Instance {
+func AwsEc2(cluster *biz.Cluster) *AwsEc2Instance {
 	return &AwsEc2Instance{
 		cluster: cluster,
 	}
@@ -1120,7 +1120,7 @@ func (a *AwsEc2Instance) Import(ctx *pulumi.Context) error {
 	return nil
 }
 
-func (a *AwsEc2Instance) Clear(ctx *pulumi.Context) error {
+func (a *AwsEc2Instance) Clean(ctx *pulumi.Context) error {
 	return nil
 }
 

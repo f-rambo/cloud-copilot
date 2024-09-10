@@ -3,6 +3,7 @@ package infrastructure
 import (
 	"fmt"
 
+	"github.com/f-rambo/ocean/internal/biz"
 	"github.com/pkg/errors"
 	"github.com/pulumi/pulumi-aws/sdk/v6/go/aws/ec2"
 	"github.com/pulumi/pulumi-aws/sdk/v6/go/aws/eks"
@@ -72,13 +73,13 @@ type NodeGroupOptions struct {
 
 type AwsEksCluster struct {
 	clusterNodeGroupArgs ClusterNodeGroupArgs
+	cluster              *biz.Cluster
 }
 
-func StartAwsEksCluster(clusterNodeGroupArgs ClusterNodeGroupArgs) func(*pulumi.Context) error {
-	awsCluster := &AwsEksCluster{
-		clusterNodeGroupArgs: clusterNodeGroupArgs,
+func AwsEks(cluster *biz.Cluster) *AwsEksCluster {
+	return &AwsEksCluster{
+		cluster: cluster,
 	}
-	return awsCluster.Start
 }
 
 func (a *AwsEksCluster) Start(ctx *pulumi.Context) error {
@@ -244,6 +245,14 @@ func (a *AwsEksCluster) Start(ctx *pulumi.Context) error {
 
 	// todo deploy ocean service
 
+	return nil
+}
+
+func (a *AwsEksCluster) Import(ctx *pulumi.Context) error {
+	return nil
+}
+
+func (a *AwsEksCluster) Clean(ctx *pulumi.Context) error {
 	return nil
 }
 

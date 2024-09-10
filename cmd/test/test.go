@@ -74,7 +74,6 @@ func wireApp(controller *gomock.Controller, bootstrap *conf.Bootstrap, logger lo
 // cluster
 
 var nodeGroup *biz.NodeGroup = &biz.NodeGroup{
-	ID:             1,
 	MinSize:        3,
 	MaxSize:        6,
 	Type:           "testType",
@@ -89,16 +88,15 @@ var nodeGroup *biz.NodeGroup = &biz.NodeGroup{
 }
 
 var node *biz.Node = &biz.Node{
-	ID:          1,
-	Name:        "minikube",
-	Status:      biz.NodeStatusRunning,
-	Role:        "master",
-	InternalIP:  "127.0.0.1",
-	ExternalIP:  "127.0.0.1",
-	User:        "testUser",
-	Labels:      "testLabels",
-	ClusterID:   1,
-	NodeGroupID: 1,
+	ID:         1,
+	Name:       "minikube",
+	Status:     biz.NodeStatusRunning,
+	Role:       "master",
+	InternalIP: "127.0.0.1",
+	ExternalIP: "127.0.0.1",
+	User:       "testUser",
+	Labels:     "testLabels",
+	ClusterID:  1,
 }
 
 var cluster *biz.Cluster = &biz.Cluster{

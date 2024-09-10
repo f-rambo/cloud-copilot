@@ -3,10 +3,33 @@ package infrastructure
 import (
 	"fmt"
 
+	"github.com/f-rambo/ocean/internal/biz"
 	"github.com/pulumi/pulumi-alicloud/sdk/v3/go/alicloud/cs"
 	"github.com/pulumi/pulumi-alicloud/sdk/v3/go/alicloud/ecs"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 )
+
+type AlicloudAksCluster struct {
+	cluster *biz.Cluster
+}
+
+func AlicloudAks(cluster *biz.Cluster) *AlicloudAksCluster {
+	return &AlicloudAksCluster{
+		cluster: cluster,
+	}
+}
+
+func (a *AlicloudAksCluster) Start(ctx *pulumi.Context) error {
+	return nil
+}
+
+func (a *AlicloudAksCluster) Clean(ctx *pulumi.Context) error {
+	return nil
+}
+
+func (a *AlicloudAksCluster) Import(ctx *pulumi.Context) error {
+	return nil
+}
 
 // alicloud managed kubernetes cluster
 func (a *AlicloudCluster) Startkubernetes(ctx *pulumi.Context) error {

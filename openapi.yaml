@@ -743,25 +743,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/cloud.v1alpha1.Msg'
-    /api/v1alpha1/cloud/init_kubeadm:
-        post:
-            tags:
-                - CloudInterface
-            description: InitKubeadm
-            operationId: CloudInterface_InitKubeadm
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/cloud.v1alpha1.Cloud'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/cloud.v1alpha1.Msg'
     /api/v1alpha1/cloud/install_kubeadm_kubelet_crio:
         post:
             tags:
@@ -781,12 +762,12 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/cloud.v1alpha1.Msg'
-    /api/v1alpha1/cloud/join_kubeadm_with_join_command:
+    /api/v1alpha1/cloud/kubeadm_init:
         post:
             tags:
                 - CloudInterface
-            description: JoinKubeadmWithJoinCommand
-            operationId: CloudInterface_JoinKubeadmWithJoinCommand
+            description: KubeadmInit
+            operationId: CloudInterface_KubeadmInit
             requestBody:
                 content:
                     application/json:
@@ -800,12 +781,50 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/cloud.v1alpha1.Msg'
-    /api/v1alpha1/cloud/join_kubeadm_with_join_config_file:
+    /api/v1alpha1/cloud/kubeadm_join:
         post:
             tags:
                 - CloudInterface
-            description: JoinKubeadmWithJoinConfigFile
-            operationId: CloudInterface_JoinKubeadmWithJoinConfigFile
+            description: KubeadmJoin
+            operationId: CloudInterface_KubeadmJoin
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/cloud.v1alpha1.Cloud'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/cloud.v1alpha1.Msg'
+    /api/v1alpha1/cloud/kubeadm_reset:
+        post:
+            tags:
+                - CloudInterface
+            description: KubeadmReset
+            operationId: CloudInterface_KubeadmReset
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/cloud.v1alpha1.Cloud'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/cloud.v1alpha1.Msg'
+    /api/v1alpha1/cloud/kubeadm_upgrade:
+        post:
+            tags:
+                - CloudInterface
+            description: KubeadmUpgrade
+            operationId: CloudInterface_KubeadmUpgrade
             requestBody:
                 content:
                     application/json:
@@ -906,6 +925,24 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/cluster.v1alpha1.Msg'
+    /api/v1alpha1/cluster/check_bostion_host:
+        post:
+            tags:
+                - ClusterInterface
+            operationId: ClusterInterface_CheckBostionHost
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/cluster.v1alpha1.CheckBostionHostRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/cluster.v1alpha1.Msg'
     /api/v1alpha1/cluster/import:
         post:
             tags:
@@ -941,6 +978,24 @@ paths:
             tags:
                 - ClusterInterface
             operationId: ClusterInterface_Ping
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/cluster.v1alpha1.Msg'
+    /api/v1alpha1/cluster/start:
+        post:
+            tags:
+                - ClusterInterface
+            operationId: ClusterInterface_StartCluster
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/cluster.v1alpha1.ClusterID'
+                required: true
             responses:
                 "200":
                     description: OK
@@ -1855,7 +1910,17 @@ components:
             properties:
                 id:
                     type: string
+                kubeProxyConfig:
+                    type: string
+                kubeletConfig:
+                    type: string
+                kubeadmInitClusterConfig:
+                    type: string
                 kubeadmInitConfig:
+                    type: string
+                kubeadmResetConfig:
+                    type: string
+                kubeadmUpgradeConfig:
                     type: string
                 kubeadmConfig:
                     type: string
@@ -1880,6 +1945,23 @@ components:
                     type: integer
                     format: enum
                 Message:
+                    type: string
+        cluster.v1alpha1.CheckBostionHostRequest:
+            type: object
+            properties:
+                arch:
+                    type: string
+                ocean_version:
+                    type: string
+                ship_version:
+                    type: string
+                ocean_data_tar_gz_package_path:
+                    type: string
+                ocean_data_tar_gz_package_sha256sum_path:
+                    type: string
+                ocean_path:
+                    type: string
+                ship_path:
                     type: string
         cluster.v1alpha1.Cluster:
             type: object

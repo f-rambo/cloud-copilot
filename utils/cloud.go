@@ -1,5 +1,7 @@
 package utils
 
+import "fmt"
+
 type CloudSowftwareVersion struct {
 	KubernetesVersion           string   `json:"kubernetes_version"`
 	KubeadmVersion              []string `json:"kubeadm_version"`
@@ -96,10 +98,50 @@ ExecStart=/usr/bin/kubelet $KUBELET_KUBECONFIG_ARGS $KUBELET_CONFIG_ARGS $KUBELE
 `
 
 // kubeadm-init.conf
-var KubeadmInitConfig = `
-apiVersion: kubeadm.k8s.io/v1beta3
+var KubeadmInitConfig = fmt.Sprintf(`
+apiVersion: kubeadm.k8s.io/v1beta4
 kind: InitConfiguration
 localAPIEndpoint:
-  advertiseAddress: 192.168.1.1
+  advertiseAddress: %s
   bindPort: 6443
+`, "192.168.1.1")
+
+// kubeadm-cluster.conf
+var KubeadmClusterConfig = `
+apiVersion: kubeadm.k8s.io/v1beta4
+kind: ClusterConfiguration
+kubernetesVersion: v1.30.0
+imageRepository: registry.aliyuncs.com/google_containers
+controlPlaneEndpoint: "your-control-plane-endpoint:6443"
+networking:
+  podSubnet: "10.244.0.0/16"
+`
+
+// kubeadm-join.conf
+var KubeadmJoinConfig = `
+apiVersion: kubeadm.k8s.io/v1beta4
+kind: JoinConfiguration
+nodeRegistration:
+  kubeletExtraArgs:
+    node-labels: "node-role.kubernetes.io/master"
+`
+
+var KubeadmResetConfig = `
+apiVersion: kubeadm.k8s.io/v1beta4
+kind: ResetConfiguration
+`
+
+var KubeadmUpgradeConfig = `
+apiVersion: kubeadm.k8s.io/v1beta4
+kind: UpgradeConfiguration
+`
+
+var KubeProxyConfig = `
+apiVersion: kubeproxy.config.k8s.io/v1alpha1
+kind: KubeProxyConfiguration
+`
+
+var KubeletConfig = `
+apiVersion: kubelet.config.k8s.io/v1
+kind: KubeletConfiguration
 `

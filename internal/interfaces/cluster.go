@@ -3,10 +3,13 @@ package interfaces
 import (
 	"context"
 	"fmt"
+	"os/exec"
+	"runtime"
 
 	"github.com/f-rambo/ocean/api/cluster/v1alpha1"
 	"github.com/f-rambo/ocean/internal/biz"
 	"github.com/f-rambo/ocean/internal/conf"
+	"github.com/f-rambo/ocean/utils"
 	"github.com/go-kratos/kratos/v2"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-kratos/kratos/v2/metadata"
@@ -123,12 +126,6 @@ func (c *ClusterInterface) Save(ctx context.Context, clusterArgs *v1alpha1.Clust
 	if err != nil {
 		return nil, err
 	}
-	// first
-	cluster.Status = biz.ClusterStatucCreating
-	err = c.clusterUc.Apply(ctx, cluster)
-	if err != nil {
-		return nil, err
-	}
 	return c.bizCLusterToCluster(cluster), nil
 }
 
@@ -170,7 +167,68 @@ func (c *ClusterInterface) ImportResouce(ctx context.Context, clusterArgs *v1alp
 	if err != nil {
 		return nil, err
 	}
-	return nil, nil
+	return &v1alpha1.Msg{}, nil
+}
+
+func (c *ClusterInterface) StartCluster(ctx context.Context, clusterID *v1alpha1.ClusterID) (*v1alpha1.Msg, error) {
+	if clusterID == nil || clusterID.Id == 0 {
+		return nil, errors.New("cluster id is required")
+	}
+	cluster, err := c.clusterUc.Get(ctx, clusterID.Id)
+	if err != nil {
+		return nil, err
+	}
+	err = c.clusterUc.Apply(ctx, cluster)
+	if err != nil {
+		return nil, err
+	}
+	return &v1alpha1.Msg{}, nil
+}
+
+// check bostion host data and resources
+func (c *ClusterInterface) CheckBostionHost(ctx context.Context, req *v1alpha1.CheckBostionHostRequest) (*v1alpha1.Msg, error) {
+	if req.Arch == "" {
+		return nil, errors.New("arch is required")
+	}
+	if req.OceanVersion == "" {
+		return nil, errors.New("ocean version is required")
+	}
+	if req.ShipVersion == "" {
+		return nil, errors.New("ship version is required")
+	}
+	if req.OceanDataTarGzPackagePath == "" {
+		return nil, errors.New("ocean data tar gz package path is required")
+	}
+	if req.OceanDataTarGzPackageSha256SumPath == "" {
+		return nil, errors.New("ocean data tar gz package sha256sum path is required")
+	}
+	if req.OceanPath == "" {
+		return nil, errors.New("ocean path is required")
+	}
+	if req.ShipPath == "" {
+		return nil, errors.New("ship path is required")
+	}
+	if req.Arch != runtime.GOOS {
+		return nil, errors.New("arch is wrong")
+	}
+	// check ocean data tar gz package
+	if ok := utils.IsFileExist(req.OceanDataTarGzPackagePath); !ok {
+		return nil, errors.New("ocean data tar gz package is not exist")
+	}
+	// check ship
+	if ok := utils.IsFileExist(req.ShipPath); !ok {
+		return nil, errors.New("ship is not exist")
+	}
+	// check ocean data tar gz package sha256sum
+	output, err := exec.Command("sudo", "sha256sum", "-c", req.OceanDataTarGzPackageSha256SumPath).CombinedOutput()
+	if err != nil {
+		return nil, errors.New(string(output))
+	}
+	// check ocean
+	if ok := utils.IsFileExist(req.OceanPath); !ok {
+		return nil, errors.New("ocean is not exist")
+	}
+	return &v1alpha1.Msg{}, nil
 }
 
 func (c *ClusterInterface) bizCLusterToCluster(bizCluster *biz.Cluster) *v1alpha1.Cluster {

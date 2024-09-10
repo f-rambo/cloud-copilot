@@ -23,9 +23,10 @@ const (
 	CloudInterface_Ping_FullMethodName                                     = "/cloud.v1alpha1.CloudInterface/Ping"
 	CloudInterface_InstallKubeadmKubeletCriO_FullMethodName                = "/cloud.v1alpha1.CloudInterface/InstallKubeadmKubeletCriO"
 	CloudInterface_AddKubeletServiceAndSettingKubeadmConfig_FullMethodName = "/cloud.v1alpha1.CloudInterface/AddKubeletServiceAndSettingKubeadmConfig"
-	CloudInterface_JoinKubeadmWithJoinCommand_FullMethodName               = "/cloud.v1alpha1.CloudInterface/JoinKubeadmWithJoinCommand"
-	CloudInterface_JoinKubeadmWithJoinConfigFile_FullMethodName            = "/cloud.v1alpha1.CloudInterface/JoinKubeadmWithJoinConfigFile"
-	CloudInterface_InitKubeadm_FullMethodName                              = "/cloud.v1alpha1.CloudInterface/InitKubeadm"
+	CloudInterface_KubeadmJoin_FullMethodName                              = "/cloud.v1alpha1.CloudInterface/KubeadmJoin"
+	CloudInterface_KubeadmInit_FullMethodName                              = "/cloud.v1alpha1.CloudInterface/KubeadmInit"
+	CloudInterface_KubeadmReset_FullMethodName                             = "/cloud.v1alpha1.CloudInterface/KubeadmReset"
+	CloudInterface_KubeadmUpgrade_FullMethodName                           = "/cloud.v1alpha1.CloudInterface/KubeadmUpgrade"
 	CloudInterface_SetingIpv4Forward_FullMethodName                        = "/cloud.v1alpha1.CloudInterface/SetingIpv4Forward"
 	CloudInterface_CloseSwap_FullMethodName                                = "/cloud.v1alpha1.CloudInterface/CloseSwap"
 	CloudInterface_CloseFirewall_FullMethodName                            = "/cloud.v1alpha1.CloudInterface/CloseFirewall"
@@ -40,12 +41,14 @@ type CloudInterfaceClient interface {
 	InstallKubeadmKubeletCriO(ctx context.Context, in *Cloud, opts ...grpc.CallOption) (*Msg, error)
 	// AddKubeletServiceAndSettingKubeadmConfig
 	AddKubeletServiceAndSettingKubeadmConfig(ctx context.Context, in *Cloud, opts ...grpc.CallOption) (*Msg, error)
-	// JoinKubeadmWithJoinCommand
-	JoinKubeadmWithJoinCommand(ctx context.Context, in *Cloud, opts ...grpc.CallOption) (*Msg, error)
-	// JoinKubeadmWithJoinConfigFile
-	JoinKubeadmWithJoinConfigFile(ctx context.Context, in *Cloud, opts ...grpc.CallOption) (*Msg, error)
-	// InitKubeadm
-	InitKubeadm(ctx context.Context, in *Cloud, opts ...grpc.CallOption) (*Msg, error)
+	// KubeadmJoin
+	KubeadmJoin(ctx context.Context, in *Cloud, opts ...grpc.CallOption) (*Msg, error)
+	// KubeadmInit
+	KubeadmInit(ctx context.Context, in *Cloud, opts ...grpc.CallOption) (*Msg, error)
+	// KubeadmReset
+	KubeadmReset(ctx context.Context, in *Cloud, opts ...grpc.CallOption) (*Msg, error)
+	// KubeadmUpgrade
+	KubeadmUpgrade(ctx context.Context, in *Cloud, opts ...grpc.CallOption) (*Msg, error)
 	// SetingIpv4Forward
 	SetingIpv4Forward(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*Msg, error)
 	// CloseSwap
@@ -92,30 +95,40 @@ func (c *cloudInterfaceClient) AddKubeletServiceAndSettingKubeadmConfig(ctx cont
 	return out, nil
 }
 
-func (c *cloudInterfaceClient) JoinKubeadmWithJoinCommand(ctx context.Context, in *Cloud, opts ...grpc.CallOption) (*Msg, error) {
+func (c *cloudInterfaceClient) KubeadmJoin(ctx context.Context, in *Cloud, opts ...grpc.CallOption) (*Msg, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Msg)
-	err := c.cc.Invoke(ctx, CloudInterface_JoinKubeadmWithJoinCommand_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, CloudInterface_KubeadmJoin_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *cloudInterfaceClient) JoinKubeadmWithJoinConfigFile(ctx context.Context, in *Cloud, opts ...grpc.CallOption) (*Msg, error) {
+func (c *cloudInterfaceClient) KubeadmInit(ctx context.Context, in *Cloud, opts ...grpc.CallOption) (*Msg, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Msg)
-	err := c.cc.Invoke(ctx, CloudInterface_JoinKubeadmWithJoinConfigFile_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, CloudInterface_KubeadmInit_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *cloudInterfaceClient) InitKubeadm(ctx context.Context, in *Cloud, opts ...grpc.CallOption) (*Msg, error) {
+func (c *cloudInterfaceClient) KubeadmReset(ctx context.Context, in *Cloud, opts ...grpc.CallOption) (*Msg, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Msg)
-	err := c.cc.Invoke(ctx, CloudInterface_InitKubeadm_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, CloudInterface_KubeadmReset_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *cloudInterfaceClient) KubeadmUpgrade(ctx context.Context, in *Cloud, opts ...grpc.CallOption) (*Msg, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Msg)
+	err := c.cc.Invoke(ctx, CloudInterface_KubeadmUpgrade_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -161,12 +174,14 @@ type CloudInterfaceServer interface {
 	InstallKubeadmKubeletCriO(context.Context, *Cloud) (*Msg, error)
 	// AddKubeletServiceAndSettingKubeadmConfig
 	AddKubeletServiceAndSettingKubeadmConfig(context.Context, *Cloud) (*Msg, error)
-	// JoinKubeadmWithJoinCommand
-	JoinKubeadmWithJoinCommand(context.Context, *Cloud) (*Msg, error)
-	// JoinKubeadmWithJoinConfigFile
-	JoinKubeadmWithJoinConfigFile(context.Context, *Cloud) (*Msg, error)
-	// InitKubeadm
-	InitKubeadm(context.Context, *Cloud) (*Msg, error)
+	// KubeadmJoin
+	KubeadmJoin(context.Context, *Cloud) (*Msg, error)
+	// KubeadmInit
+	KubeadmInit(context.Context, *Cloud) (*Msg, error)
+	// KubeadmReset
+	KubeadmReset(context.Context, *Cloud) (*Msg, error)
+	// KubeadmUpgrade
+	KubeadmUpgrade(context.Context, *Cloud) (*Msg, error)
 	// SetingIpv4Forward
 	SetingIpv4Forward(context.Context, *emptypb.Empty) (*Msg, error)
 	// CloseSwap
@@ -192,14 +207,17 @@ func (UnimplementedCloudInterfaceServer) InstallKubeadmKubeletCriO(context.Conte
 func (UnimplementedCloudInterfaceServer) AddKubeletServiceAndSettingKubeadmConfig(context.Context, *Cloud) (*Msg, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AddKubeletServiceAndSettingKubeadmConfig not implemented")
 }
-func (UnimplementedCloudInterfaceServer) JoinKubeadmWithJoinCommand(context.Context, *Cloud) (*Msg, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method JoinKubeadmWithJoinCommand not implemented")
+func (UnimplementedCloudInterfaceServer) KubeadmJoin(context.Context, *Cloud) (*Msg, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method KubeadmJoin not implemented")
 }
-func (UnimplementedCloudInterfaceServer) JoinKubeadmWithJoinConfigFile(context.Context, *Cloud) (*Msg, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method JoinKubeadmWithJoinConfigFile not implemented")
+func (UnimplementedCloudInterfaceServer) KubeadmInit(context.Context, *Cloud) (*Msg, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method KubeadmInit not implemented")
 }
-func (UnimplementedCloudInterfaceServer) InitKubeadm(context.Context, *Cloud) (*Msg, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method InitKubeadm not implemented")
+func (UnimplementedCloudInterfaceServer) KubeadmReset(context.Context, *Cloud) (*Msg, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method KubeadmReset not implemented")
+}
+func (UnimplementedCloudInterfaceServer) KubeadmUpgrade(context.Context, *Cloud) (*Msg, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method KubeadmUpgrade not implemented")
 }
 func (UnimplementedCloudInterfaceServer) SetingIpv4Forward(context.Context, *emptypb.Empty) (*Msg, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SetingIpv4Forward not implemented")
@@ -285,56 +303,74 @@ func _CloudInterface_AddKubeletServiceAndSettingKubeadmConfig_Handler(srv interf
 	return interceptor(ctx, in, info, handler)
 }
 
-func _CloudInterface_JoinKubeadmWithJoinCommand_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _CloudInterface_KubeadmJoin_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(Cloud)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(CloudInterfaceServer).JoinKubeadmWithJoinCommand(ctx, in)
+		return srv.(CloudInterfaceServer).KubeadmJoin(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: CloudInterface_JoinKubeadmWithJoinCommand_FullMethodName,
+		FullMethod: CloudInterface_KubeadmJoin_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(CloudInterfaceServer).JoinKubeadmWithJoinCommand(ctx, req.(*Cloud))
+		return srv.(CloudInterfaceServer).KubeadmJoin(ctx, req.(*Cloud))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _CloudInterface_JoinKubeadmWithJoinConfigFile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _CloudInterface_KubeadmInit_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(Cloud)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(CloudInterfaceServer).JoinKubeadmWithJoinConfigFile(ctx, in)
+		return srv.(CloudInterfaceServer).KubeadmInit(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: CloudInterface_JoinKubeadmWithJoinConfigFile_FullMethodName,
+		FullMethod: CloudInterface_KubeadmInit_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(CloudInterfaceServer).JoinKubeadmWithJoinConfigFile(ctx, req.(*Cloud))
+		return srv.(CloudInterfaceServer).KubeadmInit(ctx, req.(*Cloud))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _CloudInterface_InitKubeadm_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _CloudInterface_KubeadmReset_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(Cloud)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(CloudInterfaceServer).InitKubeadm(ctx, in)
+		return srv.(CloudInterfaceServer).KubeadmReset(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: CloudInterface_InitKubeadm_FullMethodName,
+		FullMethod: CloudInterface_KubeadmReset_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(CloudInterfaceServer).InitKubeadm(ctx, req.(*Cloud))
+		return srv.(CloudInterfaceServer).KubeadmReset(ctx, req.(*Cloud))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _CloudInterface_KubeadmUpgrade_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Cloud)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CloudInterfaceServer).KubeadmUpgrade(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CloudInterface_KubeadmUpgrade_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CloudInterfaceServer).KubeadmUpgrade(ctx, req.(*Cloud))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -413,16 +449,20 @@ var CloudInterface_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _CloudInterface_AddKubeletServiceAndSettingKubeadmConfig_Handler,
 		},
 		{
-			MethodName: "JoinKubeadmWithJoinCommand",
-			Handler:    _CloudInterface_JoinKubeadmWithJoinCommand_Handler,
+			MethodName: "KubeadmJoin",
+			Handler:    _CloudInterface_KubeadmJoin_Handler,
 		},
 		{
-			MethodName: "JoinKubeadmWithJoinConfigFile",
-			Handler:    _CloudInterface_JoinKubeadmWithJoinConfigFile_Handler,
+			MethodName: "KubeadmInit",
+			Handler:    _CloudInterface_KubeadmInit_Handler,
 		},
 		{
-			MethodName: "InitKubeadm",
-			Handler:    _CloudInterface_InitKubeadm_Handler,
+			MethodName: "KubeadmReset",
+			Handler:    _CloudInterface_KubeadmReset_Handler,
+		},
+		{
+			MethodName: "KubeadmUpgrade",
+			Handler:    _CloudInterface_KubeadmUpgrade_Handler,
 		},
 		{
 			MethodName: "SetingIpv4Forward",

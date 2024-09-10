@@ -131,6 +131,7 @@ autostart=true
 autorestart=true
 stderr_logfile=/var/log/ocean.err.log
 stdout_logfile=/var/log/ocean.out.log
+environment=ENV="bostionhost"
 EOF
 
 # Start supervisord

@@ -67,7 +67,7 @@ type AlicloudCluster struct {
 	eipID           pulumi.StringInput
 }
 
-func StartAlicloudCluster(cluster *biz.Cluster) *AlicloudCluster {
+func AlicloudEcs(cluster *biz.Cluster) *AlicloudCluster {
 	return &AlicloudCluster{
 		cluster: cluster,
 	}
@@ -93,7 +93,7 @@ func (a *AlicloudCluster) getIntanceTypeFamilies(nodeGroup *biz.NodeGroup) strin
 	}
 }
 
-func (a *AlicloudCluster) StartServers(ctx *pulumi.Context) error {
+func (a *AlicloudCluster) Start(ctx *pulumi.Context) error {
 	err := a.infrastructural(ctx)
 	if err != nil {
 		return errors.Wrap(err, "alicloud cluster init failed")
@@ -527,6 +527,6 @@ func (a *AlicloudCluster) Import(ctx *pulumi.Context) error {
 	return nil
 }
 
-func (a *AlicloudCluster) Clear(ctx *pulumi.Context) error {
+func (a *AlicloudCluster) Clean(ctx *pulumi.Context) error {
 	return nil
 }

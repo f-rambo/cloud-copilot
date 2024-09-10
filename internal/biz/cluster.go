@@ -30,7 +30,8 @@ type Cluster struct {
 	Type             ClusterType   `json:"type" gorm:"column:type; default:''; NOT NULL;"` //*  aws google cloud azure alicloud local
 	KubeConfig       string        `json:"kube_config" gorm:"column:kube_config; default:''; NOT NULL; type:json"`
 	PublicKey        string        `json:"public_key" gorm:"column:public_key; default:''; NOT NULL;"` // *
-	Region           string        `json:"region" gorm:"column:region; default:''; NOT NULL;"`         // *
+	PrivateKey       string        `json:"private_key" gorm:"column:private_key; default:''; NOT NULL;"`
+	Region           string        `json:"region" gorm:"column:region; default:''; NOT NULL;"` // *
 	VpcID            string        `json:"vpc_id" gorm:"column:vpc_id; default:''; NOT NULL;"`
 	VpcCidr          string        `json:"vpc_cidr" gorm:"column:vpc_cidr; default:''; NOT NULL;"`
 	ResourceGroupID  string        `json:"resource_group_id" gorm:"column:resource_group_id; default:''; NOT NULL;"`
@@ -46,7 +47,7 @@ type Cluster struct {
 }
 
 type NodeGroup struct {
-	ID             int64         `json:"id" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
+	ID             string        `json:"id" gorm:"column:id;primaryKey; NOT NULL"`
 	Name           string        `json:"name" gorm:"column:name; default:''; NOT NULL"`
 	Type           NodeGroupType `json:"type" gorm:"column:type; default:''; NOT NULL;"`
 	InstanceType   string        `json:"instance_type" gorm:"column:instance_type; default:''; NOT NULL"`
@@ -90,7 +91,7 @@ type Node struct {
 	PodPrice                float64    `json:"pod_price" gorm:"column:pod_price; default:0; NOT NULL;"`   // 节点上pod的价格
 	InternetMaxBandwidthOut int32      `json:"internet_max_bandwidth_out" gorm:"column:internet_max_bandwidth_out; default:0; NOT NULL"`
 	ClusterID               int64      `json:"cluster_id" gorm:"column:cluster_id; default:0; NOT NULL"`
-	NodeGroupID             int64      `json:"node_group_id" gorm:"column:node_group_id; default:0; NOT NULL"`
+	NodeGroupID             string     `json:"node_group_id" gorm:"column:node_group_id; default:''; NOT NULL"`
 	gorm.Model
 }
 
@@ -113,7 +114,6 @@ type BostionHost struct {
 	gorm.Model
 }
 
-// 持久化
 type ClusterRepo interface {
 	Save(context.Context, *Cluster) error
 	Get(context.Context, int64) (*Cluster, error)
@@ -124,7 +124,6 @@ type ClusterRepo interface {
 	Watch(ctx context.Context) (*Cluster, error)
 }
 
-// 基础建设
 type ClusterInfrastructure interface {
 	Start(context.Context, *Cluster) error
 	Stop(context.Context, *Cluster) error
@@ -137,7 +136,6 @@ type ClusterInfrastructure interface {
 	RemoveNodes(context.Context, *Cluster, []*Node) error
 }
 
-// 运行时集群
 type ClusterRuntime interface {
 	CurrentCluster(context.Context, *Cluster) error
 }
@@ -146,17 +144,39 @@ var ErrClusterNotFound error = errors.New("cluster not found")
 
 type ClusterType string
 
+const (
+	ClusterTypeLocal       ClusterType = "local"
+	ClusterTypeAWSEc2      ClusterType = "aws_ec2"
+	ClusterTypeAWSEks      ClusterType = "aws_eks"
+	ClusterTypeAliCloudEcs ClusterType = "alicloud_ecs"
+	ClusterTypeAliCloudAks ClusterType = "alicloud_aks"
+	ClusterTypeGoogleGcp   ClusterType = "google_gcp"
+	ClusterTypeGoogleGke   ClusterType = "google_gke"
+)
+
 func (c ClusterType) String() string {
 	return string(c)
 }
 
-const (
-	ClusterTypeLocal    ClusterType = "local"
-	ClusterTypeAWS      ClusterType = "aws"
-	ClusterTypeGoogle   ClusterType = "google"
-	ClusterTypeAzure    ClusterType = "azure"
-	ClusterTypeAliCloud ClusterType = "alicloud"
-)
+func (c ClusterType) IsCloud() bool {
+	return c != ClusterTypeLocal
+}
+
+func (c ClusterType) IsIntegratedCloud() bool {
+	return c == ClusterTypeAWSEks || c == ClusterTypeAliCloudAks || c == ClusterTypeGoogleGke
+}
+
+func ClusterTypes() []ClusterType {
+	return []ClusterType{
+		ClusterTypeLocal,
+		ClusterTypeAWSEc2,
+		ClusterTypeAWSEks,
+		ClusterTypeAliCloudEcs,
+		ClusterTypeAliCloudAks,
+		ClusterTypeGoogleGcp,
+		ClusterTypeGoogleGke,
+	}
+}
 
 type ClusterStatus uint8
 
@@ -343,7 +363,7 @@ func (n *Node) GetStatus() NodeStatus {
 	return NodeStatus(n.Status)
 }
 
-func (c *Cluster) GetNodeGroup(nodeGroupId int64) *NodeGroup {
+func (c *Cluster) GetNodeGroup(nodeGroupId string) *NodeGroup {
 	for _, nodeGroup := range c.NodeGroups {
 		if nodeGroup.ID == nodeGroupId {
 			return nodeGroup
@@ -510,9 +530,12 @@ func (uc *ClusterUsecase) Watch(ctx context.Context) (*Cluster, error) {
 	return uc.clusterRepo.Watch(ctx)
 }
 
-// 第一次在集群中运行，导入资源
 func (uc *ClusterUsecase) ImportResource(ctx context.Context, cluster *Cluster) error {
-	err := uc.clusterInfrastructure.Import(ctx, cluster)
+	err := uc.clusterRuntime.CurrentCluster(ctx, cluster)
+	if err != nil && !errors.Is(err, ErrClusterNotFound) {
+		return err
+	}
+	err = uc.clusterInfrastructure.Import(ctx, cluster)
 	if err != nil {
 		return err
 	}
@@ -620,8 +643,4 @@ func (uc *ClusterUsecase) handlerRemoveNode(ctx context.Context, cluster *Cluste
 	}
 	cluster.Nodes = newNodes
 	return nil
-}
-
-func (uc *ClusterUsecase) MigrateToBostionHost(ctx context.Context, cluster *Cluster) error {
-	return uc.clusterInfrastructure.MigrateToBostionHost(ctx, cluster)
 }

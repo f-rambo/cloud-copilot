@@ -32,30 +32,38 @@ service CloudInterface {
             };
       }
 
-      // JoinKubeadmWithJoinCommand
-      rpc JoinKubeadmWithJoinCommand(cloud.v1alpha1.Cloud) returns (cloud.v1alpha1.Msg) {
+      // KubeadmJoin
+      rpc KubeadmJoin(cloud.v1alpha1.Cloud) returns (cloud.v1alpha1.Msg) {
             option (google.api.http) = {
-              post: "/api/v1alpha1/cloud/join_kubeadm_with_join_command"
+              post: "/api/v1alpha1/cloud/kubeadm_join"
               body: "*"
             };
       }
 
-      // JoinKubeadmWithJoinConfigFile
-      rpc JoinKubeadmWithJoinConfigFile(cloud.v1alpha1.Cloud) returns (cloud.v1alpha1.Msg) {
+      // KubeadmInit
+      rpc KubeadmInit(cloud.v1alpha1.Cloud) returns (cloud.v1alpha1.Msg) {
             option (google.api.http) = {
-              post: "/api/v1alpha1/cloud/join_kubeadm_with_join_config_file"
+              post: "/api/v1alpha1/cloud/kubeadm_init"
               body: "*"
             };
       }
 
-      // InitKubeadm
-      rpc InitKubeadm(cloud.v1alpha1.Cloud) returns (cloud.v1alpha1.Msg) {
+      // KubeadmReset
+      rpc KubeadmReset(cloud.v1alpha1.Cloud) returns (cloud.v1alpha1.Msg) {
             option (google.api.http) = {
-              post: "/api/v1alpha1/cloud/init_kubeadm"
+              post: "/api/v1alpha1/cloud/kubeadm_reset"
               body: "*"
             };
       }
-
+      
+      // KubeadmUpgrade
+      rpc KubeadmUpgrade(cloud.v1alpha1.Cloud) returns (cloud.v1alpha1.Msg) {
+            option (google.api.http) = {
+              post: "/api/v1alpha1/cloud/kubeadm_upgrade"
+              body: "*"
+            };
+      }
+      
       // SetingIpv4Forward
       rpc SetingIpv4Forward(google.protobuf.Empty) returns (cloud.v1alpha1.Msg) {
             option (google.api.http) = {
