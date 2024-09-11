@@ -13,11 +13,8 @@ import (
 	"github.com/f-rambo/ocean/internal/biz"
 	"github.com/f-rambo/ocean/internal/conf"
 	"github.com/f-rambo/ocean/utils"
-	"github.com/go-kratos/kratos/v2"
 	"github.com/go-kratos/kratos/v2/log"
-	"github.com/go-kratos/kratos/v2/metadata"
 	"github.com/pkg/errors"
-	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
@@ -63,12 +60,6 @@ func (uc *ClusterInterface) StopReconcile(ctx context.Context) error {
 }
 
 func (c *ClusterInterface) Ping(ctx context.Context, _ *emptypb.Empty) (*v1alpha1.Msg, error) {
-	if appInfo, ok := kratos.FromContext(ctx); ok {
-		fmt.Println(appInfo.Metadata())
-	}
-	if md, ok := metadata.FromServerContext(ctx); ok {
-		fmt.Println(md)
-	}
 	return &v1alpha1.Msg{Message: "pong"}, nil
 }
 
@@ -236,7 +227,7 @@ func (c *ClusterInterface) CheckBostionHost(ctx context.Context, req *v1alpha1.C
 }
 
 // get logs
-func (c *ClusterInterface) GetLogs(stream grpc.BidiStreamingServer[v1alpha1.ClusterLogsRequest, v1alpha1.ClusterLogsResponse]) error {
+func (c *ClusterInterface) GetLogs(stream v1alpha1.ClusterInterface_GetLogsServer) error {
 	var lastReadPos int64
 
 	for {
@@ -246,6 +237,9 @@ func (c *ClusterInterface) GetLogs(stream grpc.BidiStreamingServer[v1alpha1.Clus
 		}
 		if err != nil {
 			return err
+		}
+		if req.TailLines == 0 {
+			req.TailLines = 30
 		}
 		reqJson, err := json.Marshal(req)
 		if err != nil {
@@ -273,7 +267,7 @@ func (c *ClusterInterface) GetLogs(stream grpc.BidiStreamingServer[v1alpha1.Clus
 		var logs string
 		if lastReadPos == 0 {
 			// Read the last 30 lines
-			logs, err = utils.ReadLastNLines(file, 30)
+			logs, err = utils.ReadLastNLines(file, int(req.TailLines))
 			if err != nil {
 				return err
 			}

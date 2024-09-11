@@ -22,6 +22,7 @@ const _ = grpc.SupportPackageIsVersion9
 const (
 	SystemInterface_Ping_FullMethodName      = "/system.v1alpha1.SystemInterface/Ping"
 	SystemInterface_GetSystem_FullMethodName = "/system.v1alpha1.SystemInterface/GetSystem"
+	SystemInterface_GetLogs_FullMethodName   = "/system.v1alpha1.SystemInterface/GetLogs"
 )
 
 // SystemInterfaceClient is the client API for SystemInterface service.
@@ -30,6 +31,7 @@ const (
 type SystemInterfaceClient interface {
 	Ping(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*Msg, error)
 	GetSystem(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*System, error)
+	GetLogs(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[LogRequest, LogResponse], error)
 }
 
 type systemInterfaceClient struct {
@@ -60,12 +62,26 @@ func (c *systemInterfaceClient) GetSystem(ctx context.Context, in *emptypb.Empty
 	return out, nil
 }
 
+func (c *systemInterfaceClient) GetLogs(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[LogRequest, LogResponse], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &SystemInterface_ServiceDesc.Streams[0], SystemInterface_GetLogs_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[LogRequest, LogResponse]{ClientStream: stream}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type SystemInterface_GetLogsClient = grpc.BidiStreamingClient[LogRequest, LogResponse]
+
 // SystemInterfaceServer is the server API for SystemInterface service.
 // All implementations must embed UnimplementedSystemInterfaceServer
 // for forward compatibility.
 type SystemInterfaceServer interface {
 	Ping(context.Context, *emptypb.Empty) (*Msg, error)
 	GetSystem(context.Context, *emptypb.Empty) (*System, error)
+	GetLogs(grpc.BidiStreamingServer[LogRequest, LogResponse]) error
 	mustEmbedUnimplementedSystemInterfaceServer()
 }
 
@@ -81,6 +97,9 @@ func (UnimplementedSystemInterfaceServer) Ping(context.Context, *emptypb.Empty) 
 }
 func (UnimplementedSystemInterfaceServer) GetSystem(context.Context, *emptypb.Empty) (*System, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetSystem not implemented")
+}
+func (UnimplementedSystemInterfaceServer) GetLogs(grpc.BidiStreamingServer[LogRequest, LogResponse]) error {
+	return status.Errorf(codes.Unimplemented, "method GetLogs not implemented")
 }
 func (UnimplementedSystemInterfaceServer) mustEmbedUnimplementedSystemInterfaceServer() {}
 func (UnimplementedSystemInterfaceServer) testEmbeddedByValue()                         {}
@@ -139,6 +158,13 @@ func _SystemInterface_GetSystem_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _SystemInterface_GetLogs_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(SystemInterfaceServer).GetLogs(&grpc.GenericServerStream[LogRequest, LogResponse]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type SystemInterface_GetLogsServer = grpc.BidiStreamingServer[LogRequest, LogResponse]
+
 // SystemInterface_ServiceDesc is the grpc.ServiceDesc for SystemInterface service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -155,6 +181,13 @@ var SystemInterface_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _SystemInterface_GetSystem_Handler,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "GetLogs",
+			Handler:       _SystemInterface_GetLogs_Handler,
+			ServerStreams: true,
+			ClientStreams: true,
+		},
+	},
 	Metadata: "api/system/v1alpha1/system.proto",
 }

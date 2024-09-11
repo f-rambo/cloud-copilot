@@ -21,4 +21,6 @@ service SystemInterface {
               get: "/api/v1alpha1/system"
             };
       }
+
+      rpc GetLogs(stream system.v1alpha1.LogRequest) returns (stream system.v1alpha1.LogResponse);
 }

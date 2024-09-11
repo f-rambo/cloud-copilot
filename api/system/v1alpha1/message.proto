@@ -19,3 +19,12 @@ message System {
     string kube_proxy = 12;
     string internal_ip = 13;
 }
+
+
+message LogRequest {
+    int32 tail_lines = 1 [json_name = "tail_lines"];
+}
+
+message LogResponse {
+    string log = 1 [json_name = "log"];
+}
