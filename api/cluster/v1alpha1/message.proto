@@ -70,3 +70,11 @@ message CheckBostionHostRequest {
     string ocean_path = 6 [json_name = "ocean_path"];
     string ship_path = 7 [json_name = "ship_path"];
 }
+
+message ClusterLogsRequest {
+    int64 cluster_id = 1 [json_name = "cluster_id"];
+}
+
+message ClusterLogsResponse {
+    string logs = 1 [json_name = "logs"];
+}

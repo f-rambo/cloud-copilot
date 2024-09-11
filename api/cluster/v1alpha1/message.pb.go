@@ -653,6 +653,100 @@ func (x *CheckBostionHostRequest) GetShipPath() string {
 	return ""
 }
 
+type ClusterLogsRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	ClusterId int64 `protobuf:"varint,1,opt,name=cluster_id,proto3" json:"cluster_id,omitempty"`
+}
+
+func (x *ClusterLogsRequest) Reset() {
+	*x = ClusterLogsRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_api_cluster_v1alpha1_message_proto_msgTypes[7]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *ClusterLogsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ClusterLogsRequest) ProtoMessage() {}
+
+func (x *ClusterLogsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_api_cluster_v1alpha1_message_proto_msgTypes[7]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ClusterLogsRequest.ProtoReflect.Descriptor instead.
+func (*ClusterLogsRequest) Descriptor() ([]byte, []int) {
+	return file_api_cluster_v1alpha1_message_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *ClusterLogsRequest) GetClusterId() int64 {
+	if x != nil {
+		return x.ClusterId
+	}
+	return 0
+}
+
+type ClusterLogsResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Logs string `protobuf:"bytes,1,opt,name=logs,proto3" json:"logs,omitempty"`
+}
+
+func (x *ClusterLogsResponse) Reset() {
+	*x = ClusterLogsResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_api_cluster_v1alpha1_message_proto_msgTypes[8]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *ClusterLogsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ClusterLogsResponse) ProtoMessage() {}
+
+func (x *ClusterLogsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_api_cluster_v1alpha1_message_proto_msgTypes[8]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ClusterLogsResponse.ProtoReflect.Descriptor instead.
+func (*ClusterLogsResponse) Descriptor() ([]byte, []int) {
+	return file_api_cluster_v1alpha1_message_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *ClusterLogsResponse) GetLogs() string {
+	if x != nil {
+		return x.Logs
+	}
+	return ""
+}
+
 var File_api_cluster_v1alpha1_message_proto protoreflect.FileDescriptor
 
 var file_api_cluster_v1alpha1_message_proto_rawDesc = []byte{
@@ -755,10 +849,16 @@ var file_api_cluster_v1alpha1_message_proto_rawDesc = []byte{
 	0x1e, 0x0a, 0x0a, 0x6f, 0x63, 0x65, 0x61, 0x6e, 0x5f, 0x70, 0x61, 0x74, 0x68, 0x18, 0x06, 0x20,
 	0x01, 0x28, 0x09, 0x52, 0x0a, 0x6f, 0x63, 0x65, 0x61, 0x6e, 0x5f, 0x70, 0x61, 0x74, 0x68, 0x12,
 	0x1c, 0x0a, 0x09, 0x73, 0x68, 0x69, 0x70, 0x5f, 0x70, 0x61, 0x74, 0x68, 0x18, 0x07, 0x20, 0x01,
-	0x28, 0x09, 0x52, 0x09, 0x73, 0x68, 0x69, 0x70, 0x5f, 0x70, 0x61, 0x74, 0x68, 0x42, 0x1f, 0x5a,
-	0x1d, 0x61, 0x70, 0x69, 0x2f, 0x63, 0x6c, 0x75, 0x73, 0x74, 0x65, 0x72, 0x2f, 0x76, 0x31, 0x61,
-	0x6c, 0x70, 0x68, 0x61, 0x31, 0x3b, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x62, 0x06,
-	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x28, 0x09, 0x52, 0x09, 0x73, 0x68, 0x69, 0x70, 0x5f, 0x70, 0x61, 0x74, 0x68, 0x22, 0x34, 0x0a,
+	0x12, 0x43, 0x6c, 0x75, 0x73, 0x74, 0x65, 0x72, 0x4c, 0x6f, 0x67, 0x73, 0x52, 0x65, 0x71, 0x75,
+	0x65, 0x73, 0x74, 0x12, 0x1e, 0x0a, 0x0a, 0x63, 0x6c, 0x75, 0x73, 0x74, 0x65, 0x72, 0x5f, 0x69,
+	0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x03, 0x52, 0x0a, 0x63, 0x6c, 0x75, 0x73, 0x74, 0x65, 0x72,
+	0x5f, 0x69, 0x64, 0x22, 0x29, 0x0a, 0x13, 0x43, 0x6c, 0x75, 0x73, 0x74, 0x65, 0x72, 0x4c, 0x6f,
+	0x67, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x12, 0x0a, 0x04, 0x6c, 0x6f,
+	0x67, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x6c, 0x6f, 0x67, 0x73, 0x42, 0x1f,
+	0x5a, 0x1d, 0x61, 0x70, 0x69, 0x2f, 0x63, 0x6c, 0x75, 0x73, 0x74, 0x65, 0x72, 0x2f, 0x76, 0x31,
+	0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x3b, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x62,
+	0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -773,7 +873,7 @@ func file_api_cluster_v1alpha1_message_proto_rawDescGZIP() []byte {
 	return file_api_cluster_v1alpha1_message_proto_rawDescData
 }
 
-var file_api_cluster_v1alpha1_message_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
+var file_api_cluster_v1alpha1_message_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_api_cluster_v1alpha1_message_proto_goTypes = []any{
 	(*ClusterArgs)(nil),             // 0: cluster.v1alpha1.ClusterArgs
 	(*NodeArgs)(nil),                // 1: cluster.v1alpha1.NodeArgs
@@ -782,6 +882,8 @@ var file_api_cluster_v1alpha1_message_proto_goTypes = []any{
 	(*Cluster)(nil),                 // 4: cluster.v1alpha1.Cluster
 	(*Node)(nil),                    // 5: cluster.v1alpha1.Node
 	(*CheckBostionHostRequest)(nil), // 6: cluster.v1alpha1.CheckBostionHostRequest
+	(*ClusterLogsRequest)(nil),      // 7: cluster.v1alpha1.ClusterLogsRequest
+	(*ClusterLogsResponse)(nil),     // 8: cluster.v1alpha1.ClusterLogsResponse
 }
 var file_api_cluster_v1alpha1_message_proto_depIdxs = []int32{
 	1, // 0: cluster.v1alpha1.ClusterArgs.nodes:type_name -> cluster.v1alpha1.NodeArgs
@@ -884,6 +986,30 @@ func file_api_cluster_v1alpha1_message_proto_init() {
 				return nil
 			}
 		}
+		file_api_cluster_v1alpha1_message_proto_msgTypes[7].Exporter = func(v any, i int) any {
+			switch v := v.(*ClusterLogsRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_api_cluster_v1alpha1_message_proto_msgTypes[8].Exporter = func(v any, i int) any {
+			switch v := v.(*ClusterLogsResponse); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -891,7 +1017,7 @@ func file_api_cluster_v1alpha1_message_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_api_cluster_v1alpha1_message_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   7,
+			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

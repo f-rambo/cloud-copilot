@@ -61,4 +61,6 @@ service ClusterInterface {
               body: "*"
             };
       }
+
+      rpc GetLogs(stream cluster.v1alpha1.ClusterLogsRequest) returns (stream cluster.v1alpha1.ClusterLogsResponse); 
 }

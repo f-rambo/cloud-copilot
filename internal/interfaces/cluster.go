@@ -2,7 +2,10 @@ package interfaces
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
+	"os"
 	"os/exec"
 	"runtime"
 
@@ -14,6 +17,7 @@ import (
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-kratos/kratos/v2/metadata"
 	"github.com/pkg/errors"
+	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
@@ -229,6 +233,80 @@ func (c *ClusterInterface) CheckBostionHost(ctx context.Context, req *v1alpha1.C
 		return nil, errors.New("ocean is not exist")
 	}
 	return &v1alpha1.Msg{}, nil
+}
+
+// get logs
+func (c *ClusterInterface) GetLogs(stream grpc.BidiStreamingServer[v1alpha1.ClusterLogsRequest, v1alpha1.ClusterLogsResponse]) error {
+	var lastReadPos int64
+
+	for {
+		req, err := stream.Recv()
+		if err == io.EOF {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		reqJson, err := json.Marshal(req)
+		if err != nil {
+			return err
+		}
+		clusterLogReq := &v1alpha1.ClusterLogsRequest{}
+		err = json.Unmarshal(reqJson, clusterLogReq)
+		if err != nil {
+			return err
+		}
+		clusterLogPath, err := utils.GetPackageStorePathByNames("log", fmt.Sprintf("cluster-%d.log", clusterLogReq.ClusterId))
+		if err != nil {
+			return err
+		}
+		if ok := utils.IsFileExist(clusterLogPath); !ok {
+			return errors.New("cluster log does not exist")
+		}
+
+		file, err := os.Open(clusterLogPath)
+		if err != nil {
+			return err
+		}
+		defer file.Close()
+
+		var logs string
+		if lastReadPos == 0 {
+			// Read the last 30 lines
+			logs, err = utils.ReadLastNLines(file, 30)
+			if err != nil {
+				return err
+			}
+		} else {
+			// Read from the last read position
+			_, err = file.Seek(lastReadPos, io.SeekStart)
+			if err != nil {
+				return err
+			}
+			newLogs, err := io.ReadAll(file)
+			if err != nil {
+				return err
+			}
+			logs = string(newLogs)
+		}
+
+		// If logs are empty, send a "." character
+		if logs == "" {
+			logs = "."
+		}
+
+		err = stream.Send(&v1alpha1.ClusterLogsResponse{
+			Logs: logs,
+		})
+		if err != nil {
+			return err
+		}
+
+		lastReadPos, err = file.Seek(0, io.SeekEnd)
+		if err != nil {
+			return err
+		}
+	}
 }
 
 func (c *ClusterInterface) bizCLusterToCluster(bizCluster *biz.Cluster) *v1alpha1.Cluster {

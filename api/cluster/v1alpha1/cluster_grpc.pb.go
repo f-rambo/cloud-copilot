@@ -28,6 +28,7 @@ const (
 	ClusterInterface_ImportResource_FullMethodName   = "/cluster.v1alpha1.ClusterInterface/ImportResource"
 	ClusterInterface_StartCluster_FullMethodName     = "/cluster.v1alpha1.ClusterInterface/StartCluster"
 	ClusterInterface_CheckBostionHost_FullMethodName = "/cluster.v1alpha1.ClusterInterface/CheckBostionHost"
+	ClusterInterface_GetLogs_FullMethodName          = "/cluster.v1alpha1.ClusterInterface/GetLogs"
 )
 
 // ClusterInterfaceClient is the client API for ClusterInterface service.
@@ -42,6 +43,7 @@ type ClusterInterfaceClient interface {
 	ImportResource(ctx context.Context, in *ClusterID, opts ...grpc.CallOption) (*Msg, error)
 	StartCluster(ctx context.Context, in *ClusterID, opts ...grpc.CallOption) (*Msg, error)
 	CheckBostionHost(ctx context.Context, in *CheckBostionHostRequest, opts ...grpc.CallOption) (*Msg, error)
+	GetLogs(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[ClusterLogsRequest, ClusterLogsResponse], error)
 }
 
 type clusterInterfaceClient struct {
@@ -132,6 +134,19 @@ func (c *clusterInterfaceClient) CheckBostionHost(ctx context.Context, in *Check
 	return out, nil
 }
 
+func (c *clusterInterfaceClient) GetLogs(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[ClusterLogsRequest, ClusterLogsResponse], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &ClusterInterface_ServiceDesc.Streams[0], ClusterInterface_GetLogs_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[ClusterLogsRequest, ClusterLogsResponse]{ClientStream: stream}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type ClusterInterface_GetLogsClient = grpc.BidiStreamingClient[ClusterLogsRequest, ClusterLogsResponse]
+
 // ClusterInterfaceServer is the server API for ClusterInterface service.
 // All implementations must embed UnimplementedClusterInterfaceServer
 // for forward compatibility.
@@ -144,6 +159,7 @@ type ClusterInterfaceServer interface {
 	ImportResource(context.Context, *ClusterID) (*Msg, error)
 	StartCluster(context.Context, *ClusterID) (*Msg, error)
 	CheckBostionHost(context.Context, *CheckBostionHostRequest) (*Msg, error)
+	GetLogs(grpc.BidiStreamingServer[ClusterLogsRequest, ClusterLogsResponse]) error
 	mustEmbedUnimplementedClusterInterfaceServer()
 }
 
@@ -177,6 +193,9 @@ func (UnimplementedClusterInterfaceServer) StartCluster(context.Context, *Cluste
 }
 func (UnimplementedClusterInterfaceServer) CheckBostionHost(context.Context, *CheckBostionHostRequest) (*Msg, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CheckBostionHost not implemented")
+}
+func (UnimplementedClusterInterfaceServer) GetLogs(grpc.BidiStreamingServer[ClusterLogsRequest, ClusterLogsResponse]) error {
+	return status.Errorf(codes.Unimplemented, "method GetLogs not implemented")
 }
 func (UnimplementedClusterInterfaceServer) mustEmbedUnimplementedClusterInterfaceServer() {}
 func (UnimplementedClusterInterfaceServer) testEmbeddedByValue()                          {}
@@ -343,6 +362,13 @@ func _ClusterInterface_CheckBostionHost_Handler(srv interface{}, ctx context.Con
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ClusterInterface_GetLogs_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(ClusterInterfaceServer).GetLogs(&grpc.GenericServerStream[ClusterLogsRequest, ClusterLogsResponse]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type ClusterInterface_GetLogsServer = grpc.BidiStreamingServer[ClusterLogsRequest, ClusterLogsResponse]
+
 // ClusterInterface_ServiceDesc is the grpc.ServiceDesc for ClusterInterface service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -383,6 +409,13 @@ var ClusterInterface_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _ClusterInterface_CheckBostionHost_Handler,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "GetLogs",
+			Handler:       _ClusterInterface_GetLogs_Handler,
+			ServerStreams: true,
+			ClientStreams: true,
+		},
+	},
 	Metadata: "api/cluster/v1alpha1/cluster.proto",
 }
