@@ -3,6 +3,7 @@ package infrastructure
 import (
 	"bufio"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -22,75 +23,9 @@ import (
 	"github.com/go-kratos/kratos/v2/transport/grpc"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
+	"github.com/spf13/cast"
 	"golang.org/x/sync/errgroup"
 	emptypb "google.golang.org/protobuf/types/known/emptypb"
-)
-
-const (
-	TAG_KEY = "ocean-key"
-	TAG_VAL = "ocean-cluster"
-
-	VPC_STACK = "vpc-stack"
-
-	PRIVATE_SUBNET_STACK = "private-subnet-stack-" // + zone
-	PUBLIC_SUBNET_STACK  = "public-subnet-stack"
-
-	INTERNETGATEWAY_STACK = "internetgateway-stack"
-
-	PUBLIC_NATGATEWAY_EIP_STACK = "public-natgateway-eip-stack"
-	BOSTIONHOST_EIP_STACK       = "bostionhost-eip-stack"
-
-	PRIVATE_NATGATEWAY_STACK = "private-natgateway-stack" // + zone
-	PUBLIC_NATGATEWAY_STACK  = "public-natgateway-stack"
-
-	PUBLIC_NATGATEWAY_ROUTE_TABLE                  = "public-natgateway-route-table"
-	PUBLIC__INTERNETGATEWAY_ROUTE_TABLE            = "public-internetgateway-route-table"
-	PUBLIC_NATGATEWAY_ROUTE_TABLE_ASSOCIATION      = "public-natgateway-route-table-association"
-	PUBLIC_INTERNETGATEWAY_ROUTE_TABLE_ASSOCIATION = "public-internetgateway-route-table-association"
-
-	SECURITY_GROUP_STACK = "security-group-stack"
-
-	EC2_ROLE_STACK         = "ec2-role-stack"
-	EC2_ROLE_POLICY_STACK  = "ec2-role-policy-stack"
-	EC2_ROLE_PROFILE_STACK = "ec2-role-profile-stack"
-
-	EC2_INSTANCE_STACK = "ec2-instance-stack"
-
-	KEY_PAIR_STACK = "key-pair-stack"
-
-	BOSTIONHOST_STACK                   = "bostionhost-stack"
-	BOSTIONHOST_NETWORK_INTERFACE_STACK = "bostionhost-network-interface-stack"
-	BOSTIONHOST_EIP_ASSOCIATION_STACK   = "bostionhost-eip-association-stack"
-
-	VPC_CIDR = "10.0.0.0/16"
-)
-
-const (
-	// BOSTIONHOST
-	BOSTIONHOST_EIP         = "bostionHostEip"
-	BOSTIONHOST_INSTANCE_ID = "bostionHostInstanceId"
-	BOSTIONHOST_PRIVATE_IP  = "bostionHostPrivateIp"
-	BOSTIONHOST_USERNAME    = "bostionHostUsername"
-)
-
-const (
-	PULUMI_ALICLOUD         = "alicloud"
-	PULUMI_ALICLOUD_VERSION = "3.56.0"
-
-	PULUMI_AWS         = "aws"
-	PULUMI_AWS_VERSION = "6.38.0"
-
-	PULUMI_GOOGLE         = "google"
-	PULUMI_GOOGLE_VERSION = "4.12.0"
-
-	PULUMI_KUBERNETES         = "kubernetes"
-	PULUMI_KUBERNETES_VERSION = "4.12.0"
-)
-
-// output const
-const (
-	OUTPUT_BOSTIONHOST_EIP = "bostionHostEip"
-	// ...
 )
 
 var ARCH_MAP = map[string]string{
@@ -114,37 +49,27 @@ func (c *ClusterInfrastructure) Start(ctx context.Context, cluster *biz.Cluster)
 	output := ""
 	switch cluster.GetType() {
 	case biz.ClusterTypeAliCloudEcs:
-		output, err = c.pulumiExec(ctx, cluster, AlicloudEcs(cluster).Start)
-		if err != nil {
-			return err
-		}
-	case biz.ClusterTypeAWSEc2:
-		output, err = c.pulumiExec(ctx, cluster, AwsEc2(cluster).Start)
-		if err != nil {
-			return err
-		}
-	case biz.ClusterTypeAWSEks:
-		output, err = c.pulumiExec(ctx, cluster, AwsEks(cluster).Start)
+		output, err = c.pulumiExec(ctx, cluster, Alicloud(cluster).Start)
 		if err != nil {
 			return err
 		}
 	case biz.ClusterTypeAliCloudAks:
-		output, err = c.pulumiExec(ctx, cluster, AlicloudAks(cluster).Start)
+		output, err = c.pulumiExec(ctx, cluster, Alicloud(cluster).StartAks)
 		if err != nil {
 			return err
 		}
-	case biz.ClusterTypeGoogleGcp:
-		output, err = c.pulumiExec(ctx, cluster, GoogleGcp(cluster).Start)
+	case biz.ClusterTypeAWSEc2:
+		output, err = c.pulumiExec(ctx, cluster, AwsCloud(cluster).Start)
 		if err != nil {
 			return err
 		}
-	case biz.ClusterTypeGoogleGke:
-		output, err = c.pulumiExec(ctx, cluster, GoogleGke(cluster).Start)
+	case biz.ClusterTypeAWSEks:
+		output, err = c.pulumiExec(ctx, cluster, AwsCloud(cluster).StartEks)
 		if err != nil {
 			return err
 		}
 	}
-	err = c.parseOutputConst(cluster, output)
+	err = c.parseOutput(cluster, output)
 	if err != nil {
 		return err
 	}
@@ -164,32 +89,22 @@ func (c *ClusterInfrastructure) Stop(ctx context.Context, cluster *biz.Cluster) 
 	}
 	switch cluster.GetType() {
 	case biz.ClusterTypeAliCloudEcs:
-		_, err := c.pulumiExec(ctx, cluster, AlicloudEcs(cluster).Clean)
-		if err != nil {
-			return err
-		}
-	case biz.ClusterTypeAWSEc2:
-		_, err := c.pulumiExec(ctx, cluster, AwsEc2(cluster).Clean)
-		if err != nil {
-			return err
-		}
-	case biz.ClusterTypeAWSEks:
-		_, err := c.pulumiExec(ctx, cluster, AwsEks(cluster).Clean)
+		_, err := c.pulumiExec(ctx, cluster, Alicloud(cluster).Clean)
 		if err != nil {
 			return err
 		}
 	case biz.ClusterTypeAliCloudAks:
-		_, err := c.pulumiExec(ctx, cluster, AlicloudAks(cluster).Clean)
+		_, err := c.pulumiExec(ctx, cluster, Alicloud(cluster).CleanAks)
 		if err != nil {
 			return err
 		}
-	case biz.ClusterTypeGoogleGcp:
-		_, err := c.pulumiExec(ctx, cluster, GoogleGcp(cluster).Clean)
+	case biz.ClusterTypeAWSEc2:
+		_, err := c.pulumiExec(ctx, cluster, AwsCloud(cluster).Clean)
 		if err != nil {
 			return err
 		}
-	case biz.ClusterTypeGoogleGke:
-		_, err := c.pulumiExec(ctx, cluster, GoogleGke(cluster).Clean)
+	case biz.ClusterTypeAWSEks:
+		_, err := c.pulumiExec(ctx, cluster, AwsCloud(cluster).CleanEks)
 		if err != nil {
 			return err
 		}
@@ -200,32 +115,22 @@ func (c *ClusterInfrastructure) Stop(ctx context.Context, cluster *biz.Cluster) 
 func (c *ClusterInfrastructure) Import(ctx context.Context, cluster *biz.Cluster) (err error) {
 	switch cluster.GetType() {
 	case biz.ClusterTypeAliCloudEcs:
-		_, err = c.pulumiExec(ctx, cluster, AlicloudEcs(cluster).Import)
-		if err != nil {
-			return err
-		}
-	case biz.ClusterTypeAWSEc2:
-		_, err = c.pulumiExec(ctx, cluster, AwsEc2(cluster).Import)
-		if err != nil {
-			return err
-		}
-	case biz.ClusterTypeAWSEks:
-		_, err = c.pulumiExec(ctx, cluster, AwsEks(cluster).Import)
+		_, err = c.pulumiExec(ctx, cluster, Alicloud(cluster).Import)
 		if err != nil {
 			return err
 		}
 	case biz.ClusterTypeAliCloudAks:
-		_, err = c.pulumiExec(ctx, cluster, AlicloudAks(cluster).Import)
+		_, err = c.pulumiExec(ctx, cluster, Alicloud(cluster).ImportAks)
 		if err != nil {
 			return err
 		}
-	case biz.ClusterTypeGoogleGcp:
-		_, err = c.pulumiExec(ctx, cluster, GoogleGcp(cluster).Import)
+	case biz.ClusterTypeAWSEc2:
+		_, err = c.pulumiExec(ctx, cluster, AwsCloud(cluster).Import)
 		if err != nil {
 			return err
 		}
-	case biz.ClusterTypeGoogleGke:
-		_, err = c.pulumiExec(ctx, cluster, GoogleGke(cluster).Import)
+	case biz.ClusterTypeAWSEks:
+		_, err = c.pulumiExec(ctx, cluster, AwsCloud(cluster).ImportEks)
 		if err != nil {
 			return err
 		}
@@ -253,7 +158,7 @@ func (cc *ClusterInfrastructure) MigrateToBostionHost(ctx context.Context, clust
 	if err != nil {
 		return err
 	}
-	if cluster.BostionHost.Username == "" {
+	if cluster.BostionHost.User == "" {
 		return errors.New("bostion host username is empty")
 	}
 	if cluster.BostionHost.ExternalIP == "" {
@@ -264,13 +169,13 @@ func (cc *ClusterInfrastructure) MigrateToBostionHost(ctx context.Context, clust
 	}
 	// check bostion host ssh connection
 	output, err := cc.execCommand("ssh", "-o", "StrictHostKeyChecking=no",
-		fmt.Sprintf("%s@%s", cluster.BostionHost.Username, cluster.BostionHost.ExternalIP), "-p",
+		fmt.Sprintf("%s@%s", cluster.BostionHost.User, cluster.BostionHost.ExternalIP), "-p",
 		fmt.Sprintf("%d", cluster.BostionHost.SshPort), "sudo echo", "1")
 	if err != nil {
 		return errors.Wrap(err, output)
 	}
 	if cluster.BostionHost.ARCH == "" {
-		output, err := cc.execCommand("ssh", fmt.Sprintf("%s@%s", cluster.BostionHost.Username, cluster.BostionHost.ExternalIP), "-p", fmt.Sprintf("%d", cluster.BostionHost.SshPort), "sudo uname -m")
+		output, err := cc.execCommand("ssh", fmt.Sprintf("%s@%s", cluster.BostionHost.User, cluster.BostionHost.ExternalIP), "-p", fmt.Sprintf("%d", cluster.BostionHost.SshPort), "sudo uname -m")
 		if err != nil {
 			return errors.Wrap(err, output)
 		}
@@ -301,19 +206,19 @@ func (cc *ClusterInfrastructure) MigrateToBostionHost(ctx context.Context, clust
 	}
 	// scp .ocean package to bostion host
 	output, err = cc.execCommand("scp", "-r", "-P", fmt.Sprintf("%d", cluster.BostionHost.SshPort), oceanDataTargzPackagePath,
-		fmt.Sprintf("%s@%s:%s", cluster.BostionHost.Username, cluster.BostionHost.ExternalIP, oceanDataTargzPackagePath))
+		fmt.Sprintf("%s@%s:%s", cluster.BostionHost.User, cluster.BostionHost.ExternalIP, oceanDataTargzPackagePath))
 	if err != nil {
 		return errors.Wrap(err, output)
 	}
 	// scp .ocean package sha256sum to bostion host
 	output, err = cc.execCommand("scp", "-r", "-P", fmt.Sprintf("%d", cluster.BostionHost.SshPort), oceanDataTsha256sumFilePath,
-		fmt.Sprintf("%s@%s:%s", cluster.BostionHost.Username, cluster.BostionHost.ExternalIP, oceanDataTsha256sumFilePath))
+		fmt.Sprintf("%s@%s:%s", cluster.BostionHost.User, cluster.BostionHost.ExternalIP, oceanDataTsha256sumFilePath))
 	if err != nil {
 		return errors.Wrap(err, output)
 	}
 	// install ocean and ship to bostion host
 	err = cc.runCommandWithLogging("echo", installScript, "|", "ssh",
-		fmt.Sprintf("%s@%s -p %d", cluster.BostionHost.Username, cluster.BostionHost.ExternalIP, cluster.BostionHost.SshPort),
+		fmt.Sprintf("%s@%s -p %d", cluster.BostionHost.User, cluster.BostionHost.ExternalIP, cluster.BostionHost.SshPort),
 		"sudo bash -s %s %s %s", cluster.BostionHost.ARCH, oceanAppVersion, shipAppVersion)
 	if err != nil {
 		return err
@@ -697,8 +602,8 @@ func (c *ClusterInfrastructure) pulumiExec(ctx context.Context, cluster *biz.Clu
 		pulumiObj.ProjectName(AlicloudProjectName).
 			StackName(AlicloudStackName).
 			Plugin([]PulumiPlugin{
-				{Kind: PULUMI_ALICLOUD, Version: PULUMI_ALICLOUD_VERSION},
-				{Kind: PULUMI_KUBERNETES, Version: PULUMI_KUBERNETES_VERSION},
+				{Kind: PulumiAlicloud, Version: PulumiAlicloudVersion},
+				{Kind: PulumiKubernetes, Version: PulumiKubernetesVersion},
 			}...).
 			Env(map[string]string{
 				"ALICLOUD_ACCESS_KEY": cluster.AccessID,
@@ -707,11 +612,11 @@ func (c *ClusterInfrastructure) pulumiExec(ctx context.Context, cluster *biz.Clu
 			})
 	}
 	if cluster.Type == biz.ClusterTypeAWSEc2 {
-		pulumiObj.ProjectName(AWS_PROJECT).
-			StackName(AWS_STACK).
+		pulumiObj.ProjectName(AwsProject).
+			StackName(AwsStack).
 			Plugin([]PulumiPlugin{
-				{Kind: PULUMI_AWS, Version: PULUMI_AWS_VERSION},
-				{Kind: PULUMI_KUBERNETES, Version: PULUMI_KUBERNETES_VERSION},
+				{Kind: PulumiAws, Version: PulumiAwsVersion},
+				{Kind: PulumiKubernetes, Version: PulumiKubernetesVersion},
 			}...).
 			Env(map[string]string{
 				"AWS_ACCESS_KEY_ID":     cluster.AccessID,
@@ -731,8 +636,111 @@ func (c *ClusterInfrastructure) pulumiExec(ctx context.Context, cluster *biz.Clu
 	return output, err
 }
 
+func getIntanceIDKey(name string) string {
+	return fmt.Sprintf("node-%s-id", name)
+}
+
+func getIntanceUser(name string) string {
+	return fmt.Sprintf("node-%s-user", name)
+}
+
+func getIntanceInternalIPKey(name string) string {
+	return fmt.Sprintf("node-%s-internal-ip", name)
+}
+
+func getIntancePublicIPKey(name string) string {
+	return fmt.Sprintf("node-%s-public-ip", name)
+}
+
+func getBostionHostInstanceID() string {
+	return "bostion-host-instance-id"
+}
+
+func getClusterCloudID() string {
+	return "cluster-cloud-id"
+}
+
+func getConnections() string {
+	return "connections"
+}
+
+func getCertificateAuthority() string {
+	return "certificate-authority"
+}
+
+func getCloudNodeGroupID(name string) string {
+	return fmt.Sprintf("cloud-nodegroup-id-%s", name)
+}
+
 // Parse output const
-func (c *ClusterInfrastructure) parseOutputConst(cluster *biz.Cluster, output string) error {
+func (c *ClusterInfrastructure) parseOutput(cluster *biz.Cluster, output string) error {
+	outputMap := make(map[string]interface{})
+	err := json.Unmarshal([]byte(output), &outputMap)
+	if err != nil {
+		return errors.Wrap(err, "failed to unmarshal output")
+	}
+	data := make(map[string]string)
+	for k, v := range outputMap {
+		if v == nil {
+			continue
+		}
+		m := make(map[string]interface{})
+		vJson, err := json.Marshal(v)
+		if err != nil {
+			return errors.Wrap(err, "failed to marshal value")
+		}
+		err = json.Unmarshal(vJson, &m)
+		if err != nil {
+			return errors.Wrap(err, "failed to unmarshal value")
+		}
+		if _, ok := m["Value"]; !ok {
+			continue
+		}
+		data[k] = cast.ToString(m["Value"])
+	}
+	clusterCloudID, ok := data[getClusterCloudID()]
+	if ok {
+		cluster.CloudID = clusterCloudID
+	}
+	connections, ok := data[getConnections()]
+	if ok {
+		cluster.Connections = connections
+	}
+	certificateAuthority, ok := data[getCertificateAuthority()]
+	if ok {
+		cluster.CertificateAuthority = certificateAuthority
+	}
+	for _, v := range cluster.NodeGroups {
+		cloudNodeGroupID, ok := data[getCloudNodeGroupID(v.Name)]
+		if ok {
+			v.CloudNoodGroupID = cloudNodeGroupID
+		}
+	}
+	for _, node := range cluster.Nodes {
+		instanceID, ok := data[getIntanceIDKey(node.Name)]
+		if !ok {
+			continue
+		}
+		node.InstanceID = instanceID
+		node.InternalIP = data[getIntanceInternalIPKey(node.Name)]
+		node.ExternalIP = data[getIntancePublicIPKey(node.Name)]
+		node.User = data[getIntanceUser(node.Name)]
+	}
+	bostionHostInstanceID, ok := data[getIntanceIDKey(getBostionHostInstanceID())]
+	if ok {
+		if cluster.BostionHost == nil {
+			cluster.BostionHost = &biz.BostionHost{}
+		}
+		cluster.BostionHost.InstanceID = bostionHostInstanceID
+		for _, node := range cluster.Nodes {
+			if node.InstanceID == bostionHostInstanceID {
+				cluster.BostionHost.InternalIP = node.InternalIP
+				cluster.BostionHost.ExternalIP = node.ExternalIP
+				cluster.BostionHost.User = node.User
+				break
+			}
+		}
+	}
 	return nil
 }
 

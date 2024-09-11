@@ -15,7 +15,6 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/pkg/errors v0.9.1
 	github.com/pulumi/pulumi-aws/sdk/v6 v6.38.0
-	github.com/pulumi/pulumi-kubernetes/sdk/v4 v4.12.0
 	github.com/pulumi/pulumi/sdk/v3 v3.130.0
 	github.com/spf13/cast v1.5.1
 	go.etcd.io/etcd/client/v3 v3.5.14
@@ -245,6 +244,7 @@ require (
 	k8s.io/utils v0.0.0-20240902221715-702e33fdd3c3 // indirect
 	lukechampine.com/frand v1.4.2 // indirect
 	oras.land/oras-go v1.2.5 // indirect
+	pgregory.net/rapid v0.6.1 // indirect
 	sigs.k8s.io/controller-runtime v0.16.3 // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 	sigs.k8s.io/kustomize/api v0.14.0 // indirect

@@ -3,79 +3,60 @@ package infrastructure
 import (
 	"fmt"
 
-	"github.com/f-rambo/ocean/internal/biz"
+	"github.com/pkg/errors"
 	"github.com/pulumi/pulumi-alicloud/sdk/v3/go/alicloud/cs"
-	"github.com/pulumi/pulumi-alicloud/sdk/v3/go/alicloud/ecs"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 )
 
-type AlicloudAksCluster struct {
-	cluster *biz.Cluster
-}
+const (
+	alicloudKubernetesClusterName = "alicloud-kubernetes-cluster"
+	alicloudNodePoolName          = "alicloud-node-pool"
+)
 
-func AlicloudAks(cluster *biz.Cluster) *AlicloudAksCluster {
-	return &AlicloudAksCluster{
-		cluster: cluster,
-	}
-}
-
-func (a *AlicloudAksCluster) Start(ctx *pulumi.Context) error {
-	return nil
-}
-
-func (a *AlicloudAksCluster) Clean(ctx *pulumi.Context) error {
-	return nil
-}
-
-func (a *AlicloudAksCluster) Import(ctx *pulumi.Context) error {
-	return nil
-}
-
-// alicloud managed kubernetes cluster
-func (a *AlicloudCluster) Startkubernetes(ctx *pulumi.Context) error {
-	if err := a.infrastructural(ctx); err != nil {
-		return err
-	}
-	var nodeInstanceType string
-	masterGetInstanceType, err := ecs.GetInstanceTypes(ctx, &ecs.GetInstanceTypesArgs{
-		InstanceTypeFamily: pulumi.StringRef("ecs.c7"),
-		CpuCoreCount:       pulumi.IntRef(4),
-		MemorySize:         pulumi.Float64Ref(8),
-	}, nil)
+func (a *AlicloudCluster) StartAks(ctx *pulumi.Context) error {
+	err := a.infrastructural(ctx)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "infrastructural failed")
 	}
-	if len(masterGetInstanceType.InstanceTypes) == 0 {
-		return fmt.Errorf("no available instance type found")
+
+	err = a.setImageByNodeGroups(ctx)
+	if err != nil {
+		return errors.Wrap(err, "set image by node groups failed")
 	}
-	for i, v := range masterGetInstanceType.InstanceTypes {
-		ctx.Export(fmt.Sprintf("instanceType-%d", i), pulumi.String(v.Id))
-		nodeInstanceType = v.Id
-		break
+	err = a.setInstanceTypeByNodeGroups(ctx)
+	if err != nil {
+		return errors.Wrap(err, "set instance type by node groups failed")
 	}
 
 	vSwitchIDs := make(pulumi.StringArray, 0)
 	for _, v := range a.vSwitchs {
 		vSwitchIDs = append(vSwitchIDs, v.ID())
 	}
-	// 创建cs kubernetes集群
-	cluster, err := cs.NewManagedKubernetes(ctx, "managedKubernetesResource", &cs.ManagedKubernetesArgs{
-		Name:             pulumi.String(a.cluster.Name),
-		WorkerVswitchIds: vSwitchIDs,
-		ClusterSpec:      pulumi.String("ack.pro.small"),
-		ServiceCidr:      pulumi.String("172.16.0.0/16"),
-		NewNatGateway:    pulumi.Bool(true),
-		PodVswitchIds:    vSwitchIDs,
-		ProxyMode:        pulumi.String("ipvs"),
+	// create cluster
+	cluster, err := cs.NewManagedKubernetes(ctx, alicloudKubernetesClusterName, &cs.ManagedKubernetesArgs{
+		Name:               pulumi.String(a.cluster.Name),
+		Version:            pulumi.String(fmt.Sprintf("%s-aliyun.1", a.cluster.Version)),
+		WorkerVswitchIds:   vSwitchIDs,
+		ClusterSpec:        pulumi.String("ack.pro.small"),
+		ServiceCidr:        pulumi.String(a.cluster.VpcCidr),
+		NewNatGateway:      pulumi.Bool(true),
+		PodVswitchIds:      vSwitchIDs,
+		LoadBalancerSpec:   pulumi.String("slb.s1.small"),
+		ProxyMode:          pulumi.String("ipvs"),
+		SlbInternetEnabled: pulumi.Bool(true),
+		EnableRrsa:         pulumi.Bool(true),
 		Addons: cs.ManagedKubernetesAddonArray{
 			&cs.ManagedKubernetesAddonArgs{
-				Name: pulumi.String("terway-eniip"),
+				Name:    pulumi.String("terway-eniip"),
+				Version: pulumi.String("3.1.0-aliyun.1"),
 			},
 			&cs.ManagedKubernetesAddonArgs{
-				Name: pulumi.String("csi-plugin"),
+				Name:    pulumi.String("csi-plugin"),
+				Version: pulumi.String("1.22.0-aliyun.1"),
 			},
 			&cs.ManagedKubernetesAddonArgs{
-				Name: pulumi.String("csi-provisioner"),
+				Name:    pulumi.String("csi-provisioner"),
+				Version: pulumi.String("1.22.0-aliyun.1"),
 			},
 		},
 		ResourceGroupId: a.resourceGroupID,
@@ -84,30 +65,46 @@ func (a *AlicloudCluster) Startkubernetes(ctx *pulumi.Context) error {
 		return err
 	}
 
-	ctx.Export("clusterName", cluster.Name)
-	ctx.Export("clusterId", cluster.ID().ToStringOutput())
-	ctx.Export("Connections", cluster.Connections)
-	ctx.Export("CertificateAuthority", cluster.CertificateAuthority)
-
-	// 创建nodepool
-	nodePool, err := cs.NewNodePool(ctx, "exampleNodePool", &cs.NodePoolArgs{
-		NodePoolName:       pulumi.String("pulumi-nodepool-example"),
-		ClusterId:          cluster.ID(),
-		VswitchIds:         vSwitchIDs,
-		SystemDiskCategory: pulumi.String("cloud_essd"),
-		SystemDiskSize:     pulumi.Int(120),
-		DesiredSize:        pulumi.Int(3),
-		InstanceTypes:      pulumi.StringArray{pulumi.String(nodeInstanceType)},
-		Management: &cs.NodePoolManagementArgs{
-			Enable: pulumi.Bool(false),
-		},
-	})
-	if err != nil {
-		return err
+	for _, nodeGroup := range a.cluster.NodeGroups {
+		nodepoolArgs := &cs.NodePoolArgs{
+			NodePoolName:       pulumi.String(nodeGroup.Name),
+			ClusterId:          cluster.ID(),
+			VswitchIds:         vSwitchIDs,
+			ImageId:            pulumi.String(nodeGroup.Image),
+			InstanceTypes:      pulumi.StringArray{pulumi.String(nodeGroup.InstanceType)},
+			InstanceChargeType: pulumi.String("PostPaid"),
+			RuntimeName:        pulumi.String("containerd"),
+			RuntimeVersion:     pulumi.String("1.6.28"),
+			DesiredSize:        pulumi.Int(nodeGroup.TargetSize),
+			KeyName:            pulumi.String(alicloudKeyPairName),
+			SystemDiskCategory: pulumi.String("cloud_efficiency"),
+			SystemDiskSize:     pulumi.Int(nodeGroup.SystemDisk),
+		}
+		if nodeGroup.DataDisk > 0 {
+			nodepoolArgs.DataDisks = &cs.NodePoolDataDiskArray{
+				&cs.NodePoolDataDiskArgs{
+					Category: pulumi.String("cloud_essd"),
+					Size:     pulumi.Int(nodeGroup.DataDisk),
+				},
+			}
+		}
+		nodepool, err := cs.NewNodePool(ctx, fmt.Sprintf("%s-%s", alicloudNodePoolName, nodeGroup.Name), nodepoolArgs)
+		if err != nil {
+			return err
+		}
+		ctx.Export(getCloudNodeGroupID(nodeGroup.Name), nodepool.ID().ToStringOutput())
 	}
+	ctx.Export(getClusterCloudID(), cluster.ID())
+	ctx.Export(getConnections(), cluster.Connections)
+	ctx.Export(getCertificateAuthority(), cluster.CertificateAuthority)
 
-	// Export the NodePool ID
-	ctx.Export("nodePoolID", nodePool.ID().ToStringOutput())
+	return nil
+}
 
+func (a *AlicloudCluster) CleanAks(ctx *pulumi.Context) error {
+	return nil
+}
+
+func (a *AlicloudCluster) ImportAks(ctx *pulumi.Context) error {
 	return nil
 }

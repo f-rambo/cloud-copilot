@@ -19,49 +19,55 @@ const (
 )
 
 type Cluster struct {
-	ID               int64         `json:"id" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
-	Name             string        `json:"name" gorm:"column:name; default:''; NOT NULL"` // *
-	Version          string        `json:"version" gorm:"column:version; default:''; NOT NULL"`
-	ApiServerAddress string        `json:"api_server_address" gorm:"column:api_server_address; default:''; NOT NULL"`
-	Config           string        `json:"config" gorm:"column:config; default:''; NOT NULL;"`
-	Addons           string        `json:"addons" gorm:"column:addons; default:''; NOT NULL;"`
-	AddonsConfig     string        `json:"addons_config" gorm:"column:addons_config; default:''; NOT NULL;"`
-	Status           ClusterStatus `json:"status" gorm:"column:status; default:0; NOT NULL;"`
-	Type             ClusterType   `json:"type" gorm:"column:type; default:''; NOT NULL;"` //*  aws google cloud azure alicloud local
-	KubeConfig       string        `json:"kube_config" gorm:"column:kube_config; default:''; NOT NULL; type:json"`
-	PublicKey        string        `json:"public_key" gorm:"column:public_key; default:''; NOT NULL;"` // *
-	PrivateKey       string        `json:"private_key" gorm:"column:private_key; default:''; NOT NULL;"`
-	Region           string        `json:"region" gorm:"column:region; default:''; NOT NULL;"` // *
-	VpcID            string        `json:"vpc_id" gorm:"column:vpc_id; default:''; NOT NULL;"`
-	VpcCidr          string        `json:"vpc_cidr" gorm:"column:vpc_cidr; default:''; NOT NULL;"`
-	ResourceGroupID  string        `json:"resource_group_id" gorm:"column:resource_group_id; default:''; NOT NULL;"`
-	SecurityGroupIDs string        `json:"security_group_ids" gorm:"column:security_group_ids; default:''; NOT NULL;"`
-	ExternalIP       string        `json:"external_ip" gorm:"column:external_ip; default:''; NOT NULL;"`
-	AccessID         string        `json:"access_id" gorm:"column:access_id; default:''; NOT NULL;"`   // *
-	AccessKey        string        `json:"access_key" gorm:"column:access_key; default:''; NOT NULL;"` // *
-	BostionHost      *BostionHost  `json:"bostion_host" gorm:"-"`
-	Nodes            []*Node       `json:"nodes" gorm:"-"`
-	NodeGroups       []*NodeGroup  `json:"node_groups" gorm:"-"`
-	log              *log.Helper   `json:"-"`
+	ID                   int64         `json:"id" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
+	Name                 string        `json:"name" gorm:"column:name; default:''; NOT NULL"` // *
+	CloudID              string        `json:"cloud_id" gorm:"column:cloud_id; default:''; NOT NULL"`
+	Connections          string        `json:"connections" gorm:"column:connections; default:''; NOT NULL"`
+	CertificateAuthority string        `json:"certificate_authority" gorm:"column:certificate_authority; default:''; NOT NULL"`
+	Version              string        `json:"version" gorm:"column:version; default:''; NOT NULL"`
+	ApiServerAddress     string        `json:"api_server_address" gorm:"column:api_server_address; default:''; NOT NULL"`
+	Config               string        `json:"config" gorm:"column:config; default:''; NOT NULL;"`
+	Addons               string        `json:"addons" gorm:"column:addons; default:''; NOT NULL;"`
+	AddonsConfig         string        `json:"addons_config" gorm:"column:addons_config; default:''; NOT NULL;"`
+	Status               ClusterStatus `json:"status" gorm:"column:status; default:0; NOT NULL;"`
+	Type                 ClusterType   `json:"type" gorm:"column:type; default:''; NOT NULL;"` //*  aws google cloud azure alicloud local
+	KubeConfig           string        `json:"kube_config" gorm:"column:kube_config; default:''; NOT NULL; type:json"`
+	PublicKey            string        `json:"public_key" gorm:"column:public_key; default:''; NOT NULL;"` // *
+	PrivateKey           string        `json:"private_key" gorm:"column:private_key; default:''; NOT NULL;"`
+	Region               string        `json:"region" gorm:"column:region; default:''; NOT NULL;"` // *
+	VpcID                string        `json:"vpc_id" gorm:"column:vpc_id; default:''; NOT NULL;"`
+	VpcCidr              string        `json:"vpc_cidr" gorm:"column:vpc_cidr; default:''; NOT NULL;"`
+	ResourceGroupID      string        `json:"resource_group_id" gorm:"column:resource_group_id; default:''; NOT NULL;"`
+	SecurityGroupIDs     string        `json:"security_group_ids" gorm:"column:security_group_ids; default:''; NOT NULL;"`
+	ExternalIP           string        `json:"external_ip" gorm:"column:external_ip; default:''; NOT NULL;"`
+	AccessID             string        `json:"access_id" gorm:"column:access_id; default:''; NOT NULL;"`   // *
+	AccessKey            string        `json:"access_key" gorm:"column:access_key; default:''; NOT NULL;"` // *
+	BostionHost          *BostionHost  `json:"bostion_host" gorm:"-"`
+	Nodes                []*Node       `json:"nodes" gorm:"-"`
+	NodeGroups           []*NodeGroup  `json:"node_groups" gorm:"-"`
+	log                  *log.Helper   `json:"-"`
 	gorm.Model
 }
 
 type NodeGroup struct {
-	ID             string        `json:"id" gorm:"column:id;primaryKey; NOT NULL"`
-	Name           string        `json:"name" gorm:"column:name; default:''; NOT NULL"`
-	Type           NodeGroupType `json:"type" gorm:"column:type; default:''; NOT NULL;"`
-	InstanceType   string        `json:"instance_type" gorm:"column:instance_type; default:''; NOT NULL"`
-	Image          string        `json:"image" gorm:"column:image; default:''; NOT NULL"`
-	OS             string        `json:"os" gorm:"column:os; default:''; NOT NULL"`        //*
-	ARCH           string        `json:"arch" gorm:"column:arch; default:''; NOT NULL"`    //*
-	CPU            int32         `json:"cpu" gorm:"column:cpu; default:0; NOT NULL"`       //*
-	Memory         float64       `json:"memory" gorm:"column:memory; default:0; NOT NULL"` //*
-	GPU            int32         `json:"gpu" gorm:"column:gpu; default:0; NOT NULL"`       //*
-	NodeInitScript string        `json:"cloud_init_script" gorm:"column:cloud_init_script; default:''; NOT NULL"`
-	MinSize        int32         `json:"min_size" gorm:"column:min_size; default:0; NOT NULL"`
-	MaxSize        int32         `json:"max_size" gorm:"column:max_size; default:0; NOT NULL"`
-	TargetSize     int32         `json:"target_size" gorm:"column:target_size; default:0; NOT NULL"`
-	ClusterID      int64         `json:"cluster_id" gorm:"column:cluster_id; default:0; NOT NULL"`
+	ID               string        `json:"id" gorm:"column:id;primaryKey; NOT NULL"`
+	Name             string        `json:"name" gorm:"column:name; default:''; NOT NULL"`
+	CloudNoodGroupID string        `json:"cloud_nodegroup_id" gorm:"column:cloud_nodegroup_id; default:''; NOT NULL"`
+	Type             NodeGroupType `json:"type" gorm:"column:type; default:''; NOT NULL;"`
+	InstanceType     string        `json:"instance_type" gorm:"column:instance_type; default:''; NOT NULL"`
+	Image            string        `json:"image" gorm:"column:image; default:''; NOT NULL"`
+	OS               string        `json:"os" gorm:"column:os; default:''; NOT NULL"`        //*
+	ARCH             string        `json:"arch" gorm:"column:arch; default:''; NOT NULL"`    //*
+	CPU              int32         `json:"cpu" gorm:"column:cpu; default:0; NOT NULL"`       //*
+	Memory           float64       `json:"memory" gorm:"column:memory; default:0; NOT NULL"` //*
+	GPU              int32         `json:"gpu" gorm:"column:gpu; default:0; NOT NULL"`       //*
+	NodeInitScript   string        `json:"cloud_init_script" gorm:"column:cloud_init_script; default:''; NOT NULL"`
+	MinSize          int32         `json:"min_size" gorm:"column:min_size; default:0; NOT NULL"`
+	MaxSize          int32         `json:"max_size" gorm:"column:max_size; default:0; NOT NULL"`
+	TargetSize       int32         `json:"target_size" gorm:"column:target_size; default:0; NOT NULL"`
+	SystemDisk       int32         `json:"system_disk" gorm:"column:system_disk; default:0; NOT NULL"`
+	DataDisk         int32         `json:"data_disk" gorm:"column:data_disk; default:0; NOT NULL"`
+	ClusterID        int64         `json:"cluster_id" gorm:"column:cluster_id; default:0; NOT NULL"`
 }
 
 type Node struct {
@@ -84,8 +90,8 @@ type Node struct {
 	SubnetId                string     `json:"subnet_id" gorm:"column:subnet_id; default:''; NOT NULL"`
 	SubnetCidr              string     `json:"subnet_cidr" gorm:"column:subnet_cidr; default:''; NOT NULL"`
 	PublicKey               string     `json:"public_key" gorm:"column:public_key; default:''; NOT NULL;"`
-	SystemDisk              int32      `json:"system_disk" gorm:"column:system_disk; default:0; NOT NULL"`
 	GpuSpec                 string     `json:"gpu_spec" gorm:"column:gpu_spec; default:''; NOT NULL"`
+	SystemDisk              int32      `json:"system_disk" gorm:"column:system_disk; default:0; NOT NULL"`
 	DataDisk                int32      `json:"data_disk" gorm:"column:data_disk; default:0; NOT NULL"`
 	NodePrice               float64    `json:"node_price" gorm:"column:node_price; default:0; NOT NULL;"` // 节点价格
 	PodPrice                float64    `json:"pod_price" gorm:"column:pod_price; default:0; NOT NULL;"`   // 节点上pod的价格
@@ -99,13 +105,14 @@ type BostionHost struct {
 	ID           int64   `json:"id" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
 	InstanceType string  `json:"instance_type" gorm:"column:instance_type; default:''; NOT NULL"`
 	InstanceID   string  `json:"instance_id" gorm:"column:instance_id; default:''; NOT NULL"`
-	Username     string  `json:"username" gorm:"column:username; default:''; NOT NULL"`
+	User         string  `json:"user" gorm:"column:user; default:''; NOT NULL"`
 	ImageID      string  `json:"image_id" gorm:"column:image_id; default:''; NOT NULL"`
 	Image        string  `json:"image" gorm:"column:image; default:''; NOT NULL"`
 	OS           string  `json:"os" gorm:"column:os; default:''; NOT NULL"`
 	ARCH         string  `json:"arch" gorm:"column:arch; default:''; NOT NULL"`
 	Hostname     string  `json:"hostname" gorm:"column:hostname; default:''; NOT NULL"`
 	ExternalIP   string  `json:"external_ip" gorm:"column:external_ip; default:''; NOT NULL"`
+	InternalIP   string  `json:"internal_ip" gorm:"column:internal_ip; default:''; NOT NULL"`
 	SshPort      int32   `json:"ssh_port" gorm:"column:ssh_port; default:0; NOT NULL"`
 	PrivateIP    string  `json:"private_ip" gorm:"column:private_ip; default:''; NOT NULL"`
 	ClusterID    int64   `json:"cluster_id" gorm:"column:cluster_id; default:0; NOT NULL"`
@@ -150,8 +157,6 @@ const (
 	ClusterTypeAWSEks      ClusterType = "aws_eks"
 	ClusterTypeAliCloudEcs ClusterType = "alicloud_ecs"
 	ClusterTypeAliCloudAks ClusterType = "alicloud_aks"
-	ClusterTypeGoogleGcp   ClusterType = "google_gcp"
-	ClusterTypeGoogleGke   ClusterType = "google_gke"
 )
 
 func (c ClusterType) String() string {
@@ -163,7 +168,7 @@ func (c ClusterType) IsCloud() bool {
 }
 
 func (c ClusterType) IsIntegratedCloud() bool {
-	return c == ClusterTypeAWSEks || c == ClusterTypeAliCloudAks || c == ClusterTypeGoogleGke
+	return c == ClusterTypeAWSEks || c == ClusterTypeAliCloudAks
 }
 
 func ClusterTypes() []ClusterType {
@@ -173,8 +178,6 @@ func ClusterTypes() []ClusterType {
 		ClusterTypeAWSEks,
 		ClusterTypeAliCloudEcs,
 		ClusterTypeAliCloudAks,
-		ClusterTypeGoogleGcp,
-		ClusterTypeGoogleGke,
 	}
 }
 

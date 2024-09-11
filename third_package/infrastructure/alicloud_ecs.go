@@ -9,6 +9,7 @@ import (
 	"github.com/f-rambo/ocean/internal/biz"
 	"github.com/pkg/errors"
 	"github.com/pulumi/pulumi-alicloud/sdk/v3/go/alicloud"
+	"github.com/pulumi/pulumi-alicloud/sdk/v3/go/alicloud/alb"
 	"github.com/pulumi/pulumi-alicloud/sdk/v3/go/alicloud/ecs"
 	"github.com/pulumi/pulumi-alicloud/sdk/v3/go/alicloud/ram"
 	"github.com/pulumi/pulumi-alicloud/sdk/v3/go/alicloud/resourcemanager"
@@ -23,18 +24,22 @@ const (
 )
 
 const (
-	resourceGroupName = "ocean-resource-group"
-	roleName          = "ocean-cluster-role"
-	csPolicy          = `{"Statement":[{"Action":"sts:AssumeRole","Effect":"Allow","Principal":{"Service":["cs.aliyuncs.com"]}}],"Version":"1"}`
-	escPolicy         = `{"Statement":[{"Action":"sts:AssumeRole","Effect":"Allow","Principal":{"Service":["ecs.aliyuncs.com"]}}],"Version":"1"}`
-	aliVpcName        = "ocean-vpc"
-	aliVswitchName    = "ocean-vswitch"
-	ecsSecurityGroup  = "ocean-ecs-security-group"
-	bostionHostName   = "ocean-bostion"
-	bostionEipName    = "ocean-bostion-eip"
-	natGatewayName    = "ocean-nat-gateway"
-	natEipName        = "ocean-nat-eip"
-	keyPairName       = "ocean-key-pair"
+	alicloudResourceGroupName        = "ocean-resource-group"
+	alicloudRoleName                 = "ocean-cluster-role"
+	alicloudCsPolicy                 = `{"Statement":[{"Action":"sts:AssumeRole","Effect":"Allow","Principal":{"Service":["cs.aliyuncs.com"]}}],"Version":"1"}`
+	alicloudEscPolicy                = `{"Statement":[{"Action":"sts:AssumeRole","Effect":"Allow","Principal":{"Service":["ecs.aliyuncs.com"]}}],"Version":"1"}`
+	alicloudVpcName                  = "ocean-vpc"
+	alicloudVswitchName              = "ocean-vswitch"
+	alicloudEcsSecurityGroup         = "ocean-ecs-security-group"
+	alicloudEcsSecurityGroupRuleName = "ocean-ecs-security-group-rule"
+	alicloudBostionHostName          = "ocean-bostion"
+	alicloudBostionEipName           = "ocean-bostion-eip"
+	alicloudNatGatewayName           = "ocean-nat-gateway"
+	alicloudNatGatewayEipAssociation = "ocean-nat-gateway-eip-association"
+	alicloudNatEipName               = "ocean-nat-eip"
+	alicloudKeyPairName              = "ocean-key-pair"
+	alicloudSlbName                  = "ocean-slb"
+	alicloudSlbListenerName          = "ocean-slb-listener"
 )
 
 type GetInstanceTypesInstanceTypes []ecs.GetInstanceTypesInstanceType
@@ -65,9 +70,10 @@ type AlicloudCluster struct {
 	vSwitchs        []*vpc.Switch
 	sgID            pulumi.StringInput
 	eipID           pulumi.StringInput
+	lb              *alb.LoadBalancer
 }
 
-func AlicloudEcs(cluster *biz.Cluster) *AlicloudCluster {
+func Alicloud(cluster *biz.Cluster) *AlicloudCluster {
 	return &AlicloudCluster{
 		cluster: cluster,
 	}
@@ -98,9 +104,13 @@ func (a *AlicloudCluster) Start(ctx *pulumi.Context) error {
 	if err != nil {
 		return errors.Wrap(err, "alicloud cluster init failed")
 	}
-	err = a.bostionHost(ctx)
+	err = a.setImageByNodeGroups(ctx)
 	if err != nil {
-		return errors.Wrap(err, "start bostion host failed")
+		return errors.Wrap(err, "set image by node groups failed")
+	}
+	err = a.setInstanceTypeByNodeGroups(ctx)
+	if err != nil {
+		return errors.Wrap(err, "set instance type by node groups failed")
 	}
 	err = a.nodes(ctx)
 	if err != nil {
@@ -114,10 +124,10 @@ func (a *AlicloudCluster) Start(ctx *pulumi.Context) error {
 }
 
 func (a *AlicloudCluster) infrastructural(ctx *pulumi.Context) error {
-	// 创建资源组
-	res, err := resourcemanager.NewResourceGroup(ctx, resourceGroupName, &resourcemanager.ResourceGroupArgs{
-		ResourceGroupName: pulumi.String(resourceGroupName),
-		DisplayName:       pulumi.String(resourceGroupName),
+	// create resource group
+	res, err := resourcemanager.NewResourceGroup(ctx, alicloudResourceGroupName, &resourcemanager.ResourceGroupArgs{
+		ResourceGroupName: pulumi.String(alicloudResourceGroupName),
+		DisplayName:       pulumi.String(alicloudResourceGroupName),
 	})
 	if err != nil {
 		return err
@@ -126,8 +136,8 @@ func (a *AlicloudCluster) infrastructural(ctx *pulumi.Context) error {
 
 	// 创建角色/策略
 	roleMap := map[string]string{
-		"csPolicy":  csPolicy,
-		"ecsPolicy": escPolicy,
+		"csPolicy":  alicloudCsPolicy,
+		"ecsPolicy": alicloudEscPolicy,
 	}
 	for name, rolePolicy := range roleMap {
 		_, err := ram.NewRole(ctx, name, &ram.RoleArgs{
@@ -140,18 +150,17 @@ func (a *AlicloudCluster) infrastructural(ctx *pulumi.Context) error {
 		}
 	}
 
-	// vpc
-	network, err := vpc.NewNetwork(ctx, aliVpcName, &vpc.NetworkArgs{
-		VpcName:   pulumi.String(aliVpcName),
+	// create vpc
+	network, err := vpc.NewNetwork(ctx, alicloudVpcName, &vpc.NetworkArgs{
+		VpcName:   pulumi.String(alicloudVpcName),
 		CidrBlock: pulumi.String("192.168.0.0/16"),
 	})
 	if err != nil {
 		return err
 	}
 	a.vpcID = network.ID()
-	ctx.Export("vpc_id", a.vpcID)
 
-	// 创建交换机
+	// create vswitch
 	zones, err := alicloud.GetZones(ctx, &alicloud.GetZonesArgs{
 		AvailableResourceCreation: pulumi.StringRef("VSwitch"),
 	}, nil)
@@ -159,9 +168,8 @@ func (a *AlicloudCluster) infrastructural(ctx *pulumi.Context) error {
 		return err
 	}
 	zoneIds := make([]string, 0)
-	for i, zone := range zones.Zones {
+	for _, zone := range zones.Zones {
 		zoneIds = append(zoneIds, zone.Id)
-		ctx.Export(fmt.Sprintf("zoneId-%d", i), pulumi.String(zone.Id))
 	}
 	if len(zoneIds) == 0 {
 		return fmt.Errorf("no available zone found")
@@ -169,8 +177,8 @@ func (a *AlicloudCluster) infrastructural(ctx *pulumi.Context) error {
 
 	vSwitchs := make([]*vpc.Switch, 0)
 	for i, zoneId := range zoneIds {
-		vSwitch, err := vpc.NewSwitch(ctx, fmt.Sprintf("%s-%d", aliVswitchName, i), &vpc.SwitchArgs{
-			VswitchName: pulumi.String(fmt.Sprintf("%s-%d", aliVswitchName, i)),
+		vSwitch, err := vpc.NewSwitch(ctx, fmt.Sprintf("%s-%d", alicloudVswitchName, i), &vpc.SwitchArgs{
+			VswitchName: pulumi.String(fmt.Sprintf("%s-%d", alicloudVswitchName, i)),
 			CidrBlock:   pulumi.String(fmt.Sprintf("192.168.%d.0/24", i)),
 			VpcId:       a.vpcID,
 			ZoneId:      pulumi.String(zoneId),
@@ -178,7 +186,6 @@ func (a *AlicloudCluster) infrastructural(ctx *pulumi.Context) error {
 		if err != nil {
 			return err
 		}
-		ctx.Export(fmt.Sprintf("vSwitchId-%d", i), vSwitch.ID())
 		vSwitchs = append(vSwitchs, vSwitch)
 	}
 	if len(vSwitchs) == 0 {
@@ -186,8 +193,9 @@ func (a *AlicloudCluster) infrastructural(ctx *pulumi.Context) error {
 	}
 	a.vSwitchs = vSwitchs
 
-	group, err := ecs.NewSecurityGroup(ctx, ecsSecurityGroup, &ecs.SecurityGroupArgs{
-		Name:        pulumi.String(ecsSecurityGroup),
+	// create security group
+	group, err := ecs.NewSecurityGroup(ctx, alicloudEcsSecurityGroup, &ecs.SecurityGroupArgs{
+		Name:        pulumi.String(alicloudEcsSecurityGroup),
 		Description: pulumi.String("ocean ecs security group."),
 		VpcId:       a.vpcID,
 	})
@@ -195,10 +203,9 @@ func (a *AlicloudCluster) infrastructural(ctx *pulumi.Context) error {
 		return err
 	}
 	a.sgID = group.ID()
-	ctx.Export("security_group_id", a.sgID)
 
 	// sg rule: can add more rules
-	_, err = ecs.NewSecurityGroupRule(ctx, "allow_all_tcp", &ecs.SecurityGroupRuleArgs{
+	_, err = ecs.NewSecurityGroupRule(ctx, alicloudEcsSecurityGroupRuleName, &ecs.SecurityGroupRuleArgs{
 		Type:            pulumi.String("ingress"),
 		IpProtocol:      pulumi.String("tcp"),
 		NicType:         pulumi.String("internet"),
@@ -212,9 +219,9 @@ func (a *AlicloudCluster) infrastructural(ctx *pulumi.Context) error {
 		return err
 	}
 
-	// 公网IP
-	eipAddress, err := ecs.NewEipAddress(ctx, natEipName, &ecs.EipAddressArgs{
-		AddressName:        pulumi.String(natEipName),
+	// create eip
+	eipAddress, err := ecs.NewEipAddress(ctx, alicloudNatEipName, &ecs.EipAddressArgs{
+		AddressName:        pulumi.String(alicloudNatEipName),
 		InternetChargeType: pulumi.String("PayByTraffic"),
 	})
 	if err != nil {
@@ -222,18 +229,16 @@ func (a *AlicloudCluster) infrastructural(ctx *pulumi.Context) error {
 	}
 	a.eipID = eipAddress.ID()
 
-	ctx.Export("external_ip", eipAddress.IpAddress)
-
-	// 创建nat网关
+	// create nat gateway
 	var vswitchId pulumi.StringInput
 	for _, v := range vSwitchs {
 		vswitchId = v.ID()
 		break
 	}
-	natGateway, err := vpc.NewNatGateway(ctx, natGatewayName, &vpc.NatGatewayArgs{
+	natGateway, err := vpc.NewNatGateway(ctx, alicloudNatGatewayName, &vpc.NatGatewayArgs{
 		VpcId:              a.vpcID,
 		VswitchId:          vswitchId,
-		NatGatewayName:     pulumi.String(natGatewayName),
+		NatGatewayName:     pulumi.String(alicloudNatGatewayName),
 		InternetChargeType: pulumi.String("PayByTraffic"),
 		NatType:            pulumi.String("Enhanced"),
 	})
@@ -241,7 +246,7 @@ func (a *AlicloudCluster) infrastructural(ctx *pulumi.Context) error {
 		return err
 	}
 
-	_, err = ecs.NewEipAssociation(ctx, natGatewayName+"eip-association", &ecs.EipAssociationArgs{
+	_, err = ecs.NewEipAssociation(ctx, alicloudNatGatewayEipAssociation, &ecs.EipAssociationArgs{
 		AllocationId: a.eipID,
 		InstanceId:   natGateway.ID(),
 	})
@@ -250,38 +255,18 @@ func (a *AlicloudCluster) infrastructural(ctx *pulumi.Context) error {
 	}
 
 	// Import an existing public key to build a alicloud key pair
-	key, err := ecs.NewKeyPair(ctx, keyPairName, &ecs.KeyPairArgs{
-		KeyName:   pulumi.String(keyPairName),
+	_, err = ecs.NewKeyPair(ctx, alicloudKeyPairName, &ecs.KeyPairArgs{
+		KeyName:   pulumi.String(alicloudKeyPairName),
 		PublicKey: pulumi.String(a.cluster.PublicKey),
 	})
 	if err != nil {
 		return err
 	}
-	ctx.Export("key_pair_name", key.KeyPairName)
 
 	return nil
 }
 
-func (a *AlicloudCluster) bostionHost(ctx *pulumi.Context) error {
-	// https://help.aliyun.com/zh/ecs/user-guide/overview-of-instance-families?spm=a2c4g.11186623.0.0.717dd156Lt8LI2
-	// NVIDIA Tesla V100 GPUs. NVIDIA A100 Tensor Core GPUs. NVIDIA T4 GPUs.
-	// 实例类型选择改为 low midd high 3种 是否包含GPU
-	// 2 core 4G 经济型
-	bostionHostInstanceType, err := ecs.GetInstanceTypes(ctx, &ecs.GetInstanceTypesArgs{
-		InstanceTypeFamily: pulumi.StringRef("ecs.t6"),
-	}, nil)
-	if err != nil {
-		return err
-	}
-	sort.Sort(GetInstanceTypesInstanceTypes(bostionHostInstanceType.InstanceTypes))
-	var nodeInstanceType string
-	for _, v := range bostionHostInstanceType.InstanceTypes {
-		if v.CpuCoreCount >= int(a.cluster.BostionHost.CPU) && v.MemorySize >= float64(a.cluster.BostionHost.Memory) {
-			nodeInstanceType = v.Id
-			break
-		}
-	}
-
+func (a *AlicloudCluster) setImageByNodeGroups(ctx *pulumi.Context) error {
 	images, err := ecs.GetImages(ctx, &ecs.GetImagesArgs{
 		NameRegex: pulumi.StringRef("^ubuntu_22_04_x64*"),
 		Owners:    pulumi.StringRef("system"),
@@ -289,70 +274,22 @@ func (a *AlicloudCluster) bostionHost(ctx *pulumi.Context) error {
 	if err != nil {
 		return err
 	}
-	if len(images.Images) == 0 {
-		return fmt.Errorf("no available image found")
-	}
-
-	var vswitchId pulumi.StringInput
-	var zoneId pulumi.StringInput
-	for _, v := range a.vSwitchs {
-		vswitchId = v.ID()
-		zoneId = v.ZoneId
+	imageID := ""
+	for _, image := range images.Images {
+		imageID = image.Id
 		break
 	}
-	instance, err := ecs.NewInstance(ctx, bostionHostName, &ecs.InstanceArgs{
-		InstanceName:            pulumi.String(bostionHostName),
-		AvailabilityZone:        zoneId,
-		SecurityGroups:          pulumi.StringArray{a.sgID},
-		InstanceType:            pulumi.String(nodeInstanceType),
-		ImageId:                 pulumi.String(images.Images[0].Id),
-		VswitchId:               vswitchId,
-		InternetMaxBandwidthOut: pulumi.Int(20), // 出网带宽
-		SystemDiskCategory:      pulumi.String("cloudEssd"),
-		SystemDiskName:          pulumi.String("bostion_host_system_disk"),
-		SystemDiskSize:          pulumi.Int(20),
-		SystemDiskDescription:   pulumi.String("bostion host system disk"),
-		KeyName:                 pulumi.String(keyPairName),
-		HostName:                pulumi.String(bostionHostName),
-		ResourceGroupId:         a.resourceGroupID,
-		Tags: pulumi.StringMap{
-			"Name": pulumi.String(bostionHostName),
-		},
-	})
-	if err != nil {
-		return err
+	if imageID == "" {
+		return fmt.Errorf("no available image found")
 	}
-
-	_, err = ecs.NewEipAssociation(ctx, bostionEipName+"eip-association", &ecs.EipAssociationArgs{
-		AllocationId: a.eipID,
-		InstanceId:   instance.ID(),
-	})
-	if err != nil {
-		return err
+	for _, nodeGroup := range a.cluster.NodeGroups {
+		nodeGroup.Image = imageID
 	}
-
-	ctx.Export("bostion_private_ip", instance.PrivateIp)
-	ctx.Export("bostion_public_ip", instance.PublicIp)
-	ctx.Export("bostion_id", instance.ID())
-	ctx.Export("bostion_hostname", instance.HostName)
-
 	return nil
 }
 
-func (a *AlicloudCluster) nodes(ctx *pulumi.Context) error {
-	images, err := ecs.GetImages(ctx, &ecs.GetImagesArgs{
-		NameRegex: pulumi.StringRef("^ubuntu_22_04_x64*"),
-		Owners:    pulumi.StringRef("system"),
-	}, nil)
-	if err != nil {
-		return err
-	}
-	if len(images.Images) == 0 {
-		return fmt.Errorf("no available image found")
-	}
-	imageID := images.Images[0].Id
+func (a *AlicloudCluster) setInstanceTypeByNodeGroups(ctx *pulumi.Context) error {
 	for _, nodeGroup := range a.cluster.NodeGroups {
-		nodeGroup.OS = imageID
 		instanceTypeFamilies := a.getIntanceTypeFamilies(nodeGroup)
 		nodeInstanceTypes, err := ecs.GetInstanceTypes(ctx, &ecs.GetInstanceTypesArgs{
 			InstanceTypeFamily: pulumi.StringRef(instanceTypeFamilies),
@@ -381,78 +318,141 @@ func (a *AlicloudCluster) nodes(ctx *pulumi.Context) error {
 		if nodeGroup.InstanceType == "" {
 			return fmt.Errorf("no available instance type found")
 		}
+	}
+	return nil
+}
 
-		for nodeIndex, node := range a.cluster.Nodes {
-			vswitch := a.distributeNodeVswitches(nodeIndex)
-			instanceArgs := &ecs.InstanceArgs{
-				HostName:                pulumi.String(node.Name),
-				InstanceName:            pulumi.String(node.Name),
-				AvailabilityZone:        vswitch.ZoneId,
-				VswitchId:               vswitch.ID(),
-				SecurityGroups:          pulumi.StringArray{a.sgID},
-				InstanceType:            pulumi.String(nodeGroup.InstanceType),
-				ImageId:                 pulumi.String(imageID),
-				InternetMaxBandwidthOut: pulumi.Int(node.InternetMaxBandwidthOut), // 出网带宽
-				SystemDiskCategory:      pulumi.String("cloudEssd"),
-				SystemDiskName:          pulumi.String(fmt.Sprintf("system_disk_%s", node.Name)),
-				SystemDiskSize:          pulumi.Int(node.SystemDisk),
-				KeyName:                 pulumi.String(keyPairName),
-				ResourceGroupId:         a.resourceGroupID,
-			}
-			if nodeGroup.NodeInitScript != "" {
-				instanceArgs.UserData = pulumi.String(nodeGroup.NodeInitScript) // 节点初始化脚本
-			}
-			if node.Labels != "" {
-				lableMap := make(map[string]string)
-				err = json.Unmarshal([]byte(node.Labels), &lableMap)
-				if err != nil {
-					return err
-				}
-				tags := make(pulumi.StringMap)
-				for k, v := range lableMap {
-					tags[k] = pulumi.String(v)
-				}
-				instanceArgs.Tags = tags
-			}
-			if node.DataDisk != 0 {
-				instanceArgs.DataDisks = ecs.InstanceDataDiskArray{
-					&ecs.InstanceDataDiskArgs{
-						Size:     pulumi.Int(node.DataDisk),
-						Category: pulumi.String("cloudEssd"),
-						Name:     pulumi.String(fmt.Sprintf("data_disk_%s", node.Name)),
-						Device:   pulumi.String(fmt.Sprintf("/dev/vdb%s", node.Name)),
-					},
-				}
-			}
-			instance, err := ecs.NewInstance(ctx, node.Name, instanceArgs)
+func (a *AlicloudCluster) nodes(ctx *pulumi.Context) error {
+	selectedBostionHost := false
+	for nodeIndex, node := range a.cluster.Nodes {
+		nodeGroup := a.cluster.GetNodeGroup(node.NodeGroupID)
+		if nodeGroup == nil {
+			return fmt.Errorf("node group not found")
+		}
+		if nodeGroup.Image == "" {
+			return fmt.Errorf("image not found")
+		}
+		if nodeGroup.InstanceType == "" {
+			return fmt.Errorf("instance type not found")
+		}
+		vswitch := a.distributeNodeVswitches(nodeIndex)
+		instanceArgs := &ecs.InstanceArgs{
+			HostName:                pulumi.String(node.Name),
+			InstanceName:            pulumi.String(node.Name),
+			AvailabilityZone:        vswitch.ZoneId,
+			VswitchId:               vswitch.ID(),
+			SecurityGroups:          pulumi.StringArray{a.sgID},
+			InstanceType:            pulumi.String(nodeGroup.InstanceType),
+			ImageId:                 pulumi.String(nodeGroup.Image),
+			InternetMaxBandwidthOut: pulumi.Int(node.InternetMaxBandwidthOut),
+			SystemDiskCategory:      pulumi.String("cloudEssd"),
+			SystemDiskName:          pulumi.String(fmt.Sprintf("system_disk_%s", node.Name)),
+			SystemDiskSize:          pulumi.Int(node.SystemDisk),
+			KeyName:                 pulumi.String(alicloudKeyPairName),
+			ResourceGroupId:         a.resourceGroupID,
+		}
+		if nodeGroup.NodeInitScript != "" {
+			instanceArgs.UserData = pulumi.String(nodeGroup.NodeInitScript)
+		}
+		if node.Labels != "" {
+			lableMap := make(map[string]string)
+			err := json.Unmarshal([]byte(node.Labels), &lableMap)
 			if err != nil {
 				return err
 			}
-			ctx.Export(fmt.Sprintf("node-%s-id", node.Name), instance.ID())
-			ctx.Export(fmt.Sprintf("node-%s-user", node.Name), pulumi.String("root"))
-			ctx.Export(fmt.Sprintf("node-%s-internal-ip", node.Name), instance.PrivateIp)
-			ctx.Export(fmt.Sprintf("node-%s-public-ip", node.Name), instance.PublicIp)
+			tags := make(pulumi.StringMap)
+			for k, v := range lableMap {
+				tags[k] = pulumi.String(v)
+			}
+			instanceArgs.Tags = tags
 		}
+		if node.DataDisk != 0 {
+			instanceArgs.DataDisks = ecs.InstanceDataDiskArray{
+				&ecs.InstanceDataDiskArgs{
+					Size:     pulumi.Int(node.DataDisk),
+					Category: pulumi.String("cloudEssd"),
+					Name:     pulumi.String(fmt.Sprintf("data_disk_%s", node.Name)),
+					Device:   pulumi.String(fmt.Sprintf("/dev/vdb%s", node.Name)),
+				},
+			}
+		}
+		instance, err := ecs.NewInstance(ctx, node.Name, instanceArgs)
+		if err != nil {
+			return err
+		}
+		if node.Role == biz.NodeRoleMaster && !selectedBostionHost {
+			selectedBostionHost = true
+			// bind eip to instance
+			_, err = ecs.NewEipAssociation(ctx, alicloudNatGatewayEipAssociation, &ecs.EipAssociationArgs{
+				AllocationId: a.eipID,
+				InstanceId:   instance.ID(),
+			})
+			if err != nil {
+				return err
+			}
+			ctx.Export(getBostionHostInstanceID(), instance.ID())
+		}
+		ctx.Export(getIntanceIDKey(node.Name), instance.ID())
+		ctx.Export(getIntanceUser(node.Name), pulumi.String("root"))
+		ctx.Export(getIntanceInternalIPKey(node.Name), instance.PrivateIp)
+		ctx.Export(getIntancePublicIPKey(node.Name), instance.PublicIp)
 	}
 	return nil
 }
 
-func (a *AlicloudCluster) localBalancer(ctx *pulumi.Context) error {
-	ctx.Export("local_balancer_id", pulumi.String("a"))
+func (a *AlicloudCluster) localBalancer(ctx *pulumi.Context) (err error) {
+	zoneMappings := make(alb.LoadBalancerZoneMappingArray, 0)
+	for _, v := range a.vSwitchs {
+		zoneMappings = append(zoneMappings, &alb.LoadBalancerZoneMappingArgs{
+			VswitchId: v.ID(),
+			ZoneId:    v.ZoneId,
+		})
+	}
+	a.lb, err = alb.NewLoadBalancer(ctx, alicloudSlbName, &alb.LoadBalancerArgs{
+		LoadBalancerName: pulumi.String(alicloudSlbName),
+		VpcId:            a.vpcID,
+		AddressType:      pulumi.String("internet"),
+		AddressIpVersion: pulumi.String("ipv4"),
+		ZoneMappings:     zoneMappings,
+	})
+	if err != nil {
+		return err
+	}
+
+	// Create Load Balancer Listener http
+	_, err = alb.NewListener(ctx, alicloudSlbListenerName, &alb.ListenerArgs{
+		LoadBalancerId:   a.lb.ID(),
+		ListenerPort:     pulumi.Int(80),
+		ListenerProtocol: pulumi.String("HTTP"),
+	})
+	if err != nil {
+		return err
+	}
+
+	// Create Load Balancer Listener https
+	_, err = alb.NewListener(ctx, alicloudSlbListenerName, &alb.ListenerArgs{
+		LoadBalancerId:   a.lb.ID(),
+		ListenerPort:     pulumi.Int(443),
+		ListenerProtocol: pulumi.String("HTTPS"),
+	})
+	if err != nil {
+		return err
+	}
+
+	// Load Balancer Listener k8s apiserver
+	_, err = alb.NewListener(ctx, alicloudSlbListenerName, &alb.ListenerArgs{
+		LoadBalancerId:   a.lb.ID(),
+		ListenerPort:     pulumi.Int(6443),
+		ListenerProtocol: pulumi.String("HTTPS"),
+	})
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
-func (a *AlicloudCluster) distributeNodeVswitches(nodeIndex int) *vpc.Switch {
-	nodeSize := len(a.cluster.Nodes)
-	vSwitchSize := len(a.vSwitchs)
-	if nodeSize <= vSwitchSize {
-		return a.vSwitchs[nodeIndex%vSwitchSize]
-	}
-	interval := nodeSize / vSwitchSize
-	return a.vSwitchs[(nodeIndex/interval)%vSwitchSize]
-}
-
-func (a *AlicloudCluster) Get(ctx *pulumi.Context) error {
+func (a *AlicloudCluster) Import(ctx *pulumi.Context) error {
 	instances, err := ecs.GetInstances(ctx, &ecs.GetInstancesArgs{
 		Status: pulumi.StringRef("Running"),
 	})
@@ -523,10 +523,16 @@ func (a *AlicloudCluster) Get(ctx *pulumi.Context) error {
 	return nil
 }
 
-func (a *AlicloudCluster) Import(ctx *pulumi.Context) error {
+func (a *AlicloudCluster) Clean(ctx *pulumi.Context) error {
 	return nil
 }
 
-func (a *AlicloudCluster) Clean(ctx *pulumi.Context) error {
-	return nil
+func (a *AlicloudCluster) distributeNodeVswitches(nodeIndex int) *vpc.Switch {
+	nodeSize := len(a.cluster.Nodes)
+	vSwitchSize := len(a.vSwitchs)
+	if nodeSize <= vSwitchSize {
+		return a.vSwitchs[nodeIndex%vSwitchSize]
+	}
+	interval := nodeSize / vSwitchSize
+	return a.vSwitchs[(nodeIndex/interval)%vSwitchSize]
 }

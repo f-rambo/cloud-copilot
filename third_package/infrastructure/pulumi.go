@@ -17,6 +17,20 @@ import (
 )
 
 const (
+	PulumiAlicloud        = "alicloud"
+	PulumiAlicloudVersion = "3.56.0"
+
+	PulumiAws        = "aws"
+	PulumiAwsVersion = "6.38.0"
+
+	PulumiGoogle        = "google"
+	PulumiGoogleVersion = "4.12.0"
+
+	PulumiKubernetes        = "kubernetes"
+	PulumiKubernetesVersion = "4.12.0"
+)
+
+const (
 	PulumiPackageName = "pulumi"
 )
 
