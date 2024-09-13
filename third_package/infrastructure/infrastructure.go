@@ -46,37 +46,31 @@ func NewClusterInfrastructure(c *conf.Bootstrap, logger log.Logger) biz.ClusterI
 }
 
 func (c *ClusterInfrastructure) Start(ctx context.Context, cluster *biz.Cluster) (err error) {
+	var startFunc PulumiFunc
 	output := ""
 	switch cluster.GetType() {
 	case biz.ClusterTypeAliCloudEcs:
-		output, err = c.pulumiExec(ctx, cluster, Alicloud(cluster).Start)
-		if err != nil {
-			return err
-		}
+		startFunc = Alicloud(cluster).Start
 	case biz.ClusterTypeAliCloudAks:
-		output, err = c.pulumiExec(ctx, cluster, Alicloud(cluster).StartAks)
-		if err != nil {
-			return err
-		}
+		startFunc = Alicloud(cluster).StartAks
 	case biz.ClusterTypeAWSEc2:
-		output, err = c.pulumiExec(ctx, cluster, AwsCloud(cluster).Start)
-		if err != nil {
-			return err
-		}
+		startFunc = AwsCloud(cluster).Start
 	case biz.ClusterTypeAWSEks:
-		output, err = c.pulumiExec(ctx, cluster, AwsCloud(cluster).StartEks)
-		if err != nil {
-			return err
-		}
+		startFunc = AwsCloud(cluster).StartEks
+	}
+	output, err = c.pulumiExec(ctx, cluster, startFunc)
+	if err != nil {
+		return err
 	}
 	err = c.parseOutput(cluster, output)
 	if err != nil {
 		return err
 	}
-	if cluster.GetType().IsIntegratedCloud() {
-		return nil
-	}
 	err = c.distributeShipServer(ctx, cluster)
+	if err != nil {
+		return err
+	}
+	err = c.getNodesInformation(ctx, cluster)
 	if err != nil {
 		return err
 	}
@@ -87,62 +81,7 @@ func (c *ClusterInfrastructure) Stop(ctx context.Context, cluster *biz.Cluster) 
 	if !cluster.GetType().IsCloud() {
 		return nil
 	}
-	switch cluster.GetType() {
-	case biz.ClusterTypeAliCloudEcs:
-		_, err := c.pulumiExec(ctx, cluster, Alicloud(cluster).Clean)
-		if err != nil {
-			return err
-		}
-	case biz.ClusterTypeAliCloudAks:
-		_, err := c.pulumiExec(ctx, cluster, Alicloud(cluster).CleanAks)
-		if err != nil {
-			return err
-		}
-	case biz.ClusterTypeAWSEc2:
-		_, err := c.pulumiExec(ctx, cluster, AwsCloud(cluster).Clean)
-		if err != nil {
-			return err
-		}
-	case biz.ClusterTypeAWSEks:
-		_, err := c.pulumiExec(ctx, cluster, AwsCloud(cluster).CleanEks)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (c *ClusterInfrastructure) Import(ctx context.Context, cluster *biz.Cluster) (err error) {
-	switch cluster.GetType() {
-	case biz.ClusterTypeAliCloudEcs:
-		_, err = c.pulumiExec(ctx, cluster, Alicloud(cluster).Import)
-		if err != nil {
-			return err
-		}
-	case biz.ClusterTypeAliCloudAks:
-		_, err = c.pulumiExec(ctx, cluster, Alicloud(cluster).ImportAks)
-		if err != nil {
-			return err
-		}
-	case biz.ClusterTypeAWSEc2:
-		_, err = c.pulumiExec(ctx, cluster, AwsCloud(cluster).Import)
-		if err != nil {
-			return err
-		}
-	case biz.ClusterTypeAWSEks:
-		_, err = c.pulumiExec(ctx, cluster, AwsCloud(cluster).ImportEks)
-		if err != nil {
-			return err
-		}
-	}
-	if cluster.GetType().IsIntegratedCloud() {
-		return nil
-	}
-	err = c.distributeShipServer(ctx, cluster)
-	if err != nil {
-		return err
-	}
-	err = c.getNodesInformation(ctx, cluster)
+	_, err := c.pulumiExec(ctx, cluster, CleanFunc)
 	if err != nil {
 		return err
 	}
@@ -672,6 +611,14 @@ func getCloudNodeGroupID(name string) string {
 	return fmt.Sprintf("cloud-nodegroup-id-%s", name)
 }
 
+func getLoadBalancerID() string {
+	return "load-balancer-id"
+}
+
+func getSecurityGroupIDs() string {
+	return "security-group-ids"
+}
+
 // Parse output const
 func (c *ClusterInfrastructure) parseOutput(cluster *biz.Cluster, output string) error {
 	outputMap := make(map[string]interface{})
@@ -696,6 +643,19 @@ func (c *ClusterInfrastructure) parseOutput(cluster *biz.Cluster, output string)
 		if _, ok := m["Value"]; !ok {
 			continue
 		}
+		if k == getSecurityGroupIDs() {
+			securityGroupIDs := make([]string, 0)
+			securityGroupIDsJson, err := json.Marshal(m["Value"])
+			if err != nil {
+				return errors.Wrap(err, "failed to marshal security group ids")
+			}
+			err = json.Unmarshal(securityGroupIDsJson, &securityGroupIDs)
+			if err != nil {
+				return errors.Wrap(err, "failed to unmarshal security group ids")
+			}
+			cluster.SecurityGroupIDs = strings.Join(securityGroupIDs, ",")
+			continue
+		}
 		data[k] = cast.ToString(m["Value"])
 	}
 	clusterCloudID, ok := data[getClusterCloudID()]
@@ -715,6 +675,10 @@ func (c *ClusterInfrastructure) parseOutput(cluster *biz.Cluster, output string)
 		if ok {
 			v.CloudNoodGroupID = cloudNodeGroupID
 		}
+	}
+	loadBalancerID, ok := data[getLoadBalancerID()]
+	if ok {
+		cluster.LoadBalancerID = loadBalancerID
 	}
 	for _, node := range cluster.Nodes {
 		instanceID, ok := data[getIntanceIDKey(node.Name)]

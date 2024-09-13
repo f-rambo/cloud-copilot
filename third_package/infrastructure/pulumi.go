@@ -53,6 +53,10 @@ type PulumiPlugin struct {
 
 type PulumiFunc func(ctx *pulumi.Context) error
 
+var CleanFunc PulumiFunc = func(ctx *pulumi.Context) error {
+	return nil
+}
+
 func NewPulumiAPI(ctx context.Context, w io.Writer) *PulumiAPI {
 	p := &PulumiAPI{
 		w: w,

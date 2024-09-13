@@ -25,7 +25,6 @@ const (
 	ClusterInterface_Save_FullMethodName             = "/cluster.v1alpha1.ClusterInterface/Save"
 	ClusterInterface_List_FullMethodName             = "/cluster.v1alpha1.ClusterInterface/List"
 	ClusterInterface_Delete_FullMethodName           = "/cluster.v1alpha1.ClusterInterface/Delete"
-	ClusterInterface_ImportResource_FullMethodName   = "/cluster.v1alpha1.ClusterInterface/ImportResource"
 	ClusterInterface_StartCluster_FullMethodName     = "/cluster.v1alpha1.ClusterInterface/StartCluster"
 	ClusterInterface_CheckBostionHost_FullMethodName = "/cluster.v1alpha1.ClusterInterface/CheckBostionHost"
 	ClusterInterface_GetLogs_FullMethodName          = "/cluster.v1alpha1.ClusterInterface/GetLogs"
@@ -40,7 +39,6 @@ type ClusterInterfaceClient interface {
 	Save(ctx context.Context, in *ClusterArgs, opts ...grpc.CallOption) (*Cluster, error)
 	List(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*ClusterList, error)
 	Delete(ctx context.Context, in *ClusterID, opts ...grpc.CallOption) (*Msg, error)
-	ImportResource(ctx context.Context, in *ClusterID, opts ...grpc.CallOption) (*Msg, error)
 	StartCluster(ctx context.Context, in *ClusterID, opts ...grpc.CallOption) (*Msg, error)
 	CheckBostionHost(ctx context.Context, in *CheckBostionHostRequest, opts ...grpc.CallOption) (*Msg, error)
 	GetLogs(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[ClusterLogsRequest, ClusterLogsResponse], error)
@@ -104,16 +102,6 @@ func (c *clusterInterfaceClient) Delete(ctx context.Context, in *ClusterID, opts
 	return out, nil
 }
 
-func (c *clusterInterfaceClient) ImportResource(ctx context.Context, in *ClusterID, opts ...grpc.CallOption) (*Msg, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Msg)
-	err := c.cc.Invoke(ctx, ClusterInterface_ImportResource_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *clusterInterfaceClient) StartCluster(ctx context.Context, in *ClusterID, opts ...grpc.CallOption) (*Msg, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Msg)
@@ -156,7 +144,6 @@ type ClusterInterfaceServer interface {
 	Save(context.Context, *ClusterArgs) (*Cluster, error)
 	List(context.Context, *emptypb.Empty) (*ClusterList, error)
 	Delete(context.Context, *ClusterID) (*Msg, error)
-	ImportResource(context.Context, *ClusterID) (*Msg, error)
 	StartCluster(context.Context, *ClusterID) (*Msg, error)
 	CheckBostionHost(context.Context, *CheckBostionHostRequest) (*Msg, error)
 	GetLogs(grpc.BidiStreamingServer[ClusterLogsRequest, ClusterLogsResponse]) error
@@ -184,9 +171,6 @@ func (UnimplementedClusterInterfaceServer) List(context.Context, *emptypb.Empty)
 }
 func (UnimplementedClusterInterfaceServer) Delete(context.Context, *ClusterID) (*Msg, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Delete not implemented")
-}
-func (UnimplementedClusterInterfaceServer) ImportResource(context.Context, *ClusterID) (*Msg, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ImportResource not implemented")
 }
 func (UnimplementedClusterInterfaceServer) StartCluster(context.Context, *ClusterID) (*Msg, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method StartCluster not implemented")
@@ -308,24 +292,6 @@ func _ClusterInterface_Delete_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ClusterInterface_ImportResource_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ClusterID)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ClusterInterfaceServer).ImportResource(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ClusterInterface_ImportResource_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ClusterInterfaceServer).ImportResource(ctx, req.(*ClusterID))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _ClusterInterface_StartCluster_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ClusterID)
 	if err := dec(in); err != nil {
@@ -395,10 +361,6 @@ var ClusterInterface_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Delete",
 			Handler:    _ClusterInterface_Delete_Handler,
-		},
-		{
-			MethodName: "ImportResource",
-			Handler:    _ClusterInterface_ImportResource_Handler,
 		},
 		{
 			MethodName: "StartCluster",

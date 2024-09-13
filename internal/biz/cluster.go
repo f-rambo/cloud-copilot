@@ -32,16 +32,20 @@ type Cluster struct {
 	Status               ClusterStatus `json:"status" gorm:"column:status; default:0; NOT NULL;"`
 	Type                 ClusterType   `json:"type" gorm:"column:type; default:''; NOT NULL;"` //*  aws google cloud azure alicloud local
 	KubeConfig           string        `json:"kube_config" gorm:"column:kube_config; default:''; NOT NULL; type:json"`
+	KeyPair              string        `json:"key_pair" gorm:"column:key_pair; default:''; NOT NULL;"`
 	PublicKey            string        `json:"public_key" gorm:"column:public_key; default:''; NOT NULL;"` // *
 	PrivateKey           string        `json:"private_key" gorm:"column:private_key; default:''; NOT NULL;"`
 	Region               string        `json:"region" gorm:"column:region; default:''; NOT NULL;"` // *
 	VpcID                string        `json:"vpc_id" gorm:"column:vpc_id; default:''; NOT NULL;"`
 	VpcCidr              string        `json:"vpc_cidr" gorm:"column:vpc_cidr; default:''; NOT NULL;"`
+	EipID                string        `json:"eip_id" gorm:"column:eip_id; default:''; NOT NULL;"`
+	NatGatewayID         string        `json:"nat_gateway_id" gorm:"column:nat_gateway_id; default:''; NOT NULL;"`
 	ResourceGroupID      string        `json:"resource_group_id" gorm:"column:resource_group_id; default:''; NOT NULL;"`
 	SecurityGroupIDs     string        `json:"security_group_ids" gorm:"column:security_group_ids; default:''; NOT NULL;"`
 	ExternalIP           string        `json:"external_ip" gorm:"column:external_ip; default:''; NOT NULL;"`
 	AccessID             string        `json:"access_id" gorm:"column:access_id; default:''; NOT NULL;"`   // *
 	AccessKey            string        `json:"access_key" gorm:"column:access_key; default:''; NOT NULL;"` // *
+	LoadBalancerID       string        `json:"load_balancer_id" gorm:"column:load_balancer_id; default:''; NOT NULL;"`
 	BostionHost          *BostionHost  `json:"bostion_host" gorm:"-"`
 	Nodes                []*Node       `json:"nodes" gorm:"-"`
 	NodeGroups           []*NodeGroup  `json:"node_groups" gorm:"-"`
@@ -134,7 +138,6 @@ type ClusterRepo interface {
 type ClusterInfrastructure interface {
 	Start(context.Context, *Cluster) error
 	Stop(context.Context, *Cluster) error
-	Import(context.Context, *Cluster) error
 	GetServerEnv(context.Context) conf.Env
 	MigrateToBostionHost(context.Context, *Cluster) error
 	Install(context.Context, *Cluster) error
@@ -379,6 +382,12 @@ func (c *Cluster) GenerateNodeGroupName(nodeGroup *NodeGroup) string {
 	return strings.Join([]string{c.Name, nodeGroup.Name, nodeGroup.Type.String()}, "-")
 }
 
+func (c *Cluster) NewNodeGroup() *NodeGroup {
+	return &NodeGroup{
+		ID: utils.GetRandomString(),
+	}
+}
+
 type ClusterUsecase struct {
 	clusterRepo           ClusterRepo
 	clusterInfrastructure ClusterInfrastructure
@@ -531,18 +540,6 @@ func (uc *ClusterUsecase) Apply(ctx context.Context, cluster *Cluster) error {
 
 func (uc *ClusterUsecase) Watch(ctx context.Context) (*Cluster, error) {
 	return uc.clusterRepo.Watch(ctx)
-}
-
-func (uc *ClusterUsecase) ImportResource(ctx context.Context, cluster *Cluster) error {
-	err := uc.clusterRuntime.CurrentCluster(ctx, cluster)
-	if err != nil && !errors.Is(err, ErrClusterNotFound) {
-		return err
-	}
-	err = uc.clusterInfrastructure.Import(ctx, cluster)
-	if err != nil {
-		return err
-	}
-	return uc.clusterRepo.Save(ctx, cluster)
 }
 
 func (uc *ClusterUsecase) Reconcile(ctx context.Context, cluster *Cluster) (err error) {

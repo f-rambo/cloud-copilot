@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/f-rambo/ocean/internal/biz"
+	"github.com/f-rambo/ocean/utils"
 	"github.com/pkg/errors"
 	"github.com/pulumi/pulumi-alicloud/sdk/v3/go/alicloud"
 	"github.com/pulumi/pulumi-alicloud/sdk/v3/go/alicloud/alb"
@@ -40,6 +41,7 @@ const (
 	alicloudKeyPairName              = "ocean-key-pair"
 	alicloudSlbName                  = "ocean-slb"
 	alicloudSlbListenerName          = "ocean-slb-listener"
+	alicloudVpcCidrBlock             = "192.168.0.0/16"
 )
 
 type GetInstanceTypesInstanceTypes []ecs.GetInstanceTypesInstanceType
@@ -64,13 +66,16 @@ func (a GetInstanceTypesInstanceTypes) Less(i, j int) bool {
 }
 
 type AlicloudCluster struct {
-	cluster         *biz.Cluster
-	resourceGroupID pulumi.StringInput
-	vpcID           pulumi.StringInput
-	vSwitchs        []*vpc.Switch
-	sgID            pulumi.StringInput
-	eipID           pulumi.StringInput
-	lb              *alb.LoadBalancer
+	cluster       *biz.Cluster
+	resourceGroup *resourcemanager.ResourceGroup
+	vpcNetWork    *vpc.Network
+	vSwitchs      []*vpc.Switch
+	sgs           []*ecs.SecurityGroup
+	eipAddress    *ecs.EipAddress
+	lb            *alb.LoadBalancer
+	role          *ram.Role
+	natGateway    *vpc.NatGateway
+	keyPair       *ecs.KeyPair
 }
 
 func Alicloud(cluster *biz.Cluster) *AlicloudCluster {
@@ -100,9 +105,72 @@ func (a *AlicloudCluster) getIntanceTypeFamilies(nodeGroup *biz.NodeGroup) strin
 }
 
 func (a *AlicloudCluster) Start(ctx *pulumi.Context) error {
-	err := a.infrastructural(ctx)
+	err := a.getClusterInfoByInstance(ctx)
+	if err != nil {
+		return err
+	}
+	err = a.getLocalBalancer(ctx)
+	if err != nil {
+		return err
+	}
+	err = a.getNatGateway(ctx)
+	if err != nil {
+		return err
+	}
+	err = a.infrastructural(ctx)
 	if err != nil {
 		return errors.Wrap(err, "alicloud cluster init failed")
+	}
+	err = a.createNodes(ctx)
+	if err != nil {
+		return errors.Wrap(err, "start ecs failed")
+	}
+	return nil
+}
+
+func (a *AlicloudCluster) infrastructural(ctx *pulumi.Context) error {
+	err := a.createResourceGroup(ctx)
+	if err != nil {
+		return err
+	}
+
+	err = a.createRolesAndPolicies(ctx)
+	if err != nil {
+		return err
+	}
+
+	err = a.createVPC(ctx)
+	if err != nil {
+		return err
+	}
+
+	err = a.createVSwitches(ctx)
+	if err != nil {
+		return err
+	}
+
+	err = a.createSecurityGroup(ctx)
+	if err != nil {
+		return err
+	}
+
+	err = a.createEIP(ctx)
+	if err != nil {
+		return err
+	}
+
+	err = a.createNATGateway(ctx)
+	if err != nil {
+		return err
+	}
+
+	err = a.createKeyPair(ctx)
+	if err != nil {
+		return err
+	}
+	err = a.localBalancer(ctx)
+	if err != nil {
+		return errors.Wrap(err, "start local balancer failed")
 	}
 	err = a.setImageByNodeGroups(ctx)
 	if err != nil {
@@ -112,35 +180,36 @@ func (a *AlicloudCluster) Start(ctx *pulumi.Context) error {
 	if err != nil {
 		return errors.Wrap(err, "set instance type by node groups failed")
 	}
-	err = a.nodes(ctx)
-	if err != nil {
-		return errors.Wrap(err, "start ecs failed")
+	return nil
+}
+
+func (a *AlicloudCluster) createResourceGroup(ctx *pulumi.Context) (err error) {
+	resourceGroupArgs := &resourcemanager.ResourceGroupArgs{
+		ResourceGroupName: pulumi.String(alicloudResourceGroupName),
+		DisplayName:       pulumi.String(alicloudResourceGroupName),
 	}
-	err = a.localBalancer(ctx)
+	if a.cluster.ResourceGroupID != "" {
+		a.resourceGroup, err = resourcemanager.NewResourceGroup(ctx, alicloudResourceGroupName, resourceGroupArgs,
+			pulumi.Import(pulumi.ID(a.cluster.ResourceGroupID)))
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+	a.resourceGroup, err = resourcemanager.NewResourceGroup(ctx, alicloudResourceGroupName, resourceGroupArgs)
 	if err != nil {
-		return errors.Wrap(err, "start local balancer failed")
+		return err
 	}
 	return nil
 }
 
-func (a *AlicloudCluster) infrastructural(ctx *pulumi.Context) error {
-	// create resource group
-	res, err := resourcemanager.NewResourceGroup(ctx, alicloudResourceGroupName, &resourcemanager.ResourceGroupArgs{
-		ResourceGroupName: pulumi.String(alicloudResourceGroupName),
-		DisplayName:       pulumi.String(alicloudResourceGroupName),
-	})
-	if err != nil {
-		return err
-	}
-	a.resourceGroupID = res.ID()
-
-	// 创建角色/策略
+func (a *AlicloudCluster) createRolesAndPolicies(ctx *pulumi.Context) (err error) {
 	roleMap := map[string]string{
 		"csPolicy":  alicloudCsPolicy,
 		"ecsPolicy": alicloudEscPolicy,
 	}
 	for name, rolePolicy := range roleMap {
-		_, err := ram.NewRole(ctx, name, &ram.RoleArgs{
+		a.role, err = ram.NewRole(ctx, name, &ram.RoleArgs{
 			Name:        pulumi.String(name),
 			Document:    pulumi.String(rolePolicy),
 			Description: pulumi.String("ocean cluster role."),
@@ -149,17 +218,64 @@ func (a *AlicloudCluster) infrastructural(ctx *pulumi.Context) error {
 			return err
 		}
 	}
+	return nil
+}
 
-	// create vpc
-	network, err := vpc.NewNetwork(ctx, alicloudVpcName, &vpc.NetworkArgs{
+func (a *AlicloudCluster) createVPC(ctx *pulumi.Context) (err error) {
+	cidrBlock := alicloudVpcCidrBlock
+	if a.cluster.VpcCidr != "" {
+		cidrBlock = a.cluster.VpcCidr
+	}
+	vpcArgs := &vpc.NetworkArgs{
 		VpcName:   pulumi.String(alicloudVpcName),
-		CidrBlock: pulumi.String("192.168.0.0/16"),
-	})
+		CidrBlock: pulumi.String(cidrBlock),
+	}
+	if a.cluster.VpcID != "" {
+		vpcNetwork, err := vpc.GetNetwork(ctx, alicloudVpcName, pulumi.ID(a.cluster.VpcID), nil)
+		if err != nil {
+			return err
+		}
+		vpcArgs.CidrBlock = vpcNetwork.CidrBlock
+		a.vpcNetWork, err = vpc.NewNetwork(ctx, alicloudVpcName, vpcArgs, pulumi.Import(pulumi.ID(a.cluster.VpcID)))
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+	a.vpcNetWork, err = vpc.NewNetwork(ctx, alicloudVpcName, vpcArgs)
 	if err != nil {
 		return err
 	}
-	a.vpcID = network.ID()
+	return nil
+}
 
+func (a *AlicloudCluster) createVSwitches(ctx *pulumi.Context) error {
+	// import vswitch
+	var subnetIds []string
+	for _, node := range a.cluster.Nodes {
+		subnetIds = append(subnetIds, node.SubnetId)
+	}
+	subnetIds = utils.RemoveDuplicateString(subnetIds)
+	for i, subnetId := range subnetIds {
+		vswitchName := fmt.Sprintf("%s-%d", alicloudVswitchName, i)
+		vswitch, err := vpc.GetSwitch(ctx, vswitchName, pulumi.ID(subnetId), nil)
+		if err != nil {
+			return err
+		}
+		a.vSwitchs = append(a.vSwitchs, vswitch)
+		_, err = vpc.NewSwitch(ctx, vswitchName, &vpc.SwitchArgs{
+			VswitchName: vswitch.VswitchName,
+			CidrBlock:   vswitch.CidrBlock,
+			VpcId:       a.vpcNetWork.ID(),
+			ZoneId:      vswitch.ZoneId,
+		}, pulumi.Import(pulumi.ID(subnetId)))
+		if err != nil {
+			return err
+		}
+	}
+	if len(a.vSwitchs) > 0 {
+		return nil
+	}
 	// create vswitch
 	zones, err := alicloud.GetZones(ctx, &alicloud.GetZonesArgs{
 		AvailableResourceCreation: pulumi.StringRef("VSwitch"),
@@ -175,36 +291,54 @@ func (a *AlicloudCluster) infrastructural(ctx *pulumi.Context) error {
 		return fmt.Errorf("no available zone found")
 	}
 
-	vSwitchs := make([]*vpc.Switch, 0)
 	for i, zoneId := range zoneIds {
 		vSwitch, err := vpc.NewSwitch(ctx, fmt.Sprintf("%s-%d", alicloudVswitchName, i), &vpc.SwitchArgs{
 			VswitchName: pulumi.String(fmt.Sprintf("%s-%d", alicloudVswitchName, i)),
 			CidrBlock:   pulumi.String(fmt.Sprintf("192.168.%d.0/24", i)),
-			VpcId:       a.vpcID,
+			VpcId:       a.vpcNetWork.ID(),
 			ZoneId:      pulumi.String(zoneId),
 		})
 		if err != nil {
 			return err
 		}
-		vSwitchs = append(vSwitchs, vSwitch)
+		a.vSwitchs = append(a.vSwitchs, vSwitch)
 	}
-	if len(vSwitchs) == 0 {
+	if len(a.vSwitchs) == 0 {
 		return fmt.Errorf("no available vswitch found")
 	}
-	a.vSwitchs = vSwitchs
+	return nil
+}
 
+func (a *AlicloudCluster) createSecurityGroup(ctx *pulumi.Context) (err error) {
+	// import security group
+	sgIDs := strings.Split(a.cluster.SecurityGroupIDs, ",")
+	for i, sgID := range sgIDs {
+		sgName := fmt.Sprintf("%s-%d", alicloudEcsSecurityGroup, i)
+		sg, err := ecs.GetSecurityGroup(ctx, sgName, pulumi.ID(sgID), nil)
+		if err != nil {
+			return err
+		}
+		a.sgs = append(a.sgs, sg)
+		_, err = ecs.NewSecurityGroup(ctx, sgName, &ecs.SecurityGroupArgs{
+			Name:        sg.Name,
+			Description: sg.Description,
+			VpcId:       a.vpcNetWork.ID(),
+		}, pulumi.Import(pulumi.ID(sgID)))
+		if err != nil {
+			return err
+		}
+	}
 	// create security group
 	group, err := ecs.NewSecurityGroup(ctx, alicloudEcsSecurityGroup, &ecs.SecurityGroupArgs{
 		Name:        pulumi.String(alicloudEcsSecurityGroup),
 		Description: pulumi.String("ocean ecs security group."),
-		VpcId:       a.vpcID,
+		VpcId:       a.vpcNetWork.ID(),
 	})
 	if err != nil {
 		return err
 	}
-	a.sgID = group.ID()
+	a.sgs = append(a.sgs, group)
 
-	// sg rule: can add more rules
 	_, err = ecs.NewSecurityGroupRule(ctx, alicloudEcsSecurityGroupRuleName, &ecs.SecurityGroupRuleArgs{
 		Type:            pulumi.String("ingress"),
 		IpProtocol:      pulumi.String("tcp"),
@@ -218,8 +352,30 @@ func (a *AlicloudCluster) infrastructural(ctx *pulumi.Context) error {
 	if err != nil {
 		return err
 	}
+	sgPulumiIDs := make(pulumi.StringArray, 0)
+	for _, sg := range a.sgs {
+		sgPulumiIDs = append(sgPulumiIDs, sg.ID())
+	}
+	ctx.Export(getSecurityGroupIDs(), sgPulumiIDs)
+	return nil
+}
 
-	// create eip
+func (a *AlicloudCluster) createEIP(ctx *pulumi.Context) error {
+	if a.cluster.EipID != "" {
+		eip, err := ecs.GetEipAddress(ctx, alicloudNatEipName, pulumi.ID(a.cluster.EipID), nil)
+		if err != nil {
+			return err
+		}
+		_, err = ecs.NewEipAddress(ctx, alicloudNatEipName, &ecs.EipAddressArgs{
+			AddressName:        eip.AddressName,
+			InternetChargeType: eip.InternetChargeType,
+		}, pulumi.Import(pulumi.ID(a.cluster.EipID)))
+		if err != nil {
+			return err
+		}
+		a.eipAddress = eip
+		return nil
+	}
 	eipAddress, err := ecs.NewEipAddress(ctx, alicloudNatEipName, &ecs.EipAddressArgs{
 		AddressName:        pulumi.String(alicloudNatEipName),
 		InternetChargeType: pulumi.String("PayByTraffic"),
@@ -227,42 +383,75 @@ func (a *AlicloudCluster) infrastructural(ctx *pulumi.Context) error {
 	if err != nil {
 		return err
 	}
-	a.eipID = eipAddress.ID()
+	a.eipAddress = eipAddress
+	return nil
+}
 
-	// create nat gateway
-	var vswitchId pulumi.StringInput
-	for _, v := range vSwitchs {
-		vswitchId = v.ID()
-		break
+func (a *AlicloudCluster) createNATGateway(ctx *pulumi.Context) (err error) {
+	if a.cluster.NatGatewayID != "" {
+		a.natGateway, err = vpc.GetNatGateway(ctx, alicloudNatGatewayName, pulumi.ID(a.cluster.NatGatewayID), nil)
+		if err != nil {
+			return err
+		}
+		_, err = vpc.NewNatGateway(ctx, alicloudNatGatewayName, &vpc.NatGatewayArgs{
+			VpcId:              a.vpcNetWork.ID(),
+			VswitchId:          a.natGateway.VswitchId,
+			NatGatewayName:     a.natGateway.NatGatewayName,
+			InternetChargeType: a.natGateway.InternetChargeType,
+			NatType:            a.natGateway.NatType,
+		}, pulumi.Import(pulumi.ID(a.cluster.NatGatewayID)))
+		if err != nil {
+			return err
+		}
+	} else {
+		var vswitchId pulumi.StringInput
+		for _, v := range a.vSwitchs {
+			vswitchId = v.ID()
+			break
+		}
+		a.natGateway, err = vpc.NewNatGateway(ctx, alicloudNatGatewayName, &vpc.NatGatewayArgs{
+			VpcId:              a.vpcNetWork.ID(),
+			VswitchId:          vswitchId,
+			NatGatewayName:     pulumi.String(alicloudNatGatewayName),
+			InternetChargeType: pulumi.String("PayByTraffic"),
+			NatType:            pulumi.String("Enhanced"),
+		})
+		if err != nil {
+			return err
+		}
 	}
-	natGateway, err := vpc.NewNatGateway(ctx, alicloudNatGatewayName, &vpc.NatGatewayArgs{
-		VpcId:              a.vpcID,
-		VswitchId:          vswitchId,
-		NatGatewayName:     pulumi.String(alicloudNatGatewayName),
-		InternetChargeType: pulumi.String("PayByTraffic"),
-		NatType:            pulumi.String("Enhanced"),
-	})
-	if err != nil {
-		return err
-	}
-
 	_, err = ecs.NewEipAssociation(ctx, alicloudNatGatewayEipAssociation, &ecs.EipAssociationArgs{
-		AllocationId: a.eipID,
-		InstanceId:   natGateway.ID(),
+		AllocationId: a.eipAddress.ID(),
+		InstanceId:   a.natGateway.ID(),
 	})
 	if err != nil {
 		return err
 	}
+	return nil
+}
 
-	// Import an existing public key to build a alicloud key pair
-	_, err = ecs.NewKeyPair(ctx, alicloudKeyPairName, &ecs.KeyPairArgs{
-		KeyName:   pulumi.String(alicloudKeyPairName),
-		PublicKey: pulumi.String(a.cluster.PublicKey),
+func (a *AlicloudCluster) createKeyPair(ctx *pulumi.Context) (err error) {
+	if a.cluster.KeyPair != "" {
+		a.keyPair, err = ecs.GetKeyPair(ctx, alicloudKeyPairName, pulumi.ID(a.cluster.KeyPair), nil)
+		if err != nil {
+			return err
+		}
+		_, err = ecs.NewKeyPair(ctx, alicloudKeyPairName, &ecs.KeyPairArgs{
+			KeyPairName: a.keyPair.KeyPairName,
+			PublicKey:   a.keyPair.PublicKey,
+		}, pulumi.Import(pulumi.ID(a.cluster.KeyPair)))
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+	a.keyPair, err = ecs.NewKeyPair(ctx, alicloudKeyPairName, &ecs.KeyPairArgs{
+		KeyPairName: pulumi.String(alicloudKeyPairName),
+		PublicKey:   pulumi.String(a.cluster.PublicKey),
 	})
 	if err != nil {
 		return err
 	}
-
 	return nil
 }
 
@@ -322,7 +511,7 @@ func (a *AlicloudCluster) setInstanceTypeByNodeGroups(ctx *pulumi.Context) error
 	return nil
 }
 
-func (a *AlicloudCluster) nodes(ctx *pulumi.Context) error {
+func (a *AlicloudCluster) createNodes(ctx *pulumi.Context) (err error) {
 	selectedBostionHost := false
 	for nodeIndex, node := range a.cluster.Nodes {
 		nodeGroup := a.cluster.GetNodeGroup(node.NodeGroupID)
@@ -336,12 +525,16 @@ func (a *AlicloudCluster) nodes(ctx *pulumi.Context) error {
 			return fmt.Errorf("instance type not found")
 		}
 		vswitch := a.distributeNodeVswitches(nodeIndex)
+		sgIDs := make(pulumi.StringArray, 0)
+		for _, sg := range a.sgs {
+			sgIDs = append(sgIDs, sg.ID())
+		}
 		instanceArgs := &ecs.InstanceArgs{
 			HostName:                pulumi.String(node.Name),
 			InstanceName:            pulumi.String(node.Name),
 			AvailabilityZone:        vswitch.ZoneId,
 			VswitchId:               vswitch.ID(),
-			SecurityGroups:          pulumi.StringArray{a.sgID},
+			SecurityGroups:          sgIDs,
 			InstanceType:            pulumi.String(nodeGroup.InstanceType),
 			ImageId:                 pulumi.String(nodeGroup.Image),
 			InternetMaxBandwidthOut: pulumi.Int(node.InternetMaxBandwidthOut),
@@ -349,7 +542,8 @@ func (a *AlicloudCluster) nodes(ctx *pulumi.Context) error {
 			SystemDiskName:          pulumi.String(fmt.Sprintf("system_disk_%s", node.Name)),
 			SystemDiskSize:          pulumi.Int(node.SystemDisk),
 			KeyName:                 pulumi.String(alicloudKeyPairName),
-			ResourceGroupId:         a.resourceGroupID,
+			ResourceGroupId:         a.resourceGroup.ID(),
+			RoleName:                a.role.Name,
 		}
 		if nodeGroup.NodeInitScript != "" {
 			instanceArgs.UserData = pulumi.String(nodeGroup.NodeInitScript)
@@ -376,15 +570,45 @@ func (a *AlicloudCluster) nodes(ctx *pulumi.Context) error {
 				},
 			}
 		}
-		instance, err := ecs.NewInstance(ctx, node.Name, instanceArgs)
-		if err != nil {
-			return err
+		var instance *ecs.Instance
+		if node.InstanceID != "" {
+			instance, err = ecs.GetInstance(ctx, node.Name, pulumi.ID(node.InstanceID), nil)
+			if err != nil {
+				return err
+			}
+			_, err = ecs.NewInstance(ctx, node.Name, &ecs.InstanceArgs{
+				InstanceName:            instance.InstanceName,
+				HostName:                instance.HostName,
+				AvailabilityZone:        instance.AvailabilityZone,
+				VswitchId:               instance.VswitchId,
+				SecurityGroups:          instance.SecurityGroups,
+				InstanceType:            instance.InstanceType,
+				ImageId:                 instance.ImageId,
+				InternetMaxBandwidthOut: instance.InternetMaxBandwidthOut,
+				SystemDiskCategory:      instance.SystemDiskCategory,
+				SystemDiskName:          instance.SystemDiskName,
+				SystemDiskSize:          instance.SystemDiskSize,
+				KeyName:                 instance.KeyName,
+				ResourceGroupId:         instance.ResourceGroupId,
+				RoleName:                instance.RoleName,
+				UserData:                instance.UserData,
+				Tags:                    instance.Tags,
+				DataDisks:               instance.DataDisks,
+			}, pulumi.Import(pulumi.ID(node.InstanceID)))
+			if err != nil {
+				return err
+			}
+		} else {
+			instance, err = ecs.NewInstance(ctx, node.Name, instanceArgs)
+			if err != nil {
+				return err
+			}
 		}
 		if node.Role == biz.NodeRoleMaster && !selectedBostionHost {
 			selectedBostionHost = true
 			// bind eip to instance
 			_, err = ecs.NewEipAssociation(ctx, alicloudNatGatewayEipAssociation, &ecs.EipAssociationArgs{
-				AllocationId: a.eipID,
+				AllocationId: a.eipAddress.ID(),
 				InstanceId:   instance.ID(),
 			})
 			if err != nil {
@@ -401,26 +625,59 @@ func (a *AlicloudCluster) nodes(ctx *pulumi.Context) error {
 }
 
 func (a *AlicloudCluster) localBalancer(ctx *pulumi.Context) (err error) {
-	zoneMappings := make(alb.LoadBalancerZoneMappingArray, 0)
-	for _, v := range a.vSwitchs {
-		zoneMappings = append(zoneMappings, &alb.LoadBalancerZoneMappingArgs{
-			VswitchId: v.ID(),
-			ZoneId:    v.ZoneId,
+	if a.cluster.LoadBalancerID != "" {
+		a.lb, err = alb.GetLoadBalancer(ctx, alicloudSlbName, pulumi.ID(a.cluster.LoadBalancerID), nil)
+		if err != nil {
+			return err
+		}
+		_, err = alb.NewLoadBalancer(ctx, alicloudSlbName, &alb.LoadBalancerArgs{
+			LoadBalancerName: a.lb.LoadBalancerName,
+			VpcId:            a.vpcNetWork.ID(),
+			AddressType:      a.lb.AddressType,
+			AddressIpVersion: a.lb.AddressIpVersion,
+			ZoneMappings:     a.lb.ZoneMappings,
+		}, pulumi.Import(pulumi.ID(a.cluster.LoadBalancerID)))
+		if err != nil {
+			return err
+		}
+		listeners, err := alb.GetListeners(ctx, &alb.GetListenersArgs{
+			LoadBalancerIds: []string{a.cluster.LoadBalancerID},
+		}, nil)
+		if err != nil {
+			return err
+		}
+		for _, v := range listeners.Listeners {
+			_, err = alb.NewListener(ctx, fmt.Sprintf("listener_%d", v.ListenerPort), &alb.ListenerArgs{
+				LoadBalancerId:   a.lb.ID(),
+				ListenerPort:     pulumi.Int(v.ListenerPort),
+				ListenerProtocol: pulumi.String(v.ListenerProtocol),
+			}, pulumi.Import(pulumi.ID(v.ListenerId)))
+			if err != nil {
+				return err
+			}
+		}
+	} else {
+		zoneMappings := make(alb.LoadBalancerZoneMappingArray, 0)
+		for _, v := range a.vSwitchs {
+			zoneMappings = append(zoneMappings, &alb.LoadBalancerZoneMappingArgs{
+				VswitchId: v.ID(),
+				ZoneId:    v.ZoneId,
+			})
+		}
+		a.lb, err = alb.NewLoadBalancer(ctx, alicloudSlbName, &alb.LoadBalancerArgs{
+			LoadBalancerName: pulumi.String(alicloudSlbName),
+			VpcId:            a.vpcNetWork.ID(),
+			AddressType:      pulumi.String("internet"),
+			AddressIpVersion: pulumi.String("ipv4"),
+			ZoneMappings:     zoneMappings,
 		})
-	}
-	a.lb, err = alb.NewLoadBalancer(ctx, alicloudSlbName, &alb.LoadBalancerArgs{
-		LoadBalancerName: pulumi.String(alicloudSlbName),
-		VpcId:            a.vpcID,
-		AddressType:      pulumi.String("internet"),
-		AddressIpVersion: pulumi.String("ipv4"),
-		ZoneMappings:     zoneMappings,
-	})
-	if err != nil {
-		return err
+		if err != nil {
+			return err
+		}
 	}
 
 	// Create Load Balancer Listener http
-	_, err = alb.NewListener(ctx, alicloudSlbListenerName, &alb.ListenerArgs{
+	_, err = alb.NewListener(ctx, fmt.Sprintf("listener_%d", 80), &alb.ListenerArgs{
 		LoadBalancerId:   a.lb.ID(),
 		ListenerPort:     pulumi.Int(80),
 		ListenerProtocol: pulumi.String("HTTP"),
@@ -430,7 +687,7 @@ func (a *AlicloudCluster) localBalancer(ctx *pulumi.Context) (err error) {
 	}
 
 	// Create Load Balancer Listener https
-	_, err = alb.NewListener(ctx, alicloudSlbListenerName, &alb.ListenerArgs{
+	_, err = alb.NewListener(ctx, fmt.Sprintf("listener_%d", 443), &alb.ListenerArgs{
 		LoadBalancerId:   a.lb.ID(),
 		ListenerPort:     pulumi.Int(443),
 		ListenerProtocol: pulumi.String("HTTPS"),
@@ -440,7 +697,7 @@ func (a *AlicloudCluster) localBalancer(ctx *pulumi.Context) (err error) {
 	}
 
 	// Load Balancer Listener k8s apiserver
-	_, err = alb.NewListener(ctx, alicloudSlbListenerName, &alb.ListenerArgs{
+	_, err = alb.NewListener(ctx, fmt.Sprintf("listener_%d", 6443), &alb.ListenerArgs{
 		LoadBalancerId:   a.lb.ID(),
 		ListenerPort:     pulumi.Int(6443),
 		ListenerProtocol: pulumi.String("HTTPS"),
@@ -448,52 +705,49 @@ func (a *AlicloudCluster) localBalancer(ctx *pulumi.Context) (err error) {
 	if err != nil {
 		return err
 	}
-
+	ctx.Export(getLoadBalancerID(), a.lb.ID())
 	return nil
 }
 
-func (a *AlicloudCluster) Import(ctx *pulumi.Context) error {
+func (a *AlicloudCluster) getClusterInfoByInstance(ctx *pulumi.Context) error {
+	// get instances
 	instances, err := ecs.GetInstances(ctx, &ecs.GetInstancesArgs{
 		Status: pulumi.StringRef("Running"),
 	})
 	if err != nil {
 		return err
 	}
-	var vpcId, resourceGroupID, sgIDs, eipID string
-	instanceTypes := make(map[string]struct{})
+	instanceTypes := make(map[string][]int64)
 	for _, node := range a.cluster.Nodes {
-		for _, instance := range instances.Instances {
-			if node.InternalIP == instance.PrivateIp {
-				node.InstanceID = instance.Id
-				node.SubnetId = instance.VswitchId
-				node.Zone = instance.AvailabilityZone
-				node.ExternalIP = instance.PublicIp
-				vpcId = instance.VpcId
-				resourceGroupID = instance.ResourceGroupId
-				sgIDs = strings.Join(instance.SecurityGroups, ",")
-				if instance.Eip != "" {
-					eipID = instance.Eip
-				}
-				instanceTypes[instance.InstanceType] = struct{}{}
-				for _, v := range instance.DiskDeviceMappings {
-					if v.Type == "system disk" {
-						node.SystemDisk += int32(v.Size)
-					}
-					if v.Type == "data disk" {
-						node.DataDisk += int32(v.Size)
-					}
-				}
-				break
+		instance, err := a.getInstanceByNode(instances, node)
+		if err != nil {
+			return err
+		}
+		node.InstanceID = instance.Id
+		node.SubnetId = instance.VswitchId
+		node.Zone = instance.AvailabilityZone
+		node.ExternalIP = instance.PublicIp
+		a.cluster.VpcID = instance.VpcId
+		a.cluster.ResourceGroupID = instance.ResourceGroupId
+		a.cluster.SecurityGroupIDs = strings.Join(instance.SecurityGroups, ",")
+		a.cluster.KeyPair = instance.KeyName
+		a.cluster.Region = instance.RegionId
+		if instance.Eip != "" {
+			a.cluster.EipID = instance.Eip
+		}
+		for _, v := range instance.DiskDeviceMappings {
+			if v.Type == "system disk" {
+				node.SystemDisk += int32(v.Size)
+			}
+			if v.Type == "data disk" {
+				node.DataDisk += int32(v.Size)
 			}
 		}
+		instanceTypes[instance.InstanceType] = append(instanceTypes[instance.InstanceType], node.ID)
 	}
-	a.cluster.VpcID = vpcId
-	a.cluster.ResourceGroupID = resourceGroupID
-	a.cluster.SecurityGroupIDs = sgIDs
-	a.cluster.ApiServerAddress = eipID
 	nodeGroups := make([]*biz.NodeGroup, 0)
 	for instanceType := range instanceTypes {
-		nodeGroup := &biz.NodeGroup{}
+		nodeGroup := a.cluster.NewNodeGroup()
 		for _, ng := range a.cluster.NodeGroups {
 			if ng.InstanceType == instanceType {
 				nodeGroup = ng
@@ -517,13 +771,67 @@ func (a *AlicloudCluster) Import(ctx *pulumi.Context) error {
 			nodeGroup.CPU = int32(v.CpuCoreCount)
 			nodeGroup.Memory = v.MemorySize
 		}
+		nodeGroup.Name = a.cluster.GenerateNodeGroupName(nodeGroup)
 		nodeGroups = append(nodeGroups, nodeGroup)
 	}
 	a.cluster.NodeGroups = nodeGroups
+	// Assign nodegroupID
+	for _, nodeGroup := range a.cluster.NodeGroups {
+		for _, nodeID := range instanceTypes[nodeGroup.InstanceType] {
+			for _, node := range a.cluster.Nodes {
+				if node.ID == nodeID {
+					node.NodeGroupID = nodeGroup.ID
+					break
+				}
+			}
+		}
+	}
 	return nil
 }
 
-func (a *AlicloudCluster) Clean(ctx *pulumi.Context) error {
+// get instance by node
+func (a *AlicloudCluster) getInstanceByNode(instances *ecs.GetInstancesResult, node *biz.Node) (ecs.GetInstancesInstance, error) {
+	for _, instance := range instances.Instances {
+		if node.InternalIP != instance.PrivateIp {
+			continue
+		}
+		return instance, nil
+	}
+	return ecs.GetInstancesInstance{}, fmt.Errorf("instance not found")
+}
+
+// get local balancer
+func (a *AlicloudCluster) getLocalBalancer(ctx *pulumi.Context) error {
+	lb, err := alb.GetLoadBalancers(ctx, &alb.GetLoadBalancersArgs{
+		VpcId:       pulumi.StringRef(a.cluster.VpcID),
+		Status:      pulumi.StringRef("Active"),
+		AddressType: pulumi.StringRef("internet"),
+	})
+	if err != nil {
+		return err
+	}
+	if len(lb.Balancers) == 0 {
+		return fmt.Errorf("load balancer not found")
+	}
+	for _, v := range lb.Balancers {
+		a.cluster.LoadBalancerID = v.Id
+		return nil
+	}
+	return fmt.Errorf("load balancer not found")
+}
+
+// get nat gateway
+func (a *AlicloudCluster) getNatGateway(ctx *pulumi.Context) error {
+	natGateway, err := vpc.GetNatGateways(ctx, &vpc.GetNatGatewaysArgs{
+		VpcId: pulumi.StringRef(a.cluster.VpcID),
+	})
+	if err != nil {
+		return err
+	}
+	if len(natGateway.Gateways) == 0 {
+		return fmt.Errorf("nat gateway not found")
+	}
+	a.cluster.NatGatewayID = natGateway.Gateways[0].Id
 	return nil
 }
 

@@ -150,21 +150,6 @@ func (c *ClusterInterface) Delete(ctx context.Context, clusterID *v1alpha1.Clust
 	return &v1alpha1.Msg{}, nil
 }
 
-func (c *ClusterInterface) ImportResouce(ctx context.Context, clusterArgs *v1alpha1.ClusterID) (*v1alpha1.Msg, error) {
-	if clusterArgs == nil || clusterArgs.Id == 0 {
-		return nil, errors.New("cluster id is required")
-	}
-	cluster, err := c.clusterUc.Get(ctx, clusterArgs.Id)
-	if err != nil {
-		return nil, err
-	}
-	err = c.clusterUc.ImportResource(ctx, cluster)
-	if err != nil {
-		return nil, err
-	}
-	return &v1alpha1.Msg{}, nil
-}
-
 func (c *ClusterInterface) StartCluster(ctx context.Context, clusterID *v1alpha1.ClusterID) (*v1alpha1.Msg, error) {
 	if clusterID == nil || clusterID.Id == 0 {
 		return nil, errors.New("cluster id is required")

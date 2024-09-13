@@ -943,24 +943,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/cluster.v1alpha1.Msg'
-    /api/v1alpha1/cluster/import:
-        post:
-            tags:
-                - ClusterInterface
-            operationId: ClusterInterface_ImportResource
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/cluster.v1alpha1.ClusterID'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/cluster.v1alpha1.Msg'
     /api/v1alpha1/cluster/list:
         get:
             tags:

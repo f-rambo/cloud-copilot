@@ -14,6 +14,7 @@ require (
 	github.com/gorilla/handlers v1.5.2
 	github.com/joho/godotenv v1.5.1
 	github.com/pkg/errors v0.9.1
+	github.com/pulumi/pulumi-alicloud/sdk/v3 v3.56.0
 	github.com/pulumi/pulumi-aws/sdk/v6 v6.38.0
 	github.com/pulumi/pulumi/sdk/v3 v3.130.0
 	github.com/spf13/cast v1.5.1
@@ -182,7 +183,6 @@ require (
 	github.com/prometheus/procfs v0.11.1 // indirect
 	github.com/pulumi/appdash v0.0.0-20231130102222-75f619a67231 // indirect
 	github.com/pulumi/esc v0.9.1 // indirect
-	github.com/pulumi/pulumi-alicloud/sdk/v3 v3.56.0
 	github.com/rivo/uniseg v0.4.4 // indirect
 	github.com/rogpeppe/go-internal v1.12.0 // indirect
 	github.com/rubenv/sql-migrate v1.5.2 // indirect

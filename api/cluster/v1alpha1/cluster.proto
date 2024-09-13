@@ -41,13 +41,6 @@ service ClusterInterface {
             };
       }
 
-      rpc ImportResource(cluster.v1alpha1.ClusterID) returns (cluster.v1alpha1.Msg) {
-            option (google.api.http) = {
-              post: "/api/v1alpha1/cluster/import"
-              body: "*"
-            };
-      }
-
       rpc StartCluster(cluster.v1alpha1.ClusterID) returns (cluster.v1alpha1.Msg) {
             option (google.api.http) = {
               post: "/api/v1alpha1/cluster/start"
