@@ -1,7 +1,6 @@
 package infrastructure
 
 import (
-	"encoding/json"
 	"fmt"
 	"sort"
 	"strings"
@@ -137,6 +136,10 @@ func (a *AwsInstance) Start(ctx *pulumi.Context) (err error) {
 }
 
 func (a *AwsInstance) infrastructural(ctx *pulumi.Context) (err error) {
+	err = a.getClusterInfoByInstance(ctx)
+	if err != nil {
+		return err
+	}
 	err = a.createVpc(ctx)
 	if err != nil {
 		return err
@@ -183,6 +186,23 @@ func (a *AwsInstance) infrastructural(ctx *pulumi.Context) (err error) {
 func (a *AwsInstance) createVpc(ctx *pulumi.Context) (err error) {
 	if a.vpcCidrBlock == "" {
 		a.vpcCidrBlock = awsVpcCidrBlock
+	}
+	if a.cluster.VpcID != "" {
+		a.vpc, err = ec2.GetVpc(ctx, awsVpcName, pulumi.ID(a.cluster.VpcID), nil)
+		if err != nil {
+			return err
+		}
+		a.vpc, err = ec2.NewVpc(ctx, awsVpcName, &ec2.VpcArgs{
+			CidrBlock: a.vpc.CidrBlock,
+			Tags: pulumi.StringMap{
+				"Name":    pulumi.String(a.cluster.Name + "-vpc"),
+				awsTagkey: pulumi.String(awsTagVal),
+			},
+		}, pulumi.Import(pulumi.ID(a.cluster.VpcID)))
+		if err != nil {
+			return err
+		}
+		return nil
 	}
 	a.vpc, err = ec2.NewVpc(ctx, awsVpcName, &ec2.VpcArgs{
 		CidrBlock: pulumi.String(a.vpcCidrBlock),
@@ -659,12 +679,41 @@ func (a *AwsInstance) setInstanceTypeByNodeGroups(ctx *pulumi.Context) (err erro
 	return nil
 }
 
-func (a *AwsInstance) startNodes(ctx *pulumi.Context) error {
+func (a *AwsInstance) startNodes(ctx *pulumi.Context) (err error) {
 	if len(a.cluster.Nodes) == 0 || len(a.cluster.NodeGroups) == 0 {
 		return nil
 	}
 	selectedBostionHost := false
 	for index, node := range a.cluster.Nodes {
+		// import instance
+		if node.InstanceID != "" {
+			instance, err := ec2.GetInstance(ctx, fmt.Sprintf("%s-%s", awsEc2InstanceStack, node.Name), pulumi.ID(node.InstanceID), nil)
+			if err != nil {
+				return err
+			}
+			nodeRes, err := ec2.NewInstance(ctx, fmt.Sprintf("%s-%s", awsEc2InstanceStack, node.Name), &ec2.InstanceArgs{
+				InstanceType:       instance.InstanceType,
+				NetworkInterfaces:  instance.NetworkInterfaces,
+				Ami:                instance.Ami,
+				IamInstanceProfile: a.ec2Profile.Name,
+				KeyName:            a.keyPair.KeyName,
+				RootBlockDevice:    instance.RootBlockDevice,
+				Tags: pulumi.StringMap{
+					"Name":     pulumi.String(node.Name),
+					awsTagkey:  pulumi.String(awsTagVal),
+					"NodeRole": pulumi.String(node.Role),
+				},
+			}, pulumi.Import(pulumi.ID(node.InstanceID)))
+			if err != nil {
+				return err
+			}
+			ctx.Export(getIntanceIDKey(node.Name), nodeRes.ID())
+			ctx.Export(getIntanceUser(node.Name), pulumi.String("ubuntu"))
+			ctx.Export(getIntanceInternalIPKey(node.Name), nodeRes.PrivateIp)
+			ctx.Export(getIntancePublicIPKey(node.Name), nodeRes.PublicIp)
+			continue
+		}
+		// create node
 		nodeGroup := a.cluster.GetNodeGroup(node.NodeGroupID)
 		if nodeGroup == nil {
 			return fmt.Errorf("node group %s not found", node.NodeGroupID)
@@ -742,179 +791,55 @@ func (a *AwsInstance) startNodes(ctx *pulumi.Context) error {
 	return nil
 }
 
-func (a *AwsInstance) Import(ctx *pulumi.Context) error {
+func (a *AwsInstance) getClusterInfoByInstance(ctx *pulumi.Context) error {
 	instances, err := ec2.GetInstances(ctx, &ec2.GetInstancesArgs{})
 	if err != nil {
 		return err
 	}
-	subnetIds := make([]string, 0)
-	instanceTypes := make([]string, 0)
-	instanceTypeOsMap := make(map[string]string)
-	publikeys := make([]string, 0)
 	sgids := make([]string, 0)
-	publicIps := make([]string, 0)
-	for _, instanceId := range instances.Ids {
+	subnetIds := make([]string, 0)
+	for _, instanceID := range instances.Ids {
 		instance, err := ec2.LookupInstance(ctx, &ec2.LookupInstanceArgs{
-			InstanceId: pulumi.StringRef(instanceId),
+			InstanceId: pulumi.StringRef(instanceID),
 		})
 		if err != nil {
 			return err
 		}
-		var node *biz.Node
-		for _, v := range a.cluster.Nodes {
-			if v.InternalIP == instance.PrivateIp {
-				node = v
+		for _, node := range a.cluster.Nodes {
+			if node.InternalIP == instance.PrivateIp {
+				node.InstanceID = instanceID
+				node.SubnetId = instance.SubnetId
+				node.Zone = instance.AvailabilityZone
+				node.ExternalIP = instance.PublicIp
+				node.InternalIP = instance.PrivateIp
+				sgids = append(sgids, instance.VpcSecurityGroupIds...)
+				subnetIds = append(subnetIds, instance.SubnetId)
 				break
 			}
 		}
-		if node == nil || node.Name == "" {
-			continue
-		}
-		instanceTags := make(pulumi.StringMap)
-		for k, v := range instance.Tags {
-			instanceTags[k] = pulumi.String(v)
-		}
-		vpcSgIDs := make(pulumi.StringArray, 0)
-		for _, sgID := range instance.VpcSecurityGroupIds {
-			vpcSgIDs = append(vpcSgIDs, pulumi.String(sgID))
-		}
-		// pulumi import aws:ec2/instance:Instance myInstance i-092b8bf00cf03a72d --generate-code
-		_, err = ec2.NewInstance(ctx, node.Name, &ec2.InstanceArgs{
-			Ami:                 pulumi.String(instance.Ami),
-			InstanceType:        pulumi.String(instance.InstanceType),
-			KeyName:             pulumi.String(instance.KeyName),
-			SubnetId:            pulumi.String(instance.SubnetId),
-			Tags:                instanceTags,
-			VpcSecurityGroupIds: vpcSgIDs,
-		}, pulumi.Import(pulumi.ID(instanceId)))
-		if err != nil {
-			return err
-		}
-		// cluster
-		publikeys = append(publikeys, instance.KeyName)
-		sgids = append(sgids, instance.SecurityGroups...)
-		publicIps = append(publicIps, instance.PublicIp)
-		// nodegroup
-		instanceTypes = append(instanceTypes, instance.InstanceType)
-		instanceTypeOsMap[instance.InstanceType] = instance.Ami
-		// node
-		node.ClusterID = a.cluster.ID
-		node.InstanceID = instanceId
-		node.PublicKey = instance.KeyName
-		tags, err := json.Marshal(instance.Tags)
-		if err != nil {
-			return err
-		}
-		node.Labels = string(tags)
-		node.InternalIP = instance.PrivateIp
-		node.ExternalIP = instance.PublicIp
-		//  `pending`, `running`, `shutting-down`, `terminated`, `stopping`, `stopped`
-		if instance.InstanceState == "running" {
-			node.Status = biz.NodeStatusRunning
-		} else {
-			node.Status = biz.NodeStatusUnspecified
-		}
-		node.Zone = instance.AvailabilityZone
-		node.SubnetId = instance.SubnetId
-		subnetIds = append(subnetIds, instance.SubnetId)
-	}
-	publikeys = utils.RemoveDuplicateString(publikeys)
-	if len(publikeys) == 1 {
-		a.cluster.PublicKey = publikeys[0]
 	}
 	sgids = utils.RemoveDuplicateString(sgids)
 	a.cluster.SecurityGroupIDs = strings.Join(sgids, ",")
-	publicIps = utils.RemoveDuplicateString(publicIps)
-	if len(publicIps) == 1 {
-		a.cluster.ExternalIP = publicIps[0]
-	}
-	// subnet
+	// get vpc by subnet
+	var subnetId string
 	for _, subnetID := range subnetIds {
-		subnet, err := ec2.LookupSubnet(ctx, &ec2.LookupSubnetArgs{
-			Id: pulumi.StringRef(subnetID),
-		})
-		if err != nil {
-			return err
-		}
-		// import subnet pulumi import aws:ec2/subnet:Subnet mySubnet subnet-075eea802912b4a60 --generate-code
-		tags := make(pulumi.StringMap)
-		for k, v := range subnet.Tags {
-			tags[k] = pulumi.String(v)
-		}
-		_, err = ec2.NewSubnet(ctx, "k8s-subnet-"+subnetID, &ec2.SubnetArgs{
-			AvailabilityZone:               pulumi.String(subnet.AvailabilityZone),
-			CidrBlock:                      pulumi.String(subnet.CidrBlock),
-			MapPublicIpOnLaunch:            pulumi.Bool(subnet.MapPublicIpOnLaunch),
-			PrivateDnsHostnameTypeOnLaunch: pulumi.String(subnet.PrivateDnsHostnameTypeOnLaunch),
-			VpcId:                          pulumi.String(subnet.VpcId),
-			Tags:                           tags,
-		}, pulumi.Import(pulumi.ID(subnetID)))
-		if err != nil {
-			return err
-		}
-		if a.cluster.VpcID == "" {
-			vpc, err := ec2.LookupVpc(ctx, &ec2.LookupVpcArgs{
-				Id: pulumi.StringRef(subnet.VpcId),
-			})
-			if err != nil {
-				return err
-			}
-			a.cluster.VpcID = subnet.VpcId
-			a.cluster.VpcCidr = vpc.CidrBlock
-		}
-		for _, node := range a.cluster.Nodes {
-			if node.SubnetId == subnetID {
-				node.SubnetCidr = subnet.CidrBlock
-			}
-		}
+		subnetId = subnetID
+		break
 	}
-	// vpc
-	vpc, err := ec2.LookupVpc(ctx, &ec2.LookupVpcArgs{})
+	subnet, err := ec2.LookupSubnet(ctx, &ec2.LookupSubnetArgs{
+		Id: pulumi.StringRef(subnetId),
+	})
 	if err != nil {
 		return err
 	}
-	// import vpc pulumi import aws:ec2/vpc:Vpc myVpc vpc-0483055d1fc806937 --generate-code
-	tags := make(pulumi.StringMap)
-	for k, v := range vpc.Tags {
-		tags[k] = pulumi.String(v)
-	}
-	_, err = ec2.NewVpc(ctx, "k8s-vpc", &ec2.VpcArgs{
-		CidrBlock:          pulumi.String(vpc.CidrBlock),
-		EnableDnsHostnames: pulumi.Bool(vpc.EnableDnsHostnames),
-		InstanceTenancy:    pulumi.String(vpc.InstanceTenancy),
-		Tags:               tags,
-	}, pulumi.Import(pulumi.ID(vpc.Id)))
+	a.cluster.VpcID = subnet.VpcId
+	vpc, err := ec2.LookupVpc(ctx, &ec2.LookupVpcArgs{
+		Id: pulumi.StringRef(subnet.VpcId),
+	})
 	if err != nil {
 		return err
 	}
-	nodeGroups := make([]*biz.NodeGroup, 0)
-	for _, instanceType := range instanceTypes {
-		ng := &biz.NodeGroup{}
-		for _, v := range a.cluster.NodeGroups {
-			if v.InstanceType == instanceType {
-				ng = v
-				break
-			}
-		}
-		instanceTypeRes, err := ec2.GetInstanceType(ctx, &ec2.GetInstanceTypeArgs{InstanceType: instanceType})
-		if err != nil {
-			return err
-		}
-		ng.ClusterID = a.cluster.ID
-		ng.InstanceType = instanceType
-		ng.OS = instanceTypeOsMap[instanceType]
-		ng.CPU = int32(instanceTypeRes.DefaultVcpus)
-		ng.Memory = float64(instanceTypeRes.MemorySize)
-		for _, gpues := range instanceTypeRes.Gpuses {
-			ng.GPU += int32(gpues.Count)
-		}
-		nodeGroups = append(nodeGroups, ng)
-	}
-	a.cluster.NodeGroups = nodeGroups
-	return nil
-}
-
-func (a *AwsInstance) Clean(ctx *pulumi.Context) error {
+	a.cluster.VpcCidr = vpc.CidrBlock
 	return nil
 }
 
