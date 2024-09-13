@@ -138,7 +138,7 @@ type ClusterRepo interface {
 type ClusterInfrastructure interface {
 	Start(context.Context, *Cluster) error
 	Stop(context.Context, *Cluster) error
-	GetServerEnv(context.Context) conf.Env
+	GetRegions(context.Context, *Cluster) ([]string, error)
 	MigrateToBostionHost(context.Context, *Cluster) error
 	Install(context.Context, *Cluster) error
 	UnInstall(context.Context, *Cluster) error
@@ -392,14 +392,16 @@ type ClusterUsecase struct {
 	clusterRepo           ClusterRepo
 	clusterInfrastructure ClusterInfrastructure
 	clusterRuntime        ClusterRuntime
+	conf                  *conf.Bootstrap
 	log                   *log.Helper
 }
 
-func NewClusterUseCase(clusterRepo ClusterRepo, clusterInfrastructure ClusterInfrastructure, clusterRuntime ClusterRuntime, logger log.Logger) *ClusterUsecase {
+func NewClusterUseCase(conf *conf.Bootstrap, clusterRepo ClusterRepo, clusterInfrastructure ClusterInfrastructure, clusterRuntime ClusterRuntime, logger log.Logger) *ClusterUsecase {
 	c := &ClusterUsecase{
 		clusterRepo:           clusterRepo,
 		clusterInfrastructure: clusterInfrastructure,
 		clusterRuntime:        clusterRuntime,
+		conf:                  conf,
 		log:                   log.NewHelper(logger),
 	}
 	return c
@@ -450,6 +452,10 @@ func (uc *ClusterUsecase) Save(ctx context.Context, cluster *Cluster) error {
 		return err
 	}
 	return nil
+}
+
+func (uc *ClusterUsecase) GetRegions(ctx context.Context, cluster *Cluster) ([]string, error) {
+	return uc.clusterInfrastructure.GetRegions(ctx, cluster)
 }
 
 // 获取当前集群最新信息
@@ -566,7 +572,7 @@ func (uc *ClusterUsecase) Reconcile(ctx context.Context, cluster *Cluster) (err 
 		if err != nil {
 			return err
 		}
-		if uc.clusterInfrastructure.GetServerEnv(ctx) == conf.EnvLocal {
+		if uc.conf.Server.GetEnv() == conf.EnvLocal {
 			err = uc.clusterInfrastructure.MigrateToBostionHost(ctx, cluster)
 			if err != nil {
 				return err

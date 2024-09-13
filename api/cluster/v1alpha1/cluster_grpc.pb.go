@@ -27,6 +27,7 @@ const (
 	ClusterInterface_Delete_FullMethodName           = "/cluster.v1alpha1.ClusterInterface/Delete"
 	ClusterInterface_StartCluster_FullMethodName     = "/cluster.v1alpha1.ClusterInterface/StartCluster"
 	ClusterInterface_CheckBostionHost_FullMethodName = "/cluster.v1alpha1.ClusterInterface/CheckBostionHost"
+	ClusterInterface_GetRegions_FullMethodName       = "/cluster.v1alpha1.ClusterInterface/GetRegions"
 	ClusterInterface_GetLogs_FullMethodName          = "/cluster.v1alpha1.ClusterInterface/GetLogs"
 )
 
@@ -41,6 +42,7 @@ type ClusterInterfaceClient interface {
 	Delete(ctx context.Context, in *ClusterID, opts ...grpc.CallOption) (*Msg, error)
 	StartCluster(ctx context.Context, in *ClusterID, opts ...grpc.CallOption) (*Msg, error)
 	CheckBostionHost(ctx context.Context, in *CheckBostionHostRequest, opts ...grpc.CallOption) (*Msg, error)
+	GetRegions(ctx context.Context, in *ClusterID, opts ...grpc.CallOption) (*Regions, error)
 	GetLogs(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[ClusterLogsRequest, ClusterLogsResponse], error)
 }
 
@@ -122,6 +124,16 @@ func (c *clusterInterfaceClient) CheckBostionHost(ctx context.Context, in *Check
 	return out, nil
 }
 
+func (c *clusterInterfaceClient) GetRegions(ctx context.Context, in *ClusterID, opts ...grpc.CallOption) (*Regions, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Regions)
+	err := c.cc.Invoke(ctx, ClusterInterface_GetRegions_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *clusterInterfaceClient) GetLogs(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[ClusterLogsRequest, ClusterLogsResponse], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	stream, err := c.cc.NewStream(ctx, &ClusterInterface_ServiceDesc.Streams[0], ClusterInterface_GetLogs_FullMethodName, cOpts...)
@@ -146,6 +158,7 @@ type ClusterInterfaceServer interface {
 	Delete(context.Context, *ClusterID) (*Msg, error)
 	StartCluster(context.Context, *ClusterID) (*Msg, error)
 	CheckBostionHost(context.Context, *CheckBostionHostRequest) (*Msg, error)
+	GetRegions(context.Context, *ClusterID) (*Regions, error)
 	GetLogs(grpc.BidiStreamingServer[ClusterLogsRequest, ClusterLogsResponse]) error
 	mustEmbedUnimplementedClusterInterfaceServer()
 }
@@ -177,6 +190,9 @@ func (UnimplementedClusterInterfaceServer) StartCluster(context.Context, *Cluste
 }
 func (UnimplementedClusterInterfaceServer) CheckBostionHost(context.Context, *CheckBostionHostRequest) (*Msg, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CheckBostionHost not implemented")
+}
+func (UnimplementedClusterInterfaceServer) GetRegions(context.Context, *ClusterID) (*Regions, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetRegions not implemented")
 }
 func (UnimplementedClusterInterfaceServer) GetLogs(grpc.BidiStreamingServer[ClusterLogsRequest, ClusterLogsResponse]) error {
 	return status.Errorf(codes.Unimplemented, "method GetLogs not implemented")
@@ -328,6 +344,24 @@ func _ClusterInterface_CheckBostionHost_Handler(srv interface{}, ctx context.Con
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ClusterInterface_GetRegions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ClusterID)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ClusterInterfaceServer).GetRegions(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ClusterInterface_GetRegions_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ClusterInterfaceServer).GetRegions(ctx, req.(*ClusterID))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _ClusterInterface_GetLogs_Handler(srv interface{}, stream grpc.ServerStream) error {
 	return srv.(ClusterInterfaceServer).GetLogs(&grpc.GenericServerStream[ClusterLogsRequest, ClusterLogsResponse]{ServerStream: stream})
 }
@@ -369,6 +403,10 @@ var ClusterInterface_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CheckBostionHost",
 			Handler:    _ClusterInterface_CheckBostionHost_Handler,
+		},
+		{
+			MethodName: "GetRegions",
+			Handler:    _ClusterInterface_GetRegions_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

@@ -65,26 +65,7 @@ func (a GetInstanceTypesInstanceTypes) Less(i, j int) bool {
 	return a[i].CpuCoreCount < a[j].CpuCoreCount
 }
 
-type AlicloudCluster struct {
-	cluster       *biz.Cluster
-	resourceGroup *resourcemanager.ResourceGroup
-	vpcNetWork    *vpc.Network
-	vSwitchs      []*vpc.Switch
-	sgs           []*ecs.SecurityGroup
-	eipAddress    *ecs.EipAddress
-	lb            *alb.LoadBalancer
-	role          *ram.Role
-	natGateway    *vpc.NatGateway
-	keyPair       *ecs.KeyPair
-}
-
-func Alicloud(cluster *biz.Cluster) *AlicloudCluster {
-	return &AlicloudCluster{
-		cluster: cluster,
-	}
-}
-
-func (a *AlicloudCluster) getIntanceTypeFamilies(nodeGroup *biz.NodeGroup) string {
+func (a *Alicloud) getIntanceTypeFamilies(nodeGroup *biz.NodeGroup) string {
 	if nodeGroup == nil {
 		return "ecs.g6"
 	}
@@ -104,7 +85,7 @@ func (a *AlicloudCluster) getIntanceTypeFamilies(nodeGroup *biz.NodeGroup) strin
 	}
 }
 
-func (a *AlicloudCluster) Start(ctx *pulumi.Context) error {
+func (a *Alicloud) Start(ctx *pulumi.Context) error {
 	err := a.getClusterInfoByInstance(ctx)
 	if err != nil {
 		return err
@@ -128,7 +109,7 @@ func (a *AlicloudCluster) Start(ctx *pulumi.Context) error {
 	return nil
 }
 
-func (a *AlicloudCluster) infrastructural(ctx *pulumi.Context) error {
+func (a *Alicloud) infrastructural(ctx *pulumi.Context) error {
 	err := a.createResourceGroup(ctx)
 	if err != nil {
 		return err
@@ -183,7 +164,7 @@ func (a *AlicloudCluster) infrastructural(ctx *pulumi.Context) error {
 	return nil
 }
 
-func (a *AlicloudCluster) createResourceGroup(ctx *pulumi.Context) (err error) {
+func (a *Alicloud) createResourceGroup(ctx *pulumi.Context) (err error) {
 	resourceGroupArgs := &resourcemanager.ResourceGroupArgs{
 		ResourceGroupName: pulumi.String(alicloudResourceGroupName),
 		DisplayName:       pulumi.String(alicloudResourceGroupName),
@@ -203,7 +184,7 @@ func (a *AlicloudCluster) createResourceGroup(ctx *pulumi.Context) (err error) {
 	return nil
 }
 
-func (a *AlicloudCluster) createRolesAndPolicies(ctx *pulumi.Context) (err error) {
+func (a *Alicloud) createRolesAndPolicies(ctx *pulumi.Context) (err error) {
 	roleMap := map[string]string{
 		"csPolicy":  alicloudCsPolicy,
 		"ecsPolicy": alicloudEscPolicy,
@@ -221,7 +202,7 @@ func (a *AlicloudCluster) createRolesAndPolicies(ctx *pulumi.Context) (err error
 	return nil
 }
 
-func (a *AlicloudCluster) createVPC(ctx *pulumi.Context) (err error) {
+func (a *Alicloud) createVPC(ctx *pulumi.Context) (err error) {
 	cidrBlock := alicloudVpcCidrBlock
 	if a.cluster.VpcCidr != "" {
 		cidrBlock = a.cluster.VpcCidr
@@ -249,7 +230,7 @@ func (a *AlicloudCluster) createVPC(ctx *pulumi.Context) (err error) {
 	return nil
 }
 
-func (a *AlicloudCluster) createVSwitches(ctx *pulumi.Context) error {
+func (a *Alicloud) createVSwitches(ctx *pulumi.Context) error {
 	// import vswitch
 	var subnetIds []string
 	for _, node := range a.cluster.Nodes {
@@ -309,7 +290,7 @@ func (a *AlicloudCluster) createVSwitches(ctx *pulumi.Context) error {
 	return nil
 }
 
-func (a *AlicloudCluster) createSecurityGroup(ctx *pulumi.Context) (err error) {
+func (a *Alicloud) createSecurityGroup(ctx *pulumi.Context) (err error) {
 	// import security group
 	sgIDs := strings.Split(a.cluster.SecurityGroupIDs, ",")
 	for i, sgID := range sgIDs {
@@ -360,7 +341,7 @@ func (a *AlicloudCluster) createSecurityGroup(ctx *pulumi.Context) (err error) {
 	return nil
 }
 
-func (a *AlicloudCluster) createEIP(ctx *pulumi.Context) error {
+func (a *Alicloud) createEIP(ctx *pulumi.Context) error {
 	if a.cluster.EipID != "" {
 		eip, err := ecs.GetEipAddress(ctx, alicloudNatEipName, pulumi.ID(a.cluster.EipID), nil)
 		if err != nil {
@@ -387,7 +368,7 @@ func (a *AlicloudCluster) createEIP(ctx *pulumi.Context) error {
 	return nil
 }
 
-func (a *AlicloudCluster) createNATGateway(ctx *pulumi.Context) (err error) {
+func (a *Alicloud) createNATGateway(ctx *pulumi.Context) (err error) {
 	if a.cluster.NatGatewayID != "" {
 		a.natGateway, err = vpc.GetNatGateway(ctx, alicloudNatGatewayName, pulumi.ID(a.cluster.NatGatewayID), nil)
 		if err != nil {
@@ -430,7 +411,7 @@ func (a *AlicloudCluster) createNATGateway(ctx *pulumi.Context) (err error) {
 	return nil
 }
 
-func (a *AlicloudCluster) createKeyPair(ctx *pulumi.Context) (err error) {
+func (a *Alicloud) createKeyPair(ctx *pulumi.Context) (err error) {
 	if a.cluster.KeyPair != "" {
 		a.keyPair, err = ecs.GetKeyPair(ctx, alicloudKeyPairName, pulumi.ID(a.cluster.KeyPair), nil)
 		if err != nil {
@@ -455,7 +436,7 @@ func (a *AlicloudCluster) createKeyPair(ctx *pulumi.Context) (err error) {
 	return nil
 }
 
-func (a *AlicloudCluster) setImageByNodeGroups(ctx *pulumi.Context) error {
+func (a *Alicloud) setImageByNodeGroups(ctx *pulumi.Context) error {
 	images, err := ecs.GetImages(ctx, &ecs.GetImagesArgs{
 		NameRegex: pulumi.StringRef("^ubuntu_22_04_x64*"),
 		Owners:    pulumi.StringRef("system"),
@@ -477,7 +458,7 @@ func (a *AlicloudCluster) setImageByNodeGroups(ctx *pulumi.Context) error {
 	return nil
 }
 
-func (a *AlicloudCluster) setInstanceTypeByNodeGroups(ctx *pulumi.Context) error {
+func (a *Alicloud) setInstanceTypeByNodeGroups(ctx *pulumi.Context) error {
 	for _, nodeGroup := range a.cluster.NodeGroups {
 		instanceTypeFamilies := a.getIntanceTypeFamilies(nodeGroup)
 		nodeInstanceTypes, err := ecs.GetInstanceTypes(ctx, &ecs.GetInstanceTypesArgs{
@@ -511,7 +492,7 @@ func (a *AlicloudCluster) setInstanceTypeByNodeGroups(ctx *pulumi.Context) error
 	return nil
 }
 
-func (a *AlicloudCluster) createNodes(ctx *pulumi.Context) (err error) {
+func (a *Alicloud) createNodes(ctx *pulumi.Context) (err error) {
 	selectedBostionHost := false
 	for nodeIndex, node := range a.cluster.Nodes {
 		nodeGroup := a.cluster.GetNodeGroup(node.NodeGroupID)
@@ -624,7 +605,7 @@ func (a *AlicloudCluster) createNodes(ctx *pulumi.Context) (err error) {
 	return nil
 }
 
-func (a *AlicloudCluster) localBalancer(ctx *pulumi.Context) (err error) {
+func (a *Alicloud) localBalancer(ctx *pulumi.Context) (err error) {
 	if a.cluster.LoadBalancerID != "" {
 		a.lb, err = alb.GetLoadBalancer(ctx, alicloudSlbName, pulumi.ID(a.cluster.LoadBalancerID), nil)
 		if err != nil {
@@ -709,7 +690,7 @@ func (a *AlicloudCluster) localBalancer(ctx *pulumi.Context) (err error) {
 	return nil
 }
 
-func (a *AlicloudCluster) getClusterInfoByInstance(ctx *pulumi.Context) error {
+func (a *Alicloud) getClusterInfoByInstance(ctx *pulumi.Context) error {
 	// get instances
 	instances, err := ecs.GetInstances(ctx, &ecs.GetInstancesArgs{
 		Status: pulumi.StringRef("Running"),
@@ -790,7 +771,7 @@ func (a *AlicloudCluster) getClusterInfoByInstance(ctx *pulumi.Context) error {
 }
 
 // get instance by node
-func (a *AlicloudCluster) getInstanceByNode(instances *ecs.GetInstancesResult, node *biz.Node) (ecs.GetInstancesInstance, error) {
+func (a *Alicloud) getInstanceByNode(instances *ecs.GetInstancesResult, node *biz.Node) (ecs.GetInstancesInstance, error) {
 	for _, instance := range instances.Instances {
 		if node.InternalIP != instance.PrivateIp {
 			continue
@@ -801,7 +782,7 @@ func (a *AlicloudCluster) getInstanceByNode(instances *ecs.GetInstancesResult, n
 }
 
 // get local balancer
-func (a *AlicloudCluster) getLocalBalancer(ctx *pulumi.Context) error {
+func (a *Alicloud) getLocalBalancer(ctx *pulumi.Context) error {
 	lb, err := alb.GetLoadBalancers(ctx, &alb.GetLoadBalancersArgs{
 		VpcId:       pulumi.StringRef(a.cluster.VpcID),
 		Status:      pulumi.StringRef("Active"),
@@ -821,7 +802,7 @@ func (a *AlicloudCluster) getLocalBalancer(ctx *pulumi.Context) error {
 }
 
 // get nat gateway
-func (a *AlicloudCluster) getNatGateway(ctx *pulumi.Context) error {
+func (a *Alicloud) getNatGateway(ctx *pulumi.Context) error {
 	natGateway, err := vpc.GetNatGateways(ctx, &vpc.GetNatGatewaysArgs{
 		VpcId: pulumi.StringRef(a.cluster.VpcID),
 	})
@@ -835,7 +816,7 @@ func (a *AlicloudCluster) getNatGateway(ctx *pulumi.Context) error {
 	return nil
 }
 
-func (a *AlicloudCluster) distributeNodeVswitches(nodeIndex int) *vpc.Switch {
+func (a *Alicloud) distributeNodeVswitches(nodeIndex int) *vpc.Switch {
 	nodeSize := len(a.cluster.Nodes)
 	vSwitchSize := len(a.vSwitchs)
 	if nodeSize <= vSwitchSize {

@@ -478,3 +478,13 @@ func ReadLastNLines(file *os.File, n int) (string, error) {
 	}
 	return strings.Join(lines, "\n"), nil
 }
+
+// InArray 判断元素是否在切片中
+func InArray(item string, arr []string) bool {
+	for _, v := range arr {
+		if v == item {
+			return true
+		}
+	}
+	return false
+}

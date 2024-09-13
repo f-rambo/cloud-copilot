@@ -967,6 +967,27 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/cluster.v1alpha1.Msg'
+    /api/v1alpha1/cluster/regions:
+        get:
+            tags:
+                - ClusterInterface
+            operationId: ClusterInterface_GetRegions
+            parameters:
+                - name: id
+                  in: query
+                  schema:
+                    type: string
+                - name: nodeId
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/cluster.v1alpha1.Regions'
     /api/v1alpha1/cluster/start:
         post:
             tags:
@@ -2053,6 +2074,13 @@ components:
                     type: string
                 user:
                     type: string
+        cluster.v1alpha1.Regions:
+            type: object
+            properties:
+                regions:
+                    type: array
+                    items:
+                        type: string
         project.v1alpha1.Business:
             type: object
             properties:

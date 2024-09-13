@@ -9,7 +9,6 @@ import (
 	reflect "reflect"
 
 	biz "github.com/f-rambo/ocean/internal/biz"
-	conf "github.com/f-rambo/ocean/internal/conf"
 	gomock "github.com/golang/mock/gomock"
 )
 
@@ -175,61 +174,19 @@ func (mr *MockClusterInfrastructureMockRecorder) AddNodes(arg0, arg1, arg2 inter
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddNodes", reflect.TypeOf((*MockClusterInfrastructure)(nil).AddNodes), arg0, arg1, arg2)
 }
 
-// GenerateInitial mocks base method.
-func (m *MockClusterInfrastructure) GenerateInitial(arg0 context.Context, arg1 *biz.Cluster) error {
+// GetRegions mocks base method.
+func (m *MockClusterInfrastructure) GetRegions(arg0 context.Context, arg1 *biz.Cluster) ([]string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GenerateInitial", arg0, arg1)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// GenerateInitial indicates an expected call of GenerateInitial.
-func (mr *MockClusterInfrastructureMockRecorder) GenerateInitial(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GenerateInitial", reflect.TypeOf((*MockClusterInfrastructure)(nil).GenerateInitial), arg0, arg1)
-}
-
-// GenerateNodeLables mocks base method.
-func (m *MockClusterInfrastructure) GenerateNodeLables(arg0 context.Context, arg1 *biz.Cluster, arg2 *biz.NodeGroup) (string, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GenerateNodeLables", arg0, arg1, arg2)
-	ret0, _ := ret[0].(string)
+	ret := m.ctrl.Call(m, "GetRegions", arg0, arg1)
+	ret0, _ := ret[0].([]string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GenerateNodeLables indicates an expected call of GenerateNodeLables.
-func (mr *MockClusterInfrastructureMockRecorder) GenerateNodeLables(arg0, arg1, arg2 interface{}) *gomock.Call {
+// GetRegions indicates an expected call of GetRegions.
+func (mr *MockClusterInfrastructureMockRecorder) GetRegions(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GenerateNodeLables", reflect.TypeOf((*MockClusterInfrastructure)(nil).GenerateNodeLables), arg0, arg1, arg2)
-}
-
-// GetServerEnv mocks base method.
-func (m *MockClusterInfrastructure) GetServerEnv(arg0 context.Context) conf.Env {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetServerEnv", arg0)
-	ret0, _ := ret[0].(conf.Env)
-	return ret0
-}
-
-// GetServerEnv indicates an expected call of GetServerEnv.
-func (mr *MockClusterInfrastructureMockRecorder) GetServerEnv(arg0 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetServerEnv", reflect.TypeOf((*MockClusterInfrastructure)(nil).GetServerEnv), arg0)
-}
-
-// Import mocks base method.
-func (m *MockClusterInfrastructure) Import(arg0 context.Context, arg1 *biz.Cluster) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Import", arg0, arg1)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// Import indicates an expected call of Import.
-func (mr *MockClusterInfrastructureMockRecorder) Import(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Import", reflect.TypeOf((*MockClusterInfrastructure)(nil).Import), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRegions", reflect.TypeOf((*MockClusterInfrastructure)(nil).GetRegions), arg0, arg1)
 }
 
 // Install mocks base method.

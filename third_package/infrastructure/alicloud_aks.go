@@ -13,7 +13,7 @@ const (
 	alicloudNodePoolName          = "alicloud-node-pool"
 )
 
-func (a *AlicloudCluster) StartAks(ctx *pulumi.Context) (err error) {
+func (a *Alicloud) StartAks(ctx *pulumi.Context) (err error) {
 	err = a.infrastructural(ctx)
 	if err != nil {
 		return errors.Wrap(err, "infrastructural failed")
@@ -128,7 +128,7 @@ func (a *AlicloudCluster) StartAks(ctx *pulumi.Context) (err error) {
 	return nil
 }
 
-func (a *AlicloudCluster) getManagedKubernetes(ctx *pulumi.Context) error {
+func (a *Alicloud) getManagedKubernetes(ctx *pulumi.Context) error {
 	cluster, err := cs.GetManagedKubernetesClusters(ctx, &cs.GetManagedKubernetesClustersArgs{
 		NameRegex: pulumi.StringRef(a.cluster.Name),
 	})

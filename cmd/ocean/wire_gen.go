@@ -38,7 +38,7 @@ func wireApp(bootstrap *conf.Bootstrap, logger log.Logger) (*kratos.App, func(),
 	clusterRepo := data.NewClusterRepo(dataData, bootstrap, logger)
 	clusterInfrastructure := infrastructure.NewClusterInfrastructure(bootstrap, logger)
 	clusterRuntime := kubernetes.NewClusterRuntime(bootstrap, logger)
-	clusterUsecase := biz.NewClusterUseCase(clusterRepo, clusterInfrastructure, clusterRuntime, logger)
+	clusterUsecase := biz.NewClusterUseCase(bootstrap, clusterRepo, clusterInfrastructure, clusterRuntime, logger)
 	projectRepo := data.NewProjectRepo(dataData, bootstrap, logger)
 	clusterPorjectRepo := kubernetes.NewProjectClient(bootstrap, logger)
 	projectUsecase := biz.NewProjectUseCase(projectRepo, clusterPorjectRepo, logger)

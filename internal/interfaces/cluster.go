@@ -211,6 +211,22 @@ func (c *ClusterInterface) CheckBostionHost(ctx context.Context, req *v1alpha1.C
 	return &v1alpha1.Msg{}, nil
 }
 
+// get regions
+func (c *ClusterInterface) GetRegions(ctx context.Context, clusterID *v1alpha1.ClusterID) (*v1alpha1.Regions, error) {
+	if clusterID == nil || clusterID.Id == 0 {
+		return nil, errors.New("cluster id is required")
+	}
+	cluster, err := c.clusterUc.Get(ctx, clusterID.Id)
+	if err != nil {
+		return nil, err
+	}
+	regions, err := c.clusterUc.GetRegions(ctx, cluster)
+	if err != nil {
+		return nil, err
+	}
+	return &v1alpha1.Regions{Regions: regions}, nil
+}
+
 // get logs
 func (c *ClusterInterface) GetLogs(stream v1alpha1.ClusterInterface_GetLogsServer) error {
 	var lastReadPos int64

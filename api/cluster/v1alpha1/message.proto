@@ -79,3 +79,7 @@ message ClusterLogsRequest {
 message ClusterLogsResponse {
     string logs = 1 [json_name = "logs"];
 }
+
+message Regions {
+    repeated string regions = 1 [json_name = "regions"];
+}

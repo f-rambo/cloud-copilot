@@ -101,29 +101,7 @@ func (g InstanceTypeGpus) Less(i, j int) bool {
 	return g[i].Count < g[j].Count
 }
 
-type AwsInstance struct {
-	cluster          *biz.Cluster
-	vpc              *ec2.Vpc
-	vpcCidrBlock     string
-	pulicSubnet      *ec2.Subnet
-	privateSubnets   []*ec2.Subnet
-	zoneNames        []string
-	igw              *ec2.InternetGateway
-	publicNatGateWay *ec2.NatGateway
-	sg               *ec2.SecurityGroup
-	ec2Profile       *iam.InstanceProfile
-	keyPair          *ec2.KeyPair
-	eip              *ec2.Eip
-}
-
-func AwsCloud(cluster *biz.Cluster) *AwsInstance {
-	return &AwsInstance{
-		vpcCidrBlock: cluster.VpcCidr,
-		cluster:      cluster,
-	}
-}
-
-func (a *AwsInstance) Start(ctx *pulumi.Context) (err error) {
+func (a *AwsCloud) Start(ctx *pulumi.Context) (err error) {
 	err = a.infrastructural(ctx)
 	if err != nil {
 		return err
@@ -135,7 +113,7 @@ func (a *AwsInstance) Start(ctx *pulumi.Context) (err error) {
 	return nil
 }
 
-func (a *AwsInstance) infrastructural(ctx *pulumi.Context) (err error) {
+func (a *AwsCloud) infrastructural(ctx *pulumi.Context) (err error) {
 	err = a.getClusterInfoByInstance(ctx)
 	if err != nil {
 		return err
@@ -183,7 +161,7 @@ func (a *AwsInstance) infrastructural(ctx *pulumi.Context) (err error) {
 	return nil
 }
 
-func (a *AwsInstance) createVpc(ctx *pulumi.Context) (err error) {
+func (a *AwsCloud) createVpc(ctx *pulumi.Context) (err error) {
 	if a.vpcCidrBlock == "" {
 		a.vpcCidrBlock = awsVpcCidrBlock
 	}
@@ -217,7 +195,7 @@ func (a *AwsInstance) createVpc(ctx *pulumi.Context) (err error) {
 	return nil
 }
 
-func (a *AwsInstance) createSubnets(ctx *pulumi.Context) (err error) {
+func (a *AwsCloud) createSubnets(ctx *pulumi.Context) (err error) {
 	// Get list of availability zones
 	zones, err := aws.GetAvailabilityZones(ctx, &aws.GetAvailabilityZonesArgs{}, nil)
 	if err != nil {
@@ -292,7 +270,7 @@ func (a *AwsInstance) createSubnets(ctx *pulumi.Context) (err error) {
 	return nil
 }
 
-func (a *AwsInstance) createGateway(ctx *pulumi.Context) (err error) {
+func (a *AwsCloud) createGateway(ctx *pulumi.Context) (err error) {
 	// Create an Internet Gateway
 	a.igw, err = ec2.NewInternetGateway(ctx, awsInterneteGatewayName, &ec2.InternetGatewayArgs{
 		VpcId: a.vpc.ID(),
@@ -335,7 +313,7 @@ func (a *AwsInstance) createGateway(ctx *pulumi.Context) (err error) {
 	return nil
 }
 
-func (a *AwsInstance) createRouteTable(ctx *pulumi.Context) (err error) {
+func (a *AwsCloud) createRouteTable(ctx *pulumi.Context) (err error) {
 	// Create a route table with a route for the public nat gateway
 	privateRouteTable, err := ec2.NewRouteTable(ctx, awsPublicNatewayRouteTableName, &ec2.RouteTableArgs{
 		VpcId: a.vpc.ID(),
@@ -391,7 +369,7 @@ func (a *AwsInstance) createRouteTable(ctx *pulumi.Context) (err error) {
 	return nil
 }
 
-func (a *AwsInstance) startSecurityGroup(ctx *pulumi.Context) (err error) {
+func (a *AwsCloud) startSecurityGroup(ctx *pulumi.Context) (err error) {
 	// Security Group for Master and Worker nodes
 	a.sg, err = ec2.NewSecurityGroup(ctx, awsSecurityGroupStack, &ec2.SecurityGroupArgs{
 		VpcId: a.vpc.ID(),
@@ -430,7 +408,7 @@ func (a *AwsInstance) startSecurityGroup(ctx *pulumi.Context) (err error) {
 	return nil
 }
 
-func (a *AwsInstance) createSLB(ctx *pulumi.Context) (err error) {
+func (a *AwsCloud) createSLB(ctx *pulumi.Context) (err error) {
 	// Create Application Load Balancer
 	alb, err := lb.NewLoadBalancer(ctx, awsAppLoadBalancerStack, &lb.LoadBalancerArgs{
 		Name:             pulumi.String(fmt.Sprintf("%s-alb", a.cluster.Name)),
@@ -489,7 +467,7 @@ func (a *AwsInstance) createSLB(ctx *pulumi.Context) (err error) {
 	return nil
 }
 
-func (a *AwsInstance) createIAM(ctx *pulumi.Context) (err error) {
+func (a *AwsCloud) createIAM(ctx *pulumi.Context) (err error) {
 	// IAM Role
 	ec2Role, err := iam.NewRole(ctx, awsEc2RoleStack, &iam.RoleArgs{
 		Name: pulumi.String(fmt.Sprintf("%s-ec2-role", a.cluster.Name)),
@@ -555,7 +533,7 @@ func (a *AwsInstance) createIAM(ctx *pulumi.Context) (err error) {
 	return nil
 }
 
-func (a *AwsInstance) startSshKey(ctx *pulumi.Context) (err error) {
+func (a *AwsCloud) startSshKey(ctx *pulumi.Context) (err error) {
 	// key pair
 	a.keyPair, err = ec2.NewKeyPair(ctx, awsKeyPairStack, &ec2.KeyPairArgs{
 		KeyName:   pulumi.String(fmt.Sprintf("%s-key-pair", a.cluster.Name)),
@@ -571,7 +549,7 @@ func (a *AwsInstance) startSshKey(ctx *pulumi.Context) (err error) {
 	return nil
 }
 
-func (a *AwsInstance) setImageByNodeGroups(ctx *pulumi.Context) (err error) {
+func (a *AwsCloud) setImageByNodeGroups(ctx *pulumi.Context) (err error) {
 	amiImageID := ""
 	for _, nodegroup := range a.cluster.NodeGroups {
 		if nodegroup.Image != "" {
@@ -621,7 +599,7 @@ func (a *AwsInstance) setImageByNodeGroups(ctx *pulumi.Context) (err error) {
 }
 
 // setInstanceTypeByNodeGroups
-func (a *AwsInstance) setInstanceTypeByNodeGroups(ctx *pulumi.Context) (err error) {
+func (a *AwsCloud) setInstanceTypeByNodeGroups(ctx *pulumi.Context) (err error) {
 	for _, nodeGroup := range a.cluster.NodeGroups {
 		// find suitable instance type
 		if nodeGroup.InstanceType == "" {
@@ -679,7 +657,7 @@ func (a *AwsInstance) setInstanceTypeByNodeGroups(ctx *pulumi.Context) (err erro
 	return nil
 }
 
-func (a *AwsInstance) startNodes(ctx *pulumi.Context) (err error) {
+func (a *AwsCloud) startNodes(ctx *pulumi.Context) (err error) {
 	if len(a.cluster.Nodes) == 0 || len(a.cluster.NodeGroups) == 0 {
 		return nil
 	}
@@ -791,7 +769,7 @@ func (a *AwsInstance) startNodes(ctx *pulumi.Context) (err error) {
 	return nil
 }
 
-func (a *AwsInstance) getClusterInfoByInstance(ctx *pulumi.Context) error {
+func (a *AwsCloud) getClusterInfoByInstance(ctx *pulumi.Context) error {
 	instances, err := ec2.GetInstances(ctx, &ec2.GetInstancesArgs{})
 	if err != nil {
 		return err

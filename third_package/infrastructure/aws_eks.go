@@ -12,7 +12,7 @@ const (
 	awsEksNodeGroupName = "aws-eks-node-group"
 )
 
-func (a *AwsInstance) StartEks(ctx *pulumi.Context) (err error) {
+func (a *AwsCloud) StartEks(ctx *pulumi.Context) (err error) {
 	var eksCluster *eks.Cluster
 	subnetIds := make(pulumi.StringArray, 0)
 

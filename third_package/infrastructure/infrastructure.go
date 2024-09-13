@@ -45,18 +45,32 @@ func NewClusterInfrastructure(c *conf.Bootstrap, logger log.Logger) biz.ClusterI
 	}
 }
 
+func (c *ClusterInfrastructure) GetRegions(ctx context.Context, cluster *biz.Cluster) ([]string, error) {
+	switch cluster.GetType() {
+	case biz.ClusterTypeAliCloudEcs:
+		return NewAlicloud(cluster).GetRegions()
+	case biz.ClusterTypeAliCloudAks:
+		return NewAlicloud(cluster).GetRegions()
+	case biz.ClusterTypeAWSEc2:
+		return NewAwsCloud(cluster).GetRegions()
+	case biz.ClusterTypeAWSEks:
+		return NewAwsCloud(cluster).GetRegions()
+	}
+	return nil, errors.New("cluster type is not supported")
+}
+
 func (c *ClusterInfrastructure) Start(ctx context.Context, cluster *biz.Cluster) (err error) {
 	var startFunc PulumiFunc
 	output := ""
 	switch cluster.GetType() {
 	case biz.ClusterTypeAliCloudEcs:
-		startFunc = Alicloud(cluster).Start
+		startFunc = NewAlicloud(cluster).Start
 	case biz.ClusterTypeAliCloudAks:
-		startFunc = Alicloud(cluster).StartAks
+		startFunc = NewAlicloud(cluster).StartAks
 	case biz.ClusterTypeAWSEc2:
-		startFunc = AwsCloud(cluster).Start
+		startFunc = NewAwsCloud(cluster).Start
 	case biz.ClusterTypeAWSEks:
-		startFunc = AwsCloud(cluster).StartEks
+		startFunc = NewAwsCloud(cluster).StartEks
 	}
 	output, err = c.pulumiExec(ctx, cluster, startFunc)
 	if err != nil {
@@ -343,10 +357,6 @@ func (cc *ClusterInfrastructure) RemoveNodes(ctx context.Context, cluster *biz.C
 		return err
 	}
 	return nil
-}
-
-func (cc *ClusterInfrastructure) GetServerEnv(context.Context) conf.Env {
-	return cc.c.Server.GetEnv()
 }
 
 // Distribute the “ship server” to each node in the bostion host
