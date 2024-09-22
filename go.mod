@@ -9,6 +9,7 @@ require (
 	github.com/argoproj/argo-workflows/v3 v3.5.10
 	github.com/aws/aws-sdk-go v1.45.1
 	github.com/f-rambo/sailor v0.0.0-20240328021241-d6662a9d12fe
+	github.com/fsnotify/fsnotify v1.7.0
 	github.com/go-kratos/kratos/v2 v2.8.0
 	github.com/golang-jwt/jwt/v5 v5.2.1
 	github.com/golang/mock v1.6.0
@@ -102,7 +103,6 @@ require (
 	github.com/expr-lang/expr v1.16.0 // indirect
 	github.com/fatih/color v1.16.0 // indirect
 	github.com/felixge/httpsnoop v1.0.3 // indirect
-	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/fxamacker/cbor/v2 v2.7.0 // indirect
 	github.com/go-errors/errors v1.5.1 // indirect
 	github.com/go-git/gcfg v1.5.1-0.20230307220236-3a3c6141e376 // indirect

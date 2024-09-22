@@ -112,8 +112,11 @@ func (c *clusterRepo) Save(ctx context.Context, cluster *biz.Cluster) error {
 func (c *clusterRepo) Get(ctx context.Context, id int64) (*biz.Cluster, error) {
 	cluster := &biz.Cluster{}
 	err := c.data.db.Model(&biz.Cluster{}).Where("id = ?", id).First(cluster).Error
-	if err != nil {
+	if err != nil && err != gorm.ErrRecordNotFound {
 		return nil, err
+	}
+	if err == gorm.ErrRecordNotFound {
+		return nil, nil
 	}
 	bostionHost := &biz.BostionHost{}
 	err = c.data.db.Model(&biz.BostionHost{}).Where("cluster_id = ?", cluster.ID).First(bostionHost).Error

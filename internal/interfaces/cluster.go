@@ -2,16 +2,20 @@ package interfaces
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"os"
 	"os/exec"
 	"runtime"
 
 	"github.com/f-rambo/ocean/api/cluster/v1alpha1"
+	systemv1alpha1 "github.com/f-rambo/ocean/api/system/v1alpha1"
 	"github.com/f-rambo/ocean/internal/biz"
 	"github.com/f-rambo/ocean/internal/conf"
 	"github.com/f-rambo/ocean/utils"
+	"github.com/fsnotify/fsnotify"
 	"github.com/go-kratos/kratos/v2/log"
+	"github.com/go-kratos/kratos/v2/transport/grpc"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
@@ -263,9 +267,11 @@ func (c *ClusterInterface) GetRegions(ctx context.Context, clusterID *v1alpha1.C
 
 // get logs
 func (c *ClusterInterface) GetLogs(stream v1alpha1.ClusterInterface_GetLogsServer) error {
-	var lastReadPos int64
-
+	i := 0
 	for {
+		ctx, cancel := context.WithCancel(stream.Context())
+		defer cancel()
+
 		req, err := stream.Recv()
 		if err == io.EOF {
 			return nil
@@ -273,13 +279,19 @@ func (c *ClusterInterface) GetLogs(stream v1alpha1.ClusterInterface_GetLogsServe
 		if err != nil {
 			return err
 		}
+		if i > 0 {
+			c.log.Info("repeat message, don't need to process")
+			continue
+		}
+		i++
 		if req.TailLines == 0 {
 			req.TailLines = 30
 		}
 		clusterName := c.c.Server.GetClusterName()
 		if req.ClusterName != clusterName {
-			return nil
+			return errors.New("cluster name mismatch")
 		}
+
 		clusterLogPath, err := utils.GetLogFilePath(c.c.Server.Name)
 		if err != nil {
 			return err
@@ -294,43 +306,152 @@ func (c *ClusterInterface) GetLogs(stream v1alpha1.ClusterInterface_GetLogsServe
 		}
 		defer file.Close()
 
-		var logs string
-		if lastReadPos == 0 {
-			// Read the last 30 lines
-			logs, err = utils.ReadLastNLines(file, int(req.TailLines))
+		// Read initial lines if TailLines is specified
+		if req.TailLines > 0 {
+			initialLogs, err := utils.ReadLastNLines(file, int(req.TailLines))
 			if err != nil {
 				return err
 			}
-		} else {
-			// Read from the last read position
-			_, err = file.Seek(lastReadPos, io.SeekStart)
+			err = stream.Send(&v1alpha1.ClusterLogsResponse{Logs: initialLogs})
 			if err != nil {
 				return err
 			}
-			newLogs, err := io.ReadAll(file)
-			if err != nil {
-				return err
-			}
-			logs = string(newLogs)
 		}
 
-		// If logs are empty, send a "." character
-		if logs == "" {
-			logs = "."
-		}
-
-		err = stream.Send(&v1alpha1.ClusterLogsResponse{
-			Logs: logs,
-		})
+		// Move to the end of the file
+		_, err = file.Seek(0, io.SeekEnd)
 		if err != nil {
 			return err
 		}
 
-		lastReadPos, err = file.Seek(0, io.SeekEnd)
+		// Start watching for new logs
+		watcher, err := fsnotify.NewWatcher()
 		if err != nil {
 			return err
 		}
+		defer watcher.Close()
+
+		err = watcher.Add(clusterLogPath)
+		if err != nil {
+			return err
+		}
+
+		// get ship logs
+		shipLogContentChan := make(chan string)
+		defer close(shipLogContentChan)
+		cluster, err := c.clusterUc.Get(ctx, req.ClusterId)
+		if err != nil {
+			return err
+		}
+		if cluster != nil {
+			for _, node := range cluster.Nodes {
+				err = c.getShipLogContent(ctx, shipLogContentChan, node.InternalIP, node.SshPort)
+				if err != nil {
+					return err
+				}
+			}
+		}
+
+		go func() {
+			for {
+				select {
+				case event, ok := <-watcher.Events:
+					if !ok {
+						return
+					}
+					if event.Op&fsnotify.Write == fsnotify.Write {
+						newLogs, err := readNewLines(file)
+						if err != nil {
+							return
+						}
+						if newLogs != "" {
+							err = stream.Send(&v1alpha1.ClusterLogsResponse{Logs: newLogs})
+							if err != nil {
+								return
+							}
+						}
+					}
+				case shipLogContent, ok := <-shipLogContentChan:
+					if !ok {
+						c.log.Info("Ship GetLogs stream closed by ship content")
+						return
+					}
+					err = stream.Send(&v1alpha1.ClusterLogsResponse{Logs: shipLogContent})
+					if err != nil {
+						c.log.Errorf("Error sending ship log message: %v", err)
+						return
+					}
+				case err, ok := <-watcher.Errors:
+					if !ok {
+						return
+					}
+					c.log.Errorf("error watching log file: %v", err)
+				case <-ctx.Done():
+					c.log.Info("GetLogs stream closed by client")
+					return
+				}
+			}
+		}()
 	}
+}
+
+func (c *ClusterInterface) getShipLogContent(ctx context.Context, contentChan chan string, nodeIp string, nodePort int32) error {
+	conn, err := grpc.DialInsecure(
+		ctx, // with cancel
+		grpc.WithEndpoint(fmt.Sprintf("%s:%d", nodeIp, nodePort)),
+	)
+	if err != nil {
+		return err
+	}
+	client := systemv1alpha1.NewSystemInterfaceClient(conn)
+	stream, err := client.GetLogs(ctx)
+	if err != nil {
+		return err
+	}
+
+	go func() {
+		for {
+			msg, err := stream.Recv()
+			if err == io.EOF {
+				return
+			}
+			if err != nil {
+				c.log.Errorf("Error receiving ship log message: %v", err)
+				return
+			}
+			contentChan <- msg.Log
+		}
+	}()
+
+	err = stream.Send(&systemv1alpha1.LogRequest{
+		TailLines: 30,
+	})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func readNewLines(file *os.File) (string, error) {
+	currentPos, err := file.Seek(0, io.SeekCurrent)
+	if err != nil {
+		return "", err
+	}
+
+	newContent, err := io.ReadAll(file)
+	if err != nil {
+		return "", err
+	}
+
+	if len(newContent) > 0 {
+		_, err = file.Seek(currentPos+int64(len(newContent)), io.SeekStart)
+		if err != nil {
+			return "", err
+		}
+		return string(newContent), nil
+	}
+
+	return "", nil
 }
 
 func (c *ClusterInterface) bizCLusterToCluster(bizCluster *biz.Cluster) *v1alpha1.Cluster {
