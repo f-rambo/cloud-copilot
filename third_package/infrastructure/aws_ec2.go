@@ -685,10 +685,10 @@ func (a *AwsCloud) startNodes(ctx *pulumi.Context) (err error) {
 			if err != nil {
 				return err
 			}
-			ctx.Export(getIntanceIDKey(node.Name), nodeRes.ID())
-			ctx.Export(getIntanceUser(node.Name), pulumi.String("ubuntu"))
-			ctx.Export(getIntanceInternalIPKey(node.Name), nodeRes.PrivateIp)
-			ctx.Export(getIntancePublicIPKey(node.Name), nodeRes.PublicIp)
+			ctx.Export(GetKey(InstanceID, node.Name), nodeRes.ID())
+			ctx.Export(GetKey(InstanceUser, node.Name), pulumi.String("ubuntu"))
+			ctx.Export(GetKey(InstanceInternalIP, node.Name), nodeRes.PrivateIp)
+			ctx.Export(GetKey(InstancePublicIP, node.Name), nodeRes.PublicIp)
 			continue
 		}
 		// create node
@@ -750,7 +750,7 @@ func (a *AwsCloud) startNodes(ctx *pulumi.Context) (err error) {
 			}
 		}
 		if !selectedBostionHost && node.Role == biz.NodeRoleMaster {
-			ctx.Export(getBostionHostInstanceID(), nodeRes.ID())
+			ctx.Export(GetKey(BostionHostInstanceID), nodeRes.ID())
 			selectedBostionHost = true
 			// bind eip to instance
 			_, err = ec2.NewEipAssociation(ctx, awsBostionhostEipAssociationStack, &ec2.EipAssociationArgs{
@@ -761,10 +761,10 @@ func (a *AwsCloud) startNodes(ctx *pulumi.Context) (err error) {
 				return err
 			}
 		}
-		ctx.Export(getIntanceIDKey(node.Name), nodeRes.ID())
-		ctx.Export(getIntanceUser(node.Name), pulumi.String("ubuntu"))
-		ctx.Export(getIntanceInternalIPKey(node.Name), nodeRes.PrivateIp)
-		ctx.Export(getIntancePublicIPKey(node.Name), nodeRes.PublicIp)
+		ctx.Export(GetKey(InstanceID, node.Name), nodeRes.ID())
+		ctx.Export(GetKey(InstanceUser, node.Name), pulumi.String("ubuntu"))
+		ctx.Export(GetKey(InstanceInternalIP, node.Name), nodeRes.PrivateIp)
+		ctx.Export(GetKey(InstancePublicIP, node.Name), nodeRes.PublicIp)
 	}
 	return nil
 }

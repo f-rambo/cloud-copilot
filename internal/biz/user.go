@@ -20,6 +20,13 @@ type User struct {
 }
 
 const (
+	AdminID       = -1
+	AdminName     = "admin"
+	AdminEmail    = "admin@admin.com"
+	AdminPassword = "admin"
+)
+
+const (
 	UserStateEnable  = "enable"
 	UserStateDisable = "disable"
 )
@@ -86,6 +93,9 @@ func (u *UserUseCase) SignIn(ctx context.Context, user *User) error {
 		user.SignType = SignTypeBasic
 	}
 	user.State = UserStateEnable
+	if user.ID == AdminID {
+		return nil
+	}
 	err := u.Save(ctx, user)
 	if err != nil {
 		return err

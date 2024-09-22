@@ -31,13 +31,13 @@ const OperationClusterInterfaceStartCluster = "/cluster.v1alpha1.ClusterInterfac
 
 type ClusterInterfaceHTTPServer interface {
 	CheckBostionHost(context.Context, *CheckBostionHostRequest) (*Msg, error)
-	Delete(context.Context, *ClusterID) (*Msg, error)
-	Get(context.Context, *ClusterID) (*Cluster, error)
-	GetRegions(context.Context, *ClusterID) (*Regions, error)
+	Delete(context.Context, *ClusterArgs) (*Msg, error)
+	Get(context.Context, *ClusterArgs) (*Cluster, error)
+	GetRegions(context.Context, *ClusterArgs) (*Regions, error)
 	List(context.Context, *emptypb.Empty) (*ClusterList, error)
 	Ping(context.Context, *emptypb.Empty) (*Msg, error)
 	Save(context.Context, *ClusterArgs) (*Cluster, error)
-	StartCluster(context.Context, *ClusterID) (*Msg, error)
+	StartCluster(context.Context, *ClusterArgs) (*Msg, error)
 }
 
 func RegisterClusterInterfaceHTTPServer(s *http.Server, srv ClusterInterfaceHTTPServer) {
@@ -73,13 +73,13 @@ func _ClusterInterface_Ping0_HTTP_Handler(srv ClusterInterfaceHTTPServer) func(c
 
 func _ClusterInterface_Get0_HTTP_Handler(srv ClusterInterfaceHTTPServer) func(ctx http.Context) error {
 	return func(ctx http.Context) error {
-		var in ClusterID
+		var in ClusterArgs
 		if err := ctx.BindQuery(&in); err != nil {
 			return err
 		}
 		http.SetOperation(ctx, OperationClusterInterfaceGet)
 		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.Get(ctx, req.(*ClusterID))
+			return srv.Get(ctx, req.(*ClusterArgs))
 		})
 		out, err := h(ctx, &in)
 		if err != nil {
@@ -133,13 +133,13 @@ func _ClusterInterface_List0_HTTP_Handler(srv ClusterInterfaceHTTPServer) func(c
 
 func _ClusterInterface_Delete0_HTTP_Handler(srv ClusterInterfaceHTTPServer) func(ctx http.Context) error {
 	return func(ctx http.Context) error {
-		var in ClusterID
+		var in ClusterArgs
 		if err := ctx.BindQuery(&in); err != nil {
 			return err
 		}
 		http.SetOperation(ctx, OperationClusterInterfaceDelete)
 		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.Delete(ctx, req.(*ClusterID))
+			return srv.Delete(ctx, req.(*ClusterArgs))
 		})
 		out, err := h(ctx, &in)
 		if err != nil {
@@ -152,7 +152,7 @@ func _ClusterInterface_Delete0_HTTP_Handler(srv ClusterInterfaceHTTPServer) func
 
 func _ClusterInterface_StartCluster0_HTTP_Handler(srv ClusterInterfaceHTTPServer) func(ctx http.Context) error {
 	return func(ctx http.Context) error {
-		var in ClusterID
+		var in ClusterArgs
 		if err := ctx.Bind(&in); err != nil {
 			return err
 		}
@@ -161,7 +161,7 @@ func _ClusterInterface_StartCluster0_HTTP_Handler(srv ClusterInterfaceHTTPServer
 		}
 		http.SetOperation(ctx, OperationClusterInterfaceStartCluster)
 		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.StartCluster(ctx, req.(*ClusterID))
+			return srv.StartCluster(ctx, req.(*ClusterArgs))
 		})
 		out, err := h(ctx, &in)
 		if err != nil {
@@ -196,13 +196,13 @@ func _ClusterInterface_CheckBostionHost0_HTTP_Handler(srv ClusterInterfaceHTTPSe
 
 func _ClusterInterface_GetRegions0_HTTP_Handler(srv ClusterInterfaceHTTPServer) func(ctx http.Context) error {
 	return func(ctx http.Context) error {
-		var in ClusterID
+		var in ClusterArgs
 		if err := ctx.BindQuery(&in); err != nil {
 			return err
 		}
 		http.SetOperation(ctx, OperationClusterInterfaceGetRegions)
 		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.GetRegions(ctx, req.(*ClusterID))
+			return srv.GetRegions(ctx, req.(*ClusterArgs))
 		})
 		out, err := h(ctx, &in)
 		if err != nil {
@@ -215,13 +215,13 @@ func _ClusterInterface_GetRegions0_HTTP_Handler(srv ClusterInterfaceHTTPServer) 
 
 type ClusterInterfaceHTTPClient interface {
 	CheckBostionHost(ctx context.Context, req *CheckBostionHostRequest, opts ...http.CallOption) (rsp *Msg, err error)
-	Delete(ctx context.Context, req *ClusterID, opts ...http.CallOption) (rsp *Msg, err error)
-	Get(ctx context.Context, req *ClusterID, opts ...http.CallOption) (rsp *Cluster, err error)
-	GetRegions(ctx context.Context, req *ClusterID, opts ...http.CallOption) (rsp *Regions, err error)
+	Delete(ctx context.Context, req *ClusterArgs, opts ...http.CallOption) (rsp *Msg, err error)
+	Get(ctx context.Context, req *ClusterArgs, opts ...http.CallOption) (rsp *Cluster, err error)
+	GetRegions(ctx context.Context, req *ClusterArgs, opts ...http.CallOption) (rsp *Regions, err error)
 	List(ctx context.Context, req *emptypb.Empty, opts ...http.CallOption) (rsp *ClusterList, err error)
 	Ping(ctx context.Context, req *emptypb.Empty, opts ...http.CallOption) (rsp *Msg, err error)
 	Save(ctx context.Context, req *ClusterArgs, opts ...http.CallOption) (rsp *Cluster, err error)
-	StartCluster(ctx context.Context, req *ClusterID, opts ...http.CallOption) (rsp *Msg, err error)
+	StartCluster(ctx context.Context, req *ClusterArgs, opts ...http.CallOption) (rsp *Msg, err error)
 }
 
 type ClusterInterfaceHTTPClientImpl struct {
@@ -245,7 +245,7 @@ func (c *ClusterInterfaceHTTPClientImpl) CheckBostionHost(ctx context.Context, i
 	return &out, nil
 }
 
-func (c *ClusterInterfaceHTTPClientImpl) Delete(ctx context.Context, in *ClusterID, opts ...http.CallOption) (*Msg, error) {
+func (c *ClusterInterfaceHTTPClientImpl) Delete(ctx context.Context, in *ClusterArgs, opts ...http.CallOption) (*Msg, error) {
 	var out Msg
 	pattern := "/api/v1alpha1/cluster"
 	path := binding.EncodeURL(pattern, in, true)
@@ -258,7 +258,7 @@ func (c *ClusterInterfaceHTTPClientImpl) Delete(ctx context.Context, in *Cluster
 	return &out, nil
 }
 
-func (c *ClusterInterfaceHTTPClientImpl) Get(ctx context.Context, in *ClusterID, opts ...http.CallOption) (*Cluster, error) {
+func (c *ClusterInterfaceHTTPClientImpl) Get(ctx context.Context, in *ClusterArgs, opts ...http.CallOption) (*Cluster, error) {
 	var out Cluster
 	pattern := "/api/v1alpha1/cluster"
 	path := binding.EncodeURL(pattern, in, true)
@@ -271,7 +271,7 @@ func (c *ClusterInterfaceHTTPClientImpl) Get(ctx context.Context, in *ClusterID,
 	return &out, nil
 }
 
-func (c *ClusterInterfaceHTTPClientImpl) GetRegions(ctx context.Context, in *ClusterID, opts ...http.CallOption) (*Regions, error) {
+func (c *ClusterInterfaceHTTPClientImpl) GetRegions(ctx context.Context, in *ClusterArgs, opts ...http.CallOption) (*Regions, error) {
 	var out Regions
 	pattern := "/api/v1alpha1/cluster/regions"
 	path := binding.EncodeURL(pattern, in, true)
@@ -323,7 +323,7 @@ func (c *ClusterInterfaceHTTPClientImpl) Save(ctx context.Context, in *ClusterAr
 	return &out, nil
 }
 
-func (c *ClusterInterfaceHTTPClientImpl) StartCluster(ctx context.Context, in *ClusterID, opts ...http.CallOption) (*Msg, error) {
+func (c *ClusterInterfaceHTTPClientImpl) StartCluster(ctx context.Context, in *ClusterArgs, opts ...http.CallOption) (*Msg, error) {
 	var out Msg
 	pattern := "/api/v1alpha1/cluster/start"
 	path := binding.EncodeURL(pattern, in, false)

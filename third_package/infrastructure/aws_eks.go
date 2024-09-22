@@ -89,11 +89,11 @@ func (a *AwsCloud) StartEks(ctx *pulumi.Context) (err error) {
 		if err != nil {
 			return fmt.Errorf("failed to create node group %s: %w", nodegroup.Name, err)
 		}
-		ctx.Export(getCloudNodeGroupID(nodegroup.Name), nodeGroupResult.ID())
+		ctx.Export(GetKey(CloudNodeGroupID, nodegroup.Name), nodeGroupResult.ID())
 
 	}
-	ctx.Export(getClusterCloudID(), eksCluster.ID())
-	ctx.Export(getConnections(), eksCluster.AccessConfig)
-	ctx.Export(getCertificateAuthority(), eksCluster.CertificateAuthority)
+	ctx.Export(GetKey(ClusterCloudID), eksCluster.ID())
+	ctx.Export(GetKey(Connections), eksCluster.AccessConfig)
+	ctx.Export(GetKey(CertificateAuthority), eksCluster.CertificateAuthority)
 	return nil
 }

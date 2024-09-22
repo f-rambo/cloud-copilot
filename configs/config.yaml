@@ -1,4 +1,5 @@
 server:
+  debug: true
   env: local
   name: ocean
   version: 0.0.1
@@ -25,8 +26,6 @@ log:
   max_size: 500
   max_backups: 3
   max_age: 28
-  compress: true
-  local_time: true
 auth:
   exp: 24
   key: 'S89XMkyGIpI0tgJkf7b8undK'

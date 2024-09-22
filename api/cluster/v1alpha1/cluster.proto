@@ -16,7 +16,7 @@ service ClusterInterface {
             };
       }
 
-      rpc Get(cluster.v1alpha1.ClusterID) returns (cluster.v1alpha1.Cluster) {
+      rpc Get(cluster.v1alpha1.ClusterArgs) returns (cluster.v1alpha1.Cluster) {
             option (google.api.http) = {
               get: "/api/v1alpha1/cluster"
             };
@@ -35,13 +35,13 @@ service ClusterInterface {
             };
       }
 
-      rpc Delete(cluster.v1alpha1.ClusterID) returns (cluster.v1alpha1.Msg) {
+      rpc Delete(cluster.v1alpha1.ClusterArgs) returns (cluster.v1alpha1.Msg) {
             option (google.api.http) = {
               delete: "/api/v1alpha1/cluster"
             };
       }
 
-      rpc StartCluster(cluster.v1alpha1.ClusterID) returns (cluster.v1alpha1.Msg) {
+      rpc StartCluster(cluster.v1alpha1.ClusterArgs) returns (cluster.v1alpha1.Msg) {
             option (google.api.http) = {
               post: "/api/v1alpha1/cluster/start"
               body: "*"
@@ -55,7 +55,7 @@ service ClusterInterface {
             };
       }
 
-      rpc GetRegions(cluster.v1alpha1.ClusterID) returns (cluster.v1alpha1.Regions) {
+      rpc GetRegions(cluster.v1alpha1.ClusterArgs) returns (cluster.v1alpha1.Regions) {
             option (google.api.http) = {
               get: "/api/v1alpha1/cluster/regions"
             };

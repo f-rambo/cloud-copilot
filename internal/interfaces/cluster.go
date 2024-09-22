@@ -38,8 +38,8 @@ func NewClusterInterface(clusterUc *biz.ClusterUsecase, projectUc *biz.ProjectUs
 }
 
 func (uc *ClusterInterface) StartReconcile(ctx context.Context) (err error) {
+	uc.log.Info("start watching reconcile...")
 	for {
-		uc.log.Info("start watching reconcile...")
 		cluster, err := uc.clusterUc.Watch(ctx)
 		if err != nil {
 			return err
@@ -63,7 +63,7 @@ func (c *ClusterInterface) Ping(ctx context.Context, _ *emptypb.Empty) (*v1alpha
 	return &v1alpha1.Msg{Message: "pong"}, nil
 }
 
-func (c *ClusterInterface) Get(ctx context.Context, clusterID *v1alpha1.ClusterID) (*v1alpha1.Cluster, error) {
+func (c *ClusterInterface) Get(ctx context.Context, clusterID *v1alpha1.ClusterArgs) (*v1alpha1.Cluster, error) {
 	cluster, err := c.clusterUc.Get(ctx, clusterID.Id)
 	if err != nil {
 		return nil, err
@@ -72,52 +72,85 @@ func (c *ClusterInterface) Get(ctx context.Context, clusterID *v1alpha1.ClusterI
 	if cluster == nil {
 		return data, nil
 	}
-	data = c.bizCLusterToCluster(cluster)
-	return data, nil
+	return c.bizCLusterToCluster(cluster), nil
 }
 
-func (c *ClusterInterface) Save(ctx context.Context, clusterArgs *v1alpha1.ClusterArgs) (*v1alpha1.Cluster, error) {
+func (c *ClusterInterface) Save(ctx context.Context, clusterArgs *v1alpha1.ClusterArgs) (clusterApiRes *v1alpha1.Cluster, err error) {
 	if clusterArgs.Name == "" {
 		return nil, errors.New("cluster name is required")
 	}
 	if clusterArgs.PublicKey == "" {
 		return nil, errors.New("public key is required")
 	}
-	if clusterArgs.ServerType == "" {
+	if clusterArgs.Type == "" {
 		return nil, errors.New("server type is required")
 	}
-	if biz.ClusterType(clusterArgs.ServerType) != biz.ClusterTypeLocal {
+	if biz.ClusterType(clusterArgs.Type) != biz.ClusterTypeLocal {
 		if clusterArgs.AccessKeyId == "" {
 			return nil, errors.New("access key id is required")
 		}
 		if clusterArgs.SecretAccessKey == "" {
 			return nil, errors.New("secret access key is required")
 		}
-		if clusterArgs.Region == "" {
-			return nil, errors.New("region is required")
+	}
+	var cluster *biz.Cluster
+	if clusterArgs.Id != 0 {
+		cluster, err = c.clusterUc.Get(ctx, clusterArgs.Id)
+		if err != nil {
+			return nil, err
 		}
-	}
-	cluster := &biz.Cluster{
-		Name:      clusterArgs.Name,
-		Type:      biz.ClusterType(clusterArgs.ServerType),
-		PublicKey: clusterArgs.PublicKey,
-		Region:    clusterArgs.Region,
-		AccessID:  clusterArgs.AccessKeyId,
-		AccessKey: clusterArgs.SecretAccessKey,
-		Nodes:     make([]*biz.Node, 0),
-	}
-	if biz.ClusterType(clusterArgs.ServerType) == biz.ClusterTypeLocal {
-		if len(clusterArgs.Nodes) == 0 {
-			return nil, errors.New("at least one node is required")
+		if cluster == nil {
+			return nil, errors.New("cluster not found")
+		}
+		cluster.Name = clusterArgs.Name
+		cluster.Type = biz.ClusterType(clusterArgs.Type)
+		cluster.PublicKey = clusterArgs.PublicKey
+		cluster.Region = clusterArgs.Region
+		cluster.AccessID = clusterArgs.AccessKeyId
+		cluster.AccessKey = clusterArgs.SecretAccessKey
+		for _, node := range cluster.Nodes {
+			if node.ID == 0 {
+				continue
+			}
+			for _, nodeArg := range clusterArgs.Nodes {
+				if node.ID == nodeArg.Id {
+					node.InternalIP = nodeArg.Ip
+					node.User = nodeArg.User
+					node.Role = biz.NodeRole(nodeArg.Role)
+				}
+			}
+		}
+		for _, nodeArg := range clusterArgs.Nodes {
+			if nodeArg.Id == 0 {
+				cluster.Nodes = append(cluster.Nodes, &biz.Node{
+					ID:         nodeArg.Id,
+					InternalIP: nodeArg.Ip,
+					User:       nodeArg.User,
+					Role:       biz.NodeRole(nodeArg.Role),
+				})
+			}
+		}
+	} else {
+		cluster = &biz.Cluster{
+			ID:        clusterArgs.Id,
+			Name:      clusterArgs.Name,
+			Type:      biz.ClusterType(clusterArgs.Type),
+			PublicKey: clusterArgs.PublicKey,
+			Region:    clusterArgs.Region,
+			AccessID:  clusterArgs.AccessKeyId,
+			AccessKey: clusterArgs.SecretAccessKey,
+			Nodes:     make([]*biz.Node, 0),
 		}
 		for _, node := range clusterArgs.Nodes {
 			cluster.Nodes = append(cluster.Nodes, &biz.Node{
-				ExternalIP: node.Ip,
+				ID:         node.Id,
+				InternalIP: node.Ip,
 				User:       node.User,
+				Role:       biz.NodeRole(node.Role),
 			})
 		}
 	}
-	err := c.clusterUc.Save(ctx, cluster)
+	err = c.clusterUc.Save(ctx, cluster)
 	if err != nil {
 		return nil, err
 	}
@@ -139,7 +172,7 @@ func (c *ClusterInterface) List(ctx context.Context, _ *emptypb.Empty) (*v1alpha
 	return data, nil
 }
 
-func (c *ClusterInterface) Delete(ctx context.Context, clusterID *v1alpha1.ClusterID) (*v1alpha1.Msg, error) {
+func (c *ClusterInterface) Delete(ctx context.Context, clusterID *v1alpha1.ClusterArgs) (*v1alpha1.Msg, error) {
 	if clusterID.Id == 0 {
 		return nil, errors.New("cluster id is required")
 	}
@@ -150,13 +183,16 @@ func (c *ClusterInterface) Delete(ctx context.Context, clusterID *v1alpha1.Clust
 	return &v1alpha1.Msg{}, nil
 }
 
-func (c *ClusterInterface) StartCluster(ctx context.Context, clusterID *v1alpha1.ClusterID) (*v1alpha1.Msg, error) {
+func (c *ClusterInterface) StartCluster(ctx context.Context, clusterID *v1alpha1.ClusterArgs) (*v1alpha1.Msg, error) {
 	if clusterID == nil || clusterID.Id == 0 {
 		return nil, errors.New("cluster id is required")
 	}
 	cluster, err := c.clusterUc.Get(ctx, clusterID.Id)
 	if err != nil {
 		return nil, err
+	}
+	if cluster.Type == biz.ClusterTypeLocal && len(cluster.Nodes) == 0 {
+		return nil, errors.New("at least one node is required")
 	}
 	err = c.clusterUc.Apply(ctx, cluster)
 	if err != nil {
@@ -212,7 +248,7 @@ func (c *ClusterInterface) CheckBostionHost(ctx context.Context, req *v1alpha1.C
 }
 
 // get regions
-func (c *ClusterInterface) GetRegions(ctx context.Context, clusterID *v1alpha1.ClusterID) (*v1alpha1.Regions, error) {
+func (c *ClusterInterface) GetRegions(ctx context.Context, clusterID *v1alpha1.ClusterArgs) (*v1alpha1.Regions, error) {
 	if clusterID == nil || clusterID.Id == 0 {
 		return nil, errors.New("cluster id is required")
 	}
@@ -305,34 +341,130 @@ func (c *ClusterInterface) GetLogs(stream v1alpha1.ClusterInterface_GetLogsServe
 }
 
 func (c *ClusterInterface) bizCLusterToCluster(bizCluster *biz.Cluster) *v1alpha1.Cluster {
-	cluster := &v1alpha1.Cluster{
-		Id:               bizCluster.ID,
-		Name:             bizCluster.Name,
-		ServerVersion:    bizCluster.Version,
-		ApiServerAddress: bizCluster.ApiServerAddress,
-		Config:           bizCluster.Config,
-		Addons:           bizCluster.Addons,
+	nodes := make([]*v1alpha1.Node, 0)
+	for _, v := range bizCluster.Nodes {
+		if v == nil {
+			continue
+		}
+		nodes = append(nodes, c.bizNodeToNode(v))
 	}
-	for _, node := range bizCluster.Nodes {
-		cluster.Nodes = append(cluster.Nodes, c.bizNodeToNode(node))
+	nodeGroups := make([]*v1alpha1.NodeGroup, 0)
+	for _, v := range bizCluster.NodeGroups {
+		if v == nil {
+			continue
+		}
+		nodeGroups = append(nodeGroups, c.bizNodeGroupToNodeGroup(v))
 	}
-	return cluster
+	var bostionHost *v1alpha1.BostionHost
+	if bizCluster.BostionHost != nil {
+		bostionHost = c.bizBostionHostToBostionHost(bizCluster.BostionHost)
+	}
+	return &v1alpha1.Cluster{
+		Id:                   bizCluster.ID,
+		Name:                 bizCluster.Name,
+		CloudId:              bizCluster.CloudID,
+		Connections:          bizCluster.Connections,
+		CertificateAuthority: bizCluster.CertificateAuthority,
+		Version:              bizCluster.Version,
+		ApiServerAddress:     bizCluster.ApiServerAddress,
+		Config:               bizCluster.Config,
+		Addons:               bizCluster.Addons,
+		AddonsConfig:         bizCluster.AddonsConfig,
+		Status:               uint32(bizCluster.Status),
+		Type:                 string(bizCluster.Type),
+		KubeConfig:           bizCluster.KubeConfig,
+		KeyPair:              bizCluster.KeyPair,
+		PublicKey:            bizCluster.PublicKey,
+		PrivateKey:           bizCluster.PrivateKey,
+		Region:               bizCluster.Region,
+		VpcId:                bizCluster.VpcID,
+		VpcCidr:              bizCluster.VpcCidr,
+		EipId:                bizCluster.EipID,
+		NatGatewayId:         bizCluster.NatGatewayID,
+		ResourceGroupId:      bizCluster.ResourceGroupID,
+		SecurityGroupIds:     bizCluster.SecurityGroupIDs,
+		ExternalIp:           bizCluster.ExternalIP,
+		AccessId:             bizCluster.AccessID,
+		AccessKey:            bizCluster.AccessKey,
+		LoadBalancerId:       bizCluster.LoadBalancerID,
+		Nodes:                nodes,
+		NodeGroups:           nodeGroups,
+		BostionHost:          bostionHost,
+	}
 }
 
 func (c *ClusterInterface) bizNodeToNode(bizNode *biz.Node) *v1alpha1.Node {
-	node := &v1alpha1.Node{
-		Id:         bizNode.ID,
-		Name:       bizNode.Name,
-		Labels:     bizNode.Labels,
-		Kernel:     bizNode.Kernel,
-		Container:  bizNode.ContainerRuntime,
-		Kubelet:    bizNode.Kubelet,
-		KubeProxy:  bizNode.KubeProxy,
-		InternalIp: bizNode.InternalIP,
-		ExternalIp: bizNode.ExternalIP,
-		User:       bizNode.User,
-		Role:       bizNode.Role.String(),
-		ClusterId:  bizNode.ClusterID,
+	return &v1alpha1.Node{
+		Id:                      bizNode.ID,
+		InstanceId:              bizNode.InstanceID,
+		Name:                    bizNode.Name,
+		Labels:                  bizNode.Labels,
+		Kernel:                  bizNode.Kernel,
+		ContainerRuntime:        bizNode.ContainerRuntime,
+		Kubelet:                 bizNode.Kubelet,
+		KubeProxy:               bizNode.KubeProxy,
+		SshPort:                 int32(bizNode.SshPort),
+		InternalIp:              bizNode.InternalIP,
+		ExternalIp:              bizNode.ExternalIP,
+		User:                    bizNode.User,
+		Role:                    string(bizNode.Role),
+		Status:                  string(bizNode.Status),
+		ErrorInfo:               bizNode.ErrorInfo,
+		Zone:                    bizNode.Zone,
+		SubnetId:                bizNode.SubnetId,
+		SubnetCidr:              bizNode.SubnetCidr,
+		PublicKey:               bizNode.PublicKey,
+		GpuSpec:                 bizNode.GpuSpec,
+		SystemDisk:              int32(bizNode.SystemDisk),
+		DataDisk:                int32(bizNode.DataDisk),
+		NodePrice:               float32(bizNode.NodePrice),
+		PodPrice:                float32(bizNode.PodPrice),
+		InternetMaxBandwidthOut: int32(bizNode.InternetMaxBandwidthOut),
+		ClusterId:               bizNode.ClusterID,
+		NodeGroupId:             bizNode.NodeGroupID,
 	}
-	return node
+}
+
+func (c *ClusterInterface) bizNodeGroupToNodeGroup(bizNodeGroup *biz.NodeGroup) *v1alpha1.NodeGroup {
+	return &v1alpha1.NodeGroup{
+		Id:               bizNodeGroup.ID,
+		Name:             bizNodeGroup.Name,
+		CloudNodegroupId: bizNodeGroup.CloudNoodGroupID,
+		Type:             string(bizNodeGroup.Type),
+		InstanceType:     bizNodeGroup.InstanceType,
+		Image:            bizNodeGroup.Image,
+		Os:               bizNodeGroup.OS,
+		Arch:             bizNodeGroup.ARCH,
+		Cpu:              int32(bizNodeGroup.CPU),
+		Memory:           float32(bizNodeGroup.Memory),
+		Gpu:              int32(bizNodeGroup.GPU),
+		NodeInitScript:   bizNodeGroup.NodeInitScript,
+		MinSize:          int32(bizNodeGroup.MinSize),
+		MaxSize:          int32(bizNodeGroup.MaxSize),
+		TargetSize:       int32(bizNodeGroup.TargetSize),
+		SystemDisk:       int32(bizNodeGroup.SystemDisk),
+		DataDisk:         int32(bizNodeGroup.DataDisk),
+		ClusterId:        int64(bizNodeGroup.ClusterID),
+	}
+}
+
+func (c *ClusterInterface) bizBostionHostToBostionHost(bizBostionHost *biz.BostionHost) *v1alpha1.BostionHost {
+	return &v1alpha1.BostionHost{
+		Id:           bizBostionHost.ID,
+		InstanceType: bizBostionHost.InstanceType,
+		InstanceId:   bizBostionHost.InstanceID,
+		User:         bizBostionHost.User,
+		ImageId:      bizBostionHost.ImageID,
+		Image:        bizBostionHost.Image,
+		Os:           bizBostionHost.OS,
+		Arch:         bizBostionHost.ARCH,
+		Hostname:     bizBostionHost.Hostname,
+		ExternalIp:   bizBostionHost.ExternalIP,
+		InternalIp:   bizBostionHost.InternalIP,
+		SshPort:      int32(bizBostionHost.SshPort),
+		PrivateIp:    bizBostionHost.PrivateIP,
+		ClusterId:    int64(bizBostionHost.ClusterID),
+		Cpu:          int32(bizBostionHost.CPU),
+		Memory:       float32(bizBostionHost.Memory),
+	}
 }

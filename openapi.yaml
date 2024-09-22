@@ -877,7 +877,31 @@ paths:
                   in: query
                   schema:
                     type: string
-                - name: nodeId
+                - name: name
+                  in: query
+                  schema:
+                    type: string
+                - name: type
+                  in: query
+                  schema:
+                    type: string
+                - name: public_key
+                  in: query
+                  schema:
+                    type: string
+                - name: region
+                  in: query
+                  schema:
+                    type: string
+                - name: access_key_id
+                  in: query
+                  schema:
+                    type: string
+                - name: secret_access_key
+                  in: query
+                  schema:
+                    type: string
+                - name: node_id
                   in: query
                   schema:
                     type: string
@@ -914,7 +938,31 @@ paths:
                   in: query
                   schema:
                     type: string
-                - name: nodeId
+                - name: name
+                  in: query
+                  schema:
+                    type: string
+                - name: type
+                  in: query
+                  schema:
+                    type: string
+                - name: public_key
+                  in: query
+                  schema:
+                    type: string
+                - name: region
+                  in: query
+                  schema:
+                    type: string
+                - name: access_key_id
+                  in: query
+                  schema:
+                    type: string
+                - name: secret_access_key
+                  in: query
+                  schema:
+                    type: string
+                - name: node_id
                   in: query
                   schema:
                     type: string
@@ -977,7 +1025,31 @@ paths:
                   in: query
                   schema:
                     type: string
-                - name: nodeId
+                - name: name
+                  in: query
+                  schema:
+                    type: string
+                - name: type
+                  in: query
+                  schema:
+                    type: string
+                - name: public_key
+                  in: query
+                  schema:
+                    type: string
+                - name: region
+                  in: query
+                  schema:
+                    type: string
+                - name: access_key_id
+                  in: query
+                  schema:
+                    type: string
+                - name: secret_access_key
+                  in: query
+                  schema:
+                    type: string
+                - name: node_id
                   in: query
                   schema:
                     type: string
@@ -997,7 +1069,7 @@ paths:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/cluster.v1alpha1.ClusterID'
+                            $ref: '#/components/schemas/cluster.v1alpha1.ClusterArgs'
                 required: true
             responses:
                 "200":
@@ -1949,6 +2021,44 @@ components:
                     format: enum
                 Message:
                     type: string
+        cluster.v1alpha1.BostionHost:
+            type: object
+            properties:
+                id:
+                    type: string
+                instance_type:
+                    type: string
+                instance_id:
+                    type: string
+                user:
+                    type: string
+                image_id:
+                    type: string
+                image:
+                    type: string
+                os:
+                    type: string
+                arch:
+                    type: string
+                hostname:
+                    type: string
+                external_ip:
+                    type: string
+                internal_ip:
+                    type: string
+                ssh_port:
+                    type: integer
+                    format: int32
+                private_ip:
+                    type: string
+                cluster_id:
+                    type: string
+                cpu:
+                    type: integer
+                    format: int32
+                memory:
+                    type: number
+                    format: float
         cluster.v1alpha1.CheckBostionHostRequest:
             type: object
             properties:
@@ -1973,7 +2083,13 @@ components:
                     type: string
                 name:
                     type: string
-                server_version:
+                cloud_id:
+                    type: string
+                connections:
+                    type: string
+                certificate_authority:
+                    type: string
+                version:
                     type: string
                 api_server_address:
                     type: string
@@ -1983,22 +2099,59 @@ components:
                     type: string
                 addons_config:
                     type: string
-                state:
+                status:
+                    type: integer
+                    format: uint32
+                type:
+                    type: string
+                kube_config:
+                    type: string
+                key_pair:
+                    type: string
+                public_key:
+                    type: string
+                private_key:
+                    type: string
+                region:
+                    type: string
+                vpc_id:
+                    type: string
+                vpc_cidr:
+                    type: string
+                eip_id:
+                    type: string
+                nat_gateway_id:
+                    type: string
+                resource_group_id:
+                    type: string
+                security_group_ids:
+                    type: string
+                external_ip:
+                    type: string
+                access_id:
+                    type: string
+                access_key:
+                    type: string
+                load_balancer_id:
                     type: string
                 nodes:
                     type: array
                     items:
                         $ref: '#/components/schemas/cluster.v1alpha1.Node'
-                logs:
-                    type: string
-                is_current_cluster:
-                    type: boolean
+                node_groups:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/cluster.v1alpha1.NodeGroup'
+                bostion_host:
+                    $ref: '#/components/schemas/cluster.v1alpha1.BostionHost'
         cluster.v1alpha1.ClusterArgs:
             type: object
             properties:
+                id:
+                    type: string
                 name:
                     type: string
-                server_type:
+                type:
                     type: string
                 public_key:
                     type: string
@@ -2012,12 +2165,7 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/cluster.v1alpha1.NodeArgs'
-        cluster.v1alpha1.ClusterID:
-            type: object
-            properties:
-                id:
-                    type: string
-                nodeId:
+                node_id:
                     type: string
         cluster.v1alpha1.ClusterList:
             type: object
@@ -2039,22 +2187,23 @@ components:
             properties:
                 id:
                     type: string
+                instance_id:
+                    type: string
                 name:
                     type: string
                 labels:
                     type: string
-                annotations:
-                    type: string
-                os_image:
-                    type: string
                 kernel:
                     type: string
-                container:
+                container_runtime:
                     type: string
                 kubelet:
                     type: string
                 kube_proxy:
                     type: string
+                ssh_port:
+                    type: integer
+                    format: int32
                 internal_ip:
                     type: string
                 external_ip:
@@ -2063,9 +2212,38 @@ components:
                     type: string
                 role:
                     type: string
-                state:
+                status:
                     type: string
+                error_info:
+                    type: string
+                zone:
+                    type: string
+                subnet_id:
+                    type: string
+                subnet_cidr:
+                    type: string
+                public_key:
+                    type: string
+                gpu_spec:
+                    type: string
+                system_disk:
+                    type: integer
+                    format: int32
+                data_disk:
+                    type: integer
+                    format: int32
+                node_price:
+                    type: number
+                    format: float
+                pod_price:
+                    type: number
+                    format: float
+                internet_max_bandwidth_out:
+                    type: integer
+                    format: int32
                 cluster_id:
+                    type: string
+                node_group_id:
                     type: string
         cluster.v1alpha1.NodeArgs:
             type: object
@@ -2073,6 +2251,57 @@ components:
                 ip:
                     type: string
                 user:
+                    type: string
+                role:
+                    type: string
+                id:
+                    type: string
+        cluster.v1alpha1.NodeGroup:
+            type: object
+            properties:
+                id:
+                    type: string
+                name:
+                    type: string
+                cloud_nodegroup_id:
+                    type: string
+                type:
+                    type: string
+                instance_type:
+                    type: string
+                image:
+                    type: string
+                os:
+                    type: string
+                arch:
+                    type: string
+                cpu:
+                    type: integer
+                    format: int32
+                memory:
+                    type: number
+                    format: float
+                gpu:
+                    type: integer
+                    format: int32
+                node_init_script:
+                    type: string
+                min_size:
+                    type: integer
+                    format: int32
+                max_size:
+                    type: integer
+                    format: int32
+                target_size:
+                    type: integer
+                    format: int32
+                system_disk:
+                    type: integer
+                    format: int32
+                data_disk:
+                    type: integer
+                    format: int32
+                cluster_id:
                     type: string
         cluster.v1alpha1.Regions:
             type: object

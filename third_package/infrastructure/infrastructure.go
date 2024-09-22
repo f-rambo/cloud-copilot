@@ -21,7 +21,6 @@ import (
 	"github.com/go-kratos/kratos/v2/metadata"
 	mmd "github.com/go-kratos/kratos/v2/middleware/metadata"
 	"github.com/go-kratos/kratos/v2/transport/grpc"
-	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"github.com/spf13/cast"
 	"golang.org/x/sync/errgroup"
@@ -72,13 +71,15 @@ func (c *ClusterInfrastructure) Start(ctx context.Context, cluster *biz.Cluster)
 	case biz.ClusterTypeAWSEks:
 		startFunc = NewAwsCloud(cluster).StartEks
 	}
-	output, err = c.pulumiExec(ctx, cluster, startFunc)
-	if err != nil {
-		return err
-	}
-	err = c.parseOutput(cluster, output)
-	if err != nil {
-		return err
+	if cluster.Type.IsCloud() {
+		output, err = c.pulumiExec(ctx, cluster, startFunc)
+		if err != nil {
+			return err
+		}
+		err = c.parseOutput(cluster, output)
+		if err != nil {
+			return err
+		}
 	}
 	err = c.distributeShipServer(ctx, cluster)
 	if err != nil {
@@ -365,6 +366,8 @@ func (cc *ClusterInfrastructure) distributeShipServer(ctx context.Context, clust
 	for _, node := range cluster.Nodes {
 		node := node
 		errGroup.Go(func() error {
+
+			// check node information
 			if node.InternalIP == "" {
 				return errors.New("node internal ip is empty")
 			}
@@ -374,27 +377,40 @@ func (cc *ClusterInfrastructure) distributeShipServer(ctx context.Context, clust
 			if node.SshPort == 0 {
 				node.SshPort = 22
 			}
-			nodeGroup := cluster.GetNodeGroup(node.NodeGroupID)
-			if nodeGroup == nil {
-				nodeGroup = &biz.NodeGroup{}
+			if node.GrpcPort == 0 {
+				node.GrpcPort = 9000
 			}
-			if nodeGroup.ARCH == "" {
-				output, err := exec.Command("echo", "uname -m", "|", "ssh", fmt.Sprintf("%s@%s -p %d", node.User, node.InternalIP, node.SshPort),
-					"sudo bash -s").CombinedOutput()
-				if err != nil {
-					return errors.Wrap(err, string(output))
-				}
-				arch := strings.TrimSpace(string(output))
-				if _, ok := ARCH_MAP[arch]; !ok {
-					return errors.New("node arch is not supported")
-				}
-				nodeGroup.ARCH = ARCH_MAP[arch]
+
+			// check ship server
+			conn, err := grpc.DialInsecure(
+				ctx,
+				grpc.WithEndpoint(fmt.Sprintf("%s:%d", node.InternalIP, node.GrpcPort)),
+			)
+			if err != nil {
+				return err
 			}
-			if nodeGroup.ARCH == "" {
-				return errors.New("node arch is empty")
+			defer conn.Close()
+			client := systemv1alpha1.NewSystemInterfaceClient(conn)
+			_, err = client.Ping(ctx, &emptypb.Empty{})
+			if err == nil {
+				// ship server is already installed
+				return nil
 			}
-			shipArchPath := fmt.Sprintf("%s/%s", shipPath, nodeGroup.ARCH)
-			output, err := exec.Command("scp", "-r", "-P", fmt.Sprintf("%d", node.SshPort), shipArchPath,
+
+			// get node arch
+			output, err := exec.Command("echo", "uname -m", "|", "ssh", fmt.Sprintf("%s@%s -p %d", node.User, node.InternalIP, node.SshPort),
+				"sudo bash -s").CombinedOutput()
+			if err != nil {
+				return errors.Wrap(err, string(output))
+			}
+			arch := strings.TrimSpace(string(output))
+			if _, ok := ARCH_MAP[arch]; !ok {
+				return errors.New("node arch is not supported")
+			}
+
+			// get ship arch path
+			shipArchPath := fmt.Sprintf("%s/%s", shipPath, ARCH_MAP[arch])
+			output, err = exec.Command("scp", "-r", "-P", fmt.Sprintf("%d", node.SshPort), shipArchPath,
 				fmt.Sprintf("%s@%s:%s", node.User, node.InternalIP, shipPath)).CombinedOutput()
 			if err != nil {
 				return errors.Wrap(err, string(output))
@@ -418,7 +434,10 @@ func (cc *ClusterInfrastructure) distributeShipServer(ctx context.Context, clust
 func (cc *ClusterInfrastructure) getNodesInformation(ctx context.Context, cluster *biz.Cluster) error {
 	errGroup, ctx := errgroup.WithContext(ctx)
 	for _, node := range cluster.Nodes {
-		nodegroup := &biz.NodeGroup{}
+		nodegroup := cluster.GetNodeGroup(node.NodeGroupID)
+		if nodegroup == nil {
+			nodegroup = cluster.NewNodeGroup()
+		}
 		node := node
 		errGroup.Go(func() error {
 			conn, err := grpc.DialInsecure(
@@ -447,7 +466,6 @@ func (cc *ClusterInfrastructure) getNodesInformation(ctx context.Context, cluste
 			nodegroup.Memory = systemInfo.Memory
 			nodegroup.GPU = systemInfo.Gpu
 			nodegroup.OS = systemInfo.Os
-			nodegroup.ID = uuid.New().String()
 			// node
 			node.SystemDisk = systemInfo.DataDisk
 			node.GpuSpec = systemInfo.GpuSpec
@@ -546,7 +564,7 @@ func (c *ClusterInfrastructure) downloadAndCopyK8sSoftware(_ context.Context, cl
 
 // preview is true, only preview the pulumi resources
 func (c *ClusterInfrastructure) pulumiExec(ctx context.Context, cluster *biz.Cluster, pulumiFunc PulumiFunc, preview ...bool) (output string, err error) {
-	pulumiObj := NewPulumiAPI(ctx, cluster)
+	pulumiObj := NewPulumiAPI(ctx, c)
 	if cluster.Type == biz.ClusterTypeAliCloudEcs {
 		pulumiObj.ProjectName(AlicloudProjectName).
 			StackName(AlicloudStackName).
@@ -585,137 +603,10 @@ func (c *ClusterInfrastructure) pulumiExec(ctx context.Context, cluster *biz.Clu
 	return output, err
 }
 
-func getIntanceIDKey(name string) string {
-	return fmt.Sprintf("node-%s-id", name)
-}
-
-func getIntanceUser(name string) string {
-	return fmt.Sprintf("node-%s-user", name)
-}
-
-func getIntanceInternalIPKey(name string) string {
-	return fmt.Sprintf("node-%s-internal-ip", name)
-}
-
-func getIntancePublicIPKey(name string) string {
-	return fmt.Sprintf("node-%s-public-ip", name)
-}
-
-func getBostionHostInstanceID() string {
-	return "bostion-host-instance-id"
-}
-
-func getClusterCloudID() string {
-	return "cluster-cloud-id"
-}
-
-func getConnections() string {
-	return "connections"
-}
-
-func getCertificateAuthority() string {
-	return "certificate-authority"
-}
-
-func getCloudNodeGroupID(name string) string {
-	return fmt.Sprintf("cloud-nodegroup-id-%s", name)
-}
-
-func getLoadBalancerID() string {
-	return "load-balancer-id"
-}
-
-func getSecurityGroupIDs() string {
-	return "security-group-ids"
-}
-
-// Parse output const
-func (c *ClusterInfrastructure) parseOutput(cluster *biz.Cluster, output string) error {
-	outputMap := make(map[string]interface{})
-	err := json.Unmarshal([]byte(output), &outputMap)
-	if err != nil {
-		return errors.Wrap(err, "failed to unmarshal output")
-	}
-	data := make(map[string]string)
-	for k, v := range outputMap {
-		if v == nil {
-			continue
-		}
-		m := make(map[string]interface{})
-		vJson, err := json.Marshal(v)
-		if err != nil {
-			return errors.Wrap(err, "failed to marshal value")
-		}
-		err = json.Unmarshal(vJson, &m)
-		if err != nil {
-			return errors.Wrap(err, "failed to unmarshal value")
-		}
-		if _, ok := m["Value"]; !ok {
-			continue
-		}
-		if k == getSecurityGroupIDs() {
-			securityGroupIDs := make([]string, 0)
-			securityGroupIDsJson, err := json.Marshal(m["Value"])
-			if err != nil {
-				return errors.Wrap(err, "failed to marshal security group ids")
-			}
-			err = json.Unmarshal(securityGroupIDsJson, &securityGroupIDs)
-			if err != nil {
-				return errors.Wrap(err, "failed to unmarshal security group ids")
-			}
-			cluster.SecurityGroupIDs = strings.Join(securityGroupIDs, ",")
-			continue
-		}
-		data[k] = cast.ToString(m["Value"])
-	}
-	clusterCloudID, ok := data[getClusterCloudID()]
-	if ok {
-		cluster.CloudID = clusterCloudID
-	}
-	connections, ok := data[getConnections()]
-	if ok {
-		cluster.Connections = connections
-	}
-	certificateAuthority, ok := data[getCertificateAuthority()]
-	if ok {
-		cluster.CertificateAuthority = certificateAuthority
-	}
-	for _, v := range cluster.NodeGroups {
-		cloudNodeGroupID, ok := data[getCloudNodeGroupID(v.Name)]
-		if ok {
-			v.CloudNoodGroupID = cloudNodeGroupID
-		}
-	}
-	loadBalancerID, ok := data[getLoadBalancerID()]
-	if ok {
-		cluster.LoadBalancerID = loadBalancerID
-	}
-	for _, node := range cluster.Nodes {
-		instanceID, ok := data[getIntanceIDKey(node.Name)]
-		if !ok {
-			continue
-		}
-		node.InstanceID = instanceID
-		node.InternalIP = data[getIntanceInternalIPKey(node.Name)]
-		node.ExternalIP = data[getIntancePublicIPKey(node.Name)]
-		node.User = data[getIntanceUser(node.Name)]
-	}
-	bostionHostInstanceID, ok := data[getIntanceIDKey(getBostionHostInstanceID())]
-	if ok {
-		if cluster.BostionHost == nil {
-			cluster.BostionHost = &biz.BostionHost{}
-		}
-		cluster.BostionHost.InstanceID = bostionHostInstanceID
-		for _, node := range cluster.Nodes {
-			if node.InstanceID == bostionHostInstanceID {
-				cluster.BostionHost.InternalIP = node.InternalIP
-				cluster.BostionHost.ExternalIP = node.ExternalIP
-				cluster.BostionHost.User = node.User
-				break
-			}
-		}
-	}
-	return nil
+// log
+func (c *ClusterInfrastructure) Write(content []byte) (n int, err error) {
+	c.log.Info(string(content))
+	return len(content), nil
 }
 
 // exec command
@@ -750,6 +641,140 @@ func (c *ClusterInfrastructure) runCommandWithLogging(command string, args ...st
 	}()
 	if err := cmd.Wait(); err != nil {
 		return errors.Wrap(err, "command failed")
+	}
+	return nil
+}
+
+type KeyType int
+
+const (
+	InstanceID KeyType = iota
+	InstanceUser
+	InstanceInternalIP
+	InstancePublicIP
+	BostionHostInstanceID
+	ClusterCloudID
+	Connections
+	CertificateAuthority
+	CloudNodeGroupID
+	LoadBalancerID
+	SecurityGroupIDs
+)
+
+func GetKey(keyType KeyType, name ...string) string {
+	switch keyType {
+	case InstanceID:
+		return fmt.Sprintf("node-%s-id", name[0])
+	case InstanceUser:
+		return fmt.Sprintf("node-%s-user", name[0])
+	case InstanceInternalIP:
+		return fmt.Sprintf("node-%s-internal-ip", name[0])
+	case InstancePublicIP:
+		return fmt.Sprintf("node-%s-public-ip", name[0])
+	case BostionHostInstanceID:
+		return "bostion-host-instance-id"
+	case ClusterCloudID:
+		return "cluster-cloud-id"
+	case Connections:
+		return "connections"
+	case CertificateAuthority:
+		return "certificate-authority"
+	case CloudNodeGroupID:
+		return fmt.Sprintf("cloud-nodegroup-id-%s", name[0])
+	case LoadBalancerID:
+		return "load-balancer-id"
+	case SecurityGroupIDs:
+		return "security-group-ids"
+	default:
+		return ""
+	}
+}
+
+// Parse output const
+func (c *ClusterInfrastructure) parseOutput(cluster *biz.Cluster, output string) error {
+	outputMap := make(map[string]interface{})
+	err := json.Unmarshal([]byte(output), &outputMap)
+	if err != nil {
+		return errors.Wrap(err, "failed to unmarshal output")
+	}
+	data := make(map[string]string)
+	for k, v := range outputMap {
+		if v == nil {
+			continue
+		}
+		m := make(map[string]interface{})
+		vJson, err := json.Marshal(v)
+		if err != nil {
+			return errors.Wrap(err, "failed to marshal value")
+		}
+		err = json.Unmarshal(vJson, &m)
+		if err != nil {
+			return errors.Wrap(err, "failed to unmarshal value")
+		}
+		if _, ok := m["Value"]; !ok {
+			continue
+		}
+		if k == GetKey(SecurityGroupIDs) {
+			securityGroupIDs := make([]string, 0)
+			securityGroupIDsJson, err := json.Marshal(m["Value"])
+			if err != nil {
+				return errors.Wrap(err, "failed to marshal security group ids")
+			}
+			err = json.Unmarshal(securityGroupIDsJson, &securityGroupIDs)
+			if err != nil {
+				return errors.Wrap(err, "failed to unmarshal security group ids")
+			}
+			cluster.SecurityGroupIDs = strings.Join(securityGroupIDs, ",")
+			continue
+		}
+		data[k] = cast.ToString(m["Value"])
+	}
+	clusterCloudID, ok := data[GetKey(ClusterCloudID)]
+	if ok {
+		cluster.CloudID = clusterCloudID
+	}
+	connections, ok := data[GetKey(Connections)]
+	if ok {
+		cluster.Connections = connections
+	}
+	certificateAuthority, ok := data[GetKey(CertificateAuthority)]
+	if ok {
+		cluster.CertificateAuthority = certificateAuthority
+	}
+	for _, v := range cluster.NodeGroups {
+		cloudNodeGroupID, ok := data[GetKey(CloudNodeGroupID, v.Name)]
+		if ok {
+			v.CloudNoodGroupID = cloudNodeGroupID
+		}
+	}
+	loadBalancerID, ok := data[GetKey(LoadBalancerID)]
+	if ok {
+		cluster.LoadBalancerID = loadBalancerID
+	}
+	for _, node := range cluster.Nodes {
+		instanceID, ok := data[GetKey(InstanceID, node.Name)]
+		if !ok {
+			continue
+		}
+		node.InstanceID = instanceID
+		node.InternalIP = data[GetKey(InstanceInternalIP, node.Name)]
+		node.ExternalIP = data[GetKey(InstancePublicIP, node.Name)]
+		node.User = data[GetKey(InstanceUser, node.Name)]
+	}
+	bostionHostInstanceID, ok := data[GetKey(InstanceID, GetKey(BostionHostInstanceID))]
+	if ok {
+		if cluster.BostionHost == nil {
+			cluster.BostionHost = &biz.BostionHost{}
+		}
+		cluster.BostionHost.InstanceID = bostionHostInstanceID
+		for _, node := range cluster.Nodes {
+			if node.InstanceID == bostionHostInstanceID {
+				cluster.BostionHost.InternalIP = node.InternalIP
+				cluster.BostionHost.ExternalIP = node.ExternalIP
+				cluster.BostionHost.User = node.User
+				break
+			}
+		}
 	}
 	return nil
 }

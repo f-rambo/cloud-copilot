@@ -79,32 +79,34 @@ func (a *Alicloud) getIntanceTypeFamilies(nodeGroup *biz.NodeGroup) string {
 	case biz.NodeGroupTypeHighMemory:
 		return "ecs.r6"
 	case biz.NodeGroupTypeLargeHardDisk:
-		return "ecs.g6" // 支持挂载大磁盘
+		return "ecs.g6"
 	default:
 		return "ecs.g6"
 	}
 }
 
-func (a *Alicloud) Start(ctx *pulumi.Context) error {
-	err := a.getClusterInfoByInstance(ctx)
-	if err != nil {
-		return err
-	}
-	err = a.getLocalBalancer(ctx)
-	if err != nil {
-		return err
-	}
-	err = a.getNatGateway(ctx)
-	if err != nil {
-		return err
+func (a *Alicloud) Start(ctx *pulumi.Context) (err error) {
+	if a.cluster.Status == biz.ClusterStatusRunning {
+		err := a.getClusterInfoByInstance(ctx)
+		if err != nil {
+			return err
+		}
+		err = a.getLocalBalancer(ctx)
+		if err != nil {
+			return err
+		}
+		err = a.getNatGateway(ctx)
+		if err != nil {
+			return err
+		}
 	}
 	err = a.infrastructural(ctx)
 	if err != nil {
-		return errors.Wrap(err, "alicloud cluster init failed")
+		return err
 	}
 	err = a.createNodes(ctx)
 	if err != nil {
-		return errors.Wrap(err, "start ecs failed")
+		return err
 	}
 	return nil
 }
@@ -337,7 +339,7 @@ func (a *Alicloud) createSecurityGroup(ctx *pulumi.Context) (err error) {
 	for _, sg := range a.sgs {
 		sgPulumiIDs = append(sgPulumiIDs, sg.ID())
 	}
-	ctx.Export(getSecurityGroupIDs(), sgPulumiIDs)
+	ctx.Export(GetKey(SecurityGroupIDs), sgPulumiIDs)
 	return nil
 }
 
@@ -595,12 +597,12 @@ func (a *Alicloud) createNodes(ctx *pulumi.Context) (err error) {
 			if err != nil {
 				return err
 			}
-			ctx.Export(getBostionHostInstanceID(), instance.ID())
+			ctx.Export(GetKey(BostionHostInstanceID), instance.ID())
 		}
-		ctx.Export(getIntanceIDKey(node.Name), instance.ID())
-		ctx.Export(getIntanceUser(node.Name), pulumi.String("root"))
-		ctx.Export(getIntanceInternalIPKey(node.Name), instance.PrivateIp)
-		ctx.Export(getIntancePublicIPKey(node.Name), instance.PublicIp)
+		ctx.Export(GetKey(InstanceID, node.Name), instance.ID())
+		ctx.Export(GetKey(InstanceUser, node.Name), pulumi.String("root"))
+		ctx.Export(GetKey(InstanceInternalIP, node.Name), instance.PrivateIp)
+		ctx.Export(GetKey(InstancePublicIP, node.Name), instance.PublicIp)
 	}
 	return nil
 }
@@ -686,7 +688,7 @@ func (a *Alicloud) localBalancer(ctx *pulumi.Context) (err error) {
 	if err != nil {
 		return err
 	}
-	ctx.Export(getLoadBalancerID(), a.lb.ID())
+	ctx.Export(GetKey(LoadBalancerID), a.lb.ID())
 	return nil
 }
 
@@ -752,7 +754,7 @@ func (a *Alicloud) getClusterInfoByInstance(ctx *pulumi.Context) error {
 			nodeGroup.CPU = int32(v.CpuCoreCount)
 			nodeGroup.Memory = v.MemorySize
 		}
-		nodeGroup.Name = a.cluster.GenerateNodeGroupName(nodeGroup)
+		a.cluster.GenerateNodeGroupName(nodeGroup)
 		nodeGroups = append(nodeGroups, nodeGroup)
 	}
 	a.cluster.NodeGroups = nodeGroups

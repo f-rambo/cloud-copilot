@@ -2,9 +2,7 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"os"
-	"path/filepath"
 	"runtime"
 
 	"github.com/f-rambo/ocean/internal/conf"
@@ -20,8 +18,6 @@ import (
 
 	_ "github.com/joho/godotenv/autoload"
 	_ "go.uber.org/automaxprocs"
-
-	lumberjack "gopkg.in/natefinch/lumberjack.v2"
 )
 
 // go build -ldflags "-X main.Version=x.y.z"
@@ -82,32 +78,13 @@ func main() {
 	if err := c.Scan(&bc); err != nil {
 		panic(err)
 	}
-	conf := bc
-	Name = conf.Server.Name
-	Version = conf.Server.Version
-	if conf.Server.ShipVersion != "" {
-		shipVersion = conf.Server.ShipVersion
+	if bc.Server.ShipVersion != "" {
+		shipVersion = bc.Server.ShipVersion
 	}
-	logConf := conf.Log
-	logPath, err := utils.GetPackageStorePathByNames("log")
-	if err != nil {
-		panic(err)
-	}
-	err = os.MkdirAll(logPath, 0755)
-	if err != nil {
-		panic(err)
-	}
-	logger := log.With(log.NewStdLogger(&lumberjack.Logger{
-		Filename:   filepath.Join(logPath, fmt.Sprintf("%s.log", Name)),
-		MaxSize:    int(logConf.MaxSize), // megabytes
-		MaxBackups: int(logConf.MaxBackups),
-		MaxAge:     int(logConf.MaxAge), // days
-		Compress:   logConf.Compress,    // disabled by default
-		LocalTime:  logConf.LocalTime,
-	}),
-		"ts", log.DefaultTimestamp,
-		"caller", log.DefaultCaller,
-	)
+
+	utilLog := utils.NewLog(&bc)
+	defer utilLog.Close()
+	logger := log.With(utilLog, utils.GetLogContenteKeyvals()...)
 	app, cleanup, err := wireApp(
 		&bc,
 		logger,

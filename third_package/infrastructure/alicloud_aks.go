@@ -119,11 +119,11 @@ func (a *Alicloud) StartAks(ctx *pulumi.Context) (err error) {
 		if err != nil {
 			return err
 		}
-		ctx.Export(getCloudNodeGroupID(nodeGroup.Name), nodepool.ID())
+		ctx.Export(GetKey(CloudNodeGroupID, nodeGroup.Name), nodepool.ID())
 	}
-	ctx.Export(getClusterCloudID(), cluster.ID())
-	ctx.Export(getConnections(), cluster.Connections)
-	ctx.Export(getCertificateAuthority(), cluster.CertificateAuthority)
+	ctx.Export(GetKey(ClusterCloudID), cluster.ID())
+	ctx.Export(GetKey(Connections), cluster.Connections)
+	ctx.Export(GetKey(CertificateAuthority), cluster.CertificateAuthority)
 
 	return nil
 }

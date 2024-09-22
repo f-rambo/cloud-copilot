@@ -19,6 +19,7 @@ import (
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	gormlogger "gorm.io/gorm/logger"
+	"gorm.io/gorm/schema"
 )
 
 // ProviderSet is data providers.
@@ -41,8 +42,7 @@ const (
 )
 
 type Data struct {
-	databaseConf  *conf.Data
-	etcdConf      *conf.ETCD
+	conf          *conf.Bootstrap
 	log           *log.Helper
 	dbLoggerLevel gormlogger.LogLevel
 	db            *gorm.DB
@@ -52,20 +52,17 @@ type Data struct {
 
 func NewData(c *conf.Bootstrap, logger log.Logger) (*Data, func(), error) {
 	var err error
-	cdata := c.Data
-	etcd := c.ETCD
 	data := &Data{
-		databaseConf:  &cdata,
-		etcdConf:      &etcd,
+		conf:          c,
 		log:           log.NewHelper(logger),
-		dbLoggerLevel: gormlogger.Info,
+		dbLoggerLevel: gormlogger.Warn,
 	}
 
-	err = data.newDB(cdata)
+	err = data.newDB(data.conf.Data)
 	if err != nil {
 		return nil, nil, err
 	}
-	err = data.newEtcd(etcd)
+	err = data.newEtcd(data.conf.ETCD)
 	if err != nil {
 		data.kvStore = utils.NewKVStore()
 	}
@@ -192,26 +189,16 @@ func (d *Data) newEtcd(c conf.ETCD) (err error) {
 }
 
 func (d *Data) newDB(c conf.Data) (err error) {
+	var gormDialector gorm.Dialector
 	switch DBDriver(c.GetDriver()) {
 	case DBDriverMySQL:
 		dns := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8&parseTime=True&loc=Local",
 			c.GetUsername(), c.GetPassword(), c.GetHost(), c.GetPort(), c.GetDatabase())
-		d.db, err = gorm.Open(mysql.Open(dns), &gorm.Config{
-			Logger: d,
-		})
-		if err != nil {
-			return err
-		}
-		d.db = d.db.Set("gorm:table_options", "ENGINE=InnoDB DEFAULT CHARSET=utf8")
+		gormDialector = mysql.Open(dns)
 	case DBDriverPostgres:
 		dns := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%d sslmode=disable TimeZone=Asia/Shanghai",
 			c.GetHost(), c.GetUsername(), c.GetPassword(), c.GetDatabase(), c.GetPort())
-		d.db, err = gorm.Open(postgres.Open(dns), &gorm.Config{
-			Logger: d,
-		})
-		if err != nil {
-			return err
-		}
+		gormDialector = postgres.Open(dns)
 	default:
 		dbFilePath, err := utils.GetPackageStorePathByNames(DBDriverSQLite.String(), DatabaseName)
 		if err != nil {
@@ -226,12 +213,18 @@ func (d *Data) newDB(c conf.Data) (err error) {
 			}
 			file.Close()
 		}
-		d.db, err = gorm.Open(sqlite.Open(dbFilePath), &gorm.Config{
-			Logger: d,
-		})
-		if err != nil {
-			return err
-		}
+		gormDialector = sqlite.Open(dbFilePath)
+	}
+	tablePrefix := fmt.Sprintf("%s_", c.GetDatabase())
+	d.db, err = gorm.Open(gormDialector, &gorm.Config{
+		Logger: d,
+		NamingStrategy: schema.NamingStrategy{
+			TablePrefix:   tablePrefix,
+			SingularTable: true,
+		},
+	})
+	if err != nil {
+		return err
 	}
 	// AutoMigrate
 	err = d.db.AutoMigrate(

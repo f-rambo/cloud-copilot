@@ -53,7 +53,7 @@ func wireApp(controller *gomock.Controller, bootstrap *conf.Bootstrap, logger lo
 	servicesRepo := servicesRepo(controller)
 	workflowRepo := workflowRepo(controller)
 	// biz
-	clusterUsecase := biz.NewClusterUseCase(clusterRepo, infrastructure, clusterRuntime, logger)
+	clusterUsecase := biz.NewClusterUseCase(bootstrap, clusterRepo, infrastructure, clusterRuntime, logger)
 	servicesUseCase := biz.NewServicesUseCase(servicesRepo, workflowRepo, logger)
 	userUseCase := biz.NewUseUser(userRepo, thirdparty, logger)
 	appUsecase := biz.NewAppUsecase(appRepo, clusterRepo, projectRepo, sailorRepo, appRuntime, appConstruct, logger, bootstrap)

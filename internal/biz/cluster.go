@@ -9,8 +9,8 @@ import (
 	"github.com/f-rambo/ocean/internal/conf"
 	"github.com/f-rambo/ocean/utils"
 	"github.com/go-kratos/kratos/v2/log"
+	"github.com/google/uuid"
 	"github.com/pkg/errors"
-	"gopkg.in/natefinch/lumberjack.v2"
 	"gorm.io/gorm"
 )
 
@@ -49,7 +49,6 @@ type Cluster struct {
 	BostionHost          *BostionHost  `json:"bostion_host" gorm:"-"`
 	Nodes                []*Node       `json:"nodes" gorm:"-"`
 	NodeGroups           []*NodeGroup  `json:"node_groups" gorm:"-"`
-	log                  *log.Helper   `json:"-"`
 	gorm.Model
 }
 
@@ -84,6 +83,7 @@ type Node struct {
 	Kubelet                 string     `json:"kubelet" gorm:"column:kubelet; default:''; NOT NULL"`
 	KubeProxy               string     `json:"kube_proxy" gorm:"column:kube_proxy; default:''; NOT NULL"`
 	SshPort                 int32      `json:"ssh_port" gorm:"column:ssh_port; default:0; NOT NULL"`
+	GrpcPort                int32      `json:"grpc_port" gorm:"column:grpc_port; default:0; NOT NULL"`
 	InternalIP              string     `json:"internal_ip" gorm:"column:internal_ip; default:''; NOT NULL"`
 	ExternalIP              string     `json:"external_ip" gorm:"column:external_ip; default:''; NOT NULL"`
 	User                    string     `json:"user" gorm:"column:user; default:''; NOT NULL"`
@@ -194,7 +194,8 @@ const (
 	ClusterStatusUnspecified ClusterStatus = 0
 	ClusterStatusRunning     ClusterStatus = 1
 	ClusterStatusDeleted     ClusterStatus = 2
-	ClusterStatucCreating    ClusterStatus = 3
+	ClusterStatusStarting    ClusterStatus = 3
+	ClusterStatusStopping    ClusterStatus = 4
 )
 
 var (
@@ -202,13 +203,15 @@ var (
 		0: "unspecified",
 		1: "running",
 		2: "deleted",
-		3: "creating",
+		3: "starting",
+		4: "stopping",
 	}
 	ClusterStatusValue = map[string]uint8{
 		"unspecified": 0,
 		"running":     1,
 		"deleted":     2,
-		"creating":    3,
+		"starting":    3,
+		"stopping":    4,
 	}
 )
 
@@ -317,23 +320,6 @@ func (c *Cluster) generateNodeLables(nodeGroup *NodeGroup) string {
 	return string(lablebytes)
 }
 
-func (c *Cluster) logPath() string {
-	return fmt.Sprintf("logs/cluster-%d.log", c.ID)
-}
-
-func (c *Cluster) Write(content []byte) (int, error) {
-	if c.log == nil {
-		logger := log.With(log.NewStdLogger(&lumberjack.Logger{
-			Filename:  c.logPath(),
-			MaxAge:    int(7),
-			LocalTime: true,
-		}), "ts", log.DefaultTimestamp)
-		c.log = log.NewHelper(logger)
-	}
-	c.log.Info(string(content))
-	return len(content), nil
-}
-
 func isClusterEmpty(c *Cluster) bool {
 	if c == nil {
 		return true
@@ -378,13 +364,14 @@ func (c *Cluster) GetNodeGroup(nodeGroupId string) *NodeGroup {
 	return nil
 }
 
-func (c *Cluster) GenerateNodeGroupName(nodeGroup *NodeGroup) string {
-	return strings.Join([]string{c.Name, nodeGroup.Name, nodeGroup.Type.String()}, "-")
+func (c *Cluster) GenerateNodeGroupName(nodeGroup *NodeGroup) {
+	nodeGroup.Name = strings.Join([]string{c.Name, nodeGroup.Type.String()}, "-")
 }
 
 func (c *Cluster) NewNodeGroup() *NodeGroup {
 	return &NodeGroup{
-		ID: utils.GetRandomString(),
+		ID:        uuid.New().String(),
+		ClusterID: c.ID,
 	}
 }
 
@@ -439,7 +426,7 @@ func (uc *ClusterUsecase) Save(ctx context.Context, cluster *Cluster) error {
 	if err != nil {
 		return err
 	}
-	if !isClusterEmpty(cluster) && cluster.ID != data.ID {
+	if !isClusterEmpty(data) && isClusterEmpty(cluster) {
 		return errors.New("cluster name already exists")
 	}
 	for _, node := range cluster.Nodes {
@@ -455,6 +442,9 @@ func (uc *ClusterUsecase) Save(ctx context.Context, cluster *Cluster) error {
 }
 
 func (uc *ClusterUsecase) GetRegions(ctx context.Context, cluster *Cluster) ([]string, error) {
+	if cluster.Type == ClusterTypeLocal {
+		return []string{}, nil
+	}
 	return uc.clusterInfrastructure.GetRegions(ctx, cluster)
 }
 
@@ -568,6 +558,7 @@ func (uc *ClusterUsecase) Reconcile(ctx context.Context, cluster *Cluster) (err 
 	}
 	err = uc.clusterRuntime.CurrentCluster(ctx, cluster)
 	if errors.Is(err, ErrClusterNotFound) {
+		uc.settingSpecifications(cluster)
 		err = uc.clusterInfrastructure.Start(ctx, cluster)
 		if err != nil {
 			return err
@@ -601,6 +592,40 @@ func (uc *ClusterUsecase) Reconcile(ctx context.Context, cluster *Cluster) (err 
 		return err
 	}
 	return
+}
+
+// Setting specifications
+func (uc *ClusterUsecase) settingSpecifications(cluster *Cluster) {
+	if !cluster.Type.IsCloud() {
+		return
+	}
+	nodegroup := cluster.NewNodeGroup()
+	nodegroup.Type = NodeGroupTypeNormal
+	cluster.GenerateNodeGroupName(nodegroup)
+	nodegroup.CPU = 4
+	nodegroup.Memory = 8
+	nodegroup.TargetSize = 5
+	nodegroup.MinSize = 1
+	nodegroup.MaxSize = 10
+	cluster.NodeGroups = append(cluster.NodeGroups, nodegroup)
+	if cluster.Type.IsIntegratedCloud() {
+		return
+	}
+	for i := 0; i < int(nodegroup.TargetSize); i++ {
+		node := &Node{
+			Name:        fmt.Sprintf("%s-%s", cluster.Name, utils.GetRandomString()),
+			Status:      NodeStatusCreating,
+			ClusterID:   cluster.ID,
+			NodeGroupID: nodegroup.ID,
+		}
+		if i < 3 {
+			node.Role = NodeRoleMaster
+		} else {
+			node.Role = NodeRoleWorker
+		}
+		node.Labels = cluster.generateNodeLables(nodegroup)
+		cluster.Nodes = append(cluster.Nodes, node)
+	}
 }
 
 func (uc *ClusterUsecase) handlerAddNode(ctx context.Context, cluster *Cluster) error {

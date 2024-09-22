@@ -33,6 +33,7 @@ Thumbs.db
 bin/
 shell/
 built/
+resource/
 
 # Develop tools
 .vscode/
@@ -41,3 +42,4 @@ built/
 
 # copilot
 copilot/
+.cursorrules

@@ -15,6 +15,7 @@ type Bootstrap struct {
 }
 
 type Server struct {
+	Debug       bool   `json:"debug,omitempty"`
 	Name        string `json:"name,omitempty"`
 	Version     string `json:"version,omitempty"`
 	ShipVersion string `json:"ship_version,omitempty"`
@@ -52,8 +53,6 @@ type Log struct {
 	MaxSize    int32 `json:"max_size,omitempty"`
 	MaxAge     int32 `json:"max_age,omitempty"`
 	MaxBackups int32 `json:"max_backups,omitempty"`
-	Compress   bool  `json:"compress,omitempty"`
-	LocalTime  bool  `json:"local_time,omitempty"`
 }
 
 type Auth struct {

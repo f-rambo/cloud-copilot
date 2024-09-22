@@ -15,13 +15,6 @@ import (
 	"gorm.io/gorm"
 )
 
-const (
-	AdminID    = -1
-	AdminName  = "admin"
-	AdminEmail = "admin@admin.com"
-	AdminPass  = "admin"
-)
-
 type UserRepo struct {
 	data *Data
 	log  *log.Helper
@@ -114,14 +107,17 @@ func (u *UserRepo) SignIn(ctx context.Context, userParam *biz.User) error {
 }
 
 func (u *UserRepo) adminSignIn(user *biz.User) (bool, error) {
-	if user.Email == AdminEmail && user.PassWord == utils.Md5(AdminEmail) {
+	if user.Email == biz.AdminEmail {
+		password := utils.Md5(biz.AdminPassword)
+		if user.PassWord != password {
+			return false, errors.New("password error")
+		}
 		accessToken, err := u.encodeToken(u.getAdmin())
 		if err != nil {
 			return true, err
 		}
-		user.ID = AdminID
-		user.Name = AdminName
-		user.Email = AdminEmail
+		user.ID = biz.AdminID
+		user.Email = biz.AdminEmail
 		user.AccessToken = accessToken
 		return true, nil
 	}
@@ -130,9 +126,9 @@ func (u *UserRepo) adminSignIn(user *biz.User) (bool, error) {
 
 func (u *UserRepo) getAdmin() *biz.User {
 	return &biz.User{
-		ID:    AdminID,
-		Name:  AdminName,
-		Email: AdminEmail,
+		ID:    biz.AdminID,
+		Name:  biz.AdminName,
+		Email: biz.AdminEmail,
 	}
 }
 

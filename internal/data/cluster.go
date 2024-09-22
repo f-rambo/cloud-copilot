@@ -76,6 +76,7 @@ func (c *clusterRepo) Save(ctx context.Context, cluster *biz.Cluster) error {
 		}
 	}
 	for _, node := range cluster.Nodes {
+		node.ClusterID = cluster.ID
 		err = tx.Model(&biz.Node{}).Where("id = ?", node.ID).Save(node).Error
 		if err != nil {
 			return err
