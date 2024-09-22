@@ -19,16 +19,20 @@ type logtool struct {
 	lumberjackLogger *lumberjack.Logger
 }
 
-func NewLog(conf *conf.Bootstrap) *logtool {
+func NewLog(conf *conf.Bootstrap) (*logtool, error) {
 	logConf := conf.Log
 
 	if conf.Server.Debug {
 		return &logtool{
 			logger: log.DefaultLogger,
-		}
+		}, nil
+	}
+	logFilePath, err := GetLogFilePath(conf.Server.Name)
+	if err != nil {
+		return nil, err
 	}
 	lumberjackLogger := &lumberjack.Logger{
-		Filename:   getFilePath(conf.Server.Name),
+		Filename:   logFilePath,
 		MaxSize:    int(logConf.MaxSize),
 		MaxBackups: int(logConf.MaxBackups),
 		MaxAge:     int(logConf.MaxAge),
@@ -37,7 +41,7 @@ func NewLog(conf *conf.Bootstrap) *logtool {
 	return &logtool{
 		logger:           log.NewStdLogger(lumberjackLogger),
 		lumberjackLogger: lumberjackLogger,
-	}
+	}, nil
 }
 
 func (l *logtool) Log(level log.Level, keyvals ...interface{}) error {
@@ -58,14 +62,14 @@ func GetLogContenteKeyvals() []interface{} {
 	}
 }
 
-func getFilePath(filename string) string {
+func GetLogFilePath(filename string) (string, error) {
 	logPath, err := GetPackageStorePathByNames(logPackageName)
 	if err != nil {
-		panic(err)
+		return "", err
 	}
 	err = os.MkdirAll(logPath, 0755)
 	if err != nil {
-		panic(err)
+		return "", err
 	}
-	return filepath.Join(logPath, fmt.Sprintf("%s.%s", filename, logPackageName))
+	return filepath.Join(logPath, fmt.Sprintf("%s.%s", filename, logPackageName)), nil
 }

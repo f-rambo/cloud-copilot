@@ -2,8 +2,6 @@ package interfaces
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 	"io"
 	"os"
 	"os/exec"
@@ -278,16 +276,11 @@ func (c *ClusterInterface) GetLogs(stream v1alpha1.ClusterInterface_GetLogsServe
 		if req.TailLines == 0 {
 			req.TailLines = 30
 		}
-		reqJson, err := json.Marshal(req)
-		if err != nil {
-			return err
+		clusterName := c.c.Server.GetClusterName()
+		if req.ClusterName != clusterName {
+			return nil
 		}
-		clusterLogReq := &v1alpha1.ClusterLogsRequest{}
-		err = json.Unmarshal(reqJson, clusterLogReq)
-		if err != nil {
-			return err
-		}
-		clusterLogPath, err := utils.GetPackageStorePathByNames("log", fmt.Sprintf("cluster-%d.log", clusterLogReq.ClusterId))
+		clusterLogPath, err := utils.GetLogFilePath(c.c.Server.Name)
 		if err != nil {
 			return err
 		}

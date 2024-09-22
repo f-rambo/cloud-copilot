@@ -82,7 +82,10 @@ func main() {
 		shipVersion = bc.Server.ShipVersion
 	}
 
-	utilLog := utils.NewLog(&bc)
+	utilLog, err := utils.NewLog(&bc)
+	if err != nil {
+		panic(err)
+	}
 	defer utilLog.Close()
 	logger := log.With(utilLog, utils.GetLogContenteKeyvals()...)
 	app, cleanup, err := wireApp(

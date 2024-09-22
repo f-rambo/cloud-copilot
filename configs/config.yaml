@@ -2,6 +2,7 @@ server:
   debug: true
   env: local
   name: ocean
+  cluster_name: ocean
   version: 0.0.1
   ship_version: 0.0.1
   http:

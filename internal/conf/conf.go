@@ -17,6 +17,7 @@ type Bootstrap struct {
 type Server struct {
 	Debug       bool   `json:"debug,omitempty"`
 	Name        string `json:"name,omitempty"`
+	ClusterName string `json:"cluster_name,omitempty"`
 	Version     string `json:"version,omitempty"`
 	ShipVersion string `json:"ship_version,omitempty"`
 	HTTP        HTTP   `json:"http,omitempty"`
@@ -135,6 +136,14 @@ func (s Server) GetEnv() Env {
 		return Env(env)
 	}
 	return Env(s.Env)
+}
+
+func (s Server) GetClusterName() string {
+	clusterName := os.Getenv("CLUSTER_NAME")
+	if clusterName != "" {
+		return clusterName
+	}
+	return s.ClusterName
 }
 
 func (d Data) GetDriver() string {
