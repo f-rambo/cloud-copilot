@@ -93,7 +93,7 @@ type Node struct {
 	Zone                    string     `json:"zone" gorm:"column:zone; default:''; NOT NULL"`
 	SubnetId                string     `json:"subnet_id" gorm:"column:subnet_id; default:''; NOT NULL"`
 	SubnetCidr              string     `json:"subnet_cidr" gorm:"column:subnet_cidr; default:''; NOT NULL"`
-	PublicKey               string     `json:"public_key" gorm:"column:public_key; default:''; NOT NULL;"`
+	PrivateKey              string     `json:"private_key" gorm:"column:private_key; default:''; NOT NULL;"`
 	GpuSpec                 string     `json:"gpu_spec" gorm:"column:gpu_spec; default:''; NOT NULL"`
 	SystemDisk              int32      `json:"system_disk" gorm:"column:system_disk; default:0; NOT NULL"`
 	DataDisk                int32      `json:"data_disk" gorm:"column:data_disk; default:0; NOT NULL"`

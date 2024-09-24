@@ -51,7 +51,7 @@ func (uc *ClusterInterface) StartReconcile(ctx context.Context) (err error) {
 		}
 		err = uc.clusterUc.Reconcile(ctx, cluster)
 		if err != nil {
-			return err
+			uc.log.Error(err)
 		}
 	}
 }
@@ -527,7 +527,7 @@ func (c *ClusterInterface) bizNodeToNode(bizNode *biz.Node) *v1alpha1.Node {
 		Zone:                    bizNode.Zone,
 		SubnetId:                bizNode.SubnetId,
 		SubnetCidr:              bizNode.SubnetCidr,
-		PublicKey:               bizNode.PublicKey,
+		PublicKey:               bizNode.PrivateKey,
 		GpuSpec:                 bizNode.GpuSpec,
 		SystemDisk:              int32(bizNode.SystemDisk),
 		DataDisk:                int32(bizNode.DataDisk),

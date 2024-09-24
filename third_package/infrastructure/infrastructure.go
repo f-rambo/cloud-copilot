@@ -378,7 +378,7 @@ func (cc *ClusterInfrastructure) distributeShipServer(ctx context.Context, clust
 				node.SshPort = 22
 			}
 			if node.GrpcPort == 0 {
-				node.GrpcPort = 9000
+				node.GrpcPort = 9001
 			}
 
 			// check ship server
@@ -398,28 +398,41 @@ func (cc *ClusterInfrastructure) distributeShipServer(ctx context.Context, clust
 			}
 
 			// get node arch
-			output, err := exec.Command("echo", "uname -m", "|", "ssh", fmt.Sprintf("%s@%s -p %d", node.User, node.InternalIP, node.SshPort),
-				"sudo bash -s").CombinedOutput()
+			remoteBash, err := NewRemoteBash(ctx, node, cc.log)
 			if err != nil {
-				return errors.Wrap(err, string(output))
+				return err
 			}
-			arch := strings.TrimSpace(string(output))
+			defer remoteBash.Close()
+			stdout, stderr, err := remoteBash.Run("uname -m")
+			if err != nil {
+				return err
+			}
+			if stderr != "" {
+				return errors.WithMessage(errors.New(stderr), "run uname -m error")
+			}
+			if stdout == "" {
+				return errors.New("node arch is empty")
+			}
+			arch := strings.TrimSpace(string(stdout))
 			if _, ok := ARCH_MAP[arch]; !ok {
 				return errors.New("node arch is not supported")
 			}
 
 			// get ship arch path
 			shipArchPath := fmt.Sprintf("%s/%s", shipPath, ARCH_MAP[arch])
-			output, err = exec.Command("scp", "-r", "-P", fmt.Sprintf("%d", node.SshPort), shipArchPath,
-				fmt.Sprintf("%s@%s:%s", node.User, node.InternalIP, shipPath)).CombinedOutput()
+			if !utils.IsFileExist(shipArchPath) {
+				return errors.New("ship arch is not exist")
+			}
+			// scp ship arch to node
+			output, err := cc.execCommand("scp", "-r", "-P", fmt.Sprintf("%d", node.SshPort), shipArchPath,
+				fmt.Sprintf("%s@%s:%s", node.User, node.InternalIP, shipPath))
 			if err != nil {
 				return errors.Wrap(err, string(output))
 			}
-			output, err = exec.Command("echo", shipStartScript, "|", "ssh",
-				fmt.Sprintf("%s@%s -p %d", node.User, node.InternalIP, node.SshPort),
-				"sudo bash -s %s", shipPath).CombinedOutput()
+			// run ship start script
+			err = remoteBash.RunShell(shipStartScript)
 			if err != nil {
-				return errors.Wrap(err, string(output))
+				return err
 			}
 			return nil
 		})
