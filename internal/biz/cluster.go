@@ -33,7 +33,7 @@ type Cluster struct {
 	Type                 ClusterType   `json:"type" gorm:"column:type; default:''; NOT NULL;"` //*  aws google cloud azure alicloud local
 	KubeConfig           string        `json:"kube_config" gorm:"column:kube_config; default:''; NOT NULL; type:json"`
 	KeyPair              string        `json:"key_pair" gorm:"column:key_pair; default:''; NOT NULL;"`
-	PublicKey            string        `json:"public_key" gorm:"column:public_key; default:''; NOT NULL;"` // *
+	PublicKey            string        `json:"public_key" gorm:"column:public_key; default:''; NOT NULL;"`
 	PrivateKey           string        `json:"private_key" gorm:"column:private_key; default:''; NOT NULL;"`
 	Region               string        `json:"region" gorm:"column:region; default:''; NOT NULL;"` // *
 	VpcID                string        `json:"vpc_id" gorm:"column:vpc_id; default:''; NOT NULL;"`
@@ -93,7 +93,6 @@ type Node struct {
 	Zone                    string     `json:"zone" gorm:"column:zone; default:''; NOT NULL"`
 	SubnetId                string     `json:"subnet_id" gorm:"column:subnet_id; default:''; NOT NULL"`
 	SubnetCidr              string     `json:"subnet_cidr" gorm:"column:subnet_cidr; default:''; NOT NULL"`
-	PrivateKey              string     `json:"private_key" gorm:"column:private_key; default:''; NOT NULL;"`
 	GpuSpec                 string     `json:"gpu_spec" gorm:"column:gpu_spec; default:''; NOT NULL"`
 	SystemDisk              int32      `json:"system_disk" gorm:"column:system_disk; default:0; NOT NULL"`
 	DataDisk                int32      `json:"data_disk" gorm:"column:data_disk; default:0; NOT NULL"`
@@ -140,6 +139,8 @@ type ClusterInfrastructure interface {
 	Stop(context.Context, *Cluster) error
 	GetRegions(context.Context, *Cluster) ([]string, error)
 	MigrateToBostionHost(context.Context, *Cluster) error
+	DistributeDaemonApp(context.Context, *Cluster) error
+	GetNodesSystemInfo(context.Context, *Cluster) error
 	Install(context.Context, *Cluster) error
 	UnInstall(context.Context, *Cluster) error
 	AddNodes(context.Context, *Cluster, []*Node) error
@@ -569,6 +570,14 @@ func (uc *ClusterUsecase) Reconcile(ctx context.Context, cluster *Cluster) (err 
 				return err
 			}
 			return nil
+		}
+		err = uc.clusterInfrastructure.DistributeDaemonApp(ctx, cluster)
+		if err != nil {
+			return err
+		}
+		err = uc.clusterInfrastructure.GetNodesSystemInfo(ctx, cluster)
+		if err != nil {
+			return err
 		}
 		err = uc.clusterInfrastructure.Install(ctx, cluster)
 		if err != nil {

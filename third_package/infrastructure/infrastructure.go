@@ -2,10 +2,10 @@ package infrastructure
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -59,6 +59,9 @@ func (c *ClusterInfrastructure) GetRegions(ctx context.Context, cluster *biz.Clu
 }
 
 func (c *ClusterInfrastructure) Start(ctx context.Context, cluster *biz.Cluster) (err error) {
+	if !cluster.GetType().IsCloud() {
+		return nil
+	}
 	var startFunc PulumiFunc
 	output := ""
 	switch cluster.GetType() {
@@ -71,21 +74,14 @@ func (c *ClusterInfrastructure) Start(ctx context.Context, cluster *biz.Cluster)
 	case biz.ClusterTypeAWSEks:
 		startFunc = NewAwsCloud(cluster).StartEks
 	}
-	if cluster.Type.IsCloud() {
-		output, err = c.pulumiExec(ctx, cluster, startFunc)
-		if err != nil {
-			return err
-		}
-		err = c.parseOutput(cluster, output)
-		if err != nil {
-			return err
-		}
+	if startFunc == nil {
+		return errors.New("not supported cluster type")
 	}
-	err = c.distributeShipServer(ctx, cluster)
+	output, err = c.pulumiExec(ctx, cluster, startFunc)
 	if err != nil {
 		return err
 	}
-	err = c.getNodesInformation(ctx, cluster)
+	err = c.parseOutput(cluster, output)
 	if err != nil {
 		return err
 	}
@@ -104,14 +100,6 @@ func (c *ClusterInfrastructure) Stop(ctx context.Context, cluster *biz.Cluster) 
 }
 
 func (cc *ClusterInfrastructure) MigrateToBostionHost(ctx context.Context, cluster *biz.Cluster) error {
-	oceanAppVersion, err := utils.GetFromContextByKey(ctx, "version")
-	if err != nil {
-		return err
-	}
-	shipAppVersion, err := utils.GetFromContextByKey(ctx, "ship_version")
-	if err != nil {
-		return err
-	}
 	if cluster.BostionHost.User == "" {
 		return errors.New("bostion host username is empty")
 	}
@@ -121,19 +109,23 @@ func (cc *ClusterInfrastructure) MigrateToBostionHost(ctx context.Context, clust
 	if cluster.BostionHost.SshPort == 0 {
 		cluster.BostionHost.SshPort = 22
 	}
-	// check bostion host ssh connection
-	output, err := cc.execCommand("ssh", "-o", "StrictHostKeyChecking=no",
-		fmt.Sprintf("%s@%s", cluster.BostionHost.User, cluster.BostionHost.ExternalIP), "-p",
-		fmt.Sprintf("%d", cluster.BostionHost.SshPort), "sudo echo", "1")
+	remoteBash, err := NewRemoteBash(ctx, Server{
+		Name:       "bostion host",
+		Host:       cluster.BostionHost.ExternalIP,
+		User:       cluster.BostionHost.User,
+		Port:       cluster.BostionHost.SshPort,
+		PrivateKey: cluster.PrivateKey,
+	}, cc.log)
 	if err != nil {
-		return errors.Wrap(err, output)
+		return err
 	}
+	defer remoteBash.Close()
 	if cluster.BostionHost.ARCH == "" {
-		output, err := cc.execCommand("ssh", fmt.Sprintf("%s@%s", cluster.BostionHost.User, cluster.BostionHost.ExternalIP), "-p", fmt.Sprintf("%d", cluster.BostionHost.SshPort), "sudo uname -m")
+		stdout, err := remoteBash.Run("uname -m")
 		if err != nil {
-			return errors.Wrap(err, output)
+			return err
 		}
-		arch := strings.TrimSpace(output)
+		arch := strings.TrimSpace(stdout)
 		if _, ok := ARCH_MAP[arch]; !ok {
 			return errors.New("bostion host arch is not supported")
 		}
@@ -145,38 +137,37 @@ func (cc *ClusterInfrastructure) MigrateToBostionHost(ctx context.Context, clust
 		return err
 	}
 	// packing and storing files, this is ocean data and resources
-	output, err = cc.execCommand("tar", "-czvf", oceanDataTargzPackagePath, "-C", filepath.Dir(currentOceanFilePath), utils.PackageStoreDirName)
+	err = cc.runCommandWithLogging("tar", "-czvf", oceanDataTargzPackagePath, "-C", filepath.Dir(currentOceanFilePath), utils.PackageStoreDirName)
 	if err != nil {
-		return errors.Wrap(err, output)
+		return err
 	}
 	// .ocean package generating sha256sum
-	output, err = cc.execCommand("sha256sum", oceanDataTargzPackagePath)
+	stdout, err := cc.execCommand("sha256sum", oceanDataTargzPackagePath)
 	if err != nil {
-		return errors.Wrap(err, output)
+		return err
 	}
-	err = os.WriteFile(oceanDataTsha256sumFilePath, []byte(output), 0644)
+	err = os.WriteFile(oceanDataTsha256sumFilePath, []byte(stdout), 0644)
 	if err != nil {
 		return errors.Wrap(err, "failed to write sha256sum file")
 	}
 	// scp .ocean package to bostion host
-	output, err = cc.execCommand("scp", "-r", "-P", fmt.Sprintf("%d", cluster.BostionHost.SshPort), oceanDataTargzPackagePath,
+	err = cc.runCommandWithLogging("scp", "-r", "-P", fmt.Sprintf("%d", cluster.BostionHost.SshPort), oceanDataTargzPackagePath,
 		fmt.Sprintf("%s@%s:%s", cluster.BostionHost.User, cluster.BostionHost.ExternalIP, oceanDataTargzPackagePath))
-	if err != nil {
-		return errors.Wrap(err, output)
-	}
-	// scp .ocean package sha256sum to bostion host
-	output, err = cc.execCommand("scp", "-r", "-P", fmt.Sprintf("%d", cluster.BostionHost.SshPort), oceanDataTsha256sumFilePath,
-		fmt.Sprintf("%s@%s:%s", cluster.BostionHost.User, cluster.BostionHost.ExternalIP, oceanDataTsha256sumFilePath))
-	if err != nil {
-		return errors.Wrap(err, output)
-	}
-	// install ocean and ship to bostion host
-	err = cc.runCommandWithLogging("echo", installScript, "|", "ssh",
-		fmt.Sprintf("%s@%s -p %d", cluster.BostionHost.User, cluster.BostionHost.ExternalIP, cluster.BostionHost.SshPort),
-		"sudo bash -s %s %s %s", cluster.BostionHost.ARCH, oceanAppVersion, shipAppVersion)
 	if err != nil {
 		return err
 	}
+	// scp .ocean package sha256sum to bostion host
+	err = cc.runCommandWithLogging("scp", "-r", "-P", fmt.Sprintf("%d", cluster.BostionHost.SshPort), oceanDataTsha256sumFilePath,
+		fmt.Sprintf("%s@%s:%s", cluster.BostionHost.User, cluster.BostionHost.ExternalIP, oceanDataTsha256sumFilePath))
+	if err != nil {
+		return err
+	}
+	// install ocean and ship to bostion host
+	err = remoteBash.RunWithLogging(installScript, cluster.BostionHost.ARCH, cc.c.Server.Version, cc.c.Server.ShipVersion)
+	if err != nil {
+		return err
+	}
+
 	// grpc check bostion host data and resources
 	conn, err := grpc.DialInsecure(
 		ctx,
@@ -196,8 +187,8 @@ func (cc *ClusterInfrastructure) MigrateToBostionHost(ctx context.Context, clust
 	}
 	_, err = client.CheckBostionHost(ctx, &clusterv1alpha1.CheckBostionHostRequest{
 		Arch:                               cluster.BostionHost.ARCH,
-		OceanVersion:                       oceanAppVersion,
-		ShipVersion:                        shipAppVersion,
+		OceanVersion:                       cc.c.Server.Version,
+		ShipVersion:                        cc.c.Server.ShipVersion,
 		OceanDataTarGzPackagePath:          oceanDataTargzPackagePath,
 		OceanDataTarGzPackageSha256SumPath: oceanDataTsha256sumFilePath,
 		OceanPath:                          oceanPath,
@@ -361,7 +352,7 @@ func (cc *ClusterInfrastructure) RemoveNodes(ctx context.Context, cluster *biz.C
 }
 
 // Distribute the “ship server” to each node in the bostion host
-func (cc *ClusterInfrastructure) distributeShipServer(ctx context.Context, cluster *biz.Cluster) error {
+func (cc *ClusterInfrastructure) DistributeDaemonApp(ctx context.Context, cluster *biz.Cluster) error {
 	errGroup, _ := errgroup.WithContext(ctx)
 	for _, node := range cluster.Nodes {
 		node := node
@@ -398,20 +389,20 @@ func (cc *ClusterInfrastructure) distributeShipServer(ctx context.Context, clust
 			}
 
 			// get node arch
-			remoteBash, err := NewRemoteBash(ctx, node, cc.log)
+			remoteBash, err := NewRemoteBash(ctx, Server{
+				Name:       node.Name,
+				Host:       node.InternalIP,
+				User:       node.User,
+				Port:       node.SshPort,
+				PrivateKey: cluster.PrivateKey,
+			}, cc.log)
 			if err != nil {
 				return err
 			}
 			defer remoteBash.Close()
-			stdout, stderr, err := remoteBash.Run("uname -m")
+			stdout, err := remoteBash.Run("uname -m")
 			if err != nil {
 				return err
-			}
-			if stderr != "" {
-				return errors.WithMessage(errors.New(stderr), "run uname -m error")
-			}
-			if stdout == "" {
-				return errors.New("node arch is empty")
 			}
 			arch := strings.TrimSpace(string(stdout))
 			if _, ok := ARCH_MAP[arch]; !ok {
@@ -430,7 +421,7 @@ func (cc *ClusterInfrastructure) distributeShipServer(ctx context.Context, clust
 				return errors.Wrap(err, string(output))
 			}
 			// run ship start script
-			err = remoteBash.RunShell(shipStartScript)
+			err = remoteBash.RunWithLogging(shipStartScript)
 			if err != nil {
 				return err
 			}
@@ -444,7 +435,7 @@ func (cc *ClusterInfrastructure) distributeShipServer(ctx context.Context, clust
 	return nil
 }
 
-func (cc *ClusterInfrastructure) getNodesInformation(ctx context.Context, cluster *biz.Cluster) error {
+func (cc *ClusterInfrastructure) GetNodesSystemInfo(ctx context.Context, cluster *biz.Cluster) error {
 	errGroup, ctx := errgroup.WithContext(ctx)
 	for _, node := range cluster.Nodes {
 		nodegroup := cluster.GetNodeGroup(node.NodeGroupID)
@@ -625,16 +616,32 @@ func (c *ClusterInfrastructure) Write(content []byte) (n int, err error) {
 // exec command
 func (c *ClusterInfrastructure) execCommand(command string, args ...string) (output string, err error) {
 	c.log.Info("exec command: ", fmt.Sprintf("%s %s", command, strings.Join(args, " ")))
-	outputBytes, err := exec.Command(command, args...).CombinedOutput()
+
+	cmd := exec.Command(command, args...)
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	err = cmd.Run()
+
+	stdoutStr := stdout.String()
+	stderrStr := stderr.String()
+
 	if err != nil {
-		return "", errors.Wrap(err, string(outputBytes))
+		return "", errors.Wrapf(err, "command failed: %s\nstdout: %s\nstderr: %s", command, stdoutStr, stderrStr)
 	}
-	return string(outputBytes), err
+
+	if stderrStr != "" {
+		return stdoutStr, errors.WithMessage(errors.New(stderrStr), "command failed")
+	}
+
+	return stdoutStr, nil
 }
 
 func (c *ClusterInfrastructure) runCommandWithLogging(command string, args ...string) error {
 	c.log.Info("exec command: ", fmt.Sprintf("%s %s", command, strings.Join(args, " ")))
 	cmd := exec.Command(command, args...)
+
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		return errors.Wrap(err, "failed to get stdout pipe")
@@ -643,18 +650,40 @@ func (c *ClusterInfrastructure) runCommandWithLogging(command string, args ...st
 	if err != nil {
 		return errors.Wrap(err, "failed to get stderr pipe")
 	}
+
 	if err := cmd.Start(); err != nil {
 		return errors.Wrap(err, "failed to start command")
 	}
+
+	var stderrBuffer bytes.Buffer
+
+	// use scanner to read stdout
 	go func() {
-		scanner := bufio.NewScanner(io.MultiReader(stdout, stderr))
+		scanner := bufio.NewScanner(stdout)
 		for scanner.Scan() {
 			c.log.Info(scanner.Text())
 		}
 	}()
+
+	// use scanner to read stderr
+	go func() {
+		scanner := bufio.NewScanner(stderr)
+		for scanner.Scan() {
+			line := scanner.Text()
+			c.log.Error("command failed: ", line)
+			stderrBuffer.WriteString(line + "\n")
+		}
+	}()
+
 	if err := cmd.Wait(); err != nil {
 		return errors.Wrap(err, "command failed")
 	}
+
+	// if stderr is not empty, return error
+	if stderrBuffer.Len() > 0 {
+		return errors.Errorf("command wrote to stderr: %s", stderrBuffer.String())
+	}
+
 	return nil
 }
 

@@ -527,7 +527,6 @@ func (c *ClusterInterface) bizNodeToNode(bizNode *biz.Node) *v1alpha1.Node {
 		Zone:                    bizNode.Zone,
 		SubnetId:                bizNode.SubnetId,
 		SubnetCidr:              bizNode.SubnetCidr,
-		PublicKey:               bizNode.PrivateKey,
 		GpuSpec:                 bizNode.GpuSpec,
 		SystemDisk:              int32(bizNode.SystemDisk),
 		DataDisk:                int32(bizNode.DataDisk),

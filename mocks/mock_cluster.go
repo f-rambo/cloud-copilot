@@ -174,6 +174,34 @@ func (mr *MockClusterInfrastructureMockRecorder) AddNodes(arg0, arg1, arg2 inter
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddNodes", reflect.TypeOf((*MockClusterInfrastructure)(nil).AddNodes), arg0, arg1, arg2)
 }
 
+// DistributeDaemonApp mocks base method.
+func (m *MockClusterInfrastructure) DistributeDaemonApp(arg0 context.Context, arg1 *biz.Cluster) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DistributeDaemonApp", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DistributeDaemonApp indicates an expected call of DistributeDaemonApp.
+func (mr *MockClusterInfrastructureMockRecorder) DistributeDaemonApp(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DistributeDaemonApp", reflect.TypeOf((*MockClusterInfrastructure)(nil).DistributeDaemonApp), arg0, arg1)
+}
+
+// GetNodesSystemInfo mocks base method.
+func (m *MockClusterInfrastructure) GetNodesSystemInfo(arg0 context.Context, arg1 *biz.Cluster) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetNodesSystemInfo", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// GetNodesSystemInfo indicates an expected call of GetNodesSystemInfo.
+func (mr *MockClusterInfrastructureMockRecorder) GetNodesSystemInfo(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNodesSystemInfo", reflect.TypeOf((*MockClusterInfrastructure)(nil).GetNodesSystemInfo), arg0, arg1)
+}
+
 // GetRegions mocks base method.
 func (m *MockClusterInfrastructure) GetRegions(arg0 context.Context, arg1 *biz.Cluster) ([]string, error) {
 	m.ctrl.T.Helper()
