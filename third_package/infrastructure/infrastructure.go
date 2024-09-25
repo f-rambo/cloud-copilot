@@ -45,7 +45,7 @@ func NewClusterInfrastructure(c *conf.Bootstrap, logger log.Logger) biz.ClusterI
 }
 
 func (c *ClusterInfrastructure) GetRegions(ctx context.Context, cluster *biz.Cluster) ([]string, error) {
-	switch cluster.GetType() {
+	switch cluster.Type {
 	case biz.ClusterTypeAliCloudEcs:
 		return NewAlicloud(cluster).GetRegions()
 	case biz.ClusterTypeAliCloudAks:
@@ -59,12 +59,12 @@ func (c *ClusterInfrastructure) GetRegions(ctx context.Context, cluster *biz.Clu
 }
 
 func (c *ClusterInfrastructure) Start(ctx context.Context, cluster *biz.Cluster) (err error) {
-	if !cluster.GetType().IsCloud() {
+	if !cluster.Type.IsCloud() {
 		return nil
 	}
 	var startFunc PulumiFunc
 	output := ""
-	switch cluster.GetType() {
+	switch cluster.Type {
 	case biz.ClusterTypeAliCloudEcs:
 		startFunc = NewAlicloud(cluster).Start
 	case biz.ClusterTypeAliCloudAks:
@@ -89,7 +89,7 @@ func (c *ClusterInfrastructure) Start(ctx context.Context, cluster *biz.Cluster)
 }
 
 func (c *ClusterInfrastructure) Stop(ctx context.Context, cluster *biz.Cluster) error {
-	if !cluster.GetType().IsCloud() {
+	if !cluster.Type.IsCloud() {
 		return nil
 	}
 	_, err := c.pulumiExec(ctx, cluster, CleanFunc)

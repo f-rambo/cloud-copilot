@@ -2,7 +2,6 @@ package biz
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -52,6 +51,85 @@ type Cluster struct {
 	gorm.Model
 }
 
+var ErrClusterNotFound error = errors.New("cluster not found")
+
+type ClusterType string
+
+const (
+	ClusterTypeLocal       ClusterType = "local"
+	ClusterTypeAWSEc2      ClusterType = "aws_ec2"
+	ClusterTypeAWSEks      ClusterType = "aws_eks"
+	ClusterTypeAliCloudEcs ClusterType = "alicloud_ecs"
+	ClusterTypeAliCloudAks ClusterType = "alicloud_aks"
+)
+
+func (c ClusterType) String() string {
+	return string(c)
+}
+
+func ClusterTypes() []ClusterType {
+	return []ClusterType{
+		ClusterTypeLocal,
+		ClusterTypeAWSEc2,
+		ClusterTypeAWSEks,
+		ClusterTypeAliCloudEcs,
+		ClusterTypeAliCloudAks,
+	}
+}
+
+type ClusterStatus uint8
+
+func (s ClusterStatus) Uint8() uint8 {
+	return uint8(s)
+}
+
+const (
+	ClusterStatusUnspecified ClusterStatus = 0
+	ClusterStatusRunning     ClusterStatus = 1
+	ClusterStatusDeleted     ClusterStatus = 2
+	ClusterStatusStarting    ClusterStatus = 3
+	ClusterStatusStopping    ClusterStatus = 4
+)
+
+var (
+	ClusterStatusName = map[uint8]string{
+		0: "unspecified",
+		1: "running",
+		2: "deleted",
+		3: "starting",
+		4: "stopping",
+	}
+	ClusterStatusValue = map[string]uint8{
+		"unspecified": 0,
+		"running":     1,
+		"deleted":     2,
+		"starting":    3,
+		"stopping":    4,
+	}
+)
+
+func (c ClusterType) IsCloud() bool {
+	return c != ClusterTypeLocal
+}
+
+func (c ClusterType) IsIntegratedCloud() bool {
+	return c == ClusterTypeAWSEks || c == ClusterTypeAliCloudAks
+}
+
+func isClusterEmpty(c *Cluster) bool {
+	if c == nil {
+		return true
+	}
+	if c.ID == 0 {
+		return true
+	}
+	return false
+}
+
+func (c *Cluster) IsDeleteed() bool {
+	return c.DeletedAt.Valid
+}
+
 type NodeGroup struct {
 	ID               string        `json:"id" gorm:"column:id;primaryKey; NOT NULL"`
 	Name             string        `json:"name" gorm:"column:name; default:''; NOT NULL"`
@@ -71,6 +149,64 @@ type NodeGroup struct {
 	SystemDisk       int32         `json:"system_disk" gorm:"column:system_disk; default:0; NOT NULL"`
 	DataDisk         int32         `json:"data_disk" gorm:"column:data_disk; default:0; NOT NULL"`
 	ClusterID        int64         `json:"cluster_id" gorm:"column:cluster_id; default:0; NOT NULL"`
+}
+
+type NodeGroupType string
+
+func (n NodeGroupType) String() string {
+	return string(n)
+}
+
+const (
+	NodeGroupTypeNormal          NodeGroupType = "normal"
+	NodeGroupTypeHighComputation NodeGroupType = "highComputation"
+	NodeGroupTypeGPUAcceleraterd NodeGroupType = "gpuAcceleraterd"
+	NodeGroupTypeHighMemory      NodeGroupType = "highMemory"
+	NodeGroupTypeLargeHardDisk   NodeGroupType = "largeHardDisk"
+)
+
+func (c *Cluster) NewNodeGroup() *NodeGroup {
+	return &NodeGroup{
+		ID:        uuid.New().String(),
+		ClusterID: c.ID,
+	}
+}
+
+func (ng *NodeGroup) SetTargetSize(size int32) {
+	ng.TargetSize = size
+}
+
+type NodeGroups []*NodeGroup
+
+func (n NodeGroups) Len() int {
+	return len(n)
+}
+
+func (n NodeGroups) Swap(i, j int) {
+	n[i], n[j] = n[j], n[i]
+}
+
+func (n NodeGroups) Less(i, j int) bool {
+	if n[i] == nil || n[j] == nil {
+		return false
+	}
+	if n[i].Memory == n[j].Memory {
+		return n[i].CPU < n[j].CPU
+	}
+	return n[i].Memory < n[j].Memory
+}
+
+func (c *Cluster) GetNodeGroup(nodeGroupId string) *NodeGroup {
+	for _, nodeGroup := range c.NodeGroups {
+		if nodeGroup.ID == nodeGroupId {
+			return nodeGroup
+		}
+	}
+	return nil
+}
+
+func (c *Cluster) GenerateNodeGroupName(nodeGroup *NodeGroup) {
+	nodeGroup.Name = strings.Join([]string{c.Name, nodeGroup.Type.String()}, "-")
 }
 
 type Node struct {
@@ -103,6 +239,50 @@ type Node struct {
 	NodeGroupID             string     `json:"node_group_id" gorm:"column:node_group_id; default:''; NOT NULL"`
 	gorm.Model
 }
+
+type NodeRole string
+
+const (
+	NodeRoleMaster NodeRole = "master"
+	NodeRoleWorker NodeRole = "worker"
+	NodeRoleEdge   NodeRole = "edge"
+)
+
+func (n NodeRole) String() string {
+	return string(n)
+}
+
+type NodeStatus uint8
+
+const (
+	// an Unspecified instanceState means the actual instance status is undefined (nil).
+	NodeStatusUnspecified NodeStatus = 0
+	// NodeStatusRunning means instance is running.
+	NodeStatusRunning NodeStatus = 1
+	// NodeStatusCreating means instance is being created.
+	NodeStatusCreating NodeStatus = 2
+	// NodeStatusDeleting means instance is being deleted.
+	NodeStatusDeleting NodeStatus = 3
+)
+
+func (s NodeStatus) Uint8() uint8 {
+	return uint8(s)
+}
+
+var (
+	NodeStatusName = map[uint8]string{
+		0: "unspecified",
+		1: "instanceRunning",
+		2: "instanceCreating",
+		3: "instanceDeleting",
+	}
+	NodeStatusValue = map[string]uint8{
+		"unspecified":      0,
+		"instanceRunning":  1,
+		"instanceCreating": 2,
+		"instanceDeleting": 3,
+	}
+)
 
 type BostionHost struct {
 	ID           int64   `json:"id" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
@@ -149,231 +329,6 @@ type ClusterInfrastructure interface {
 
 type ClusterRuntime interface {
 	CurrentCluster(context.Context, *Cluster) error
-}
-
-var ErrClusterNotFound error = errors.New("cluster not found")
-
-type ClusterType string
-
-const (
-	ClusterTypeLocal       ClusterType = "local"
-	ClusterTypeAWSEc2      ClusterType = "aws_ec2"
-	ClusterTypeAWSEks      ClusterType = "aws_eks"
-	ClusterTypeAliCloudEcs ClusterType = "alicloud_ecs"
-	ClusterTypeAliCloudAks ClusterType = "alicloud_aks"
-)
-
-func (c ClusterType) String() string {
-	return string(c)
-}
-
-func (c ClusterType) IsCloud() bool {
-	return c != ClusterTypeLocal
-}
-
-func (c ClusterType) IsIntegratedCloud() bool {
-	return c == ClusterTypeAWSEks || c == ClusterTypeAliCloudAks
-}
-
-func ClusterTypes() []ClusterType {
-	return []ClusterType{
-		ClusterTypeLocal,
-		ClusterTypeAWSEc2,
-		ClusterTypeAWSEks,
-		ClusterTypeAliCloudEcs,
-		ClusterTypeAliCloudAks,
-	}
-}
-
-type ClusterStatus uint8
-
-func (s ClusterStatus) Uint8() uint8 {
-	return uint8(s)
-}
-
-const (
-	ClusterStatusUnspecified ClusterStatus = 0
-	ClusterStatusRunning     ClusterStatus = 1
-	ClusterStatusDeleted     ClusterStatus = 2
-	ClusterStatusStarting    ClusterStatus = 3
-	ClusterStatusStopping    ClusterStatus = 4
-)
-
-var (
-	ClusterStatusName = map[uint8]string{
-		0: "unspecified",
-		1: "running",
-		2: "deleted",
-		3: "starting",
-		4: "stopping",
-	}
-	ClusterStatusValue = map[string]uint8{
-		"unspecified": 0,
-		"running":     1,
-		"deleted":     2,
-		"starting":    3,
-		"stopping":    4,
-	}
-)
-
-type NodeGroups []*NodeGroup
-
-func (n NodeGroups) Len() int {
-	return len(n)
-}
-
-func (n NodeGroups) Swap(i, j int) {
-	n[i], n[j] = n[j], n[i]
-}
-
-// 从小到大排序
-func (n NodeGroups) Less(i, j int) bool {
-	if n[i] == nil || n[j] == nil {
-		return false
-	}
-	if n[i].Memory == n[j].Memory {
-		return n[i].CPU < n[j].CPU
-	}
-	return n[i].Memory < n[j].Memory
-}
-
-type NodeGroupType string
-
-func (n NodeGroupType) String() string {
-	return string(n)
-}
-
-const (
-	NodeGroupTypeNormal          NodeGroupType = "normal"
-	NodeGroupTypeHighComputation NodeGroupType = "highComputation"
-	NodeGroupTypeGPUAcceleraterd NodeGroupType = "gpuAcceleraterd"
-	NodeGroupTypeHighMemory      NodeGroupType = "highMemory"
-	NodeGroupTypeLargeHardDisk   NodeGroupType = "largeHardDisk"
-)
-
-type NodeSize int32
-
-func (n NodeSize) Int32() int32 {
-	return int32(n)
-}
-
-func (n NodeSize) Int() int {
-	return int(n)
-}
-
-const (
-	NodeMinSize NodeSize = 5
-)
-
-type NodeRole string
-
-const (
-	NodeRoleMaster NodeRole = "master"
-	NodeRoleWorker NodeRole = "worker"
-	NodeRoleEdge   NodeRole = "edge"
-)
-
-func (n NodeRole) String() string {
-	return string(n)
-}
-
-type NodeStatus uint8
-
-const (
-	// an Unspecified instanceState means the actual instance status is undefined (nil).
-	NodeStatusUnspecified NodeStatus = 0
-	// NodeStatusRunning means instance is running.
-	NodeStatusRunning NodeStatus = 1
-	// NodeStatusCreating means instance is being created.
-	NodeStatusCreating NodeStatus = 2
-	// NodeStatusDeleting means instance is being deleted.
-	NodeStatusDeleting NodeStatus = 3
-)
-
-func (s NodeStatus) Uint8() uint8 {
-	return uint8(s)
-}
-
-var (
-	NodeStatusName = map[uint8]string{
-		0: "unspecified",
-		1: "instanceRunning",
-		2: "instanceCreating",
-		3: "instanceDeleting",
-	}
-	NodeStatusValue = map[string]uint8{
-		"unspecified":      0,
-		"instanceRunning":  1,
-		"instanceCreating": 2,
-		"instanceDeleting": 3,
-	}
-)
-
-func (c *Cluster) generateNodeLables(nodeGroup *NodeGroup) string {
-	lableMap := make(map[string]string)
-	lableMap["cluster"] = c.Name
-	lableMap["cluster_type"] = c.Type.String()
-	lableMap["region"] = c.Region
-	lableMap["nodegroup"] = nodeGroup.Name
-	lableMap["nodegroup_type"] = nodeGroup.Type.String()
-	lableMap["instance_type"] = nodeGroup.InstanceType
-	lablebytes, _ := json.Marshal(lableMap)
-	return string(lablebytes)
-}
-
-func isClusterEmpty(c *Cluster) bool {
-	if c == nil {
-		return true
-	}
-	if c.ID == 0 {
-		return true
-	}
-	return false
-}
-
-func (c *Cluster) IsDeleteed() bool {
-	return c.DeletedAt.Valid
-}
-
-func (c *Cluster) GetNode(nodeId int64) *Node {
-	for _, node := range c.Nodes {
-		if node.ID == nodeId {
-			return node
-		}
-	}
-	return nil
-}
-
-func (ng *NodeGroup) SetTargetSize(size int32) {
-	ng.TargetSize = size
-}
-
-func (c *Cluster) GetType() ClusterType {
-	return ClusterType(c.Type)
-}
-
-func (n *Node) GetStatus() NodeStatus {
-	return NodeStatus(n.Status)
-}
-
-func (c *Cluster) GetNodeGroup(nodeGroupId string) *NodeGroup {
-	for _, nodeGroup := range c.NodeGroups {
-		if nodeGroup.ID == nodeGroupId {
-			return nodeGroup
-		}
-	}
-	return nil
-}
-
-func (c *Cluster) GenerateNodeGroupName(nodeGroup *NodeGroup) {
-	nodeGroup.Name = strings.Join([]string{c.Name, nodeGroup.Type.String()}, "-")
-}
-
-func (c *Cluster) NewNodeGroup() *NodeGroup {
-	return &NodeGroup{
-		ID:        uuid.New().String(),
-		ClusterID: c.ID,
-	}
 }
 
 type ClusterUsecase struct {
@@ -449,88 +404,6 @@ func (uc *ClusterUsecase) GetRegions(ctx context.Context, cluster *Cluster) ([]s
 	return uc.clusterInfrastructure.GetRegions(ctx, cluster)
 }
 
-// 获取当前集群最新信息
-func (uc *ClusterUsecase) GetCurrentCluster(ctx context.Context) (*Cluster, error) {
-	cluster := &Cluster{}
-	err := uc.clusterRuntime.CurrentCluster(ctx, cluster)
-	if err != nil {
-		return nil, err
-	}
-	return cluster, nil
-}
-
-// 根据nodegroup增加节点
-func (uc *ClusterUsecase) NodeGroupIncreaseSize(ctx context.Context, cluster *Cluster, nodeGroup *NodeGroup, size int32) error {
-	for i := 0; i < int(size); i++ {
-		node := &Node{
-			Name:        fmt.Sprintf("%s-%s", cluster.Name, utils.GetRandomString()),
-			Role:        NodeRoleWorker,
-			Status:      NodeStatusCreating,
-			ClusterID:   cluster.ID,
-			NodeGroupID: nodeGroup.ID,
-		}
-		cluster.Nodes = append(cluster.Nodes, node)
-	}
-	return uc.Apply(ctx, cluster)
-}
-
-// 删除节点
-func (uc *ClusterUsecase) DeleteNodes(ctx context.Context, cluster *Cluster, nodes []*Node) error {
-	for _, node := range nodes {
-		for i, n := range cluster.Nodes {
-			if n.ID == node.ID {
-				cluster.Nodes = append(cluster.Nodes[:i], cluster.Nodes[i+1:]...)
-				break
-			}
-		}
-	}
-	return uc.Apply(ctx, cluster)
-}
-
-// 预测一个节点配置，也就是根据当前节点组目前还可以配置的节点
-func (uc *ClusterUsecase) NodeGroupTemplateNodeInfo(ctx context.Context, cluster *Cluster, nodeGroup *NodeGroup) (*Node, error) {
-	return &Node{
-		Name:        fmt.Sprintf("%s-%s", cluster.Name, utils.GetRandomString()),
-		Role:        NodeRoleWorker,
-		Status:      NodeStatusCreating,
-		ClusterID:   cluster.ID,
-		NodeGroupID: nodeGroup.ID,
-		Labels:      cluster.generateNodeLables(nodeGroup),
-	}, nil
-}
-
-// 在云提供商销毁前清理打开的资源，例如协程等
-func (uc *ClusterUsecase) Cleanup(ctx context.Context) error {
-	return nil
-}
-
-// 在每个主循环前调用，用于动态更新云提供商状态
-func (uc *ClusterUsecase) Refresh(ctx context.Context) error {
-	// 获取当前集群状态更新状态
-	cluster := &Cluster{}
-	err := uc.clusterRuntime.CurrentCluster(ctx, cluster)
-	if err != nil {
-		return err
-	}
-	cluster, err = uc.clusterRepo.GetByName(ctx, cluster.Name)
-	if err != nil {
-		return err
-	}
-	for _, v := range cluster.Nodes {
-		for _, currentNode := range cluster.Nodes {
-			if v.Name == currentNode.Name {
-				v.Status = currentNode.Status
-				break
-			}
-		}
-	}
-	err = uc.Save(ctx, cluster)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 func (uc *ClusterUsecase) Apply(ctx context.Context, cluster *Cluster) error {
 	return uc.clusterRepo.Put(ctx, cluster)
 }
@@ -559,31 +432,7 @@ func (uc *ClusterUsecase) Reconcile(ctx context.Context, cluster *Cluster) (err 
 	}
 	err = uc.clusterRuntime.CurrentCluster(ctx, cluster)
 	if errors.Is(err, ErrClusterNotFound) {
-		uc.settingSpecifications(cluster)
-		err = uc.clusterInfrastructure.Start(ctx, cluster)
-		if err != nil {
-			return err
-		}
-		if uc.conf.Server.GetEnv() == conf.EnvLocal {
-			err = uc.clusterInfrastructure.MigrateToBostionHost(ctx, cluster)
-			if err != nil {
-				return err
-			}
-			return nil
-		}
-		err = uc.clusterInfrastructure.DistributeDaemonApp(ctx, cluster)
-		if err != nil {
-			return err
-		}
-		err = uc.clusterInfrastructure.GetNodesSystemInfo(ctx, cluster)
-		if err != nil {
-			return err
-		}
-		err = uc.clusterInfrastructure.Install(ctx, cluster)
-		if err != nil {
-			return err
-		}
-		return nil
+		return uc.handlerClusterNotInstalled(ctx, cluster)
 	}
 	if err != nil {
 		return err
@@ -603,38 +452,36 @@ func (uc *ClusterUsecase) Reconcile(ctx context.Context, cluster *Cluster) (err 
 	return
 }
 
-// Setting specifications
-func (uc *ClusterUsecase) settingSpecifications(cluster *Cluster) {
-	if !cluster.Type.IsCloud() {
-		return
+func (uc *ClusterUsecase) handlerClusterNotInstalled(ctx context.Context, cluster *Cluster) error {
+	uc.settingSpecifications(cluster)
+	err := uc.clusterInfrastructure.Start(ctx, cluster)
+	if err != nil {
+		return err
 	}
-	nodegroup := cluster.NewNodeGroup()
-	nodegroup.Type = NodeGroupTypeNormal
-	cluster.GenerateNodeGroupName(nodegroup)
-	nodegroup.CPU = 4
-	nodegroup.Memory = 8
-	nodegroup.TargetSize = 5
-	nodegroup.MinSize = 1
-	nodegroup.MaxSize = 10
-	cluster.NodeGroups = append(cluster.NodeGroups, nodegroup)
-	if cluster.Type.IsIntegratedCloud() {
-		return
-	}
-	for i := 0; i < int(nodegroup.TargetSize); i++ {
-		node := &Node{
-			Name:        fmt.Sprintf("%s-%s", cluster.Name, utils.GetRandomString()),
-			Status:      NodeStatusCreating,
-			ClusterID:   cluster.ID,
-			NodeGroupID: nodegroup.ID,
+	if uc.conf.Server.GetEnv() == conf.EnvLocal {
+		err = uc.clusterRepo.Save(ctx, cluster)
+		if err != nil {
+			return err
 		}
-		if i < 3 {
-			node.Role = NodeRoleMaster
-		} else {
-			node.Role = NodeRoleWorker
+		err = uc.clusterInfrastructure.MigrateToBostionHost(ctx, cluster)
+		if err != nil {
+			return err
 		}
-		node.Labels = cluster.generateNodeLables(nodegroup)
-		cluster.Nodes = append(cluster.Nodes, node)
+		return nil
 	}
+	err = uc.clusterInfrastructure.DistributeDaemonApp(ctx, cluster)
+	if err != nil {
+		return err
+	}
+	err = uc.clusterInfrastructure.GetNodesSystemInfo(ctx, cluster)
+	if err != nil {
+		return err
+	}
+	err = uc.clusterInfrastructure.Install(ctx, cluster)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (uc *ClusterUsecase) handlerAddNode(ctx context.Context, cluster *Cluster) error {
@@ -683,4 +530,38 @@ func (uc *ClusterUsecase) handlerRemoveNode(ctx context.Context, cluster *Cluste
 	}
 	cluster.Nodes = newNodes
 	return nil
+}
+
+// Setting specifications
+func (uc *ClusterUsecase) settingSpecifications(cluster *Cluster) {
+	if !cluster.Type.IsCloud() {
+		return
+	}
+	nodegroup := cluster.NewNodeGroup()
+	nodegroup.Type = NodeGroupTypeNormal
+	cluster.GenerateNodeGroupName(nodegroup)
+	nodegroup.CPU = 4
+	nodegroup.Memory = 8
+	nodegroup.TargetSize = 5
+	nodegroup.MinSize = 1
+	nodegroup.MaxSize = 10
+	cluster.NodeGroups = append(cluster.NodeGroups, nodegroup)
+	if cluster.Type.IsIntegratedCloud() {
+		return
+	}
+	for i := 0; i < int(nodegroup.TargetSize); i++ {
+		node := &Node{
+			Name:        fmt.Sprintf("%s-%s", cluster.Name, utils.GetRandomString()),
+			Status:      NodeStatusCreating,
+			ClusterID:   cluster.ID,
+			NodeGroupID: nodegroup.ID,
+		}
+		if i < 3 {
+			node.Role = NodeRoleMaster
+		} else {
+			node.Role = NodeRoleWorker
+		}
+		node.Labels = cluster.generateNodeLables(nodegroup)
+		cluster.Nodes = append(cluster.Nodes, node)
+	}
 }
