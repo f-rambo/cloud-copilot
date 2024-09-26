@@ -1,5 +1,5 @@
 server:
-  debug: false
+  debug: true
   env: local
   name: ocean
   cluster_name: ocean

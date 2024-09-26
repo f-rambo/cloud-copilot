@@ -11,10 +11,11 @@ message ClusterArgs {
     string type = 3 [json_name = "type"];
     string public_key = 4 [json_name = "public_key"];
     string region = 5 [json_name = "region"];
-    string access_key_id = 6 [json_name = "access_key_id"];
-    string secret_access_key = 7 [json_name = "secret_access_key"];
+    string access_id = 6 [json_name = "access_id"];
+    string access_key = 7 [json_name = "access_key"];
     repeated NodeArgs nodes = 8 [json_name = "nodes"];
     int64 node_id = 9 [json_name = "node_id"];
+    string private_key = 10 [json_name = "private_key"];
 }
 
 message NodeArgs {
@@ -59,6 +60,7 @@ message Cluster {
     repeated Node nodes = 28 [json_name = "nodes"];
     repeated NodeGroup node_groups = 29 [json_name = "node_groups"];
     BostionHost bostion_host = 30 [json_name = "bostion_host"];
+    string status_string = 31 [json_name = "status_string"];
 }
 
 message NodeGroup {
@@ -102,7 +104,6 @@ message Node {
     string zone = 16 [json_name = "zone"];
     string subnet_id = 17 [json_name = "subnet_id"];
     string subnet_cidr = 18 [json_name = "subnet_cidr"];
-    string public_key = 19 [json_name = "public_key"];
     string gpu_spec = 20 [json_name = "gpu_spec"];
     int32 system_disk = 21 [json_name = "system_disk"];
     int32 data_disk = 22 [json_name = "data_disk"];
@@ -111,6 +112,7 @@ message Node {
     int32 internet_max_bandwidth_out = 25 [json_name = "internet_max_bandwidth_out"];
     int64 cluster_id = 26 [json_name = "cluster_id"];
     string node_group_id = 27 [json_name = "node_group_id"];
+    string status_string = 19 [json_name = "status_string"];
 }
 
 

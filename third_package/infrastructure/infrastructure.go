@@ -569,7 +569,9 @@ func (c *ClusterInfrastructure) downloadAndCopyK8sSoftware(_ context.Context, cl
 // preview is true, only preview the pulumi resources
 func (c *ClusterInfrastructure) pulumiExec(ctx context.Context, cluster *biz.Cluster, pulumiFunc PulumiFunc, preview ...bool) (output string, err error) {
 	pulumiObj := NewPulumiAPI(ctx, c)
-	if cluster.Type == biz.ClusterTypeAliCloudEcs {
+	ok := false
+	if cluster.Type == biz.ClusterTypeAliCloudEcs || cluster.Type == biz.ClusterTypeAliCloudAks {
+		ok = true
 		pulumiObj.ProjectName(AlicloudProjectName).
 			StackName(AlicloudStackName).
 			Plugin([]PulumiPlugin{
@@ -582,7 +584,8 @@ func (c *ClusterInfrastructure) pulumiExec(ctx context.Context, cluster *biz.Clu
 				"ALICLOUD_REGION":     cluster.Region,
 			})
 	}
-	if cluster.Type == biz.ClusterTypeAWSEc2 {
+	if cluster.Type == biz.ClusterTypeAWSEc2 || cluster.Type == biz.ClusterTypeAWSEks {
+		ok = true
 		pulumiObj.ProjectName(AwsProject).
 			StackName(AwsStack).
 			Plugin([]PulumiPlugin{
@@ -594,6 +597,9 @@ func (c *ClusterInfrastructure) pulumiExec(ctx context.Context, cluster *biz.Clu
 				"AWS_SECRET_ACCESS_KEY": cluster.AccessKey,
 				"AWS_DEFAULT_REGION":    cluster.Region,
 			})
+	}
+	if !ok {
+		return "", errors.New("cluster type is not supported")
 	}
 	pulumiObj.RegisterDeployFunc(pulumiFunc)
 	if len(preview) > 0 && preview[0] {

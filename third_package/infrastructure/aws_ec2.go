@@ -55,7 +55,7 @@ const (
 	awsBostionhostEipAssociationStack   = "bostionhost-eip-association-stack"
 	awsBostionhostEipName               = "bostionhost-eip"
 
-	awsVpcCidrBlock = "10.0.0.0/16"
+	defaultVpcCidrBlock = "10.0.0.0/16"
 
 	awsAppLoadBalancerStack            = "app-load-balancer-stack"
 	awsAppLoadBalancerListenerStack    = "app-load-balancer-listener-stack"
@@ -106,10 +106,10 @@ func (a *AwsCloud) Start(ctx *pulumi.Context) (err error) {
 	if err != nil {
 		return err
 	}
-	err = a.startNodes(ctx)
-	if err != nil {
-		return err
-	}
+	// err = a.startNodes(ctx)
+	// if err != nil {
+	// 	return err
+	// }
 	return nil
 }
 
@@ -126,44 +126,44 @@ func (a *AwsCloud) infrastructural(ctx *pulumi.Context) (err error) {
 	if err != nil {
 		return err
 	}
-	err = a.createGateway(ctx)
-	if err != nil {
-		return err
-	}
-	err = a.createRouteTable(ctx)
-	if err != nil {
-		return err
-	}
-	err = a.startSecurityGroup(ctx)
-	if err != nil {
-		return err
-	}
-	err = a.createSLB(ctx)
-	if err != nil {
-		return err
-	}
-	err = a.createIAM(ctx)
-	if err != nil {
-		return err
-	}
-	err = a.startSshKey(ctx)
-	if err != nil {
-		return err
-	}
-	err = a.setImageByNodeGroups(ctx)
-	if err != nil {
-		return err
-	}
-	err = a.setInstanceTypeByNodeGroups(ctx)
-	if err != nil {
-		return err
-	}
+	// err = a.createGateway(ctx)
+	// if err != nil {
+	// 	return err
+	// }
+	// err = a.createRouteTable(ctx)
+	// if err != nil {
+	// 	return err
+	// }
+	// err = a.startSecurityGroup(ctx)
+	// if err != nil {
+	// 	return err
+	// }
+	// err = a.createSLB(ctx)
+	// if err != nil {
+	// 	return err
+	// }
+	// err = a.createIAM(ctx)
+	// if err != nil {
+	// 	return err
+	// }
+	// err = a.startSshKey(ctx)
+	// if err != nil {
+	// 	return err
+	// }
+	// err = a.setImageByNodeGroups(ctx)
+	// if err != nil {
+	// 	return err
+	// }
+	// err = a.setInstanceTypeByNodeGroups(ctx)
+	// if err != nil {
+	// 	return err
+	// }
 	return nil
 }
 
 func (a *AwsCloud) createVpc(ctx *pulumi.Context) (err error) {
 	if a.vpcCidrBlock == "" {
-		a.vpcCidrBlock = awsVpcCidrBlock
+		a.vpcCidrBlock = defaultVpcCidrBlock
 	}
 	if a.cluster.VpcID != "" {
 		a.vpc, err = ec2.GetVpc(ctx, awsVpcName, pulumi.ID(a.cluster.VpcID), nil)
@@ -696,7 +696,7 @@ func (a *AwsCloud) startNodes(ctx *pulumi.Context) (err error) {
 		if nodeGroup == nil {
 			return fmt.Errorf("node group %s not found", node.NodeGroupID)
 		}
-		subnet := distributeNodeSubnetsFunc(index, a.privateSubnets, a.cluster.Nodes)
+		subnet := distributeNodeSubnets(index, a.privateSubnets, a.cluster.Nodes)
 		nodeNi, err := ec2.NewNetworkInterface(ctx, node.Name+"_NI", &ec2.NetworkInterfaceArgs{
 			SubnetId:       subnet.ID(),
 			SecurityGroups: pulumi.StringArray{a.sg.ID()},
@@ -770,6 +770,15 @@ func (a *AwsCloud) startNodes(ctx *pulumi.Context) (err error) {
 }
 
 func (a *AwsCloud) getClusterInfoByInstance(ctx *pulumi.Context) error {
+	isNotUnspecifiedNodes := make([]*biz.Node, 0)
+	for _, node := range a.cluster.Nodes {
+		if node.Status != biz.NodeStatusUnspecified {
+			isNotUnspecifiedNodes = append(isNotUnspecifiedNodes, node)
+		}
+	}
+	if len(isNotUnspecifiedNodes) == 0 {
+		return nil
+	}
 	instances, err := ec2.GetInstances(ctx, &ec2.GetInstancesArgs{})
 	if err != nil {
 		return err
@@ -783,7 +792,10 @@ func (a *AwsCloud) getClusterInfoByInstance(ctx *pulumi.Context) error {
 		if err != nil {
 			return err
 		}
-		for _, node := range a.cluster.Nodes {
+		if instance == nil {
+			continue
+		}
+		for _, node := range isNotUnspecifiedNodes {
 			if node.InternalIP == instance.PrivateIp {
 				node.InstanceID = instanceID
 				node.SubnetId = instance.SubnetId
@@ -795,6 +807,9 @@ func (a *AwsCloud) getClusterInfoByInstance(ctx *pulumi.Context) error {
 				break
 			}
 		}
+	}
+	if len(sgids) == 0 || len(subnetIds) == 0 {
+		return fmt.Errorf("no instance found")
 	}
 	sgids = utils.RemoveDuplicateString(sgids)
 	a.cluster.SecurityGroupIDs = strings.Join(sgids, ",")
@@ -845,7 +860,7 @@ func getIntanceTypeFamilies(nodeGroup *biz.NodeGroup) string {
 	}
 }
 
-func distributeNodeSubnetsFunc(nodeIndex int, subnets []*ec2.Subnet, nodes []*biz.Node) *ec2.Subnet {
+func distributeNodeSubnets(nodeIndex int, subnets []*ec2.Subnet, nodes []*biz.Node) *ec2.Subnet {
 	if len(subnets) == 0 {
 		return nil
 	}

@@ -57,7 +57,7 @@ func (l *logtool) Close() error {
 
 func GetLogContenteKeyvals() []interface{} {
 	return []interface{}{
-		"ts", log.Timestamp("2006-01-02 15:04:05"),
+		"ts", log.DefaultTimestamp,
 		"caller", log.DefaultCaller,
 	}
 }

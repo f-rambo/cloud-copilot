@@ -52,6 +52,7 @@ func (uc *ClusterInterface) StartReconcile(ctx context.Context) (err error) {
 		err = uc.clusterUc.Reconcile(ctx, cluster)
 		if err != nil {
 			uc.log.Error(err)
+			ctx.Done()
 		}
 	}
 }
@@ -76,89 +77,118 @@ func (c *ClusterInterface) Get(ctx context.Context, clusterID *v1alpha1.ClusterA
 	}
 	return c.bizCLusterToCluster(cluster), nil
 }
+func (c *ClusterInterface) Save(ctx context.Context, clusterArgs *v1alpha1.ClusterArgs) (*v1alpha1.Cluster, error) {
+	if err := c.validateClusterArgs(clusterArgs); err != nil {
+		return nil, err
+	}
 
-func (c *ClusterInterface) Save(ctx context.Context, clusterArgs *v1alpha1.ClusterArgs) (clusterApiRes *v1alpha1.Cluster, err error) {
-	if clusterArgs.Name == "" {
-		return nil, errors.New("cluster name is required")
+	cluster, err := c.getOrCreateCluster(ctx, clusterArgs)
+	if err != nil {
+		return nil, err
 	}
-	if clusterArgs.PublicKey == "" {
-		return nil, errors.New("public key is required")
+
+	c.updateClusterFromArgs(cluster, clusterArgs)
+
+	err = c.clusterUc.Save(ctx, cluster)
+	if err != nil {
+		return nil, err
 	}
-	if clusterArgs.Type == "" {
-		return nil, errors.New("server type is required")
+
+	return c.bizCLusterToCluster(cluster), nil
+}
+
+func (c *ClusterInterface) validateClusterArgs(args *v1alpha1.ClusterArgs) error {
+	if args.Name == "" {
+		return errors.New("cluster name is required")
 	}
-	if biz.ClusterType(clusterArgs.Type) != biz.ClusterTypeLocal {
-		if clusterArgs.AccessKeyId == "" {
-			return nil, errors.New("access key id is required")
+	if args.PrivateKey == "" {
+		return errors.New("private key is required")
+	}
+	if args.Type == "" {
+		return errors.New("server type is required")
+	}
+	if biz.ClusterType(args.Type) != biz.ClusterTypeLocal {
+		if args.AccessId == "" {
+			return errors.New("access key id is required")
 		}
-		if clusterArgs.SecretAccessKey == "" {
-			return nil, errors.New("secret access key is required")
+		if args.AccessKey == "" {
+			return errors.New("secret access key is required")
+		}
+		if args.PublicKey == "" {
+			return errors.New("public key is required")
 		}
 	}
-	var cluster *biz.Cluster
-	if clusterArgs.Id != 0 {
-		cluster, err = c.clusterUc.Get(ctx, clusterArgs.Id)
+	if args.Id != 0 && args.Region == "" {
+		return errors.New("region is required")
+	}
+	return nil
+}
+
+func (c *ClusterInterface) getOrCreateCluster(ctx context.Context, args *v1alpha1.ClusterArgs) (*biz.Cluster, error) {
+	if args.Id != 0 {
+		cluster, err := c.clusterUc.Get(ctx, args.Id)
 		if err != nil {
 			return nil, err
 		}
 		if cluster == nil {
 			return nil, errors.New("cluster not found")
 		}
-		cluster.Name = clusterArgs.Name
-		cluster.Type = biz.ClusterType(clusterArgs.Type)
-		cluster.PublicKey = clusterArgs.PublicKey
-		cluster.Region = clusterArgs.Region
-		cluster.AccessID = clusterArgs.AccessKeyId
-		cluster.AccessKey = clusterArgs.SecretAccessKey
-		for _, node := range cluster.Nodes {
-			if node.ID == 0 {
-				continue
-			}
-			for _, nodeArg := range clusterArgs.Nodes {
-				if node.ID == nodeArg.Id {
-					node.InternalIP = nodeArg.Ip
-					node.User = nodeArg.User
-					node.Role = biz.NodeRole(nodeArg.Role)
-				}
+		return cluster, nil
+	}
+
+	return &biz.Cluster{
+		ID:         args.Id,
+		Name:       args.Name,
+		Type:       biz.ClusterType(args.Type),
+		PublicKey:  args.PublicKey,
+		PrivateKey: args.PrivateKey,
+		Region:     args.Region,
+		AccessID:   args.AccessId,
+		AccessKey:  args.AccessKey,
+		Nodes:      make([]*biz.Node, 0),
+	}, nil
+}
+
+func (c *ClusterInterface) updateClusterFromArgs(cluster *biz.Cluster, args *v1alpha1.ClusterArgs) {
+	cluster.Name = args.Name
+	cluster.Type = biz.ClusterType(args.Type)
+	cluster.PublicKey = args.PublicKey
+	cluster.PrivateKey = args.PrivateKey
+	cluster.Region = args.Region
+	cluster.AccessID = args.AccessId
+	cluster.AccessKey = args.AccessKey
+
+	c.updateExistingNodes(cluster, args.Nodes)
+	c.addNewNodes(cluster, args.Nodes)
+}
+
+func (c *ClusterInterface) updateExistingNodes(cluster *biz.Cluster, nodeArgs []*v1alpha1.NodeArgs) {
+	for _, node := range cluster.Nodes {
+		if node.ID == 0 {
+			continue
+		}
+		for _, nodeArg := range nodeArgs {
+			if node.ID == nodeArg.Id {
+				node.InternalIP = nodeArg.Ip
+				node.User = nodeArg.User
+				node.Role = biz.NodeRole(nodeArg.Role)
 			}
 		}
-		for _, nodeArg := range clusterArgs.Nodes {
-			if nodeArg.Id == 0 {
-				cluster.Nodes = append(cluster.Nodes, &biz.Node{
-					ID:         nodeArg.Id,
-					InternalIP: nodeArg.Ip,
-					User:       nodeArg.User,
-					Role:       biz.NodeRole(nodeArg.Role),
-				})
-			}
-		}
-	} else {
-		cluster = &biz.Cluster{
-			ID:        clusterArgs.Id,
-			Name:      clusterArgs.Name,
-			Type:      biz.ClusterType(clusterArgs.Type),
-			PublicKey: clusterArgs.PublicKey,
-			Region:    clusterArgs.Region,
-			AccessID:  clusterArgs.AccessKeyId,
-			AccessKey: clusterArgs.SecretAccessKey,
-			Nodes:     make([]*biz.Node, 0),
-		}
-		for _, node := range clusterArgs.Nodes {
+	}
+}
+
+func (c *ClusterInterface) addNewNodes(cluster *biz.Cluster, nodeArgs []*v1alpha1.NodeArgs) {
+	for _, nodeArg := range nodeArgs {
+		if nodeArg.Id == 0 {
 			cluster.Nodes = append(cluster.Nodes, &biz.Node{
-				ID:         node.Id,
-				InternalIP: node.Ip,
-				User:       node.User,
-				Role:       biz.NodeRole(node.Role),
+				ID:         nodeArg.Id,
+				InternalIP: nodeArg.Ip,
+				User:       nodeArg.User,
+				Role:       biz.NodeRole(nodeArg.Role),
 			})
 		}
 	}
-	err = c.clusterUc.Save(ctx, cluster)
-	if err != nil {
-		return nil, err
-	}
-	return c.bizCLusterToCluster(cluster), nil
 }
-
 func (c *ClusterInterface) List(ctx context.Context, _ *emptypb.Empty) (*v1alpha1.ClusterList, error) {
 	data := &v1alpha1.ClusterList{}
 	clusters, err := c.clusterUc.List(ctx)
@@ -504,6 +534,7 @@ func (c *ClusterInterface) bizCLusterToCluster(bizCluster *biz.Cluster) *v1alpha
 		Nodes:                nodes,
 		NodeGroups:           nodeGroups,
 		BostionHost:          bostionHost,
+		StatusString:         bizCluster.Status.String(),
 	}
 }
 
@@ -535,6 +566,7 @@ func (c *ClusterInterface) bizNodeToNode(bizNode *biz.Node) *v1alpha1.Node {
 		InternetMaxBandwidthOut: int32(bizNode.InternetMaxBandwidthOut),
 		ClusterId:               bizNode.ClusterID,
 		NodeGroupId:             bizNode.NodeGroupID,
+		StatusString:            bizNode.Status.String(),
 	}
 }
 

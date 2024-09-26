@@ -893,15 +893,19 @@ paths:
                   in: query
                   schema:
                     type: string
-                - name: access_key_id
+                - name: access_id
                   in: query
                   schema:
                     type: string
-                - name: secret_access_key
+                - name: access_key
                   in: query
                   schema:
                     type: string
                 - name: node_id
+                  in: query
+                  schema:
+                    type: string
+                - name: private_key
                   in: query
                   schema:
                     type: string
@@ -954,15 +958,19 @@ paths:
                   in: query
                   schema:
                     type: string
-                - name: access_key_id
+                - name: access_id
                   in: query
                   schema:
                     type: string
-                - name: secret_access_key
+                - name: access_key
                   in: query
                   schema:
                     type: string
                 - name: node_id
+                  in: query
+                  schema:
+                    type: string
+                - name: private_key
                   in: query
                   schema:
                     type: string
@@ -1041,15 +1049,19 @@ paths:
                   in: query
                   schema:
                     type: string
-                - name: access_key_id
+                - name: access_id
                   in: query
                   schema:
                     type: string
-                - name: secret_access_key
+                - name: access_key
                   in: query
                   schema:
                     type: string
                 - name: node_id
+                  in: query
+                  schema:
+                    type: string
+                - name: private_key
                   in: query
                   schema:
                     type: string
@@ -2144,6 +2156,8 @@ components:
                         $ref: '#/components/schemas/cluster.v1alpha1.NodeGroup'
                 bostion_host:
                     $ref: '#/components/schemas/cluster.v1alpha1.BostionHost'
+                status_string:
+                    type: string
         cluster.v1alpha1.ClusterArgs:
             type: object
             properties:
@@ -2157,15 +2171,17 @@ components:
                     type: string
                 region:
                     type: string
-                access_key_id:
+                access_id:
                     type: string
-                secret_access_key:
+                access_key:
                     type: string
                 nodes:
                     type: array
                     items:
                         $ref: '#/components/schemas/cluster.v1alpha1.NodeArgs'
                 node_id:
+                    type: string
+                private_key:
                     type: string
         cluster.v1alpha1.ClusterList:
             type: object
@@ -2222,8 +2238,6 @@ components:
                     type: string
                 subnet_cidr:
                     type: string
-                public_key:
-                    type: string
                 gpu_spec:
                     type: string
                 system_disk:
@@ -2244,6 +2258,8 @@ components:
                 cluster_id:
                     type: string
                 node_group_id:
+                    type: string
+                status_string:
                     type: string
         cluster.v1alpha1.NodeArgs:
             type: object

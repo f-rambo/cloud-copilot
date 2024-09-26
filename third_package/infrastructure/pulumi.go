@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"io"
+	"os"
 
 	"github.com/f-rambo/ocean/utils"
 	"github.com/pkg/errors"
@@ -127,6 +128,10 @@ func (p *PulumiAPI) buildPulumiResources(ctx context.Context) (err error) {
 		return errors.New("plugin and pluginVersion must be set")
 	}
 	pulumiStorePath, err := utils.GetPackageStorePathByNames(PulumiPackageName)
+	if err != nil {
+		return err
+	}
+	err = os.MkdirAll(pulumiStorePath, 0755)
 	if err != nil {
 		return err
 	}
