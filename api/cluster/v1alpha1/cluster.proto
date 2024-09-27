@@ -61,5 +61,13 @@ service ClusterInterface {
             };
       }
 
+
+      rpc PollingLogs(cluster.v1alpha1.ClusterLogsRequest) returns (cluster.v1alpha1.ClusterLogsResponse){
+            option (google.api.http) = {
+              post: "/api/v1alpha1/cluster/logs"
+              body: "*"
+            };
+      }
+
       rpc GetLogs(stream cluster.v1alpha1.ClusterLogsRequest) returns (stream cluster.v1alpha1.ClusterLogsResponse); 
 }

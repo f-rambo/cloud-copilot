@@ -26,6 +26,7 @@ const OperationClusterInterfaceGet = "/cluster.v1alpha1.ClusterInterface/Get"
 const OperationClusterInterfaceGetRegions = "/cluster.v1alpha1.ClusterInterface/GetRegions"
 const OperationClusterInterfaceList = "/cluster.v1alpha1.ClusterInterface/List"
 const OperationClusterInterfacePing = "/cluster.v1alpha1.ClusterInterface/Ping"
+const OperationClusterInterfacePollingLogs = "/cluster.v1alpha1.ClusterInterface/PollingLogs"
 const OperationClusterInterfaceSave = "/cluster.v1alpha1.ClusterInterface/Save"
 const OperationClusterInterfaceStartCluster = "/cluster.v1alpha1.ClusterInterface/StartCluster"
 
@@ -36,6 +37,7 @@ type ClusterInterfaceHTTPServer interface {
 	GetRegions(context.Context, *ClusterArgs) (*Regions, error)
 	List(context.Context, *emptypb.Empty) (*ClusterList, error)
 	Ping(context.Context, *emptypb.Empty) (*Msg, error)
+	PollingLogs(context.Context, *ClusterLogsRequest) (*ClusterLogsResponse, error)
 	Save(context.Context, *ClusterArgs) (*Cluster, error)
 	StartCluster(context.Context, *ClusterArgs) (*Msg, error)
 }
@@ -50,6 +52,7 @@ func RegisterClusterInterfaceHTTPServer(s *http.Server, srv ClusterInterfaceHTTP
 	r.POST("/api/v1alpha1/cluster/start", _ClusterInterface_StartCluster0_HTTP_Handler(srv))
 	r.POST("/api/v1alpha1/cluster/check_bostion_host", _ClusterInterface_CheckBostionHost0_HTTP_Handler(srv))
 	r.GET("/api/v1alpha1/cluster/regions", _ClusterInterface_GetRegions0_HTTP_Handler(srv))
+	r.POST("/api/v1alpha1/cluster/logs", _ClusterInterface_PollingLogs0_HTTP_Handler(srv))
 }
 
 func _ClusterInterface_Ping0_HTTP_Handler(srv ClusterInterfaceHTTPServer) func(ctx http.Context) error {
@@ -213,6 +216,28 @@ func _ClusterInterface_GetRegions0_HTTP_Handler(srv ClusterInterfaceHTTPServer) 
 	}
 }
 
+func _ClusterInterface_PollingLogs0_HTTP_Handler(srv ClusterInterfaceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in ClusterLogsRequest
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationClusterInterfacePollingLogs)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.PollingLogs(ctx, req.(*ClusterLogsRequest))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*ClusterLogsResponse)
+		return ctx.Result(200, reply)
+	}
+}
+
 type ClusterInterfaceHTTPClient interface {
 	CheckBostionHost(ctx context.Context, req *CheckBostionHostRequest, opts ...http.CallOption) (rsp *Msg, err error)
 	Delete(ctx context.Context, req *ClusterArgs, opts ...http.CallOption) (rsp *Msg, err error)
@@ -220,6 +245,7 @@ type ClusterInterfaceHTTPClient interface {
 	GetRegions(ctx context.Context, req *ClusterArgs, opts ...http.CallOption) (rsp *Regions, err error)
 	List(ctx context.Context, req *emptypb.Empty, opts ...http.CallOption) (rsp *ClusterList, err error)
 	Ping(ctx context.Context, req *emptypb.Empty, opts ...http.CallOption) (rsp *Msg, err error)
+	PollingLogs(ctx context.Context, req *ClusterLogsRequest, opts ...http.CallOption) (rsp *ClusterLogsResponse, err error)
 	Save(ctx context.Context, req *ClusterArgs, opts ...http.CallOption) (rsp *Cluster, err error)
 	StartCluster(ctx context.Context, req *ClusterArgs, opts ...http.CallOption) (rsp *Msg, err error)
 }
@@ -304,6 +330,19 @@ func (c *ClusterInterfaceHTTPClientImpl) Ping(ctx context.Context, in *emptypb.E
 	opts = append(opts, http.Operation(OperationClusterInterfacePing))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *ClusterInterfaceHTTPClientImpl) PollingLogs(ctx context.Context, in *ClusterLogsRequest, opts ...http.CallOption) (*ClusterLogsResponse, error) {
+	var out ClusterLogsResponse
+	pattern := "/api/v1alpha1/cluster/logs"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationClusterInterfacePollingLogs))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
 	if err != nil {
 		return nil, err
 	}

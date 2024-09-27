@@ -1011,6 +1011,24 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/cluster.v1alpha1.ClusterList'
+    /api/v1alpha1/cluster/logs:
+        post:
+            tags:
+                - ClusterInterface
+            operationId: ClusterInterface_PollingLogs
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/cluster.v1alpha1.ClusterLogsRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/cluster.v1alpha1.ClusterLogsResponse'
     /api/v1alpha1/cluster/ping:
         get:
             tags:
@@ -2190,6 +2208,27 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/cluster.v1alpha1.Cluster'
+        cluster.v1alpha1.ClusterLogsRequest:
+            type: object
+            properties:
+                cluster_id:
+                    type: string
+                tail_lines:
+                    type: integer
+                    format: int32
+                cluster_name:
+                    type: string
+                current_line:
+                    type: integer
+                    format: int32
+        cluster.v1alpha1.ClusterLogsResponse:
+            type: object
+            properties:
+                logs:
+                    type: string
+                last_line:
+                    type: integer
+                    format: int32
         cluster.v1alpha1.Msg:
             type: object
             properties:

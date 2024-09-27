@@ -150,10 +150,12 @@ message ClusterLogsRequest {
     int64 cluster_id = 1 [json_name = "cluster_id"];
     int32 tail_lines = 2 [json_name = "tail_lines"];
     string cluster_name = 3 [json_name = "cluster_name"];
+    int32 current_line = 4 [json_name = "current_line"];
 }
 
 message ClusterLogsResponse {
     string logs = 1 [json_name = "logs"];
+    int32 last_line = 2 [json_name = "last_line"];
 }
 
 message Regions {

@@ -28,6 +28,7 @@ const (
 	ClusterInterface_StartCluster_FullMethodName     = "/cluster.v1alpha1.ClusterInterface/StartCluster"
 	ClusterInterface_CheckBostionHost_FullMethodName = "/cluster.v1alpha1.ClusterInterface/CheckBostionHost"
 	ClusterInterface_GetRegions_FullMethodName       = "/cluster.v1alpha1.ClusterInterface/GetRegions"
+	ClusterInterface_PollingLogs_FullMethodName      = "/cluster.v1alpha1.ClusterInterface/PollingLogs"
 	ClusterInterface_GetLogs_FullMethodName          = "/cluster.v1alpha1.ClusterInterface/GetLogs"
 )
 
@@ -43,6 +44,7 @@ type ClusterInterfaceClient interface {
 	StartCluster(ctx context.Context, in *ClusterArgs, opts ...grpc.CallOption) (*Msg, error)
 	CheckBostionHost(ctx context.Context, in *CheckBostionHostRequest, opts ...grpc.CallOption) (*Msg, error)
 	GetRegions(ctx context.Context, in *ClusterArgs, opts ...grpc.CallOption) (*Regions, error)
+	PollingLogs(ctx context.Context, in *ClusterLogsRequest, opts ...grpc.CallOption) (*ClusterLogsResponse, error)
 	GetLogs(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[ClusterLogsRequest, ClusterLogsResponse], error)
 }
 
@@ -134,6 +136,16 @@ func (c *clusterInterfaceClient) GetRegions(ctx context.Context, in *ClusterArgs
 	return out, nil
 }
 
+func (c *clusterInterfaceClient) PollingLogs(ctx context.Context, in *ClusterLogsRequest, opts ...grpc.CallOption) (*ClusterLogsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ClusterLogsResponse)
+	err := c.cc.Invoke(ctx, ClusterInterface_PollingLogs_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *clusterInterfaceClient) GetLogs(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[ClusterLogsRequest, ClusterLogsResponse], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	stream, err := c.cc.NewStream(ctx, &ClusterInterface_ServiceDesc.Streams[0], ClusterInterface_GetLogs_FullMethodName, cOpts...)
@@ -159,6 +171,7 @@ type ClusterInterfaceServer interface {
 	StartCluster(context.Context, *ClusterArgs) (*Msg, error)
 	CheckBostionHost(context.Context, *CheckBostionHostRequest) (*Msg, error)
 	GetRegions(context.Context, *ClusterArgs) (*Regions, error)
+	PollingLogs(context.Context, *ClusterLogsRequest) (*ClusterLogsResponse, error)
 	GetLogs(grpc.BidiStreamingServer[ClusterLogsRequest, ClusterLogsResponse]) error
 	mustEmbedUnimplementedClusterInterfaceServer()
 }
@@ -193,6 +206,9 @@ func (UnimplementedClusterInterfaceServer) CheckBostionHost(context.Context, *Ch
 }
 func (UnimplementedClusterInterfaceServer) GetRegions(context.Context, *ClusterArgs) (*Regions, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetRegions not implemented")
+}
+func (UnimplementedClusterInterfaceServer) PollingLogs(context.Context, *ClusterLogsRequest) (*ClusterLogsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method PollingLogs not implemented")
 }
 func (UnimplementedClusterInterfaceServer) GetLogs(grpc.BidiStreamingServer[ClusterLogsRequest, ClusterLogsResponse]) error {
 	return status.Errorf(codes.Unimplemented, "method GetLogs not implemented")
@@ -362,6 +378,24 @@ func _ClusterInterface_GetRegions_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ClusterInterface_PollingLogs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ClusterLogsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ClusterInterfaceServer).PollingLogs(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ClusterInterface_PollingLogs_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ClusterInterfaceServer).PollingLogs(ctx, req.(*ClusterLogsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _ClusterInterface_GetLogs_Handler(srv interface{}, stream grpc.ServerStream) error {
 	return srv.(ClusterInterfaceServer).GetLogs(&grpc.GenericServerStream[ClusterLogsRequest, ClusterLogsResponse]{ServerStream: stream})
 }
@@ -407,6 +441,10 @@ var ClusterInterface_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetRegions",
 			Handler:    _ClusterInterface_GetRegions_Handler,
+		},
+		{
+			MethodName: "PollingLogs",
+			Handler:    _ClusterInterface_PollingLogs_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

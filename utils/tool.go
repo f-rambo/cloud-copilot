@@ -2,6 +2,7 @@ package utils
 
 import (
 	"archive/tar"
+	"bufio"
 	"compress/gzip"
 	"context"
 	"crypto/md5"
@@ -424,20 +425,20 @@ func GetFromContext(ctx context.Context) map[string]string {
 	return appInfo.Metadata()
 }
 
-// ReadLastNLines reads the last n lines from a file.
-func ReadLastNLines(file *os.File, n int) (string, error) {
+// ReadLastNLines reads the last n lines from a file and returns the content along with the total number of lines in the file.
+func ReadLastNLines(file *os.File, n int) (string, int64, error) {
 	if n <= 0 {
-		return "", fmt.Errorf("invalid number of lines: %d", n)
+		return "", 0, fmt.Errorf("invalid number of lines: %d", n)
 	}
 
 	stat, err := file.Stat()
 	if err != nil {
-		return "", err
+		return "", 0, err
 	}
 
 	fileSize := stat.Size()
 	if fileSize == 0 {
-		return "", nil
+		return "", 0, nil
 	}
 
 	bufferSize := 1024
@@ -445,38 +446,66 @@ func ReadLastNLines(file *os.File, n int) (string, error) {
 	lines := make([]string, 0, n)
 	offset := int64(0)
 	lineCount := 0
+	totalLines := int64(0)
 
-	for offset < fileSize && lineCount < n {
+	// First, count total lines
+	_, err = file.Seek(0, io.SeekStart)
+	if err != nil {
+		return "", 0, err
+	}
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		totalLines++
+	}
+	if err := scanner.Err(); err != nil {
+		return "", 0, err
+	}
+
+	// Reset file pointer to the end
+	_, err = file.Seek(0, io.SeekEnd)
+	if err != nil {
+		return "", 0, err
+	}
+
+	for offset < fileSize {
 		readSize := min(bufferSize, int(fileSize-offset))
 		offset += int64(readSize)
 
 		_, err := file.Seek(-offset, io.SeekEnd)
 		if err != nil {
-			return "", err
+			return "", 0, err
 		}
 
 		_, err = file.Read(buf[:readSize])
 		if err != nil {
-			return "", err
+			return "", 0, err
 		}
 
-		// Reverse the buffer to process lines from end to start
-		for i := readSize - 1; i >= 0 && lineCount < n; i-- {
+		// Process last n lines
+		for i := readSize - 1; i >= 0; i-- {
 			if buf[i] == '\n' || i == 0 {
-				start := i
-				if buf[i] == '\n' {
-					start++
-				}
-				line := string(buf[start:readSize])
-				if line != "" || i == 0 {
-					lines = append([]string{line}, lines...)
-					lineCount++
-					readSize = i
+				if lineCount < n {
+					start := i
+					if buf[i] == '\n' {
+						start++
+					}
+					line := string(buf[start:readSize])
+					if line != "" || i == 0 {
+						lines = append([]string{line}, lines...)
+						lineCount++
+						readSize = i
+					}
+				} else {
+					break
 				}
 			}
 		}
+		if lineCount >= n {
+			break
+		}
 	}
-	return strings.Join(lines, "\n"), nil
+
+	return strings.Join(lines, "\n"), totalLines, nil
 }
 
 // InArray 判断元素是否在切片中
@@ -487,4 +516,42 @@ func InArray(item string, arr []string) bool {
 		}
 	}
 	return false
+}
+
+// ReadFileFromLine reads a file starting from the given line number
+// and returns the content read, the last line number read, and any error encountered.
+func ReadFileFromLine(filePath string, startLine int64) (string, int64, error) {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return "", 0, err
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	var currentLine int64 = 0
+	var content strings.Builder
+
+	// Skip lines until we reach the starting line
+	for currentLine < startLine-1 && scanner.Scan() {
+		currentLine++
+	}
+
+	// Read the rest of the file
+	for scanner.Scan() {
+		line := scanner.Text()
+		content.WriteString(line)
+		content.WriteString("\n")
+		currentLine++
+	}
+
+	if err := scanner.Err(); err != nil {
+		return "", 0, err
+	}
+
+	// If the file doesn't end with a newline, we still count it as a line
+	if content.Len() > 0 && !strings.HasSuffix(content.String(), "\n") {
+		currentLine++
+	}
+
+	return content.String(), currentLine, nil
 }

@@ -59,6 +59,7 @@ func NewWhiteListMatcher() selector.MatchFunc {
 		"/user.v1alpha1.UserInterface/SignIn",
 		"/app.v1alpha1.AppInterface/Ping",
 		"/cluster.v1alpha1.ClusterInterface/Ping",
+		"/cluster.v1alpha1.ClusterInterface/PollingLogs",
 		"/service.v1alpha1.ServiceInterface/Ping",
 		"/clusterautoscaler.cloudprovider.v1.externalgrpc.CloudProvider/",
 	}

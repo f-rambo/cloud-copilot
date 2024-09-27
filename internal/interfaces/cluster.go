@@ -295,6 +295,38 @@ func (c *ClusterInterface) GetRegions(ctx context.Context, clusterID *v1alpha1.C
 	return &v1alpha1.Regions{Regions: regions}, nil
 }
 
+// polling logs
+func (c *ClusterInterface) PollingLogs(ctx context.Context, req *v1alpha1.ClusterLogsRequest) (*v1alpha1.ClusterLogsResponse, error) {
+	if req.TailLines == 0 || req.TailLines > 30 {
+		req.TailLines = 30
+	}
+
+	clusterLogPath, err := utils.GetLogFilePath(c.c.Server.Name)
+	if err != nil {
+		return nil, err
+	}
+	if ok := utils.IsFileExist(clusterLogPath); !ok {
+		return nil, errors.New("cluster log does not exist")
+	}
+	if req.CurrentLine == 0 {
+		file, err := os.Open(clusterLogPath)
+		if err != nil {
+			return nil, err
+		}
+		defer file.Close()
+		initialLogs, lastLine, err := utils.ReadLastNLines(file, int(req.TailLines))
+		if err != nil {
+			return nil, err
+		}
+		return &v1alpha1.ClusterLogsResponse{Logs: initialLogs, LastLine: int32(lastLine + 1)}, nil
+	}
+	logs, lastLine, err := utils.ReadFileFromLine(clusterLogPath, int64(req.CurrentLine))
+	if err != nil {
+		return nil, err
+	}
+	return &v1alpha1.ClusterLogsResponse{Logs: logs, LastLine: int32(lastLine + 1)}, nil
+}
+
 // get logs
 func (c *ClusterInterface) GetLogs(stream v1alpha1.ClusterInterface_GetLogsServer) error {
 	i := 0
@@ -338,7 +370,7 @@ func (c *ClusterInterface) GetLogs(stream v1alpha1.ClusterInterface_GetLogsServe
 
 		// Read initial lines if TailLines is specified
 		if req.TailLines > 0 {
-			initialLogs, err := utils.ReadLastNLines(file, int(req.TailLines))
+			initialLogs, _, err := utils.ReadLastNLines(file, int(req.TailLines))
 			if err != nil {
 				return err
 			}
