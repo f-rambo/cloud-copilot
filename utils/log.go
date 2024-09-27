@@ -17,6 +17,7 @@ var _ log.Logger = (*logtool)(nil)
 type logtool struct {
 	logger           log.Logger
 	lumberjackLogger *lumberjack.Logger
+	conf             *conf.Bootstrap
 }
 
 func NewLog(conf *conf.Bootstrap) (*logtool, error) {
@@ -25,6 +26,7 @@ func NewLog(conf *conf.Bootstrap) (*logtool, error) {
 	if conf.Server.Debug {
 		return &logtool{
 			logger: log.DefaultLogger,
+			conf:   conf,
 		}, nil
 	}
 	logFilePath, err := GetLogFilePath(conf.Server.Name)
@@ -41,6 +43,7 @@ func NewLog(conf *conf.Bootstrap) (*logtool, error) {
 	return &logtool{
 		logger:           log.NewStdLogger(lumberjackLogger),
 		lumberjackLogger: lumberjackLogger,
+		conf:             conf,
 	}, nil
 }
 
@@ -55,7 +58,10 @@ func (l *logtool) Close() error {
 	return nil
 }
 
-func GetLogContenteKeyvals() []interface{} {
+func (l *logtool) GetLogContenteKeyvals() []interface{} {
+	if !l.conf.Server.Debug {
+		return []interface{}{}
+	}
 	return []interface{}{
 		"ts", log.DefaultTimestamp,
 		"caller", log.DefaultCaller,

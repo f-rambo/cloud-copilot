@@ -14,18 +14,18 @@ import (
 )
 
 type AwsCloud struct {
-	cluster          *biz.Cluster
-	vpc              *pulumiec2.Vpc
-	vpcCidrBlock     string
-	pulicSubnet      *pulumiec2.Subnet
-	privateSubnets   []*pulumiec2.Subnet
-	zoneNames        []string
-	igw              *pulumiec2.InternetGateway
-	publicNatGateWay *pulumiec2.NatGateway
-	sg               *pulumiec2.SecurityGroup
-	ec2Profile       *pulumiIam.InstanceProfile
-	keyPair          *pulumiec2.KeyPair
-	eip              *pulumiec2.Eip
+	cluster            *biz.Cluster
+	vpc                *pulumiec2.Vpc
+	vpcCidrBlock       string
+	privateSubnets     []*pulumiec2.Subnet
+	publicSubnets      []*pulumiec2.Subnet
+	eips               []*pulumiec2.Eip
+	zoneNames          []string
+	igw                *pulumiec2.InternetGateway
+	privateNatGateWays []*pulumiec2.NatGateway
+	sg                 *pulumiec2.SecurityGroup
+	ec2Profile         *pulumiIam.InstanceProfile
+	keyPair            *pulumiec2.KeyPair
 }
 
 func NewAwsCloud(cluster *biz.Cluster) *AwsCloud {

@@ -8,7 +8,6 @@ import (
 	ecs "github.com/alibabacloud-go/ecs-20140526/v4/client"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/f-rambo/ocean/internal/biz"
-	"github.com/go-kratos/kratos/v2/log"
 	pulumiAlb "github.com/pulumi/pulumi-alicloud/sdk/v3/go/alicloud/alb"
 	pulumiEcs "github.com/pulumi/pulumi-alicloud/sdk/v3/go/alicloud/ecs"
 	pulumiRam "github.com/pulumi/pulumi-alicloud/sdk/v3/go/alicloud/ram"
@@ -28,7 +27,6 @@ type Alicloud struct {
 	natGateway    *pulumiVpc.NatGateway
 	keyPair       *pulumiEcs.KeyPair
 	endpoint      string
-	log           *log.Helper
 }
 
 func NewAlicloud(cluster *biz.Cluster) *Alicloud {

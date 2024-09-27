@@ -87,7 +87,7 @@ func main() {
 		panic(err)
 	}
 	defer utilLog.Close()
-	logger := log.With(utilLog, utils.GetLogContenteKeyvals()...)
+	logger := log.With(utilLog, utilLog.GetLogContenteKeyvals()...)
 	app, cleanup, err := wireApp(
 		&bc,
 		logger,

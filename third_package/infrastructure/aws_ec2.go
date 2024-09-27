@@ -31,14 +31,12 @@ const (
 
 	awsInterneteGatewayName = "internetgateway"
 
-	awsPublicNatgatewayEipName = "public-natgateway-eip"
-
 	awsPrivateNatgatewayName = "private-natgateway-" // + zone
 	awsPublicNatgatewayName  = "public-natgateway"
 
-	awsPublicNatewayRouteTableName               = "public-natgateway-route-table"
+	awsPrivateNatewayRouteTableName              = "private-natgateway-route-table"
 	awsPublicInternetgatewayRouteTableName       = "public-internetgateway-route-table"
-	awsPublicNatgatewayRouteTableAssctition      = "public-natgateway-route-table-association"
+	awsPrivateNatgatewayRouteTableAssctition     = "private-natgateway-route-table-association"
 	awsPublicInternetgatewayRouteTableAssctition = "public-internetgateway-route-table-association"
 
 	awsSecurityGroupStack = "security-group-stack"
@@ -51,15 +49,14 @@ const (
 
 	awsKeyPairStack = "key-pair-stack"
 
-	awsBostionhostNetworkInterfaceStack = "bostionhost-network-interface-stack"
-	awsBostionhostEipAssociationStack   = "bostionhost-eip-association-stack"
-	awsBostionhostEipName               = "bostionhost-eip"
-
 	defaultVpcCidrBlock = "10.0.0.0/16"
 
 	awsAppLoadBalancerStack            = "app-load-balancer-stack"
 	awsAppLoadBalancerListenerStack    = "app-load-balancer-listener-stack"
 	awsAppLoadBalancerTargetGroupStack = "app-load-balancer-target-group-stack"
+
+	roleAssumedPolicy = `{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"ec2.amazonaws.com"},"Action":"sts:AssumeRole"}]}`
+	rolePolicy        = `{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":["ec2:*","ecr:GetDownloadUrlForLayer","ecr:BatchGetImage","ecr:BatchCheckLayerAvailability","autoscaling:*","cloudwatch:PutMetricData","logs:*","s3:*"],"Resource":"*"}]}`
 )
 
 type GetInstanceTypeResults []*ec2.GetInstanceTypeResult
@@ -106,10 +103,10 @@ func (a *AwsCloud) Start(ctx *pulumi.Context) (err error) {
 	if err != nil {
 		return err
 	}
-	// err = a.startNodes(ctx)
-	// if err != nil {
-	// 	return err
-	// }
+	err = a.startNodes(ctx)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -118,50 +115,39 @@ func (a *AwsCloud) infrastructural(ctx *pulumi.Context) (err error) {
 	if err != nil {
 		return err
 	}
-	err = a.createVpc(ctx)
+	err = a.createNetwork(ctx)
 	if err != nil {
 		return err
 	}
-	err = a.createSubnets(ctx)
+	err = a.createSecurityGroup(ctx)
 	if err != nil {
 		return err
 	}
-	// err = a.createGateway(ctx)
-	// if err != nil {
-	// 	return err
-	// }
-	// err = a.createRouteTable(ctx)
-	// if err != nil {
-	// 	return err
-	// }
-	// err = a.startSecurityGroup(ctx)
-	// if err != nil {
-	// 	return err
-	// }
-	// err = a.createSLB(ctx)
-	// if err != nil {
-	// 	return err
-	// }
-	// err = a.createIAM(ctx)
-	// if err != nil {
-	// 	return err
-	// }
-	// err = a.startSshKey(ctx)
-	// if err != nil {
-	// 	return err
-	// }
-	// err = a.setImageByNodeGroups(ctx)
-	// if err != nil {
-	// 	return err
-	// }
-	// err = a.setInstanceTypeByNodeGroups(ctx)
-	// if err != nil {
-	// 	return err
-	// }
+	err = a.createSLB(ctx)
+	if err != nil {
+		return err
+	}
+	err = a.createIAM(ctx)
+	if err != nil {
+		return err
+	}
+	err = a.startSshKey(ctx)
+	if err != nil {
+		return err
+	}
+	err = a.setImageByNodeGroups(ctx)
+	if err != nil {
+		return err
+	}
+	err = a.setInstanceTypeByNodeGroups(ctx)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
-func (a *AwsCloud) createVpc(ctx *pulumi.Context) (err error) {
+func (a *AwsCloud) createNetwork(ctx *pulumi.Context) (err error) {
+	// create vpc
 	if a.vpcCidrBlock == "" {
 		a.vpcCidrBlock = defaultVpcCidrBlock
 	}
@@ -192,11 +178,9 @@ func (a *AwsCloud) createVpc(ctx *pulumi.Context) (err error) {
 	if err != nil {
 		return err
 	}
-	return nil
-}
+	ctx.Log.Info("vpc created", nil)
 
-func (a *AwsCloud) createSubnets(ctx *pulumi.Context) (err error) {
-	// Get list of availability zones
+	// get availability zones
 	zones, err := aws.GetAvailabilityZones(ctx, &aws.GetAvailabilityZonesArgs{}, nil)
 	if err != nil {
 		return err
@@ -206,36 +190,18 @@ func (a *AwsCloud) createSubnets(ctx *pulumi.Context) (err error) {
 	}
 	a.zoneNames = zones.Names
 
-	// Create a subnet in each availability zone
-	zoneCidrMap := make(map[string]string)
-	for _, v := range a.cluster.Nodes {
-		if v.Zone == "" || v.SubnetCidr == "" {
-			continue
-		}
-		zoneCidrMap[v.Zone] = v.SubnetCidr
-	}
-	usEsubnetCidrs := make([]string, 0)
-	subnetCidrs, err := utils.GenerateSubnets(a.vpcCidrBlock, len(zones.Names)+len(zoneCidrMap)+1)
+	// Create two private subnet and one public subnet in each availability zone
+	privateSubnetCount := len(a.zoneNames) * 2
+	publicSubnetCount := len(a.zoneNames)
+	subnetCidrs, err := utils.GenerateSubnets(a.vpcCidrBlock, privateSubnetCount+publicSubnetCount)
 	if err != nil {
 		return err
 	}
-	for _, v := range subnetCidrs {
-		exits := false
-		for _, s := range zoneCidrMap {
-			if s == v {
-				exits = true
-			}
-		}
-		if !exits {
-			usEsubnetCidrs = append(usEsubnetCidrs, v)
-		}
-	}
-	a.privateSubnets = make([]*ec2.Subnet, len(zones.Names))
-	for i, zone := range zones.Names {
-		cidr := usEsubnetCidrs[i]
-		if _, ok := zoneCidrMap[zone]; ok {
-			cidr = zoneCidrMap[zone]
-		}
+	a.privateSubnets = make([]*ec2.Subnet, privateSubnetCount)
+	a.publicSubnets = make([]*ec2.Subnet, publicSubnetCount)
+	for i := 0; i < privateSubnetCount; i++ {
+		zone := a.zoneNames[i/2]
+		cidr := subnetCidrs[i]
 		subnetArgs := &ec2.SubnetArgs{
 			VpcId:            a.vpc.ID(),
 			CidrBlock:        pulumi.String(cidr),
@@ -243,8 +209,6 @@ func (a *AwsCloud) createSubnets(ctx *pulumi.Context) (err error) {
 			Tags: pulumi.StringMap{
 				"Name":    pulumi.String(fmt.Sprintf("%s-private-subnet-%s", a.cluster.Name, getSubnetName(zone))),
 				awsTagkey: pulumi.String(awsTagVal),
-				"Zone":    pulumi.String(zone),
-				"Type":    pulumi.String("private"),
 			},
 		}
 		subnet, err := ec2.NewSubnet(ctx, getSubnetName(zone), subnetArgs)
@@ -254,94 +218,43 @@ func (a *AwsCloud) createSubnets(ctx *pulumi.Context) (err error) {
 		a.privateSubnets[i] = subnet
 	}
 
-	// public subnet
-	a.pulicSubnet, err = ec2.NewSubnet(ctx, awsPubulilSubnetName, &ec2.SubnetArgs{
-		VpcId:     a.vpc.ID(),
-		CidrBlock: pulumi.String(usEsubnetCidrs[len(usEsubnetCidrs)-1]),
-		Tags: pulumi.StringMap{
-			"Name":    pulumi.String(a.cluster.Name + "-public-subnet"),
-			awsTagkey: pulumi.String(awsTagVal),
-			"Type":    pulumi.String("public"),
-		},
-	})
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (a *AwsCloud) createGateway(ctx *pulumi.Context) (err error) {
-	// Create an Internet Gateway
-	a.igw, err = ec2.NewInternetGateway(ctx, awsInterneteGatewayName, &ec2.InternetGatewayArgs{
-		VpcId: a.vpc.ID(),
-		Tags: pulumi.StringMap{
-			"Name":    pulumi.String(a.cluster.Name + "-igw"),
-			awsTagkey: pulumi.String(awsTagVal),
-		},
-	})
-	if err != nil {
-		return err
-	}
-
-	// create eip
-	a.eip, err = ec2.NewEip(ctx, awsPublicNatgatewayEipName, &ec2.EipArgs{
-		Domain:             pulumi.String("vpc"),
-		NetworkBorderGroup: pulumi.String(a.cluster.Region),
-		PublicIpv4Pool:     pulumi.String("amazon"),
-		Tags: pulumi.StringMap{
-			"Name":    pulumi.String(fmt.Sprintf("%s-public-natgateway-eip", a.cluster.Name)),
-			awsTagkey: pulumi.String(awsTagVal),
-		},
-	})
-	if err != nil {
-		return err
-	}
-
-	a.publicNatGateWay, err = ec2.NewNatGateway(ctx, awsPublicNatgatewayName, &ec2.NatGatewayArgs{
-		SubnetId:         a.pulicSubnet.ID(),
-		AllocationId:     a.eip.ID(),
-		ConnectivityType: pulumi.String("public"),
-		Tags: pulumi.StringMap{
-			"Name":    pulumi.String(a.cluster.Name + "-public-natgateway"),
-			awsTagkey: pulumi.String(awsTagVal),
-			"Type":    pulumi.String("public"),
-		},
-	})
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (a *AwsCloud) createRouteTable(ctx *pulumi.Context) (err error) {
-	// Create a route table with a route for the public nat gateway
-	privateRouteTable, err := ec2.NewRouteTable(ctx, awsPublicNatewayRouteTableName, &ec2.RouteTableArgs{
-		VpcId: a.vpc.ID(),
-		Routes: ec2.RouteTableRouteArray{
-			&ec2.RouteTableRouteArgs{
-				NatGatewayId: a.publicNatGateWay.ID(),
-				CidrBlock:    pulumi.String("0.0.0.0/0"),
+	for i := 0; i < publicSubnetCount; i++ {
+		zone := a.zoneNames[i]
+		cidr := subnetCidrs[privateSubnetCount+i]
+		subnetArgs := &ec2.SubnetArgs{
+			VpcId:            a.vpc.ID(),
+			CidrBlock:        pulumi.String(cidr),
+			AvailabilityZone: pulumi.String(zone),
+			Tags: pulumi.StringMap{
+				"Name":    pulumi.String(fmt.Sprintf("%s-public-subnet-%s", a.cluster.Name, getSubnetName(zone))),
+				awsTagkey: pulumi.String(awsTagVal),
+				"Type":    pulumi.String("public"),
 			},
-		},
-		Tags: pulumi.StringMap{
-			"Name":    pulumi.String(fmt.Sprintf("%s-%s", a.cluster.Name, awsPublicNatewayRouteTableName)),
-			awsTagkey: pulumi.String(awsTagVal),
-		},
-	})
-	if err != nil {
-		return err
-	}
-	for index, privateSubnet := range a.privateSubnets {
-		_, err = ec2.NewRouteTableAssociation(ctx, fmt.Sprintf("%s-%s", awsPublicNatgatewayRouteTableAssctition, getZoneName(a.zoneNames, index)), &ec2.RouteTableAssociationArgs{
-			RouteTableId: privateRouteTable.ID(),
-			SubnetId:     privateSubnet.ID(),
-		})
+		}
+		subnet, err := ec2.NewSubnet(ctx, getSubnetName(zone), subnetArgs)
 		if err != nil {
 			return err
 		}
+		a.publicSubnets[i] = subnet
 	}
 
-	// Create a route table and a route for the public subnet
+	ctx.Log.Info("subnets created", nil)
+
+	// Create an Internet Gateway
+	interneteGateWayName := fmt.Sprintf("%s-igw", a.cluster.Name)
+	a.igw, err = ec2.NewInternetGateway(ctx, awsInterneteGatewayName, &ec2.InternetGatewayArgs{
+		VpcId: a.vpc.ID(),
+		Tags: pulumi.StringMap{
+			"Name":    pulumi.String(interneteGateWayName),
+			awsTagkey: pulumi.String(awsTagVal),
+		},
+	})
+	if err != nil {
+		return err
+	}
+	ctx.Log.Info(interneteGateWayName+" internet gateway created", nil)
+
+	// Create a routing table for all public subnets
 	pulicRouteTable, err := ec2.NewRouteTable(ctx, awsPublicInternetgatewayRouteTableName, &ec2.RouteTableArgs{
 		VpcId: a.vpc.ID(),
 		Routes: ec2.RouteTableRouteArray{
@@ -359,17 +272,91 @@ func (a *AwsCloud) createRouteTable(ctx *pulumi.Context) (err error) {
 		return err
 	}
 
-	_, err = ec2.NewRouteTableAssociation(ctx, awsPublicInternetgatewayRouteTableAssctition, &ec2.RouteTableAssociationArgs{
-		RouteTableId: pulicRouteTable.ID(),
-		SubnetId:     a.pulicSubnet.ID(),
-	})
-	if err != nil {
-		return err
+	// bind public subnet to public route table
+	for index, subnet := range a.publicSubnets {
+		_, err = ec2.NewRouteTableAssociation(ctx, fmt.Sprintf("%s-%d", awsPublicInternetgatewayRouteTableAssctition, index), &ec2.RouteTableAssociationArgs{
+			RouteTableId: pulicRouteTable.ID(),
+			SubnetId:     subnet.ID(),
+		})
+		if err != nil {
+			return err
+		}
+	}
+	ctx.Log.Info("public route table created", nil)
+
+	a.eips = make([]*ec2.Eip, len(a.zoneNames))
+	a.privateNatGateWays = make([]*ec2.NatGateway, len(a.zoneNames))
+	for index, zoneName := range a.zoneNames {
+		// create eip
+		eipName := fmt.Sprintf("%s-public-natgateway-eip-%s", a.cluster.Name, getSubnetName(zoneName))
+		eip, err := ec2.NewEip(ctx, eipName, &ec2.EipArgs{
+			Domain:             pulumi.String("vpc"),
+			NetworkBorderGroup: pulumi.String(a.cluster.Region),
+			PublicIpv4Pool:     pulumi.String("amazon"),
+			Tags: pulumi.StringMap{
+				"Name":    pulumi.String(eipName),
+				awsTagkey: pulumi.String(awsTagVal),
+			},
+		})
+		if err != nil {
+			return err
+		}
+		a.eips[index] = eip
+		ctx.Log.Info(eipName+" eip created", nil)
+
+		// create nat gateway
+		natGatewayName := fmt.Sprintf("%s-public-natgateway-%s", a.cluster.Name, getSubnetName(zoneName))
+		a.privateNatGateWays[index], err = ec2.NewNatGateway(ctx, awsPublicNatgatewayName, &ec2.NatGatewayArgs{
+			AllocationId:     eip.ID(),
+			ConnectivityType: pulumi.String("public"),
+			Tags: pulumi.StringMap{
+				"Name":    pulumi.String(natGatewayName),
+				awsTagkey: pulumi.String(awsTagVal),
+				"Type":    pulumi.String("public"),
+			},
+		})
+		if err != nil {
+			return err
+		}
+		ctx.Log.Info(natGatewayName+" nat gateway created", nil)
+
+		// create route table for private subnet
+		for i := 0; i < 2; i++ {
+			routeTableName := fmt.Sprintf("%s-%s-%d", awsPrivateNatewayRouteTableName, getZoneName(a.zoneNames, index/2), i+index*2)
+			privateRouteTable, err := ec2.NewRouteTable(ctx, routeTableName, &ec2.RouteTableArgs{
+				VpcId: a.vpc.ID(),
+				Routes: ec2.RouteTableRouteArray{
+					&ec2.RouteTableRouteArgs{
+						NatGatewayId: a.privateNatGateWays[index].ID(),
+						CidrBlock:    pulumi.String("0.0.0.0/0"),
+					},
+				},
+				Tags: pulumi.StringMap{
+					"Name":    pulumi.String(routeTableName),
+					awsTagkey: pulumi.String(awsTagVal),
+				},
+			})
+			if err != nil {
+				return err
+			}
+			ctx.Log.Info(fmt.Sprintf("%s route table created", routeTableName), nil)
+
+			subnet := a.privateSubnets[index*2+i]
+			routeTableAssctitionName := fmt.Sprintf("%s-%d-%d", awsPrivateNatgatewayRouteTableAssctition, index, i)
+			_, err = ec2.NewRouteTableAssociation(ctx, routeTableAssctitionName, &ec2.RouteTableAssociationArgs{
+				RouteTableId: privateRouteTable.ID(),
+				SubnetId:     subnet.ID(),
+			})
+			if err != nil {
+				return err
+			}
+			ctx.Log.Info(fmt.Sprintf("%s route table association created", routeTableName), nil)
+		}
 	}
 	return nil
 }
 
-func (a *AwsCloud) startSecurityGroup(ctx *pulumi.Context) (err error) {
+func (a *AwsCloud) createSecurityGroup(ctx *pulumi.Context) (err error) {
 	// Security Group for Master and Worker nodes
 	a.sg, err = ec2.NewSecurityGroup(ctx, awsSecurityGroupStack, &ec2.SecurityGroupArgs{
 		VpcId: a.vpc.ID(),
@@ -407,15 +394,21 @@ func (a *AwsCloud) startSecurityGroup(ctx *pulumi.Context) (err error) {
 	}
 	return nil
 }
-
 func (a *AwsCloud) createSLB(ctx *pulumi.Context) (err error) {
 	// Create Application Load Balancer
+	subnets := make(pulumi.StringArray, 0)
+	for _, subnet := range a.privateSubnets {
+		subnets = append(subnets, subnet.ID())
+	}
+	for _, subnet := range a.publicSubnets {
+		subnets = append(subnets, subnet.ID())
+	}
 	alb, err := lb.NewLoadBalancer(ctx, awsAppLoadBalancerStack, &lb.LoadBalancerArgs{
 		Name:             pulumi.String(fmt.Sprintf("%s-alb", a.cluster.Name)),
 		Internal:         pulumi.Bool(false),
 		LoadBalancerType: pulumi.String("application"),
 		SecurityGroups:   pulumi.StringArray{a.sg.ID()},
-		Subnets:          pulumi.StringArray{a.pulicSubnet.ID()},
+		Subnets:          subnets,
 		Tags: pulumi.StringMap{
 			"Name":    pulumi.String(fmt.Sprintf("%s-alb", a.cluster.Name)),
 			awsTagkey: pulumi.String(awsTagVal),
@@ -430,7 +423,7 @@ func (a *AwsCloud) createSLB(ctx *pulumi.Context) (err error) {
 		Name:     pulumi.String(fmt.Sprintf("%s-tg", a.cluster.Name)),
 		Port:     pulumi.Int(6443),
 		Protocol: pulumi.String("TCP"),
-		VpcId:    a.pulicSubnet.VpcId,
+		VpcId:    a.vpc.ID(),
 		HealthCheck: &lb.TargetGroupHealthCheckArgs{
 			Path:               pulumi.String("/healthz"),
 			Port:               pulumi.String("6443"),
@@ -470,19 +463,8 @@ func (a *AwsCloud) createSLB(ctx *pulumi.Context) (err error) {
 func (a *AwsCloud) createIAM(ctx *pulumi.Context) (err error) {
 	// IAM Role
 	ec2Role, err := iam.NewRole(ctx, awsEc2RoleStack, &iam.RoleArgs{
-		Name: pulumi.String(fmt.Sprintf("%s-ec2-role", a.cluster.Name)),
-		AssumeRolePolicy: pulumi.String(`{
-"Version": "2012-10-17",
-"Statement": [
-  {
-	"Effect": "Allow",
-	"Principal": {
-	    "Service": "ec2.amazonaws.com"
-	},
-	"Action": "sts:AssumeRole"
-  }
-]
-}`),
+		Name:             pulumi.String(fmt.Sprintf("%s-ec2-role", a.cluster.Name)),
+		AssumeRolePolicy: pulumi.String(roleAssumedPolicy),
 		Tags: pulumi.StringMap{
 			"Name":    pulumi.String(fmt.Sprintf("%s-ec2-role", a.cluster.Name)),
 			awsTagkey: pulumi.String(awsTagVal),
@@ -494,27 +476,9 @@ func (a *AwsCloud) createIAM(ctx *pulumi.Context) (err error) {
 
 	// IAM Role and Policy
 	_, err = iam.NewRolePolicy(ctx, awsEc2RolePolicyStack, &iam.RolePolicyArgs{
-		Name: pulumi.String(fmt.Sprintf("%s-ec2-role-policy", a.cluster.Name)),
-		Role: ec2Role.ID(),
-		Policy: pulumi.String(`{
-"Version": "2012-10-17",
-"Statement": [
-  {
-	"Effect": "Allow",
-	"Action": [
-	    "ec2:*",
-	    "ecr:GetDownloadUrlForLayer",
-	    "ecr:BatchGetImage",
-	    "ecr:BatchCheckLayerAvailability",
-	    "autoscaling:*",
-	    "cloudwatch:PutMetricData",
-	    "logs:*",
-	    "s3:*"
-	],
-	"Resource": "*"
-  }
-]
-}`),
+		Name:   pulumi.String(fmt.Sprintf("%s-ec2-role-policy", a.cluster.Name)),
+		Role:   ec2Role.ID(),
+		Policy: pulumi.String(rolePolicy),
 	})
 	if err != nil {
 		return err
@@ -752,14 +716,6 @@ func (a *AwsCloud) startNodes(ctx *pulumi.Context) (err error) {
 		if !selectedBostionHost && node.Role == biz.NodeRoleMaster {
 			ctx.Export(GetKey(BostionHostInstanceID), nodeRes.ID())
 			selectedBostionHost = true
-			// bind eip to instance
-			_, err = ec2.NewEipAssociation(ctx, awsBostionhostEipAssociationStack, &ec2.EipAssociationArgs{
-				AllocationId: a.eip.ID(),
-				InstanceId:   nodeRes.ID(),
-			})
-			if err != nil {
-				return err
-			}
 		}
 		ctx.Export(GetKey(InstanceID, node.Name), nodeRes.ID())
 		ctx.Export(GetKey(InstanceUser, node.Name), pulumi.String("ubuntu"))
