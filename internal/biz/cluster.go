@@ -18,36 +18,38 @@ const (
 )
 
 type Cluster struct {
-	ID                   int64         `json:"id" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
-	Name                 string        `json:"name" gorm:"column:name; default:''; NOT NULL"`
-	CloudID              string        `json:"cloud_id" gorm:"column:cloud_id; default:''; NOT NULL"`
-	Connections          string        `json:"connections" gorm:"column:connections; default:''; NOT NULL"`
-	CertificateAuthority string        `json:"certificate_authority" gorm:"column:certificate_authority; default:''; NOT NULL"`
-	Version              string        `json:"version" gorm:"column:version; default:''; NOT NULL"`
-	ApiServerAddress     string        `json:"api_server_address" gorm:"column:api_server_address; default:''; NOT NULL"`
-	Config               string        `json:"config" gorm:"column:config; default:''; NOT NULL;"`
-	Addons               string        `json:"addons" gorm:"column:addons; default:''; NOT NULL;"`
-	AddonsConfig         string        `json:"addons_config" gorm:"column:addons_config; default:''; NOT NULL;"`
-	Status               ClusterStatus `json:"status" gorm:"column:status; default:0; NOT NULL;"`
-	Type                 ClusterType   `json:"type" gorm:"column:type; default:''; NOT NULL;"`
-	KubeConfig           string        `json:"kube_config" gorm:"column:kube_config; default:''; NOT NULL; type:json"`
-	KeyPair              string        `json:"key_pair" gorm:"column:key_pair; default:''; NOT NULL;"`
-	PublicKey            string        `json:"public_key" gorm:"column:public_key; default:''; NOT NULL;"`
-	PrivateKey           string        `json:"private_key" gorm:"column:private_key; default:''; NOT NULL;"`
-	Region               string        `json:"region" gorm:"column:region; default:''; NOT NULL;"`
-	VpcID                string        `json:"vpc_id" gorm:"column:vpc_id; default:''; NOT NULL;"`
-	VpcCidr              string        `json:"vpc_cidr" gorm:"column:vpc_cidr; default:''; NOT NULL;"`
-	EipID                string        `json:"eip_id" gorm:"column:eip_id; default:''; NOT NULL;"`
-	NatGatewayID         string        `json:"nat_gateway_id" gorm:"column:nat_gateway_id; default:''; NOT NULL;"`
-	ResourceGroupID      string        `json:"resource_group_id" gorm:"column:resource_group_id; default:''; NOT NULL;"`
-	SecurityGroupIDs     string        `json:"security_group_ids" gorm:"column:security_group_ids; default:''; NOT NULL;"`
-	ExternalIP           string        `json:"external_ip" gorm:"column:external_ip; default:''; NOT NULL;"`
-	AccessID             string        `json:"access_id" gorm:"column:access_id; default:''; NOT NULL;"`
-	AccessKey            string        `json:"access_key" gorm:"column:access_key; default:''; NOT NULL;"`
-	LoadBalancerID       string        `json:"load_balancer_id" gorm:"column:load_balancer_id; default:''; NOT NULL;"`
-	BostionHost          *BostionHost  `json:"bostion_host" gorm:"-"`
-	Nodes                []*Node       `json:"nodes" gorm:"-"`
-	NodeGroups           []*NodeGroup  `json:"node_groups" gorm:"-"`
+	ID                   int64                             `json:"id" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
+	Name                 string                            `json:"name" gorm:"column:name; default:''; NOT NULL"`
+	CloudID              string                            `json:"cloud_id" gorm:"column:cloud_id; default:''; NOT NULL"`
+	Connections          string                            `json:"connections" gorm:"column:connections; default:''; NOT NULL"`
+	CertificateAuthority string                            `json:"certificate_authority" gorm:"column:certificate_authority; default:''; NOT NULL"`
+	Version              string                            `json:"version" gorm:"column:version; default:''; NOT NULL"`
+	ApiServerAddress     string                            `json:"api_server_address" gorm:"column:api_server_address; default:''; NOT NULL"`
+	Config               string                            `json:"config" gorm:"column:config; default:''; NOT NULL;"`
+	Addons               string                            `json:"addons" gorm:"column:addons; default:''; NOT NULL;"`
+	AddonsConfig         string                            `json:"addons_config" gorm:"column:addons_config; default:''; NOT NULL;"`
+	Status               ClusterStatus                     `json:"status" gorm:"column:status; default:0; NOT NULL;"`
+	Type                 ClusterType                       `json:"type" gorm:"column:type; default:''; NOT NULL;"`
+	KubeConfig           string                            `json:"kube_config" gorm:"column:kube_config; default:''; NOT NULL; type:json"`
+	KeyPair              string                            `json:"key_pair" gorm:"column:key_pair; default:''; NOT NULL;"`
+	PublicKey            string                            `json:"public_key" gorm:"column:public_key; default:''; NOT NULL;"`
+	PrivateKey           string                            `json:"private_key" gorm:"column:private_key; default:''; NOT NULL;"`
+	Region               string                            `json:"region" gorm:"column:region; default:''; NOT NULL;"`
+	VpcID                string                            `json:"vpc_id" gorm:"column:vpc_id; default:''; NOT NULL;"`
+	VpcCidr              string                            `json:"vpc_cidr" gorm:"column:vpc_cidr; default:''; NOT NULL;"`
+	EipID                string                            `json:"eip_id" gorm:"column:eip_id; default:''; NOT NULL;"`
+	NatGatewayID         string                            `json:"nat_gateway_id" gorm:"column:nat_gateway_id; default:''; NOT NULL;"`
+	ResourceGroupID      string                            `json:"resource_group_id" gorm:"column:resource_group_id; default:''; NOT NULL;"`
+	SecurityGroupIDs     string                            `json:"security_group_ids" gorm:"column:security_group_ids; default:''; NOT NULL;"`
+	ExternalIP           string                            `json:"external_ip" gorm:"column:external_ip; default:''; NOT NULL;"`
+	AccessID             string                            `json:"access_id" gorm:"column:access_id; default:''; NOT NULL;"`
+	AccessKey            string                            `json:"access_key" gorm:"column:access_key; default:''; NOT NULL;"`
+	LoadBalancerID       string                            `json:"load_balancer_id" gorm:"column:load_balancer_id; default:''; NOT NULL;"`
+	BostionHost          *BostionHost                      `json:"bostion_host" gorm:"-"`
+	Nodes                []*Node                           `json:"nodes" gorm:"-"`
+	NodeGroups           []*NodeGroup                      `json:"node_groups" gorm:"-"`
+	CloudResources       map[ResourceType][]*CloudResource `json:"cloud_resources" gorm:"-"`
+	CloudResourcesJson   string                            `json:"cloud_resources_json" gorm:"column:cloud_resources_json; default:''; NOT NULL;"`
 	gorm.Model
 }
 
@@ -136,6 +138,51 @@ func isClusterEmpty(c *Cluster) bool {
 
 func (c *Cluster) IsDeleteed() bool {
 	return c.DeletedAt.Valid
+}
+
+// ResourceType represents the type of cloud resource
+type ResourceType string
+
+const (
+	ResourceTypeVPC             ResourceType = "VPC"
+	ResourceTypeSubnet          ResourceType = "Subnet"
+	ResourceTypeInternetGateway ResourceType = "InternetGateway"
+	ResourceTypeNATGateway      ResourceType = "NATGateway"
+	ResourceTypeRouteTable      ResourceType = "RouteTable"
+	ResourceTypeSecurityGroup   ResourceType = "SecurityGroup"
+	ResourceTypeLoadBalancer    ResourceType = "LoadBalancer"
+)
+
+// CloudResource represents a cloud provider resource
+type CloudResource struct {
+	Name         string
+	ID           string
+	Type         ResourceType
+	Tags         map[string]string
+	SubResources []*CloudResource // For resources that contain other resources
+}
+
+func (c *Cluster) GetCloudResource(resourceType ResourceType) []*CloudResource {
+	return c.CloudResources[resourceType]
+}
+
+func (c *Cluster) AddCloudResource(resourceType ResourceType, resource *CloudResource) {
+	if c.CloudResources == nil {
+		c.CloudResources = make(map[ResourceType][]*CloudResource)
+	}
+	if c.CloudResources[resourceType] == nil {
+		c.CloudResources[resourceType] = []*CloudResource{}
+	}
+	c.CloudResources[resourceType] = append(c.CloudResources[resourceType], resource)
+}
+
+func (c *Cluster) GetCloudResourceByName(resourceType ResourceType, name string) *CloudResource {
+	for _, resource := range c.CloudResources[resourceType] {
+		if resource.Name == name {
+			return resource
+		}
+	}
+	return nil
 }
 
 type NodeGroup struct {
@@ -553,6 +600,7 @@ func (uc *ClusterUsecase) settingSpecifications(cluster *Cluster) {
 	if len(cluster.NodeGroups) != 0 || len(cluster.Nodes) != 0 {
 		return
 	}
+	cluster.VpcCidr = "10.0.0.0/16"
 	nodegroup := cluster.NewNodeGroup()
 	nodegroup.Type = NodeGroupTypeNormal
 	cluster.GenerateNodeGroupName(nodegroup)

@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -22,7 +21,6 @@ import (
 	mmd "github.com/go-kratos/kratos/v2/middleware/metadata"
 	"github.com/go-kratos/kratos/v2/transport/grpc"
 	"github.com/pkg/errors"
-	"github.com/spf13/cast"
 	"golang.org/x/sync/errgroup"
 	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
@@ -45,15 +43,23 @@ func NewClusterInfrastructure(c *conf.Bootstrap, logger log.Logger) biz.ClusterI
 }
 
 func (c *ClusterInfrastructure) GetRegions(ctx context.Context, cluster *biz.Cluster) ([]string, error) {
-	switch cluster.Type {
-	case biz.ClusterTypeAliCloudEcs:
-		return NewAlicloud(cluster).GetRegions()
-	case biz.ClusterTypeAliCloudAks:
-		return NewAlicloud(cluster).GetRegions()
-	case biz.ClusterTypeAWSEc2:
-		return NewAwsCloud(cluster).GetRegions()
-	case biz.ClusterTypeAWSEks:
-		return NewAwsCloud(cluster).GetRegions()
+	if cluster.Type.IsCloud() {
+		return []string{}, nil
+	}
+
+	if cluster.Type == biz.ClusterTypeAWSEc2 || cluster.Type == biz.ClusterTypeAWSEks {
+		awsCloud, err := NewAwsCloud(cluster)
+		if err != nil {
+			return nil, err
+		}
+		return awsCloud.GetRegions()
+	}
+	if cluster.Type == biz.ClusterTypeAliCloudEcs || cluster.Type == biz.ClusterTypeAliCloudAks {
+		alicloud, err := NewAlicloud(cluster)
+		if err != nil {
+			return nil, err
+		}
+		return alicloud.GetRegions()
 	}
 	return nil, errors.New("cluster type is not supported")
 }
@@ -62,39 +68,12 @@ func (c *ClusterInfrastructure) Start(ctx context.Context, cluster *biz.Cluster)
 	if !cluster.Type.IsCloud() {
 		return nil
 	}
-	var startFunc PulumiFunc
-	output := ""
-	switch cluster.Type {
-	case biz.ClusterTypeAliCloudEcs:
-		startFunc = NewAlicloud(cluster).Start
-	case biz.ClusterTypeAliCloudAks:
-		startFunc = NewAlicloud(cluster).StartAks
-	case biz.ClusterTypeAWSEc2:
-		startFunc = NewAwsCloud(cluster).Start
-	case biz.ClusterTypeAWSEks:
-		startFunc = NewAwsCloud(cluster).StartEks
-	}
-	if startFunc == nil {
-		return errors.New("not supported cluster type")
-	}
-	output, err = c.pulumiExec(ctx, cluster, startFunc)
-	if err != nil {
-		return err
-	}
-	err = c.parseOutput(cluster, output)
-	if err != nil {
-		return err
-	}
 	return nil
 }
 
 func (c *ClusterInfrastructure) Stop(ctx context.Context, cluster *biz.Cluster) error {
 	if !cluster.Type.IsCloud() {
 		return nil
-	}
-	_, err := c.pulumiExec(ctx, cluster, CleanFunc)
-	if err != nil {
-		return err
 	}
 	return nil
 }
@@ -109,7 +88,7 @@ func (cc *ClusterInfrastructure) MigrateToBostionHost(ctx context.Context, clust
 	if cluster.BostionHost.SshPort == 0 {
 		cluster.BostionHost.SshPort = 22
 	}
-	remoteBash, err := NewRemoteBash(ctx, Server{
+	remoteBash, err := NewBash(ctx, Server{
 		Name:       "bostion host",
 		Host:       cluster.BostionHost.ExternalIP,
 		User:       cluster.BostionHost.User,
@@ -389,7 +368,7 @@ func (cc *ClusterInfrastructure) DistributeDaemonApp(ctx context.Context, cluste
 			}
 
 			// get node arch
-			remoteBash, err := NewRemoteBash(ctx, Server{
+			remoteBash, err := NewBash(ctx, Server{
 				Name:       node.Name,
 				Host:       node.InternalIP,
 				User:       node.User,
@@ -566,53 +545,6 @@ func (c *ClusterInfrastructure) downloadAndCopyK8sSoftware(_ context.Context, cl
 	return nil
 }
 
-// preview is true, only preview the pulumi resources
-func (c *ClusterInfrastructure) pulumiExec(ctx context.Context, cluster *biz.Cluster, pulumiFunc PulumiFunc, preview ...bool) (output string, err error) {
-	pulumiObj := NewPulumiAPI(ctx, c)
-	ok := false
-	if cluster.Type == biz.ClusterTypeAliCloudEcs || cluster.Type == biz.ClusterTypeAliCloudAks {
-		ok = true
-		pulumiObj.ProjectName(AlicloudProjectName).
-			StackName(AlicloudStackName).
-			Plugin([]PulumiPlugin{
-				{Kind: PulumiAlicloud, Version: PulumiAlicloudVersion},
-				{Kind: PulumiKubernetes, Version: PulumiKubernetesVersion},
-			}...).
-			Env(map[string]string{
-				"ALICLOUD_ACCESS_KEY": cluster.AccessID,
-				"ALICLOUD_SECRET_KEY": cluster.AccessKey,
-				"ALICLOUD_REGION":     cluster.Region,
-			})
-	}
-	if cluster.Type == biz.ClusterTypeAWSEc2 || cluster.Type == biz.ClusterTypeAWSEks {
-		ok = true
-		pulumiObj.ProjectName(AwsProject).
-			StackName(AwsStack).
-			Plugin([]PulumiPlugin{
-				{Kind: PulumiAws, Version: PulumiAwsVersion},
-				{Kind: PulumiKubernetes, Version: PulumiKubernetesVersion},
-			}...).
-			Env(map[string]string{
-				"AWS_ACCESS_KEY_ID":     cluster.AccessID,
-				"AWS_SECRET_ACCESS_KEY": cluster.AccessKey,
-				"AWS_DEFAULT_REGION":    cluster.Region,
-			})
-	}
-	if !ok {
-		return "", errors.New("cluster type is not supported")
-	}
-	pulumiObj.RegisterDeployFunc(pulumiFunc)
-	if len(preview) > 0 && preview[0] {
-		output, err = pulumiObj.Preview(ctx)
-	} else {
-		output, err = pulumiObj.Up(ctx)
-	}
-	if err != nil {
-		return "", err
-	}
-	return output, err
-}
-
 // log
 func (c *ClusterInfrastructure) Write(content []byte) (n int, err error) {
 	c.log.Info(string(content))
@@ -690,139 +622,5 @@ func (c *ClusterInfrastructure) runCommandWithLogging(command string, args ...st
 		return errors.Errorf("command wrote to stderr: %s", stderrBuffer.String())
 	}
 
-	return nil
-}
-
-type KeyType int
-
-const (
-	InstanceID KeyType = iota
-	InstanceUser
-	InstanceInternalIP
-	InstancePublicIP
-	BostionHostInstanceID
-	ClusterCloudID
-	Connections
-	CertificateAuthority
-	CloudNodeGroupID
-	LoadBalancerID
-	SecurityGroupIDs
-)
-
-func GetKey(keyType KeyType, name ...string) string {
-	switch keyType {
-	case InstanceID:
-		return fmt.Sprintf("node-%s-id", name[0])
-	case InstanceUser:
-		return fmt.Sprintf("node-%s-user", name[0])
-	case InstanceInternalIP:
-		return fmt.Sprintf("node-%s-internal-ip", name[0])
-	case InstancePublicIP:
-		return fmt.Sprintf("node-%s-public-ip", name[0])
-	case BostionHostInstanceID:
-		return "bostion-host-instance-id"
-	case ClusterCloudID:
-		return "cluster-cloud-id"
-	case Connections:
-		return "connections"
-	case CertificateAuthority:
-		return "certificate-authority"
-	case CloudNodeGroupID:
-		return fmt.Sprintf("cloud-nodegroup-id-%s", name[0])
-	case LoadBalancerID:
-		return "load-balancer-id"
-	case SecurityGroupIDs:
-		return "security-group-ids"
-	default:
-		return ""
-	}
-}
-
-// Parse output const
-func (c *ClusterInfrastructure) parseOutput(cluster *biz.Cluster, output string) error {
-	outputMap := make(map[string]interface{})
-	err := json.Unmarshal([]byte(output), &outputMap)
-	if err != nil {
-		return errors.Wrap(err, "failed to unmarshal output")
-	}
-	data := make(map[string]string)
-	for k, v := range outputMap {
-		if v == nil {
-			continue
-		}
-		m := make(map[string]interface{})
-		vJson, err := json.Marshal(v)
-		if err != nil {
-			return errors.Wrap(err, "failed to marshal value")
-		}
-		err = json.Unmarshal(vJson, &m)
-		if err != nil {
-			return errors.Wrap(err, "failed to unmarshal value")
-		}
-		if _, ok := m["Value"]; !ok {
-			continue
-		}
-		if k == GetKey(SecurityGroupIDs) {
-			securityGroupIDs := make([]string, 0)
-			securityGroupIDsJson, err := json.Marshal(m["Value"])
-			if err != nil {
-				return errors.Wrap(err, "failed to marshal security group ids")
-			}
-			err = json.Unmarshal(securityGroupIDsJson, &securityGroupIDs)
-			if err != nil {
-				return errors.Wrap(err, "failed to unmarshal security group ids")
-			}
-			cluster.SecurityGroupIDs = strings.Join(securityGroupIDs, ",")
-			continue
-		}
-		data[k] = cast.ToString(m["Value"])
-	}
-	clusterCloudID, ok := data[GetKey(ClusterCloudID)]
-	if ok {
-		cluster.CloudID = clusterCloudID
-	}
-	connections, ok := data[GetKey(Connections)]
-	if ok {
-		cluster.Connections = connections
-	}
-	certificateAuthority, ok := data[GetKey(CertificateAuthority)]
-	if ok {
-		cluster.CertificateAuthority = certificateAuthority
-	}
-	for _, v := range cluster.NodeGroups {
-		cloudNodeGroupID, ok := data[GetKey(CloudNodeGroupID, v.Name)]
-		if ok {
-			v.CloudNoodGroupID = cloudNodeGroupID
-		}
-	}
-	loadBalancerID, ok := data[GetKey(LoadBalancerID)]
-	if ok {
-		cluster.LoadBalancerID = loadBalancerID
-	}
-	for _, node := range cluster.Nodes {
-		instanceID, ok := data[GetKey(InstanceID, node.Name)]
-		if !ok {
-			continue
-		}
-		node.InstanceID = instanceID
-		node.InternalIP = data[GetKey(InstanceInternalIP, node.Name)]
-		node.ExternalIP = data[GetKey(InstancePublicIP, node.Name)]
-		node.User = data[GetKey(InstanceUser, node.Name)]
-	}
-	bostionHostInstanceID, ok := data[GetKey(InstanceID, GetKey(BostionHostInstanceID))]
-	if ok {
-		if cluster.BostionHost == nil {
-			cluster.BostionHost = &biz.BostionHost{}
-		}
-		cluster.BostionHost.InstanceID = bostionHostInstanceID
-		for _, node := range cluster.Nodes {
-			if node.InstanceID == bostionHostInstanceID {
-				cluster.BostionHost.InternalIP = node.InternalIP
-				cluster.BostionHost.ExternalIP = node.ExternalIP
-				cluster.BostionHost.User = node.User
-				break
-			}
-		}
-	}
 	return nil
 }

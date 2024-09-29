@@ -13,7 +13,7 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-type RemoteBash struct {
+type Bash struct {
 	server    Server
 	sshClient *ssh.Client
 	log       *log.Helper
@@ -27,7 +27,7 @@ type Server struct {
 	PrivateKey string `json:"private_key,omitempty"`
 }
 
-func NewRemoteBash(ctx context.Context, server Server, log *log.Helper) (*RemoteBash, error) {
+func NewBash(ctx context.Context, server Server, log *log.Helper) (*Bash, error) {
 	signer, err := ssh.ParsePrivateKey([]byte(server.PrivateKey))
 	if err != nil {
 		return nil, err
@@ -44,19 +44,19 @@ func NewRemoteBash(ctx context.Context, server Server, log *log.Helper) (*Remote
 	if err != nil {
 		return nil, err
 	}
-	return &RemoteBash{
+	return &Bash{
 		sshClient: sshClient,
 		server:    server,
 		log:       log,
 	}, nil
 }
 
-func (s *RemoteBash) Close() {
+func (s *Bash) Close() {
 	if s.sshClient != nil {
 		s.sshClient.Close()
 	}
 }
-func (s *RemoteBash) Run(command string, args ...string) (stdout string, err error) {
+func (s *Bash) Run(command string, args ...string) (stdout string, err error) {
 	if len(args) > 0 {
 		command = fmt.Sprintf("%s %s", command, strings.Join(args, " "))
 	}
@@ -88,7 +88,7 @@ func (s *RemoteBash) Run(command string, args ...string) (stdout string, err err
 }
 
 // RunWithLogging runs a command and logs its output
-func (s *RemoteBash) RunWithLogging(command string, args ...string) error {
+func (s *Bash) RunWithLogging(command string, args ...string) error {
 	if len(args) > 0 {
 		command = fmt.Sprintf("%s %s", command, strings.Join(args, " "))
 	}
