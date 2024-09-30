@@ -17,7 +17,6 @@ func (c *Cluster) generateNodeLables(nodeGroup *NodeGroup) string {
 	lableMap["region"] = c.Region
 	lableMap["nodegroup"] = nodeGroup.Name
 	lableMap["nodegroup_type"] = nodeGroup.Type.String()
-	lableMap["instance_type"] = nodeGroup.InstanceType
 	lablebytes, _ := json.Marshal(lableMap)
 	return string(lablebytes)
 }

@@ -80,11 +80,20 @@ func (a *AwsCloud) GetAvailableZones() (zones []*ec2.AvailabilityZone, err error
 // create network(vpc, subnet, internet gateway,nat gateway, route table, security group)
 func (a *AwsCloud) CreateNetwork() error {
 	// Step 1: Check and Create VPC
+	if a.cluster.GetCloudResource(biz.ResourceTypeVPC) == nil || len(a.cluster.GetCloudResource(biz.ResourceTypeVPC)) == 0 {
+		a.cluster.AddCloudResource(biz.ResourceTypeVPC, &biz.CloudResource{
+			Name: a.cluster.Name + "-vpc",
+			Tags: map[string]string{
+				"Name": a.cluster.Name + "-vpc",
+			},
+		})
+	}
+
 	existingVpcs, err := a.ec2Client.DescribeVpcs(&ec2.DescribeVpcsInput{
 		Filters: []*ec2.Filter{
 			{
 				Name:   aws.String("tag:Name"),
-				Values: []*string{aws.String(a.cluster.Name + "-vpc")},
+				Values: []*string{aws.String(a.cluster.GetFirstCloudResource(biz.ResourceTypeVPC).Name)},
 			},
 		},
 	})
@@ -92,26 +101,28 @@ func (a *AwsCloud) CreateNetwork() error {
 		return errors.Wrap(err, "failed to describe VPCs")
 	}
 
+	if len(existingVpcs.Vpcs) != 0 {
+		for _, vpc := range existingVpcs.Vpcs {
+			a.cluster.GetFirstCloudResource(biz.ResourceTypeVPC).ID = *vpc.VpcId
+			break
+		}
+	}
+
 	if len(existingVpcs.Vpcs) == 0 {
 		// Create VPC if it doesn't exist
 		vpcOutput, err := a.ec2Client.CreateVpc(&ec2.CreateVpcInput{
-			CidrBlock: aws.String(a.cluster.VpcCidr),
+			CidrBlock: aws.String(a.cluster.IpCidr),
 			TagSpecifications: []*ec2.TagSpecification{
 				{
 					ResourceType: aws.String("vpc"),
-					Tags: []*ec2.Tag{
-						{Key: aws.String("Name"), Value: aws.String(a.cluster.Name + "-vpc")},
-						{Key: aws.String("ocean-key"), Value: aws.String("ocean-cluster")},
-					},
+					Tags:         a.mapToEc2Tags(a.cluster.GetFirstCloudResource(biz.ResourceTypeVPC).Tags),
 				},
 			},
 		})
 		if err != nil {
 			return errors.Wrap(err, "failed to create VPC")
 		}
-		a.cluster.VpcID = *vpcOutput.Vpc.VpcId
-	} else {
-		a.cluster.VpcID = *existingVpcs.Vpcs[0].VpcId
+		a.cluster.GetFirstCloudResource(biz.ResourceTypeVPC).ID = *vpcOutput.Vpc.VpcId
 	}
 
 	// Step 2: Get availability zones
@@ -128,7 +139,7 @@ func (a *AwsCloud) CreateNetwork() error {
 		Filters: []*ec2.Filter{
 			{
 				Name:   aws.String("vpc-id"),
-				Values: []*string{aws.String(a.cluster.VpcID)},
+				Values: []*string{aws.String(a.cluster.GetFirstCloudResource(biz.ResourceTypeVPC).ID)},
 			},
 		},
 	})
@@ -140,7 +151,7 @@ func (a *AwsCloud) CreateNetwork() error {
 		// Create subnets if they don't exist
 		privateSubnetCount := len(azOutput.AvailabilityZones) * 2
 		publicSubnetCount := len(azOutput.AvailabilityZones)
-		subnetCidrs, err := utils.GenerateSubnets(a.cluster.VpcCidr, privateSubnetCount+publicSubnetCount)
+		subnetCidrs, err := utils.GenerateSubnets(a.cluster.IpCidr, privateSubnetCount+publicSubnetCount)
 		if err != nil {
 			return errors.Wrap(err, "failed to generate subnet CIDRs")
 		}
@@ -150,7 +161,7 @@ func (a *AwsCloud) CreateNetwork() error {
 			for j := 0; j < 2; j++ {
 				cidr := subnetCidrs[i*2+j]
 				_, err := a.ec2Client.CreateSubnet(&ec2.CreateSubnetInput{
-					VpcId:            aws.String(a.cluster.VpcID),
+					VpcId:            aws.String(a.cluster.GetFirstCloudResource(biz.ResourceTypeVPC).ID),
 					CidrBlock:        aws.String(cidr),
 					AvailabilityZone: az.ZoneName,
 					TagSpecifications: []*ec2.TagSpecification{
@@ -170,7 +181,7 @@ func (a *AwsCloud) CreateNetwork() error {
 			// Create public subnet
 			cidr := subnetCidrs[privateSubnetCount+i]
 			_, err := a.ec2Client.CreateSubnet(&ec2.CreateSubnetInput{
-				VpcId:            aws.String(a.cluster.VpcID),
+				VpcId:            aws.String(a.cluster.GetFirstCloudResource(biz.ResourceTypeVPC).ID),
 				CidrBlock:        aws.String(cidr),
 				AvailabilityZone: az.ZoneName,
 				TagSpecifications: []*ec2.TagSpecification{
@@ -194,7 +205,7 @@ func (a *AwsCloud) CreateNetwork() error {
 		Filters: []*ec2.Filter{
 			{
 				Name:   aws.String("attachment.vpc-id"),
-				Values: []*string{aws.String(a.cluster.VpcID)},
+				Values: []*string{aws.String(a.cluster.GetFirstCloudResource(biz.ResourceTypeVPC).ID)},
 			},
 		},
 	})
@@ -223,7 +234,7 @@ func (a *AwsCloud) CreateNetwork() error {
 
 		_, err = a.ec2Client.AttachInternetGateway(&ec2.AttachInternetGatewayInput{
 			InternetGatewayId: igwId,
-			VpcId:             aws.String(a.cluster.VpcID),
+			VpcId:             aws.String(a.cluster.GetFirstCloudResource(biz.ResourceTypeVPC).ID),
 		})
 		if err != nil {
 			return errors.Wrap(err, "failed to attach Internet Gateway")
@@ -235,7 +246,7 @@ func (a *AwsCloud) CreateNetwork() error {
 	// Step 5: Check and Create NAT Gateways
 	existingNatGateways, err := a.ec2Client.DescribeNatGateways(&ec2.DescribeNatGatewaysInput{
 		Filter: []*ec2.Filter{
-			{Name: aws.String("vpc-id"), Values: []*string{aws.String(a.cluster.VpcID)}},
+			{Name: aws.String("vpc-id"), Values: []*string{aws.String(a.cluster.GetFirstCloudResource(biz.ResourceTypeVPC).ID)}},
 			{Name: aws.String("state"), Values: []*string{aws.String("available")}},
 		},
 	})
@@ -269,7 +280,7 @@ func (a *AwsCloud) CreateNetwork() error {
 			// Find the public subnet for this AZ
 			subnetOutput, err := a.ec2Client.DescribeSubnets(&ec2.DescribeSubnetsInput{
 				Filters: []*ec2.Filter{
-					{Name: aws.String("vpc-id"), Values: []*string{aws.String(a.cluster.VpcID)}},
+					{Name: aws.String("vpc-id"), Values: []*string{aws.String(a.cluster.GetFirstCloudResource(biz.ResourceTypeVPC).ID)}},
 					{Name: aws.String("availability-zone"), Values: []*string{az.ZoneName}},
 					{Name: aws.String("tag:Type"), Values: []*string{aws.String("public")}},
 				},
@@ -300,7 +311,7 @@ func (a *AwsCloud) CreateNetwork() error {
 	// Step 6: Check and Create route tables
 	existingRouteTables, err := a.ec2Client.DescribeRouteTables(&ec2.DescribeRouteTablesInput{
 		Filters: []*ec2.Filter{
-			{Name: aws.String("vpc-id"), Values: []*string{aws.String(a.cluster.VpcID)}},
+			{Name: aws.String("vpc-id"), Values: []*string{aws.String(a.cluster.GetFirstCloudResource(biz.ResourceTypeVPC).ID)}},
 		},
 	})
 	if err != nil {
@@ -311,7 +322,7 @@ func (a *AwsCloud) CreateNetwork() error {
 		// Create route tables if they don't exist
 		// Create public route table
 		publicRouteTable, err := a.ec2Client.CreateRouteTable(&ec2.CreateRouteTableInput{
-			VpcId: aws.String(a.cluster.VpcID),
+			VpcId: aws.String(a.cluster.GetFirstCloudResource(biz.ResourceTypeVPC).ID),
 			TagSpecifications: []*ec2.TagSpecification{
 				{
 					ResourceType: aws.String("route-table"),
@@ -339,7 +350,7 @@ func (a *AwsCloud) CreateNetwork() error {
 		// Associate public subnets with public route table
 		publicSubnets, err := a.ec2Client.DescribeSubnets(&ec2.DescribeSubnetsInput{
 			Filters: []*ec2.Filter{
-				{Name: aws.String("vpc-id"), Values: []*string{aws.String(a.cluster.VpcID)}},
+				{Name: aws.String("vpc-id"), Values: []*string{aws.String(a.cluster.GetFirstCloudResource(biz.ResourceTypeVPC).ID)}},
 				{Name: aws.String("tag:Type"), Values: []*string{aws.String("public")}},
 			},
 		})
@@ -360,7 +371,7 @@ func (a *AwsCloud) CreateNetwork() error {
 		// Create private route tables (one per AZ)
 		for _, az := range azOutput.AvailabilityZones {
 			privateRouteTable, err := a.ec2Client.CreateRouteTable(&ec2.CreateRouteTableInput{
-				VpcId: aws.String(a.cluster.VpcID),
+				VpcId: aws.String(a.cluster.GetFirstCloudResource(biz.ResourceTypeVPC).ID),
 				TagSpecifications: []*ec2.TagSpecification{
 					{
 						ResourceType: aws.String("route-table"),
@@ -378,7 +389,7 @@ func (a *AwsCloud) CreateNetwork() error {
 			// Find NAT Gateway for this AZ
 			natGateways, err := a.ec2Client.DescribeNatGateways(&ec2.DescribeNatGatewaysInput{
 				Filter: []*ec2.Filter{
-					{Name: aws.String("vpc-id"), Values: []*string{aws.String(a.cluster.VpcID)}},
+					{Name: aws.String("vpc-id"), Values: []*string{aws.String(a.cluster.GetFirstCloudResource(biz.ResourceTypeVPC).ID)}},
 					{Name: aws.String("state"), Values: []*string{aws.String("available")}},
 					{Name: aws.String("tag:Name"), Values: []*string{aws.String(fmt.Sprintf("%s-nat-gateway-%s", a.cluster.Name, *az.ZoneName))}},
 				},
@@ -400,7 +411,7 @@ func (a *AwsCloud) CreateNetwork() error {
 			// Associate private subnets with private route table
 			privateSubnets, err := a.ec2Client.DescribeSubnets(&ec2.DescribeSubnetsInput{
 				Filters: []*ec2.Filter{
-					{Name: aws.String("vpc-id"), Values: []*string{aws.String(a.cluster.VpcID)}},
+					{Name: aws.String("vpc-id"), Values: []*string{aws.String(a.cluster.GetFirstCloudResource(biz.ResourceTypeVPC).ID)}},
 					{Name: aws.String("availability-zone"), Values: []*string{az.ZoneName}},
 					{Name: aws.String("tag:Type"), Values: []*string{aws.String("private")}},
 				},
@@ -424,7 +435,7 @@ func (a *AwsCloud) CreateNetwork() error {
 	// Step 7: Check and Create security group
 	existingSecurityGroups, err := a.ec2Client.DescribeSecurityGroups(&ec2.DescribeSecurityGroupsInput{
 		Filters: []*ec2.Filter{
-			{Name: aws.String("vpc-id"), Values: []*string{aws.String(a.cluster.VpcID)}},
+			{Name: aws.String("vpc-id"), Values: []*string{aws.String(a.cluster.GetFirstCloudResource(biz.ResourceTypeVPC).ID)}},
 			{Name: aws.String("group-name"), Values: []*string{aws.String(fmt.Sprintf("%s-sg", a.cluster.Name))}},
 		},
 	})
@@ -437,7 +448,7 @@ func (a *AwsCloud) CreateNetwork() error {
 		sgOutput, err := a.ec2Client.CreateSecurityGroup(&ec2.CreateSecurityGroupInput{
 			GroupName:   aws.String(fmt.Sprintf("%s-sg", a.cluster.Name)),
 			Description: aws.String("Security group for Ocean cluster"),
-			VpcId:       aws.String(a.cluster.VpcID),
+			VpcId:       aws.String(a.cluster.GetFirstCloudResource(biz.ResourceTypeVPC).ID),
 			TagSpecifications: []*ec2.TagSpecification{
 				{
 					ResourceType: aws.String("security-group"),
@@ -475,4 +486,165 @@ func (a *AwsCloud) CreateNetwork() error {
 	}
 
 	return nil
+}
+
+// delete network(vpc, subnet, internet gateway, nat gateway, route table, security group)
+func (a *AwsCloud) DeleteNetwork() error {
+	// Step 1: Delete security group
+	securityGroups, err := a.ec2Client.DescribeSecurityGroups(&ec2.DescribeSecurityGroupsInput{
+		Filters: []*ec2.Filter{
+			{Name: aws.String("vpc-id"), Values: []*string{aws.String(a.cluster.GetFirstCloudResource(biz.ResourceTypeVPC).ID)}},
+			{Name: aws.String("group-name"), Values: []*string{aws.String(fmt.Sprintf("%s-sg", a.cluster.Name))}},
+		},
+	})
+	if err != nil {
+		return errors.Wrap(err, "failed to describe security groups")
+	}
+	for _, sg := range securityGroups.SecurityGroups {
+		_, err = a.ec2Client.DeleteSecurityGroup(&ec2.DeleteSecurityGroupInput{
+			GroupId: sg.GroupId,
+		})
+		if err != nil {
+			return errors.Wrap(err, "failed to delete security group")
+		}
+	}
+
+	// Step 2: Delete route tables
+	routeTables, err := a.ec2Client.DescribeRouteTables(&ec2.DescribeRouteTablesInput{
+		Filters: []*ec2.Filter{
+			{Name: aws.String("vpc-id"), Values: []*string{aws.String(a.cluster.GetFirstCloudResource(biz.ResourceTypeVPC).ID)}},
+			{Name: aws.String("tag:ocean-key"), Values: []*string{aws.String("ocean-cluster")}},
+		},
+	})
+	if err != nil {
+		return errors.Wrap(err, "failed to describe route tables")
+	}
+	for _, rt := range routeTables.RouteTables {
+		// Disassociate subnets from route table
+		for _, assoc := range rt.Associations {
+			if assoc.Main != nil && *assoc.Main {
+				continue // Skip the main route table
+			}
+			_, err = a.ec2Client.DisassociateRouteTable(&ec2.DisassociateRouteTableInput{
+				AssociationId: assoc.RouteTableAssociationId,
+			})
+			if err != nil {
+				return errors.Wrap(err, "failed to disassociate route table")
+			}
+		}
+		// Delete route table
+		_, err = a.ec2Client.DeleteRouteTable(&ec2.DeleteRouteTableInput{
+			RouteTableId: rt.RouteTableId,
+		})
+		if err != nil {
+			return errors.Wrap(err, "failed to delete route table")
+		}
+	}
+
+	// Step 3: Delete Internet Gateway
+	igws, err := a.ec2Client.DescribeInternetGateways(&ec2.DescribeInternetGatewaysInput{
+		Filters: []*ec2.Filter{
+			{Name: aws.String("attachment.vpc-id"), Values: []*string{aws.String(a.cluster.GetFirstCloudResource(biz.ResourceTypeVPC).ID)}},
+		},
+	})
+	if err != nil {
+		return errors.Wrap(err, "failed to describe Internet Gateways")
+	}
+	for _, igw := range igws.InternetGateways {
+		_, err = a.ec2Client.DetachInternetGateway(&ec2.DetachInternetGatewayInput{
+			InternetGatewayId: igw.InternetGatewayId,
+			VpcId:             aws.String(a.cluster.GetFirstCloudResource(biz.ResourceTypeVPC).ID),
+		})
+		if err != nil {
+			return errors.Wrap(err, "failed to detach Internet Gateway")
+		}
+		_, err = a.ec2Client.DeleteInternetGateway(&ec2.DeleteInternetGatewayInput{
+			InternetGatewayId: igw.InternetGatewayId,
+		})
+		if err != nil {
+			return errors.Wrap(err, "failed to delete Internet Gateway")
+		}
+	}
+
+	// Step 4: Delete NAT Gateways
+	natGateways, err := a.ec2Client.DescribeNatGateways(&ec2.DescribeNatGatewaysInput{
+		Filter: []*ec2.Filter{
+			{Name: aws.String("vpc-id"), Values: []*string{aws.String(a.cluster.GetFirstCloudResource(biz.ResourceTypeVPC).ID)}},
+		},
+	})
+	if err != nil {
+		return errors.Wrap(err, "failed to describe NAT Gateways")
+	}
+	for _, natGw := range natGateways.NatGateways {
+		_, err = a.ec2Client.DeleteNatGateway(&ec2.DeleteNatGatewayInput{
+			NatGatewayId: natGw.NatGatewayId,
+		})
+		if err != nil {
+			return errors.Wrap(err, "failed to delete NAT Gateway")
+		}
+		// Wait for NAT Gateway to be deleted
+		err = a.ec2Client.WaitUntilNatGatewayDeleted(&ec2.DescribeNatGatewaysInput{
+			NatGatewayIds: []*string{natGw.NatGatewayId},
+		})
+		if err != nil {
+			return errors.Wrap(err, "failed to wait for NAT Gateway deletion")
+		}
+	}
+
+	// Release Elastic IPs associated with NAT Gateways
+	addresses, err := a.ec2Client.DescribeAddresses(&ec2.DescribeAddressesInput{
+		Filters: []*ec2.Filter{
+			{Name: aws.String("domain"), Values: []*string{aws.String("vpc")}},
+		},
+	})
+	if err != nil {
+		return errors.Wrap(err, "failed to describe Elastic IPs")
+	}
+	for _, addr := range addresses.Addresses {
+		if addr.AssociationId != nil {
+			_, err = a.ec2Client.ReleaseAddress(&ec2.ReleaseAddressInput{
+				AllocationId: addr.AllocationId,
+			})
+			if err != nil {
+				return errors.Wrap(err, "failed to release Elastic IP")
+			}
+		}
+	}
+
+	// Step 5: Delete Subnets
+	subnets, err := a.ec2Client.DescribeSubnets(&ec2.DescribeSubnetsInput{
+		Filters: []*ec2.Filter{
+			{Name: aws.String("vpc-id"), Values: []*string{aws.String(a.cluster.GetFirstCloudResource(biz.ResourceTypeVPC).ID)}},
+		},
+	})
+	if err != nil {
+		return errors.Wrap(err, "failed to describe subnets")
+	}
+	for _, subnet := range subnets.Subnets {
+		_, err = a.ec2Client.DeleteSubnet(&ec2.DeleteSubnetInput{
+			SubnetId: subnet.SubnetId,
+		})
+		if err != nil {
+			return errors.Wrap(err, "failed to delete subnet")
+		}
+	}
+
+	// Step 6: Delete VPC
+	_, err = a.ec2Client.DeleteVpc(&ec2.DeleteVpcInput{
+		VpcId: aws.String(a.cluster.GetFirstCloudResource(biz.ResourceTypeVPC).ID),
+	})
+	if err != nil {
+		return errors.Wrap(err, "failed to delete VPC")
+	}
+
+	return nil
+}
+
+// map to ec2 tags
+func (a *AwsCloud) mapToEc2Tags(tags map[string]string) []*ec2.Tag {
+	ec2Tags := []*ec2.Tag{}
+	for key, value := range tags {
+		ec2Tags = append(ec2Tags, &ec2.Tag{Key: aws.String(key), Value: aws.String(value)})
+	}
+	return ec2Tags
 }

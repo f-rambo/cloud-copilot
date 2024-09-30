@@ -2056,10 +2056,6 @@ components:
             properties:
                 id:
                     type: string
-                instance_type:
-                    type: string
-                instance_id:
-                    type: string
                 user:
                     type: string
                 image_id:
@@ -2079,16 +2075,8 @@ components:
                 ssh_port:
                     type: integer
                     format: int32
-                private_ip:
-                    type: string
                 cluster_id:
                     type: string
-                cpu:
-                    type: integer
-                    format: int32
-                memory:
-                    type: number
-                    format: float
         cluster.v1alpha1.CheckBostionHostRequest:
             type: object
             properties:
@@ -2113,12 +2101,6 @@ components:
                     type: string
                 name:
                     type: string
-                cloud_id:
-                    type: string
-                connections:
-                    type: string
-                certificate_authority:
-                    type: string
                 version:
                     type: string
                 api_server_address:
@@ -2136,34 +2118,24 @@ components:
                     type: string
                 kube_config:
                     type: string
-                key_pair:
-                    type: string
                 public_key:
                     type: string
                 private_key:
                     type: string
+                connections:
+                    type: string
+                certificate_authority:
+                    type: string
                 region:
                     type: string
-                vpc_id:
-                    type: string
-                vpc_cidr:
-                    type: string
-                eip_id:
-                    type: string
-                nat_gateway_id:
-                    type: string
-                resource_group_id:
-                    type: string
-                security_group_ids:
-                    type: string
-                external_ip:
+                ip_cidr:
                     type: string
                 access_id:
                     type: string
                 access_key:
                     type: string
-                load_balancer_id:
-                    type: string
+                bostion_host:
+                    $ref: '#/components/schemas/cluster.v1alpha1.BostionHost'
                 nodes:
                     type: array
                     items:
@@ -2172,8 +2144,6 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/cluster.v1alpha1.NodeGroup'
-                bostion_host:
-                    $ref: '#/components/schemas/cluster.v1alpha1.BostionHost'
                 status_string:
                     type: string
         cluster.v1alpha1.ClusterArgs:
@@ -2242,8 +2212,6 @@ components:
             properties:
                 id:
                     type: string
-                instance_id:
-                    type: string
                 name:
                     type: string
                 labels:
@@ -2259,6 +2227,9 @@ components:
                 ssh_port:
                     type: integer
                     format: int32
+                grpc_port:
+                    type: integer
+                    format: int32
                 internal_ip:
                     type: string
                 external_ip:
@@ -2268,14 +2239,13 @@ components:
                 role:
                     type: string
                 status:
-                    type: string
+                    type: integer
+                    format: uint32
                 error_info:
                     type: string
                 zone:
                     type: string
-                subnet_id:
-                    type: string
-                subnet_cidr:
+                ip_cidr:
                     type: string
                 gpu_spec:
                     type: string
@@ -2287,10 +2257,10 @@ components:
                     format: int32
                 node_price:
                     type: number
-                    format: float
+                    format: double
                 pod_price:
                     type: number
-                    format: float
+                    format: double
                 internet_max_bandwidth_out:
                     type: integer
                     format: int32
@@ -2318,11 +2288,7 @@ components:
                     type: string
                 name:
                     type: string
-                cloud_nodegroup_id:
-                    type: string
                 type:
-                    type: string
-                instance_type:
                     type: string
                 image:
                     type: string
@@ -2335,7 +2301,7 @@ components:
                     format: int32
                 memory:
                     type: number
-                    format: float
+                    format: double
                 gpu:
                     type: integer
                     format: int32
