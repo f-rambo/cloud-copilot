@@ -8,18 +8,20 @@ import (
 	ecs "github.com/alibabacloud-go/ecs-20140526/v4/client"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/f-rambo/ocean/internal/biz"
+	"github.com/go-kratos/kratos/v2/log"
 )
 
 type Alicloud struct {
 	cluster   *biz.Cluster
 	ecsClient *ecs.Client
+	log       *log.Helper
 }
 
 const (
 	alicloudDefaultRegion = "cn-hangzhou"
 )
 
-func NewAlicloud(cluster *biz.Cluster) (*Alicloud, error) {
+func NewAlicloud(cluster *biz.Cluster, log *log.Helper) (*Alicloud, error) {
 	if cluster.Region == "" {
 		cluster.Region = alicloudDefaultRegion
 	}
@@ -39,6 +41,7 @@ func NewAlicloud(cluster *biz.Cluster) (*Alicloud, error) {
 	return &Alicloud{
 		cluster:   cluster,
 		ecsClient: client,
+		log:       log,
 	}, nil
 }
 

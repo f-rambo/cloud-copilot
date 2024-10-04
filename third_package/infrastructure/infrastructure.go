@@ -48,14 +48,14 @@ func (c *ClusterInfrastructure) GetRegions(ctx context.Context, cluster *biz.Clu
 	}
 
 	if cluster.Type == biz.ClusterTypeAWSEc2 || cluster.Type == biz.ClusterTypeAWSEks {
-		awsCloud, err := NewAwsCloud(cluster)
+		awsCloud, err := NewAwsCloud(cluster, c.log)
 		if err != nil {
 			return nil, err
 		}
 		return awsCloud.GetRegions()
 	}
 	if cluster.Type == biz.ClusterTypeAliCloudEcs || cluster.Type == biz.ClusterTypeAliCloudAks {
-		alicloud, err := NewAlicloud(cluster)
+		alicloud, err := NewAlicloud(cluster, c.log)
 		if err != nil {
 			return nil, err
 		}

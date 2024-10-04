@@ -33,13 +33,54 @@ func (c *clusterRepo) Save(ctx context.Context, cluster *biz.Cluster) error {
 			tx.Rollback()
 		}
 	}()
+	if len(cluster.CloudResources) != 0 {
+		cloudResourceJsonByte, err := json.Marshal(cluster.CloudResources)
+		if err != nil {
+			return err
+		}
+		cluster.CloudResourcesJson = string(cloudResourceJsonByte)
+	}
 	err := tx.Model(&biz.Cluster{}).Where("id = ?", cluster.ID).Save(cluster).Error
 	if err != nil {
 		return err
 	}
-	err = tx.Model(&biz.BostionHost{}).Where("cluster_id = ?", cluster.ID).Delete(&biz.BostionHost{}).Error
+
+	err = c.saveBostionHost(ctx, cluster, tx)
 	if err != nil {
 		return err
+	}
+
+	err = c.saveNodeGroup(ctx, cluster, tx)
+	if err != nil {
+		return err
+	}
+
+	err = c.saveNode(ctx, cluster, tx)
+	if err != nil {
+		return err
+	}
+
+	err = tx.Commit().Error
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *clusterRepo) saveBostionHost(_ context.Context, cluster *biz.Cluster, tx *gorm.DB) error {
+	bostionHost := &biz.BostionHost{}
+	err := tx.Model(&biz.BostionHost{}).Where("cluster_id = ?", cluster.ID).First(bostionHost).Error
+	if err != nil && err != gorm.ErrRecordNotFound {
+		return err
+	}
+	if bostionHost.ID != 0 && cluster.BostionHost != nil {
+		cluster.BostionHost.ID = bostionHost.ID
+	}
+	if bostionHost.ID != 0 && cluster.BostionHost == nil {
+		err = tx.Model(&biz.BostionHost{}).Where("cluster_id = ?", cluster.ID).Delete(&biz.BostionHost{}).Error
+		if err != nil {
+			return err
+		}
 	}
 	if cluster.BostionHost != nil {
 		cluster.BostionHost.ClusterID = cluster.ID
@@ -48,15 +89,19 @@ func (c *clusterRepo) Save(ctx context.Context, cluster *biz.Cluster) error {
 			return err
 		}
 	}
+	return nil
+}
+
+func (c *clusterRepo) saveNodeGroup(_ context.Context, cluster *biz.Cluster, tx *gorm.DB) error {
 	for _, nodeGroup := range cluster.NodeGroups {
 		nodeGroup.ClusterID = cluster.ID
-		err = tx.Model(&biz.NodeGroup{}).Where("id = ?", nodeGroup.ID).Save(nodeGroup).Error
+		err := tx.Model(&biz.NodeGroup{}).Where("id = ?", nodeGroup.ID).Save(nodeGroup).Error
 		if err != nil {
 			return err
 		}
 	}
 	nodeGroups := make([]*biz.NodeGroup, 0)
-	err = tx.Model(&biz.NodeGroup{}).Where("cluster_id = ?", cluster.ID).Find(&nodeGroups).Error
+	err := tx.Model(&biz.NodeGroup{}).Where("cluster_id = ?", cluster.ID).Find(&nodeGroups).Error
 	if err != nil {
 		return err
 	}
@@ -75,15 +120,19 @@ func (c *clusterRepo) Save(ctx context.Context, cluster *biz.Cluster) error {
 			}
 		}
 	}
+	return nil
+}
+
+func (c *clusterRepo) saveNode(_ context.Context, cluster *biz.Cluster, tx *gorm.DB) error {
 	for _, node := range cluster.Nodes {
 		node.ClusterID = cluster.ID
-		err = tx.Model(&biz.Node{}).Where("id = ?", node.ID).Save(node).Error
+		err := tx.Model(&biz.Node{}).Where("id = ?", node.ID).Save(node).Error
 		if err != nil {
 			return err
 		}
 	}
 	nodes := make([]*biz.Node, 0)
-	err = tx.Model(&biz.Node{}).Where("cluster_id = ?", cluster.ID).Find(&nodes).Error
+	err := tx.Model(&biz.Node{}).Where("cluster_id = ?", cluster.ID).Find(&nodes).Error
 	if err != nil {
 		return err
 	}
@@ -102,10 +151,6 @@ func (c *clusterRepo) Save(ctx context.Context, cluster *biz.Cluster) error {
 			}
 		}
 	}
-	err = tx.Commit().Error
-	if err != nil {
-		return err
-	}
 	return nil
 }
 
@@ -117,6 +162,13 @@ func (c *clusterRepo) Get(ctx context.Context, id int64) (*biz.Cluster, error) {
 	}
 	if err == gorm.ErrRecordNotFound {
 		return nil, nil
+	}
+	if cluster.CloudResourcesJson != "" {
+		cluster.CloudResources = make(map[biz.ResourceType][]*biz.CloudResource)
+		err = json.Unmarshal([]byte(cluster.CloudResourcesJson), &cluster.CloudResources)
+		if err != nil {
+			return nil, err
+		}
 	}
 	bostionHost := &biz.BostionHost{}
 	err = c.data.db.Model(&biz.BostionHost{}).Where("cluster_id = ?", cluster.ID).First(bostionHost).Error
@@ -169,29 +221,24 @@ func (c *clusterRepo) List(ctx context.Context, cluster *biz.Cluster) ([]*biz.Cl
 }
 
 func (c *clusterRepo) Delete(ctx context.Context, id int64) error {
-	// 开始事务
 	tx := c.data.db.Begin()
 	defer func() {
 		if r := recover(); r != nil {
 			tx.Rollback()
 		}
 	}()
-	// 删除集群信息
 	err := tx.Model(&biz.Cluster{}).Where("id = ?", id).Delete(&biz.Cluster{}).Error
 	if err != nil {
 		return err
 	}
-	// 删除节点信息
 	err = tx.Model(&biz.Node{}).Where("cluster_id = ?", id).Delete(&biz.Node{}).Error
 	if err != nil {
 		return err
 	}
-	// 删除节点组信息
 	err = tx.Model(&biz.NodeGroup{}).Where("cluster_id = ?", id).Delete(&biz.NodeGroup{}).Error
 	if err != nil {
 		return err
 	}
-	// 删除跳板机
 	err = tx.Model(&biz.BostionHost{}).Where("cluster_id = ?", id).Delete(&biz.BostionHost{}).Error
 	if err != nil {
 		return err

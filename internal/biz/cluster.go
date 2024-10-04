@@ -135,13 +135,15 @@ func (c *Cluster) IsDeleteed() bool {
 type ResourceType string
 
 const (
-	ResourceTypeVPC             ResourceType = "VPC"
-	ResourceTypeSubnet          ResourceType = "Subnet"
-	ResourceTypeInternetGateway ResourceType = "InternetGateway"
-	ResourceTypeNATGateway      ResourceType = "NATGateway"
-	ResourceTypeRouteTable      ResourceType = "RouteTable"
-	ResourceTypeSecurityGroup   ResourceType = "SecurityGroup"
-	ResourceTypeLoadBalancer    ResourceType = "LoadBalancer"
+	ResourceTypeVPC               ResourceType = "VPC"
+	ResourceTypeSubnet            ResourceType = "Subnet"
+	ResourceTypeInternetGateway   ResourceType = "InternetGateway"
+	ResourceTypeNATGateway        ResourceType = "NATGateway"
+	ResourceTypeRouteTable        ResourceType = "RouteTable"
+	ResourceTypeSecurityGroup     ResourceType = "SecurityGroup"
+	ResourceTypeLoadBalancer      ResourceType = "LoadBalancer"
+	ResourceTypeElasticIP         ResourceType = "ElasticIP"
+	ResourceTypeAvailabilityZones ResourceType = "AvailabilityZones"
 )
 
 // CloudResource represents a cloud provider resource
@@ -151,7 +153,7 @@ type CloudResource struct {
 	AssociatedID any // node id node group id cluster id
 	Type         ResourceType
 	Tags         map[string]string
-	Value        string
+	Value        any
 	SubResources []*CloudResource // For resources that contain other resources
 }
 
@@ -174,6 +176,18 @@ func (c *Cluster) AddCloudResource(resourceType ResourceType, resource *CloudRes
 	c.CloudResources[resourceType] = append(c.CloudResources[resourceType], resource)
 }
 
+func (c *Cluster) AddSubCloudResource(resourceType ResourceType, parentID string, resource *CloudResource) {
+	cloudResource := c.GetCloudResourceByID(resourceType, parentID)
+	if cloudResource == nil {
+		return
+	}
+	if cloudResource.SubResources == nil {
+		cloudResource.SubResources = []*CloudResource{}
+	}
+	resource.Type = resourceType
+	cloudResource.SubResources = append(cloudResource.SubResources, resource)
+}
+
 func (c *Cluster) GetCloudResourceByName(resourceType ResourceType, name string) *CloudResource {
 	for _, resource := range c.CloudResources[resourceType] {
 		if resource.Name == name {
@@ -188,11 +202,17 @@ func (c *Cluster) GetCloudResourceByID(resourceType ResourceType, id string) *Cl
 		if resource.ID == id {
 			return resource
 		}
+		if resource.SubResources != nil {
+			cloudResource := c.GetCloudResourceByID(resourceType, id)
+			if cloudResource != nil {
+				return cloudResource
+			}
+		}
 	}
 	return nil
 }
 
-func (c *Cluster) GetFirstCloudResource(resourceType ResourceType) *CloudResource {
+func (c *Cluster) GetSingleCloudResource(resourceType ResourceType) *CloudResource {
 	resources := c.GetCloudResource(resourceType)
 	if len(resources) == 0 {
 		return nil
