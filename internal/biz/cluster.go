@@ -220,6 +220,28 @@ func (c *Cluster) GetSingleCloudResource(resourceType ResourceType) *CloudResour
 	return resources[0]
 }
 
+// getCloudResource by resourceType and tag value and tag key
+func (c *Cluster) GetCloudResourceByTags(resourceType ResourceType, tagKeyValues ...string) *CloudResource {
+	for _, resource := range c.CloudResources[resourceType] {
+		if resource.Tags == nil {
+			continue
+		}
+		match := true
+		for i := 0; i < len(tagKeyValues); i += 2 {
+			tagKey := tagKeyValues[i]
+			tagValue := tagKeyValues[i+1]
+			if resource.Tags[tagKey] != tagValue {
+				match = false
+				break
+			}
+		}
+		if match {
+			return resource
+		}
+	}
+	return nil
+}
+
 type NodeGroup struct {
 	ID             string        `json:"id" gorm:"column:id;primaryKey; NOT NULL"`
 	Name           string        `json:"name" gorm:"column:name; default:''; NOT NULL"`
