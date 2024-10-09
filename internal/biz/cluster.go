@@ -198,14 +198,24 @@ func (c *Cluster) GetCloudResourceByName(resourceType ResourceType, name string)
 }
 
 func (c *Cluster) GetCloudResourceByID(resourceType ResourceType, id string) *CloudResource {
-	for _, resource := range c.CloudResources[resourceType] {
+	if resources, ok := c.CloudResources[resourceType]; ok {
+		resource := getCloudResourceByID(resources, id)
+		if resource != nil {
+			return resource
+		}
+	}
+	return nil
+}
+
+func getCloudResourceByID(cloudResources []*CloudResource, id string) *CloudResource {
+	for _, resource := range cloudResources {
 		if resource.ID == id {
 			return resource
 		}
-		if resource.SubResources != nil {
-			cloudResource := c.GetCloudResourceByID(resourceType, id)
-			if cloudResource != nil {
-				return cloudResource
+		if resource.SubResources != nil && len(resource.SubResources) > 0 {
+			subResource := getCloudResourceByID(resource.SubResources, id)
+			if subResource != nil {
+				return subResource
 			}
 		}
 	}

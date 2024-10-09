@@ -206,7 +206,7 @@ func (a *AwsCloud) DeleteNetwork() error {
 		}
 	}
 
-	// Step 5: Delete Subnets
+	// // Step 5: Delete Subnets
 	for _, subnet := range a.cluster.GetCloudResource(biz.ResourceTypeSubnet) {
 		_, err := a.ec2Client.DeleteSubnet(&ec2.DeleteSubnetInput{
 			SubnetId: &subnet.ID,
@@ -233,7 +233,7 @@ func (a *AwsCloud) createVPC() error {
 	}
 	vpcName := a.cluster.Name + "-vpc"
 	vpcTags := map[string]string{
-		"Name": vpcName,
+		AwsTagKeyName: vpcName,
 	}
 	a.cluster.AddCloudResource(biz.ResourceTypeVPC, &biz.CloudResource{
 		Name: vpcName,
@@ -279,6 +279,15 @@ func (a *AwsCloud) createVPC() error {
 	vpcCloudResource := a.cluster.GetSingleCloudResource(biz.ResourceTypeVPC)
 	vpcCloudResource.ID = *vpcOutput.Vpc.VpcId
 
+	_, err = a.ec2Client.ModifyVpcAttribute(&ec2.ModifyVpcAttributeInput{
+		VpcId: vpcOutput.Vpc.VpcId,
+		EnableDnsSupport: &ec2.AttributeBooleanValue{
+			Value: aws.Bool(true),
+		},
+	})
+	if err != nil {
+		return errors.Wrap(err, "failed to enable DNS support for VPC")
+	}
 	a.log.Infof("vpc %s created", a.cluster.GetSingleCloudResource(biz.ResourceTypeVPC).ID)
 	return nil
 }
@@ -484,7 +493,7 @@ func (a *AwsCloud) createInternetGateway() error {
 	// Create Internet Gateway if it doesn't exist
 	name := fmt.Sprintf("%s-igw", a.cluster.Name)
 	tags := map[string]string{
-		"Name": name,
+		AwsTagKeyName: name,
 	}
 	igwOutput, err := a.ec2Client.CreateInternetGateway(&ec2.CreateInternetGatewayInput{
 		TagSpecifications: []*ec2.TagSpecification{
@@ -556,6 +565,7 @@ func (a *AwsCloud) createNATGateways() error {
 	}
 
 	// Create NAT Gateways if they don't exist for each AZ
+	natGateWayIds := make([]*string, 0)
 	for _, az := range a.cluster.GetCloudResource(biz.ResourceTypeAvailabilityZones) {
 		// Allocate Elastic IP
 		name := fmt.Sprintf("%s-eip-%s", a.cluster.Name, az.Name)
@@ -642,11 +652,22 @@ func (a *AwsCloud) createNATGateways() error {
 		if err != nil {
 			return errors.Wrap(err, "failed to create NAT Gateway")
 		}
+		natGateWayIds = append(natGateWayIds, natGatewayOutput.NatGateway.NatGatewayId)
 		a.cluster.AddCloudResource(biz.ResourceTypeNATGateway, &biz.CloudResource{
 			Name: name,
 			ID:   *natGatewayOutput.NatGateway.NatGatewayId,
 			Tags: tags,
 		})
+	}
+	a.log.Info("created NAT Gateways")
+
+	// Wait for NAT Gateway availability
+	a.log.Info("waiting for NAT Gateway availability")
+	err = a.ec2Client.WaitUntilNatGatewayAvailable(&ec2.DescribeNatGatewaysInput{
+		NatGatewayIds: natGateWayIds,
+	})
+	if err != nil {
+		return errors.Wrap(err, "failed to wait for NAT Gateway availability")
 	}
 	return nil
 }
@@ -736,7 +757,7 @@ func (a *AwsCloud) createRouteTables() error {
 
 		// Associate public subnets with public route table
 		for i, subnetReource := range a.cluster.GetCloudResource(biz.ResourceTypeSubnet) {
-			if typeVal, ok := subnetReource.Tags["Type"]; !ok || typeVal != "public" {
+			if typeVal, ok := subnetReource.Tags[AwsTagKeyType]; !ok || typeVal != AwsResourcePublic {
 				continue
 			}
 			publicAssociateRouteTable, err := a.ec2Client.AssociateRouteTable(&ec2.AssociateRouteTableInput{
@@ -784,7 +805,7 @@ func (a *AwsCloud) createRouteTables() error {
 
 		// Add route to NAT Gateway in private route table
 		for _, natGateway := range a.cluster.GetCloudResource(biz.ResourceTypeNATGateway) {
-			if zoneName, ok := natGateway.Tags["Zone"]; !ok || zoneName != az.Name {
+			if zoneName, ok := natGateway.Tags[AwsTagZone]; !ok || zoneName != az.Name {
 				continue
 			}
 			_, err = a.ec2Client.CreateRoute(&ec2.CreateRouteInput{
@@ -799,7 +820,10 @@ func (a *AwsCloud) createRouteTables() error {
 
 		// Associate private subnets with private route table
 		for i, subnet := range a.cluster.GetCloudResource(biz.ResourceTypeSubnet) {
-			if typeVal, ok := subnet.Tags["Type"]; !ok || typeVal != "private" {
+			if typeVal, ok := subnet.Tags[AwsTagKeyType]; !ok || typeVal != AwsResourcePrivate {
+				continue
+			}
+			if zonename, ok := subnet.Tags[AwsTagZone]; !ok || zonename != az.Name {
 				continue
 			}
 			privateAssociateRouteTable, err := a.ec2Client.AssociateRouteTable(&ec2.AssociateRouteTableInput{
