@@ -144,6 +144,8 @@ const (
 	ResourceTypeLoadBalancer      ResourceType = "LoadBalancer"
 	ResourceTypeElasticIP         ResourceType = "ElasticIP"
 	ResourceTypeAvailabilityZones ResourceType = "AvailabilityZones"
+	ResourceTypeKeyPair           ResourceType = "KeyPair"
+	ResourceTypeInstance          ResourceType = "Instance"
 )
 
 // CloudResource represents a cloud provider resource
@@ -268,6 +270,7 @@ type NodeGroup struct {
 	TargetSize     int32         `json:"target_size" gorm:"column:target_size; default:0; NOT NULL"`
 	SystemDisk     int32         `json:"system_disk" gorm:"column:system_disk; default:0; NOT NULL"`
 	DataDisk       int32         `json:"data_disk" gorm:"column:data_disk; default:0; NOT NULL"`
+	InstanceType   string        `json:"instance_type" gorm:"column:instance_type; default:''; NOT NULL"`
 	ClusterID      int64         `json:"cluster_id" gorm:"column:cluster_id; default:0; NOT NULL"`
 }
 
@@ -355,6 +358,7 @@ type Node struct {
 	InternetMaxBandwidthOut int32      `json:"internet_max_bandwidth_out" gorm:"column:internet_max_bandwidth_out; default:0; NOT NULL"`
 	ClusterID               int64      `json:"cluster_id" gorm:"column:cluster_id; default:0; NOT NULL"`
 	NodeGroupID             string     `json:"node_group_id" gorm:"column:node_group_id; default:''; NOT NULL"`
+	InstanceID              string     `json:"instance_id" gorm:"column:instance_id; default:''; NOT NULL"`
 	gorm.Model
 }
 
