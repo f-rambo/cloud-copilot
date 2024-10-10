@@ -52,7 +52,7 @@ func (c *ClusterInfrastructure) GetRegions(ctx context.Context, cluster *biz.Clu
 		if err != nil {
 			return nil, err
 		}
-		return awsCloud.GetRegions()
+		return awsCloud.GetRegions(ctx)
 	}
 	if cluster.Type == biz.ClusterTypeAliCloudEcs || cluster.Type == biz.ClusterTypeAliCloudAks {
 		alicloud, err := NewAlicloud(cluster, c.log)
@@ -68,14 +68,55 @@ func (c *ClusterInfrastructure) Start(ctx context.Context, cluster *biz.Cluster)
 	if !cluster.Type.IsCloud() {
 		return nil
 	}
-	return nil
+	if cluster.Type == biz.ClusterTypeAWSEc2 {
+		awsCloud, err := NewAwsCloud(cluster, c.log)
+		if err != nil {
+			return err
+		}
+		err = awsCloud.CreateNetwork(ctx)
+		if err != nil {
+			return err
+		}
+		err = awsCloud.SetByNodeGroups(ctx)
+		if err != nil {
+			return err
+		}
+		err = awsCloud.ImportKeyPair(ctx)
+		if err != nil {
+			return err
+		}
+		err = awsCloud.ManageInstance(ctx)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+	return errors.New("cluster type is not supported")
 }
 
 func (c *ClusterInfrastructure) Stop(ctx context.Context, cluster *biz.Cluster) error {
 	if !cluster.Type.IsCloud() {
 		return nil
 	}
-	return nil
+	if cluster.Type == biz.ClusterTypeAWSEc2 {
+		awsCloud, err := NewAwsCloud(cluster, c.log)
+		if err != nil {
+			return err
+		}
+		err = awsCloud.DeleteClusterAllInstance(ctx)
+		if err != nil {
+			return err
+		}
+		err = awsCloud.DeleteKeyPair(ctx)
+		if err != nil {
+			return err
+		}
+		err = awsCloud.DeleteNetwork(ctx)
+		if err != nil {
+			return err
+		}
+	}
+	return errors.New("cluster type is not supported")
 }
 
 func (cc *ClusterInfrastructure) MigrateToBostionHost(ctx context.Context, cluster *biz.Cluster) error {

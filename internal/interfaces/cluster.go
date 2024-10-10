@@ -614,7 +614,6 @@ func (c *ClusterInterface) bizBostionHostToBostionHost(bizBostionHost *biz.Bosti
 	return &v1alpha1.BostionHost{
 		Id:         bizBostionHost.ID,
 		User:       bizBostionHost.User,
-		ImageId:    bizBostionHost.ImageID,
 		Image:      bizBostionHost.Image,
 		Os:         bizBostionHost.OS,
 		Arch:       bizBostionHost.ARCH,

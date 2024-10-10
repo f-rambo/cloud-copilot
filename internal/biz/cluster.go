@@ -71,10 +71,7 @@ func ClusterTypes() []ClusterType {
 }
 
 type ClusterStatus uint8
-
-func (s ClusterStatus) Uint8() uint8 {
-	return uint8(s)
-}
+type ClusterStatusName string
 
 const (
 	ClusterStatusUnspecified ClusterStatus = 0
@@ -82,31 +79,28 @@ const (
 	ClusterStatusDeleted     ClusterStatus = 2
 	ClusterStatusStarting    ClusterStatus = 3
 	ClusterStatusStopping    ClusterStatus = 4
+
+	ClusterStatusNameUnspecified ClusterStatusName = "unspecified"
+	ClusterStatusNameRunning     ClusterStatusName = "running"
+	ClusterStatusNameDeleted     ClusterStatusName = "deleted"
+	ClusterStatusNameStarting    ClusterStatusName = "starting"
+	ClusterStatusNameStopping    ClusterStatusName = "stopping"
 )
 
-var (
-	ClusterStatusName = map[uint8]string{
-		0: "unspecified",
-		1: "running",
-		2: "deleted",
-		3: "starting",
-		4: "stopping",
-	}
-	ClusterStatusValue = map[string]uint8{
-		"unspecified": 0,
-		"running":     1,
-		"deleted":     2,
-		"starting":    3,
-		"stopping":    4,
-	}
-)
+var ClusterStatusNameMap = map[ClusterStatus]ClusterStatusName{
+	ClusterStatusUnspecified: ClusterStatusNameUnspecified,
+	ClusterStatusRunning:     ClusterStatusNameRunning,
+	ClusterStatusDeleted:     ClusterStatusNameDeleted,
+	ClusterStatusStarting:    ClusterStatusNameStarting,
+	ClusterStatusStopping:    ClusterStatusNameStopping,
+}
 
 func (s ClusterStatus) String() string {
-	statusName, ok := ClusterStatusName[s.Uint8()]
+	statusName, ok := ClusterStatusNameMap[s]
 	if !ok {
-		return ClusterStatusName[0]
+		return string(ClusterStatusNameMap[ClusterStatusUnspecified])
 	}
-	return statusName
+	return string(statusName)
 }
 
 func (c ClusterType) IsCloud() bool {
@@ -254,6 +248,60 @@ func (c *Cluster) GetCloudResourceByTags(resourceType ResourceType, tagKeyValues
 	return nil
 }
 
+// delete cloud resource by resourceType
+func (c *Cluster) DeleteCloudResource(resourceType ResourceType) {
+	if c.CloudResources == nil {
+		return
+	}
+	if c.CloudResources[resourceType] == nil {
+		return
+	}
+	c.CloudResources[resourceType] = []*CloudResource{}
+}
+
+// delete cloud resource by resourceType and id
+func (c *Cluster) DeleteCloudResourceByID(resourceType ResourceType, id string) {
+	if c.CloudResources == nil {
+		return
+	}
+	if c.CloudResources[resourceType] == nil {
+		return
+	}
+	for i, resource := range c.CloudResources[resourceType] {
+		if resource.ID == id {
+			c.CloudResources[resourceType] = append(c.CloudResources[resourceType][:i], c.CloudResources[resourceType][i+1:]...)
+			break
+		}
+	}
+}
+
+// delete cloud resource by resourceType and tag value and tag key
+func (c *Cluster) DeleteCloudResourceByTags(resourceType ResourceType, tagKeyValues ...string) {
+	if c.CloudResources == nil {
+		return
+	}
+	if c.CloudResources[resourceType] == nil {
+		return
+	}
+	for i, resource := range c.CloudResources[resourceType] {
+		if resource.Tags == nil {
+			continue
+		}
+		match := true
+		for j := 0; j < len(tagKeyValues); j += 2 {
+			tagKey := tagKeyValues[j]
+			tagValue := tagKeyValues[j+1]
+			if resource.Tags[tagKey] != tagValue {
+				match = false
+				break
+			}
+		}
+		if match {
+			c.CloudResources[resourceType] = append(c.CloudResources[resourceType][:i], c.CloudResources[resourceType][i+1:]...)
+		}
+	}
+}
+
 type NodeGroup struct {
 	ID             string        `json:"id" gorm:"column:id;primaryKey; NOT NULL"`
 	Name           string        `json:"name" gorm:"column:name; default:''; NOT NULL"`
@@ -347,7 +395,6 @@ type Node struct {
 	User                    string     `json:"user" gorm:"column:user; default:''; NOT NULL"`
 	Role                    NodeRole   `json:"role" gorm:"column:role; default:''; NOT NULL;"`
 	Status                  NodeStatus `json:"status" gorm:"column:status; default:0; NOT NULL;"`
-	ErrorInfo               string     `json:"error_info" gorm:"column:error_info; default:''; NOT NULL"`
 	Zone                    string     `json:"zone" gorm:"column:zone; default:''; NOT NULL"`
 	IpCidr                  string     `json:"ip_cidr" gorm:"column:ip_cidr; default:''; NOT NULL"`
 	GpuSpec                 string     `json:"gpu_spec" gorm:"column:gpu_spec; default:''; NOT NULL"`
@@ -359,6 +406,7 @@ type Node struct {
 	ClusterID               int64      `json:"cluster_id" gorm:"column:cluster_id; default:0; NOT NULL"`
 	NodeGroupID             string     `json:"node_group_id" gorm:"column:node_group_id; default:''; NOT NULL"`
 	InstanceID              string     `json:"instance_id" gorm:"column:instance_id; default:''; NOT NULL"`
+	ErrorInfo               string     `json:"error_info" gorm:"column:error_info; default:''; NOT NULL"`
 	gorm.Model
 }
 
@@ -375,45 +423,44 @@ func (n NodeRole) String() string {
 }
 
 type NodeStatus uint8
+type NodeStatusName string
 
 const (
 	NodeStatusUnspecified NodeStatus = 0
 	NodeStatusRunning     NodeStatus = 1
 	NodeStatusCreating    NodeStatus = 2
 	NodeStatusDeleting    NodeStatus = 3
+	NodeStatusDeleted     NodeStatus = 4
+	NodeStatusError       NodeStatus = 5
+
+	NodeStatusUnspecifiedName NodeStatusName = "unspecified"
+	NodeStatusRunningName     NodeStatusName = "running"
+	NodeStatusCreatingName    NodeStatusName = "creating"
+	NodeStatusDeletingName    NodeStatusName = "deleting"
+	NodeStatusDeletedName     NodeStatusName = "deleted"
+	NodeStatusErrorName       NodeStatusName = "error"
 )
 
-func (s NodeStatus) Uint8() uint8 {
-	return uint8(s)
+var NodeStatusNameMap = map[NodeStatus]NodeStatusName{
+	NodeStatusUnspecified: NodeStatusUnspecifiedName,
+	NodeStatusRunning:     NodeStatusRunningName,
+	NodeStatusCreating:    NodeStatusCreatingName,
+	NodeStatusDeleting:    NodeStatusDeletingName,
+	NodeStatusDeleted:     NodeStatusDeletedName,
+	NodeStatusError:       NodeStatusErrorName,
 }
 
-var (
-	NodeStatusName = map[uint8]string{
-		0: "unspecified",
-		1: "instanceRunning",
-		2: "instanceCreating",
-		3: "instanceDeleting",
-	}
-	NodeStatusValue = map[string]uint8{
-		"unspecified":      0,
-		"instanceRunning":  1,
-		"instanceCreating": 2,
-		"instanceDeleting": 3,
-	}
-)
-
 func (s NodeStatus) String() string {
-	statusName, ok := NodeStatusName[s.Uint8()]
+	statusName, ok := NodeStatusNameMap[s]
 	if !ok {
-		return NodeStatusName[0]
+		return string(NodeStatusNameMap[NodeStatusUnspecified])
 	}
-	return statusName
+	return string(statusName)
 }
 
 type BostionHost struct {
 	ID         int64  `json:"id" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
 	User       string `json:"user" gorm:"column:user; default:''; NOT NULL"`
-	ImageID    string `json:"image_id" gorm:"column:image_id; default:''; NOT NULL"`
 	Image      string `json:"image" gorm:"column:image; default:''; NOT NULL"`
 	OS         string `json:"os" gorm:"column:os; default:''; NOT NULL"`
 	ARCH       string `json:"arch" gorm:"column:arch; default:''; NOT NULL"`
@@ -422,7 +469,34 @@ type BostionHost struct {
 	InternalIP string `json:"internal_ip" gorm:"column:internal_ip; default:''; NOT NULL"`
 	SshPort    int32  `json:"ssh_port" gorm:"column:ssh_port; default:0; NOT NULL"`
 	ClusterID  int64  `json:"cluster_id" gorm:"column:cluster_id; default:0; NOT NULL"`
+	NodeID     int64  `json:"node_id" gorm:"column:node_id; default:0; NOT NULL"`
 	gorm.Model
+}
+
+func (c *Cluster) selectedBostionHostByNodes() {
+	if c.BostionHost != nil {
+		return
+	}
+	for _, node := range c.Nodes {
+		if node.Role != NodeRoleMaster {
+			continue
+		}
+		nodeGroup := c.GetNodeGroup(node.NodeGroupID)
+		bostionHost := &BostionHost{
+			User:       node.User,
+			Image:      nodeGroup.Image,
+			OS:         nodeGroup.OS,
+			ARCH:       nodeGroup.ARCH,
+			Hostname:   node.Name,
+			ExternalIP: node.ExternalIP,
+			InternalIP: node.InternalIP,
+			SshPort:    node.SshPort,
+			ClusterID:  c.ID,
+			NodeID:     node.ID,
+		}
+		c.BostionHost = bostionHost
+		break
+	}
 }
 
 type ClusterRepo interface {
@@ -579,6 +653,7 @@ func (uc *ClusterUsecase) handlerClusterNotInstalled(ctx context.Context, cluste
 	if err != nil {
 		return err
 	}
+	cluster.selectedBostionHostByNodes()
 	if uc.conf.Server.GetEnv() == conf.EnvLocal {
 		err = uc.clusterRepo.Save(ctx, cluster)
 		if err != nil {
