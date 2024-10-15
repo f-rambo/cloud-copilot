@@ -880,7 +880,7 @@ func (a *AwsCloud) createSubnets(ctx context.Context) error {
 		})
 	}
 
-	a.log.Infof("subnets %v", a.cluster.GetCloudResource(biz.ResourceTypeSubnet))
+	a.log.Info("subnet finished.")
 	return nil
 }
 
@@ -1020,15 +1020,19 @@ func (a *AwsCloud) createNATGateways(ctx context.Context) error {
 	// Create NAT Gateways if they don't exist for each AZ
 	natGateWayIds := make([]*string, 0)
 	for _, az := range a.cluster.GetCloudResource(biz.ResourceTypeAvailabilityZones) {
+		natGatewayName := fmt.Sprintf("%s-nat-gateway-%s", a.cluster.Name, az.Name)
+		if a.cluster.GetCloudResourceByName(biz.ResourceTypeNATGateway, natGatewayName) != nil {
+			continue
+		}
 		// Allocate Elastic IP
-		name := fmt.Sprintf("%s-eip-%s", a.cluster.Name, az.Name)
-		tags := map[string]string{
-			AwsTagKeyName: name,
+		eipName := fmt.Sprintf("%s-eip-%s", a.cluster.Name, az.Name)
+		eipTags := map[string]string{
+			AwsTagKeyName: eipName,
 			AwsTagZone:    az.Name,
 		}
 		eipCloudResouce := &biz.CloudResource{
-			Name: name,
-			Tags: tags,
+			Name: eipName,
+			Tags: eipTags,
 		}
 		// get Elastic IP
 		eipRes, err := a.ec2Client.DescribeAddressesWithContext(ctx, &ec2.DescribeAddressesInput{})
@@ -1056,14 +1060,14 @@ func (a *AwsCloud) createNATGateways(ctx context.Context) error {
 			a.cluster.AddCloudResource(biz.ResourceTypeElasticIP, eipCloudResouce)
 			break
 		}
-		if a.cluster.GetCloudResourceByTags(biz.ResourceTypeElasticIP, AwsTagKeyName, name) == nil {
+		if a.cluster.GetCloudResourceByTags(biz.ResourceTypeElasticIP, AwsTagKeyName, eipName) == nil {
 			// Allocate Elastic IP
 			eipOutput, err := a.ec2Client.AllocateAddressWithContext(ctx, &ec2.AllocateAddressInput{
 				Domain: aws.String("vpc"),
 				TagSpecifications: []*ec2.TagSpecification{
 					{
-						ResourceType: aws.String(ec2.ResourceTypeElasticIp), // elastic-ip
-						Tags:         a.mapToEc2Tags(tags),
+						ResourceType: aws.String(ec2.ResourceTypeElasticIp),
+						Tags:         a.mapToEc2Tags(eipTags),
 					},
 				},
 			})
@@ -1077,13 +1081,12 @@ func (a *AwsCloud) createNATGateways(ctx context.Context) error {
 		a.log.Info("created Elastic IP for NAT Gateway")
 
 		// Create NAT Gateway
-		name = fmt.Sprintf("%s-nat-gateway-%s", a.cluster.Name, az.Name)
-		tags = map[string]string{
-			AwsTagKeyName: name,
+		natGatewayTags := map[string]string{
+			AwsTagKeyName: natGatewayName,
 			AwsTagKeyType: AwsResourcePublic,
 			AwsTagZone:    az.Name,
 		}
-		if a.cluster.GetCloudResourceByName(biz.ResourceTypeNATGateway, name) != nil {
+		if a.cluster.GetCloudResourceByName(biz.ResourceTypeNATGateway, natGatewayName) != nil {
 			continue
 		}
 
@@ -1098,7 +1101,7 @@ func (a *AwsCloud) createNATGateways(ctx context.Context) error {
 			TagSpecifications: []*ec2.TagSpecification{
 				{
 					ResourceType: aws.String(ec2.ResourceTypeNatgateway), // natgateway
-					Tags:         a.mapToEc2Tags(tags),
+					Tags:         a.mapToEc2Tags(natGatewayTags),
 				},
 			},
 		})
@@ -1107,20 +1110,21 @@ func (a *AwsCloud) createNATGateways(ctx context.Context) error {
 		}
 		natGateWayIds = append(natGateWayIds, natGatewayOutput.NatGateway.NatGatewayId)
 		a.cluster.AddCloudResource(biz.ResourceTypeNATGateway, &biz.CloudResource{
-			Name: name,
+			Name: natGatewayName,
 			ID:   *natGatewayOutput.NatGateway.NatGatewayId,
-			Tags: tags,
+			Tags: natGatewayTags,
 		})
 	}
-	a.log.Info("created NAT Gateways")
 
-	// Wait for NAT Gateway availability
-	a.log.Info("waiting for NAT Gateway availability")
-	err = a.ec2Client.WaitUntilNatGatewayAvailableWithContext(ctx, &ec2.DescribeNatGatewaysInput{
-		NatGatewayIds: natGateWayIds,
-	})
-	if err != nil {
-		return errors.Wrap(err, "failed to wait for NAT Gateway availability")
+	if len(natGateWayIds) != 0 {
+		// Wait for NAT Gateway availability
+		a.log.Info("waiting for NAT Gateway availability")
+		err = a.ec2Client.WaitUntilNatGatewayAvailableWithContext(ctx, &ec2.DescribeNatGatewaysInput{
+			NatGatewayIds: natGateWayIds,
+		})
+		if err != nil {
+			return errors.Wrap(err, "failed to wait for NAT Gateway availability")
+		}
 	}
 	return nil
 }
