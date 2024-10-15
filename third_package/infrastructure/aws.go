@@ -702,9 +702,7 @@ func (a *AwsCloud) createVPC(ctx context.Context) error {
 
 // Get availability zones
 func (a *AwsCloud) getAvailabilityZones(ctx context.Context) error {
-	if len(a.cluster.GetCloudResource(biz.ResourceTypeAvailabilityZones)) != 0 {
-		return nil
-	}
+	a.cluster.DeleteCloudResource(biz.ResourceTypeAvailabilityZones)
 	result, err := a.ec2Client.DescribeAvailabilityZonesWithContext(ctx, &ec2.DescribeAvailabilityZonesInput{
 		Filters: []*ec2.Filter{
 			{
@@ -715,14 +713,13 @@ func (a *AwsCloud) getAvailabilityZones(ctx context.Context) error {
 				Name:   aws.String("region-name"),
 				Values: []*string{aws.String(a.cluster.Region)},
 			},
-			{
-				Name:   aws.String("opt-in-status"),
-				Values: []*string{aws.String("opted-in")},
-			},
 		},
 	})
-	if err != nil || len(result.AvailabilityZones) == 0 {
+	if err != nil {
 		return errors.Wrap(err, "failed to describe regions")
+	}
+	if len(result.AvailabilityZones) == 0 {
+		return errors.New("no availability zones found")
 	}
 	for _, az := range result.AvailabilityZones {
 		a.cluster.AddCloudResource(biz.ResourceTypeAvailabilityZones, &biz.CloudResource{
@@ -763,6 +760,12 @@ func (a *AwsCloud) createSubnets(ctx context.Context) error {
 		}
 		for zoneName, subzoneSubnets := range zoneSubnets {
 			for i, subnet := range subzoneSubnets {
+				if subnet == nil || subnet.SubnetId == nil {
+					continue
+				}
+				if a.cluster.GetCloudResourceByID(biz.ResourceTypeSubnet, *subnet.SubnetId) != nil {
+					continue
+				}
 				tags := make(map[string]string)
 				name := ""
 				for _, tag := range subnet.Tags {
@@ -771,13 +774,19 @@ func (a *AwsCloud) createSubnets(ctx context.Context) error {
 				tags[AwsTagZone] = zoneName
 				if i < 2 {
 					name = fmt.Sprintf("%s-private-subnet-%s-%d", a.cluster.Name, *subnet.AvailabilityZone, i+1)
-					tags[AwsTagKeyName] = name
 					tags[AwsTagKeyType] = AwsResourcePrivate
 				} else {
 					name = fmt.Sprintf("%s-public-subnet-%s", a.cluster.Name, *subnet.AvailabilityZone)
-					tags[AwsTagKeyName] = name
 					tags[AwsTagKeyType] = AwsResourcePublic
 				}
+				if nameVal, ok := tags[AwsTagKeyName]; !ok || nameVal != name {
+					tags[AwsTagKeyName] = name
+					err = a.createTags(ctx, *subnet.SubnetId, biz.ResourceTypeSubnet, tags)
+					if err != nil {
+						return err
+					}
+				}
+				tags[AwsTagKeyName] = name
 				a.cluster.AddCloudResource(biz.ResourceTypeSubnet, &biz.CloudResource{
 					Name: name,
 					ID:   *subnet.SubnetId,
@@ -891,6 +900,12 @@ func (a *AwsCloud) createInternetGateway(ctx context.Context) error {
 
 	if len(existingIgws.InternetGateways) != 0 {
 		for _, igw := range existingIgws.InternetGateways {
+			if igw == nil || igw.InternetGatewayId == nil {
+				continue
+			}
+			if a.cluster.GetCloudResourceByID(biz.ResourceTypeInternetGateway, *igw.InternetGatewayId) != nil {
+				continue
+			}
 			name := ""
 			tags := make(map[string]string)
 			for _, tag := range igw.Tags {
@@ -901,8 +916,15 @@ func (a *AwsCloud) createInternetGateway(ctx context.Context) error {
 			}
 			if name == "" {
 				name = fmt.Sprintf("%s-igw", a.cluster.Name)
-				tags[AwsTagKeyName] = name
 			}
+			if nameVal, ok := tags[AwsTagKeyName]; !ok || nameVal != name {
+				tags[AwsTagKeyName] = name
+				err = a.createTags(ctx, *igw.InternetGatewayId, biz.ResourceTypeInternetGateway, tags)
+				if err != nil {
+					return err
+				}
+			}
+			tags[AwsTagKeyName] = name
 			a.cluster.AddCloudResource(biz.ResourceTypeInternetGateway, &biz.CloudResource{
 				Name: name,
 				ID:   *igw.InternetGatewayId,
@@ -962,6 +984,10 @@ func (a *AwsCloud) createNATGateways(ctx context.Context) error {
 			if natGateway == nil || natGateway.SubnetId == nil || len(natGateway.NatGatewayAddresses) == 0 {
 				continue
 			}
+			if a.cluster.GetCloudResourceByID(biz.ResourceTypeNATGateway, *natGateway.NatGatewayId) != nil {
+				continue
+			}
+			// check public subnet
 			subnetCloudResource := a.cluster.GetCloudResourceByID(biz.ResourceTypeSubnet, *natGateway.SubnetId)
 			if subnetCloudResource == nil {
 				continue
@@ -974,10 +1000,15 @@ func (a *AwsCloud) createNATGateways(ctx context.Context) error {
 				tags[*tag.Key] = *tag.Value
 			}
 			name := fmt.Sprintf("%s-nat-gateway-%s", a.cluster.Name, subnetCloudResource.Tags[AwsTagZone])
-			tags[AwsTagKeyName] = name
-			if _, ok := tags[AwsTagZone]; !ok {
-				tags[AwsTagZone] = subnetCloudResource.Tags[AwsTagZone]
+			tags[AwsTagZone] = subnetCloudResource.Tags[AwsTagZone]
+			if nameVal, ok := tags[AwsTagKeyName]; !ok || nameVal != name {
+				tags[AwsTagKeyName] = name
+				err = a.createTags(ctx, *natGateway.NatGatewayId, biz.ResourceTypeNATGateway, tags)
+				if err != nil {
+					return err
+				}
 			}
+			tags[AwsTagKeyName] = name
 			a.cluster.AddCloudResource(biz.ResourceTypeNATGateway, &biz.CloudResource{
 				Name: name,
 				ID:   *natGateway.NatGatewayId,
@@ -1108,6 +1139,9 @@ func (a *AwsCloud) createRouteTables(ctx context.Context) error {
 	if len(existingRouteTables.RouteTables) != 0 {
 		for _, routeTable := range existingRouteTables.RouteTables {
 			if routeTable == nil || routeTable.Tags == nil {
+				continue
+			}
+			if a.cluster.GetCloudResourceByID(biz.ResourceTypeRouteTable, *routeTable.RouteTableId) != nil {
 				continue
 			}
 			name := ""
@@ -1282,6 +1316,12 @@ func (a *AwsCloud) createSecurityGroup(ctx context.Context) error {
 
 	if len(existingSecurityGroups.SecurityGroups) != 0 {
 		for _, securityGroup := range existingSecurityGroups.SecurityGroups {
+			if securityGroup == nil || securityGroup.GroupId == nil {
+				continue
+			}
+			if a.cluster.GetCloudResourceByID(biz.ResourceTypeSecurityGroup, *securityGroup.GroupId) != nil {
+				continue
+			}
 			name := ""
 			tags := make(map[string]string)
 			for _, tag := range securityGroup.Tags {
@@ -1350,18 +1390,15 @@ func (a *AwsCloud) createSecurityGroup(ctx context.Context) error {
 func (a *AwsCloud) createSLB(ctx context.Context) error {
 	// Check if SLB already exists
 	name := fmt.Sprintf("%s-slb", a.cluster.Name)
-	tags := map[string]string{
-		AwsTagKeyName: name,
-	}
 	if a.cluster.GetCloudResourceByName(biz.ResourceTypeLoadBalancer, name) != nil {
 		return nil
 	}
 	publicSubnetIDs := make([]*string, 0)
-	for index, subnet := range a.cluster.GetCloudResource(biz.ResourceTypeSubnet) {
+	for _, subnet := range a.cluster.GetCloudResource(biz.ResourceTypeSubnet) {
 		if typeVal, ok := subnet.Tags[AwsTagKeyType]; !ok || typeVal != AwsResourcePublic {
 			continue
 		}
-		publicSubnetIDs[index] = aws.String(subnet.ID)
+		publicSubnetIDs = append(publicSubnetIDs, aws.String(subnet.ID))
 	}
 	if len(publicSubnetIDs) == 0 {
 		return errors.New("failed to get public subnets")
@@ -1370,8 +1407,9 @@ func (a *AwsCloud) createSLB(ctx context.Context) error {
 	if sg == nil {
 		return errors.New("failed to get security group")
 	}
-	// Create SLB
 
+	// Create SLB
+	tags := map[string]string{AwsTagKeyName: name}
 	slbOutput, err := a.elbv2Client.CreateLoadBalancerWithContext(ctx, &elbv2.CreateLoadBalancerInput{
 		Name:           aws.String(name),
 		Subnets:        publicSubnetIDs,
@@ -1431,6 +1469,18 @@ func (a *AwsCloud) createSLB(ctx context.Context) error {
 	})
 	if err != nil {
 		return errors.Wrap(err, "failed to create listener")
+	}
+	return nil
+}
+
+// create Tags
+func (a *AwsCloud) createTags(ctx context.Context, resourceID string, resourceType biz.ResourceType, tags map[string]string) error {
+	_, err := a.ec2Client.CreateTagsWithContext(ctx, &ec2.CreateTagsInput{
+		Resources: []*string{aws.String(resourceID)},
+		Tags:      a.mapToEc2Tags(tags),
+	})
+	if err != nil {
+		return errors.Wrapf(err, "failed to create tags for %s", resourceType)
 	}
 	return nil
 }

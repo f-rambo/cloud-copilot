@@ -302,6 +302,46 @@ func (c *Cluster) DeleteCloudResourceByTags(resourceType ResourceType, tagKeyVal
 	}
 }
 
+func (c *Cluster) SettingSpecifications() {
+	if !c.Type.IsCloud() {
+		return
+	}
+	if len(c.NodeGroups) != 0 || len(c.Nodes) != 0 {
+		return
+	}
+	c.IpCidr = "10.0.0.0/16"
+	nodegroup := c.NewNodeGroup()
+	nodegroup.Name = "default-nodegroup"
+	nodegroup.Type = NodeGroupTypeNormal
+	c.GenerateNodeGroupName(nodegroup)
+	nodegroup.CPU = 4
+	nodegroup.Memory = 8
+	nodegroup.TargetSize = 5
+	nodegroup.MinSize = 1
+	nodegroup.MaxSize = 10
+	c.NodeGroups = append(c.NodeGroups, nodegroup)
+	if c.Type.IsIntegratedCloud() {
+		return
+	}
+	for i := 0; i < int(nodegroup.TargetSize); i++ {
+		node := &Node{
+			Name:        fmt.Sprintf("%s-%s-%s", c.Name, nodegroup.Name, utils.GetRandomString()),
+			Status:      NodeStatusUnspecified,
+			ClusterID:   c.ID,
+			NodeGroupID: nodegroup.ID,
+			SystemDisk:  30,
+			DataDisk:    0,
+		}
+		if i < 3 {
+			node.Role = NodeRoleMaster
+		} else {
+			node.Role = NodeRoleWorker
+		}
+		node.Labels = c.generateNodeLables(nodegroup)
+		c.Nodes = append(c.Nodes, node)
+	}
+}
+
 type NodeGroup struct {
 	ID             string        `json:"id" gorm:"column:id;primaryKey; NOT NULL"`
 	Name           string        `json:"name" gorm:"column:name; default:''; NOT NULL"`
@@ -316,8 +356,6 @@ type NodeGroup struct {
 	MinSize        int32         `json:"min_size" gorm:"column:min_size; default:0; NOT NULL"`
 	MaxSize        int32         `json:"max_size" gorm:"column:max_size; default:0; NOT NULL"`
 	TargetSize     int32         `json:"target_size" gorm:"column:target_size; default:0; NOT NULL"`
-	SystemDisk     int32         `json:"system_disk" gorm:"column:system_disk; default:0; NOT NULL"`
-	DataDisk       int32         `json:"data_disk" gorm:"column:data_disk; default:0; NOT NULL"`
 	InstanceType   string        `json:"instance_type" gorm:"column:instance_type; default:''; NOT NULL"`
 	ClusterID      int64         `json:"cluster_id" gorm:"column:cluster_id; default:0; NOT NULL"`
 }
@@ -395,14 +433,14 @@ type Node struct {
 	User                    string     `json:"user" gorm:"column:user; default:''; NOT NULL"`
 	Role                    NodeRole   `json:"role" gorm:"column:role; default:''; NOT NULL;"`
 	Status                  NodeStatus `json:"status" gorm:"column:status; default:0; NOT NULL;"`
-	Zone                    string     `json:"zone" gorm:"column:zone; default:''; NOT NULL"`
-	IpCidr                  string     `json:"ip_cidr" gorm:"column:ip_cidr; default:''; NOT NULL"`
 	GpuSpec                 string     `json:"gpu_spec" gorm:"column:gpu_spec; default:''; NOT NULL"`
 	SystemDisk              int32      `json:"system_disk" gorm:"column:system_disk; default:0; NOT NULL"`
 	DataDisk                int32      `json:"data_disk" gorm:"column:data_disk; default:0; NOT NULL"`
 	NodePrice               float64    `json:"node_price" gorm:"column:node_price; default:0; NOT NULL;"`
 	PodPrice                float64    `json:"pod_price" gorm:"column:pod_price; default:0; NOT NULL;"`
 	InternetMaxBandwidthOut int32      `json:"internet_max_bandwidth_out" gorm:"column:internet_max_bandwidth_out; default:0; NOT NULL"`
+	Zone                    string     `json:"zone" gorm:"column:zone; default:''; NOT NULL"`
+	SubnetIpCidr            string     `json:"subnet_ip_cidr" gorm:"column:subnet_ip_cidr; default:''; NOT NULL"`
 	ClusterID               int64      `json:"cluster_id" gorm:"column:cluster_id; default:0; NOT NULL"`
 	NodeGroupID             string     `json:"node_group_id" gorm:"column:node_group_id; default:''; NOT NULL"`
 	InstanceID              string     `json:"instance_id" gorm:"column:instance_id; default:''; NOT NULL"`
@@ -471,32 +509,6 @@ type BostionHost struct {
 	ClusterID  int64  `json:"cluster_id" gorm:"column:cluster_id; default:0; NOT NULL"`
 	NodeID     int64  `json:"node_id" gorm:"column:node_id; default:0; NOT NULL"`
 	gorm.Model
-}
-
-func (c *Cluster) selectedBostionHostByNodes() {
-	if c.BostionHost != nil {
-		return
-	}
-	for _, node := range c.Nodes {
-		if node.Role != NodeRoleMaster {
-			continue
-		}
-		nodeGroup := c.GetNodeGroup(node.NodeGroupID)
-		bostionHost := &BostionHost{
-			User:       node.User,
-			Image:      nodeGroup.Image,
-			OS:         nodeGroup.OS,
-			ARCH:       nodeGroup.ARCH,
-			Hostname:   node.Name,
-			ExternalIP: node.ExternalIP,
-			InternalIP: node.InternalIP,
-			SshPort:    node.SshPort,
-			ClusterID:  c.ID,
-			NodeID:     node.ID,
-		}
-		c.BostionHost = bostionHost
-		break
-	}
 }
 
 type ClusterRepo interface {
@@ -648,12 +660,11 @@ func (uc *ClusterUsecase) Reconcile(ctx context.Context, cluster *Cluster) (err 
 }
 
 func (uc *ClusterUsecase) handlerClusterNotInstalled(ctx context.Context, cluster *Cluster) error {
-	uc.settingSpecifications(cluster)
+	cluster.SettingSpecifications()
 	err := uc.clusterInfrastructure.Start(ctx, cluster)
 	if err != nil {
 		return err
 	}
-	cluster.selectedBostionHostByNodes()
 	if uc.conf.Server.GetEnv() == conf.EnvLocal {
 		err = uc.clusterRepo.Save(ctx, cluster)
 		if err != nil {
@@ -726,42 +737,4 @@ func (uc *ClusterUsecase) handlerRemoveNode(ctx context.Context, cluster *Cluste
 	}
 	cluster.Nodes = newNodes
 	return nil
-}
-
-// Setting specifications
-func (uc *ClusterUsecase) settingSpecifications(cluster *Cluster) {
-	if !cluster.Type.IsCloud() {
-		return
-	}
-	if len(cluster.NodeGroups) != 0 || len(cluster.Nodes) != 0 {
-		return
-	}
-	cluster.IpCidr = "10.0.0.0/16"
-	nodegroup := cluster.NewNodeGroup()
-	nodegroup.Type = NodeGroupTypeNormal
-	cluster.GenerateNodeGroupName(nodegroup)
-	nodegroup.CPU = 4
-	nodegroup.Memory = 8
-	nodegroup.TargetSize = 5
-	nodegroup.MinSize = 1
-	nodegroup.MaxSize = 10
-	cluster.NodeGroups = append(cluster.NodeGroups, nodegroup)
-	if cluster.Type.IsIntegratedCloud() {
-		return
-	}
-	for i := 0; i < int(nodegroup.TargetSize); i++ {
-		node := &Node{
-			Name:        fmt.Sprintf("%s-%s-%s", cluster.Name, nodegroup.Name, utils.GetRandomString()),
-			Status:      NodeStatusUnspecified,
-			ClusterID:   cluster.ID,
-			NodeGroupID: nodegroup.ID,
-		}
-		if i < 3 {
-			node.Role = NodeRoleMaster
-		} else {
-			node.Role = NodeRoleWorker
-		}
-		node.Labels = cluster.generateNodeLables(nodegroup)
-		cluster.Nodes = append(cluster.Nodes, node)
-	}
 }

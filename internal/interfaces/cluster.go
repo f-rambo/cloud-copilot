@@ -604,8 +604,6 @@ func (c *ClusterInterface) bizNodeGroupToNodeGroup(bizNodeGroup *biz.NodeGroup) 
 		MinSize:        int32(bizNodeGroup.MinSize),
 		MaxSize:        int32(bizNodeGroup.MaxSize),
 		TargetSize:     int32(bizNodeGroup.TargetSize),
-		SystemDisk:     int32(bizNodeGroup.SystemDisk),
-		DataDisk:       int32(bizNodeGroup.DataDisk),
 		ClusterId:      int64(bizNodeGroup.ClusterID),
 	}
 }
