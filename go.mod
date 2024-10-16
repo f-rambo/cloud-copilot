@@ -7,7 +7,10 @@ require (
 	github.com/alibabacloud-go/ecs-20140526/v4 v4.25.0
 	github.com/alibabacloud-go/tea v1.2.2
 	github.com/argoproj/argo-workflows/v3 v3.5.10
-	github.com/aws/aws-sdk-go v1.45.1
+	github.com/aws/aws-sdk-go-v2 v1.32.2
+	github.com/aws/aws-sdk-go-v2/config v1.15.14
+	github.com/aws/aws-sdk-go-v2/service/ec2 v1.182.0
+	github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2 v1.40.0
 	github.com/f-rambo/sailor v0.0.0-20240328021241-d6662a9d12fe
 	github.com/fsnotify/fsnotify v1.7.0
 	github.com/go-kratos/kratos/v2 v2.8.0
@@ -60,6 +63,16 @@ require (
 	github.com/aliyun/credentials-go v1.3.2 // indirect
 	github.com/argoproj/pkg v0.13.7-0.20230901113346-235a5432ec98 // indirect
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2 // indirect
+	github.com/aws/aws-sdk-go-v2/credentials v1.12.9 // indirect
+	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.12.8 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/configsources v1.3.21 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.6.21 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/ini v1.3.15 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.12.0 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.12.2 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sso v1.11.12 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sts v1.16.9 // indirect
+	github.com/aws/smithy-go v1.22.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/chai2010/gettext-go v1.0.2 // indirect

@@ -227,8 +227,12 @@ func (c *Cluster) GetSingleCloudResource(resourceType ResourceType) *CloudResour
 }
 
 // getCloudResource by resourceType and tag value and tag key
-func (c *Cluster) GetCloudResourceByTags(resourceType ResourceType, tagKeyValues ...string) *CloudResource {
-	for _, resource := range c.CloudResources[resourceType] {
+func (c *Cluster) GetCloudResourceByTags(resourceType ResourceType, tagKeyValues ...string) []*CloudResource {
+	if len(tagKeyValues)%2 != 0 {
+		return nil
+	}
+	cloudResources := make([]*CloudResource, 0)
+	for _, resource := range c.GetCloudResource(resourceType) {
 		if resource.Tags == nil {
 			continue
 		}
@@ -242,10 +246,10 @@ func (c *Cluster) GetCloudResourceByTags(resourceType ResourceType, tagKeyValues
 			}
 		}
 		if match {
-			return resource
+			cloudResources = append(cloudResources, resource)
 		}
 	}
-	return nil
+	return cloudResources
 }
 
 // delete cloud resource by resourceType

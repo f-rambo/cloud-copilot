@@ -48,7 +48,7 @@ func (c *ClusterInfrastructure) GetRegions(ctx context.Context, cluster *biz.Clu
 	}
 
 	if cluster.Type == biz.ClusterTypeAWSEc2 || cluster.Type == biz.ClusterTypeAWSEks {
-		awsCloud, err := NewAwsCloud(cluster, c.log)
+		awsCloud, err := NewAwsCloud(ctx, cluster, c.log)
 		if err != nil {
 			return nil, err
 		}
@@ -69,7 +69,7 @@ func (c *ClusterInfrastructure) Start(ctx context.Context, cluster *biz.Cluster)
 		return nil
 	}
 	if cluster.Type == biz.ClusterTypeAWSEc2 {
-		awsCloud, err := NewAwsCloud(cluster, c.log)
+		awsCloud, err := NewAwsCloud(ctx, cluster, c.log)
 		if err != nil {
 			return err
 		}
@@ -99,7 +99,7 @@ func (c *ClusterInfrastructure) Stop(ctx context.Context, cluster *biz.Cluster) 
 		return nil
 	}
 	if cluster.Type == biz.ClusterTypeAWSEc2 {
-		awsCloud, err := NewAwsCloud(cluster, c.log)
+		awsCloud, err := NewAwsCloud(ctx, cluster, c.log)
 		if err != nil {
 			return err
 		}

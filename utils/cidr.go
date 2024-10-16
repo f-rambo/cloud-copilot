@@ -37,6 +37,18 @@ func GenerateSubnets(vpcCIDR string, subnetCount int) ([]string, error) {
 	return subnets, nil
 }
 
+func DecodeCidr(ipCidr string) string {
+	_, ipnet, err := net.ParseCIDR(ipCidr)
+	if err != nil {
+		return ""
+	}
+	ip := ipnet.IP.To4()
+	if ip != nil {
+		return fmt.Sprintf("%d.%d.%d.%d", ip[0], ip[1], ip[2], ip[3])
+	}
+	return ""
+}
+
 // subnet takes a parent CIDR range and creates a subnet within it
 // with the given number of additional prefix bits and the given
 // network number.
