@@ -249,6 +249,9 @@ func (c *Cluster) GetCloudResourceByTags(resourceType ResourceType, tagKeyValues
 			cloudResources = append(cloudResources, resource)
 		}
 	}
+	if len(cloudResources) == 0 {
+		return nil
+	}
 	return cloudResources
 }
 

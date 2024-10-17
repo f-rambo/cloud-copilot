@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -38,6 +39,7 @@ const (
 	AwsResourcePrivate = "Private"
 	AwsResourceBind    = "true"
 	AwsReosurceUnBind  = "false"
+	AwsNotFound        = "NotFound"
 )
 
 func NewAwsCloud(ctx context.Context, cluster *biz.Cluster, log *log.Helper) (*AwsCloud, error) {
@@ -126,37 +128,120 @@ func (a *AwsCloud) CreateNetwork(ctx context.Context) error {
 func (a *AwsCloud) DeleteNetwork(ctx context.Context) error {
 	// Step 1: Delete security group
 	for _, sg := range a.cluster.GetCloudResource(biz.ResourceTypeSecurityGroup) {
-		_, err := a.ec2Client.DeleteSecurityGroup(ctx, &ec2.DeleteSecurityGroupInput{
+		_, err := a.ec2Client.DescribeSecurityGroups(ctx, &ec2.DescribeSecurityGroupsInput{
+			GroupIds: []string{sg.ID},
+		})
+		if err != nil && strings.Contains(err.Error(), AwsNotFound) {
+			a.log.Infof("No security group found with ID: %s\n", sg.ID)
+			continue
+		}
+		if err != nil {
+			return errors.Wrap(err, "failed to describe security group")
+		}
+		_, err = a.ec2Client.DeleteSecurityGroup(ctx, &ec2.DeleteSecurityGroupInput{
 			GroupId: aws.String(sg.ID),
 		})
 		if err != nil {
 			return errors.Wrap(err, "failed to delete security group")
 		}
-		a.cluster.DeleteCloudResourceByID(biz.ResourceTypeSecurityGroup, sg.ID)
 	}
+	a.cluster.DeleteCloudResource(biz.ResourceTypeSecurityGroup)
 
 	// Step 2: Delete route tables
-	for _, rt := range a.cluster.GetCloudResource(biz.ResourceTypeRouteTable) {
+	rts := a.cluster.GetCloudResource(biz.ResourceTypeRouteTable)
+	for _, rt := range rts {
+		_, err := a.ec2Client.DescribeRouteTables(ctx, &ec2.DescribeRouteTablesInput{
+			RouteTableIds: []string{rt.ID},
+		})
+		if err != nil && strings.Contains(err.Error(), AwsNotFound) {
+			a.log.Infof("No route table found with ID: %s\n", rt.ID)
+			continue
+		}
+		if err != nil {
+			return errors.Wrap(err, "failed to describe route table")
+		}
 		for _, subRtassoc := range rt.SubResources {
-			_, err := a.ec2Client.DisassociateRouteTable(ctx, &ec2.DisassociateRouteTableInput{
+			_, err = a.ec2Client.DisassociateRouteTable(ctx, &ec2.DisassociateRouteTableInput{
 				AssociationId: aws.String(subRtassoc.ID),
 			})
 			if err != nil {
 				return errors.Wrap(err, "failed to disassociate route table")
 			}
 		}
-		_, err := a.ec2Client.DeleteRouteTable(ctx, &ec2.DeleteRouteTableInput{
+		_, err = a.ec2Client.DeleteRouteTable(ctx, &ec2.DeleteRouteTableInput{
 			RouteTableId: aws.String(rt.ID),
 		})
 		if err != nil {
 			return errors.Wrap(err, "failed to delete route table")
 		}
-		a.cluster.DeleteCloudResourceByID(biz.ResourceTypeRouteTable, rt.ID)
 	}
+	a.cluster.DeleteCloudResource(biz.ResourceTypeRouteTable)
+
+	// Step 4: Delete NAT Gateways
+	natGwIDs := make([]string, 0)
+	for _, natGw := range a.cluster.GetCloudResource(biz.ResourceTypeNATGateway) {
+		_, err := a.ec2Client.DescribeNatGateways(ctx, &ec2.DescribeNatGatewaysInput{
+			NatGatewayIds: []string{natGw.ID},
+		})
+		if err != nil && strings.Contains(err.Error(), AwsNotFound) {
+			a.log.Infof("No NAT Gateway found with ID: %s\n", natGw.ID)
+			continue
+		}
+		if err != nil {
+			return errors.Wrap(err, "failed to describe NAT Gateway")
+		}
+		_, err = a.ec2Client.DeleteNatGateway(ctx, &ec2.DeleteNatGatewayInput{
+			NatGatewayId: aws.String(natGw.ID),
+		})
+		if err != nil {
+			return errors.Wrap(err, "failed to delete NAT Gateway")
+		}
+		natGwIDs = append(natGwIDs, natGw.ID)
+	}
+	// Wait for NAT Gateway to be deleted
+	waiter := ec2.NewNatGatewayDeletedWaiter(a.ec2Client)
+	err := waiter.Wait(ctx, &ec2.DescribeNatGatewaysInput{
+		NatGatewayIds: natGwIDs,
+	}, 20*time.Minute)
+	if err != nil {
+		return fmt.Errorf("failed to wait for NAT Gateway deletion: %w", err)
+	}
+	a.cluster.DeleteCloudResource(biz.ResourceTypeNATGateway)
+
+	// Release Elastic IPs associated with NAT Gateways
+	for _, addr := range a.cluster.GetCloudResource(biz.ResourceTypeElasticIP) {
+		_, err := a.ec2Client.DescribeAddresses(ctx, &ec2.DescribeAddressesInput{
+			AllocationIds: []string{addr.ID},
+		})
+		if err != nil && strings.Contains(err.Error(), AwsNotFound) {
+			a.log.Infof("No Elastic IP found with ID: %s\n", addr.ID)
+			continue
+		}
+		if err != nil {
+			return errors.Wrap(err, "failed to describe Elastic IP")
+		}
+		_, err = a.ec2Client.ReleaseAddress(ctx, &ec2.ReleaseAddressInput{
+			AllocationId: aws.String(addr.ID),
+		})
+		if err != nil {
+			return errors.Wrap(err, "failed to release Elastic IP")
+		}
+	}
+	a.cluster.DeleteCloudResource(biz.ResourceTypeElasticIP)
 
 	// Step 3: Delete Internet Gateway
 	for _, igw := range a.cluster.GetCloudResource(biz.ResourceTypeInternetGateway) {
-		_, err := a.ec2Client.DetachInternetGateway(ctx, &ec2.DetachInternetGatewayInput{
+		_, err := a.ec2Client.DescribeInternetGateways(ctx, &ec2.DescribeInternetGatewaysInput{
+			InternetGatewayIds: []string{igw.ID},
+		})
+		if err != nil && strings.Contains(err.Error(), AwsNotFound) {
+			a.log.Infof("No Internet Gateway found with ID: %s\n", igw.ID)
+			continue
+		}
+		if err != nil {
+			return errors.Wrap(err, "failed to describe Internet Gateway")
+		}
+		_, err = a.ec2Client.DetachInternetGateway(ctx, &ec2.DetachInternetGatewayInput{
 			InternetGatewayId: aws.String(igw.ID),
 			VpcId:             aws.String(a.cluster.GetSingleCloudResource(biz.ResourceTypeVPC).ID),
 		})
@@ -169,70 +254,59 @@ func (a *AwsCloud) DeleteNetwork(ctx context.Context) error {
 		if err != nil {
 			return errors.Wrap(err, "failed to delete Internet Gateway")
 		}
-		a.cluster.DeleteCloudResourceByID(biz.ResourceTypeInternetGateway, igw.ID)
 	}
-
-	// Step 4: Delete NAT Gateways
-	// client.DescribeNetworkInterfaces(&ec2.DescribeNetworkInterfacesInput{})
-	for _, natGw := range a.cluster.GetCloudResource(biz.ResourceTypeNATGateway) {
-		_, err := a.ec2Client.DeleteNatGateway(ctx, &ec2.DeleteNatGatewayInput{
-			NatGatewayId: aws.String(natGw.ID),
-		})
-		if err != nil {
-			return errors.Wrap(err, "failed to delete NAT Gateway")
-		}
-		// Wait for NAT Gateway to be deleted
-		waiter := ec2.NewNatGatewayDeletedWaiter(a.ec2Client)
-		err = waiter.Wait(ctx, &ec2.DescribeNatGatewaysInput{
-			NatGatewayIds: []string{natGw.ID},
-		}, 15*time.Minute)
-		if err != nil {
-			return fmt.Errorf("failed to wait for NAT Gateway deletion: %w", err)
-		}
-		a.cluster.DeleteCloudResourceByID(biz.ResourceTypeNATGateway, natGw.ID)
-	}
-
-	// Release Elastic IPs associated with NAT Gateways
-	for _, addr := range a.cluster.GetCloudResource(biz.ResourceTypeElasticIP) {
-		_, err := a.ec2Client.ReleaseAddress(ctx, &ec2.ReleaseAddressInput{
-			AllocationId: aws.String(addr.ID),
-		})
-		if err != nil {
-			return errors.Wrap(err, "failed to release Elastic IP")
-		}
-		a.cluster.DeleteCloudResourceByID(biz.ResourceTypeElasticIP, addr.ID)
-	}
+	a.cluster.DeleteCloudResource(biz.ResourceTypeInternetGateway)
 
 	// // Step 5: Delete Subnets
 	for _, subnet := range a.cluster.GetCloudResource(biz.ResourceTypeSubnet) {
-		_, err := a.ec2Client.DeleteSubnet(ctx, &ec2.DeleteSubnetInput{
+		_, err := a.ec2Client.DescribeSubnets(ctx, &ec2.DescribeSubnetsInput{
+			SubnetIds: []string{subnet.ID},
+		})
+		if err != nil && strings.Contains(err.Error(), AwsNotFound) {
+			a.log.Infof("No subnet found with ID: %s\n", subnet.ID)
+			continue
+		}
+		if err != nil {
+			return errors.Wrap(err, "failed to describe subnet")
+		}
+		_, err = a.ec2Client.DeleteSubnet(ctx, &ec2.DeleteSubnetInput{
 			SubnetId: aws.String(subnet.ID),
 		})
 		if err != nil {
 			return errors.Wrap(err, "failed to delete subnet")
 		}
-		a.cluster.DeleteCloudResourceByID(biz.ResourceTypeSubnet, subnet.ID)
 	}
+	a.cluster.DeleteCloudResource(biz.ResourceTypeSubnet)
 
 	// Step 6: Delete VPC
-	_, err := a.ec2Client.DeleteVpc(ctx, &ec2.DeleteVpcInput{
+	_, err = a.ec2Client.DeleteVpc(ctx, &ec2.DeleteVpcInput{
 		VpcId: aws.String(a.cluster.GetSingleCloudResource(biz.ResourceTypeVPC).ID),
 	})
 	if err != nil {
 		return errors.Wrap(err, "failed to delete VPC")
 	}
-	a.cluster.DeleteCloudResourceByID(biz.ResourceTypeVPC, a.cluster.GetSingleCloudResource(biz.ResourceTypeVPC).ID)
+	a.cluster.DeleteCloudResource(biz.ResourceTypeVPC)
 
 	// step 7: Delete SLB
 	for _, slb := range a.cluster.GetCloudResource(biz.ResourceTypeLoadBalancer) {
-		_, err := a.elbv2Client.DeleteLoadBalancer(ctx, &elasticloadbalancingv2.DeleteLoadBalancerInput{
+		_, err := a.elbv2Client.DescribeLoadBalancers(ctx, &elasticloadbalancingv2.DescribeLoadBalancersInput{
+			LoadBalancerArns: []string{slb.ID},
+		})
+		if err != nil && strings.Contains(err.Error(), AwsNotFound) {
+			a.log.Infof("No SLB found with ID: %s\n", slb.ID)
+			continue
+		}
+		if err != nil {
+			return errors.Wrap(err, "failed to describe SLB")
+		}
+		_, err = a.elbv2Client.DeleteLoadBalancer(ctx, &elasticloadbalancingv2.DeleteLoadBalancerInput{
 			LoadBalancerArn: &slb.ID,
 		})
 		if err != nil {
 			return errors.Wrap(err, "failed to delete SLB")
 		}
-		a.cluster.DeleteCloudResourceByID(biz.ResourceTypeLoadBalancer, slb.ID)
 	}
+	a.cluster.DeleteCloudResource(biz.ResourceTypeLoadBalancer)
 	return nil
 }
 
@@ -364,6 +438,30 @@ func (a *AwsCloud) ImportKeyPair(ctx context.Context) error {
 	tags := map[string]string{
 		AwsTagKeyName: keyName,
 	}
+	keyPairOutputs, err := a.ec2Client.DescribeKeyPairs(ctx, &ec2.DescribeKeyPairsInput{
+		KeyNames: []string{keyName},
+	})
+	if err != nil && !strings.Contains(err.Error(), AwsNotFound) {
+		return fmt.Errorf("failed to describe key pair: %v", err)
+	}
+	if len(keyPairOutputs.KeyPairs) != 0 {
+		for _, keyPair := range keyPairOutputs.KeyPairs {
+			if keyPair.KeyPairId == nil {
+				continue
+			}
+			if a.cluster.GetCloudResourceByID(biz.ResourceTypeKeyPair, *keyPair.KeyPairId) != nil {
+				continue
+			}
+			a.cluster.AddCloudResource(biz.ResourceTypeKeyPair, &biz.CloudResource{
+				Name: *keyPair.KeyName,
+				ID:   *keyPair.KeyPairId,
+				Tags: tags,
+			})
+			a.log.Info("key pair found")
+		}
+		return nil
+	}
+
 	keyPairOutput, err := a.ec2Client.ImportKeyPair(ctx, &ec2.ImportKeyPairInput{
 		KeyName:           aws.String(keyName),
 		PublicKeyMaterial: []byte(a.cluster.PublicKey),
@@ -387,18 +485,23 @@ func (a *AwsCloud) ImportKeyPair(ctx context.Context) error {
 }
 
 func (a *AwsCloud) DeleteKeyPair(ctx context.Context) error {
-	keyPair := a.cluster.GetSingleCloudResource(biz.ResourceTypeKeyPair)
-	if keyPair == nil {
-		return nil
+	for _, keyPair := range a.cluster.GetCloudResource(biz.ResourceTypeKeyPair) {
+		_, err := a.ec2Client.DescribeKeyPairs(ctx, &ec2.DescribeKeyPairsInput{
+			KeyNames: []string{keyPair.Name},
+		})
+		if err != nil && strings.Contains(err.Error(), AwsNotFound) {
+			a.log.Infof("No key pair found with ID: %s\n", keyPair.ID)
+			continue
+		}
+		_, err = a.ec2Client.DeleteKeyPair(ctx, &ec2.DeleteKeyPairInput{
+			KeyName: aws.String(keyPair.Name),
+		})
+		if err != nil {
+			return fmt.Errorf("failed to delete key pair: %v", err)
+		}
+		a.log.Info("key pair deleted")
 	}
-	_, err := a.ec2Client.DeleteKeyPair(ctx, &ec2.DeleteKeyPairInput{
-		KeyName: aws.String(keyPair.Name),
-	})
-	if err != nil {
-		return fmt.Errorf("failed to delete key pair: %v", err)
-	}
-	a.log.Info("key pair deleted")
-	a.cluster.DeleteCloudResourceByID(biz.ResourceTypeKeyPair, keyPair.ID)
+	a.cluster.DeleteCloudResource(biz.ResourceTypeKeyPair)
 	return nil
 }
 
@@ -1082,6 +1185,7 @@ func (a *AwsCloud) createNATGateways(ctx context.Context) error {
 			eipResource.Name = eipName
 			eipResource.Tags = eipTags
 			usedEipID = append(usedEipID, eipResource.ID)
+			break
 		}
 
 		if a.cluster.GetCloudResourceByTags(biz.ResourceTypeElasticIP, AwsTagKeyName, eipName) == nil {
@@ -1456,10 +1560,13 @@ func (a *AwsCloud) CreateSLB(ctx context.Context) error {
 		return errors.New("failed to get security group")
 	}
 
-	loadBalancers, _ := a.elbv2Client.DescribeLoadBalancers(ctx, &elasticloadbalancingv2.DescribeLoadBalancersInput{
+	loadBalancers, err := a.elbv2Client.DescribeLoadBalancers(ctx, &elasticloadbalancingv2.DescribeLoadBalancersInput{
 		Names: []string{name},
 	})
-	if len(loadBalancers.LoadBalancers) != 0 {
+	if err != nil && !strings.Contains(err.Error(), AwsNotFound) {
+		return errors.Wrap(err, "failed to describe load balancers")
+	}
+	if loadBalancers != nil && loadBalancers.LoadBalancers != nil && len(loadBalancers.LoadBalancers) != 0 {
 		for _, loadBalancer := range loadBalancers.LoadBalancers {
 			if loadBalancer.LoadBalancerArn == nil {
 				continue
