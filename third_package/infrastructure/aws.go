@@ -19,7 +19,6 @@ import (
 	"github.com/f-rambo/ocean/utils"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/pkg/errors"
-	"github.com/spf13/cast"
 )
 
 type AwsCloud struct {
@@ -62,31 +61,42 @@ func NewAwsCloud(ctx context.Context, cluster *biz.Cluster, log *log.Helper) (*A
 	}, nil
 }
 
-func (a *AwsCloud) GetRegions(ctx context.Context) ([]string, error) {
-	regions := make([]string, 0)
-	err := a.getAvailabilityZones(ctx)
+// Get availability zones
+func (a *AwsCloud) GetAvailabilityZones(ctx context.Context) error {
+	a.cluster.DeleteCloudResource(biz.ResourceTypeAvailabilityZones)
+	result, err := a.ec2Client.DescribeAvailabilityZones(ctx, &ec2.DescribeAvailabilityZonesInput{
+		Filters: []ec2Types.Filter{
+			{
+				Name:   aws.String("state"),
+				Values: []string{"available"},
+			},
+			{
+				Name:   aws.String("region-name"),
+				Values: []string{a.cluster.Region},
+			},
+		},
+	})
 	if err != nil {
-		return nil, err
+		return errors.Wrap(err, "failed to describe regions")
 	}
-	for _, zone := range a.cluster.GetCloudResource(biz.ResourceTypeAvailabilityZones) {
-		if zone.Value == nil {
-			continue
-		}
-		regions = append(regions, cast.ToString(zone.Value))
+	if len(result.AvailabilityZones) == 0 {
+		return errors.New("no availability zones found")
 	}
-	return regions, nil
+	for _, az := range result.AvailabilityZones {
+		a.cluster.AddCloudResource(biz.ResourceTypeAvailabilityZones, &biz.CloudResource{
+			Name:  *az.ZoneName,
+			ID:    *az.ZoneId,
+			Type:  biz.ResourceTypeAvailabilityZones,
+			Value: *az.RegionName,
+		})
+	}
+	return nil
 }
 
 // create network(vpc, subnet, internet gateway,nat gateway, route table, security group)
 func (a *AwsCloud) CreateNetwork(ctx context.Context) error {
 	// Step 1: Check and Create VPC
 	err := a.createVPC(ctx)
-	if err != nil {
-		return err
-	}
-
-	// Step 2: Get availability zones
-	err = a.getAvailabilityZones(ctx)
 	if err != nil {
 		return err
 	}
@@ -800,38 +810,6 @@ func (a *AwsCloud) createVPC(ctx context.Context) error {
 		return errors.Wrap(err, "failed to enable DNS support for VPC")
 	}
 	a.log.Infof("vpc %s created", a.cluster.GetSingleCloudResource(biz.ResourceTypeVPC).ID)
-	return nil
-}
-
-// Get availability zones
-func (a *AwsCloud) getAvailabilityZones(ctx context.Context) error {
-	a.cluster.DeleteCloudResource(biz.ResourceTypeAvailabilityZones)
-	result, err := a.ec2Client.DescribeAvailabilityZones(ctx, &ec2.DescribeAvailabilityZonesInput{
-		Filters: []ec2Types.Filter{
-			{
-				Name:   aws.String("state"),
-				Values: []string{"available"},
-			},
-			{
-				Name:   aws.String("region-name"),
-				Values: []string{a.cluster.Region},
-			},
-		},
-	})
-	if err != nil {
-		return errors.Wrap(err, "failed to describe regions")
-	}
-	if len(result.AvailabilityZones) == 0 {
-		return errors.New("no availability zones found")
-	}
-	for _, az := range result.AvailabilityZones {
-		a.cluster.AddCloudResource(biz.ResourceTypeAvailabilityZones, &biz.CloudResource{
-			Name:  *az.ZoneName,
-			ID:    *az.ZoneId,
-			Type:  biz.ResourceTypeAvailabilityZones,
-			Value: *az.RegionName,
-		})
-	}
 	return nil
 }
 

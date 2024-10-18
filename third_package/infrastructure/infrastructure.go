@@ -42,31 +42,33 @@ func NewClusterInfrastructure(c *conf.Bootstrap, logger log.Logger) biz.ClusterI
 	}
 }
 
-func (c *ClusterInfrastructure) GetRegions(ctx context.Context, cluster *biz.Cluster) ([]string, error) {
+func (c *ClusterInfrastructure) GetRegions(ctx context.Context, cluster *biz.Cluster) error {
 	if cluster.Type.IsCloud() {
-		return []string{}, nil
+		return nil
 	}
-
 	if cluster.Type == biz.ClusterTypeAWSEc2 || cluster.Type == biz.ClusterTypeAWSEks {
 		awsCloud, err := NewAwsCloud(ctx, cluster, c.log)
 		if err != nil {
-			return nil, err
+			return err
 		}
-		return awsCloud.GetRegions(ctx)
+		return awsCloud.GetAvailabilityZones(ctx)
 	}
 	if cluster.Type == biz.ClusterTypeAliCloudEcs || cluster.Type == biz.ClusterTypeAliCloudAks {
 		alicloud, err := NewAlicloud(cluster, c.log)
 		if err != nil {
-			return nil, err
+			return err
 		}
-		return alicloud.GetRegions()
+		return alicloud.GetAvailabilityZones()
 	}
-	return nil, errors.New("cluster type is not supported")
+	return errors.New("cluster type is not supported")
 }
 
 func (c *ClusterInfrastructure) Start(ctx context.Context, cluster *biz.Cluster) (err error) {
 	if !cluster.Type.IsCloud() {
 		return nil
+	}
+	if len(cluster.GetCloudResource(biz.ResourceTypeAvailabilityZones)) == 0 {
+		return errors.New("availability zones is empty")
 	}
 	if cluster.Type == biz.ClusterTypeAWSEc2 {
 		awsCloud, err := NewAwsCloud(ctx, cluster, c.log)

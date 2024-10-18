@@ -3,12 +3,14 @@ package infrastructure
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	openapi "github.com/alibabacloud-go/darabonba-openapi/v2/client"
 	ecs "github.com/alibabacloud-go/ecs-20140526/v4/client"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/f-rambo/ocean/internal/biz"
 	"github.com/go-kratos/kratos/v2/log"
+	"github.com/pkg/errors"
 )
 
 type Alicloud struct {
@@ -45,22 +47,32 @@ func NewAlicloud(cluster *biz.Cluster, log *log.Helper) (*Alicloud, error) {
 	}, nil
 }
 
-func (a *Alicloud) GetRegions() (regions []string, err error) {
+func (a *Alicloud) GetAvailabilityZones() error {
+	a.cluster.DeleteCloudResource(biz.ResourceTypeAvailabilityZones)
 	describeRegionsRequest := &ecs.DescribeRegionsRequest{
 		AcceptLanguage: tea.String("zh-CN"),
 	}
 	response, err := a.ecsClient.DescribeRegions(describeRegionsRequest)
 	if err != nil {
-		return nil, err
+		return err
 	}
-
 	for _, region := range response.Body.Regions.Region {
 		if region.RegionId == nil {
 			continue
 		}
-		regions = append(regions, *region.RegionId)
+
+		if strings.ToLower(tea.StringValue(region.Status)) != "available" {
+			continue
+		}
+		a.cluster.AddCloudResource(biz.ResourceTypeAvailabilityZones, &biz.CloudResource{
+			ID:   tea.StringValue(region.RegionId),
+			Name: tea.StringValue(region.LocalName),
+		})
 	}
-	return regions, nil
+	if len(a.cluster.GetCloudResource(biz.ResourceTypeAvailabilityZones)) == 0 {
+		return errors.New("no availability zones found")
+	}
+	return nil
 }
 
 func (a *Alicloud) GetZones() (zones []string, err error) {

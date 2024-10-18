@@ -29,6 +29,7 @@ type Cluster struct {
 	AddonsConfig         string                            `json:"addons_config" gorm:"column:addons_config; default:''; NOT NULL;"`
 	Status               ClusterStatus                     `json:"status" gorm:"column:status; default:0; NOT NULL;"`
 	Type                 ClusterType                       `json:"type" gorm:"column:type; default:''; NOT NULL;"`
+	Level                ClusterLevel                      `json:"level" gorm:"column:level; default:''; NOT NULL;"`
 	KubeConfig           string                            `json:"kube_config" gorm:"column:kube_config; default:''; NOT NULL; type:json"`
 	PublicKey            string                            `json:"public_key" gorm:"column:public_key; default:''; NOT NULL;"`
 	PrivateKey           string                            `json:"private_key" gorm:"column:private_key; default:''; NOT NULL;"`
@@ -68,6 +69,18 @@ func ClusterTypes() []ClusterType {
 		ClusterTypeAliCloudEcs,
 		ClusterTypeAliCloudAks,
 	}
+}
+
+type ClusterLevel string
+
+const (
+	ClusterLevelBasic    ClusterLevel = "basic"
+	ClusterLevelStandard ClusterLevel = "standard"
+	ClusterLevelAdvanced ClusterLevel = "advanced"
+)
+
+func (c ClusterLevel) String() string {
+	return string(c)
 }
 
 type ClusterStatus uint8
@@ -321,11 +334,32 @@ func (c *Cluster) SettingSpecifications() {
 	nodegroup.Name = "default-nodegroup"
 	nodegroup.Type = NodeGroupTypeNormal
 	c.GenerateNodeGroupName(nodegroup)
-	nodegroup.CPU = 4
-	nodegroup.Memory = 8
-	nodegroup.TargetSize = 5
-	nodegroup.MinSize = 1
-	nodegroup.MaxSize = 10
+	switch {
+	case c.Level == ClusterLevelBasic:
+		nodegroup.CPU = 2
+		nodegroup.Memory = 4
+		nodegroup.TargetSize = 3
+		nodegroup.MinSize = 1
+		nodegroup.MaxSize = 5
+	case c.Level == ClusterLevelStandard:
+		nodegroup.CPU = 4
+		nodegroup.Memory = 8
+		nodegroup.TargetSize = 5
+		nodegroup.MinSize = 5
+		nodegroup.MaxSize = 10
+	case c.Level == ClusterLevelAdvanced:
+		nodegroup.CPU = 4
+		nodegroup.Memory = 8
+		nodegroup.TargetSize = 5
+		nodegroup.MinSize = 5
+		nodegroup.MaxSize = 0
+	default:
+		nodegroup.CPU = 2
+		nodegroup.Memory = 4
+		nodegroup.TargetSize = 3
+		nodegroup.MinSize = 1
+		nodegroup.MaxSize = 5
+	}
 	c.NodeGroups = append(c.NodeGroups, nodegroup)
 	if c.Type.IsIntegratedCloud() {
 		return
@@ -531,7 +565,7 @@ type ClusterRepo interface {
 type ClusterInfrastructure interface {
 	Start(context.Context, *Cluster) error
 	Stop(context.Context, *Cluster) error
-	GetRegions(context.Context, *Cluster) ([]string, error)
+	GetRegions(context.Context, *Cluster) error
 	MigrateToBostionHost(context.Context, *Cluster) error
 	DistributeDaemonApp(context.Context, *Cluster) error
 	GetNodesSystemInfo(context.Context, *Cluster) error
@@ -599,10 +633,8 @@ func (uc *ClusterUsecase) Save(ctx context.Context, cluster *Cluster) error {
 	if !isClusterEmpty(data) && isClusterEmpty(cluster) {
 		return errors.New("cluster name already exists")
 	}
-	for _, node := range cluster.Nodes {
-		if node.Name == "" {
-			node.Name = fmt.Sprintf("%s-%s", cluster.Name, utils.GetRandomString())
-		}
+	if cluster.Level == "" {
+		cluster.Level = ClusterLevelBasic
 	}
 	err = uc.clusterRepo.Save(ctx, cluster)
 	if err != nil {
@@ -615,7 +647,15 @@ func (uc *ClusterUsecase) GetRegions(ctx context.Context, cluster *Cluster) ([]s
 	if cluster.Type == ClusterTypeLocal {
 		return []string{}, nil
 	}
-	return uc.clusterInfrastructure.GetRegions(ctx, cluster)
+	err := uc.clusterInfrastructure.GetRegions(ctx, cluster)
+	if err != nil {
+		return nil, err
+	}
+	regionNames := make([]string, 0)
+	for _, region := range cluster.GetCloudResource(ResourceTypeAvailabilityZones) {
+		regionNames = append(regionNames, region.Name)
+	}
+	return regionNames, nil
 }
 
 func (uc *ClusterUsecase) Apply(ctx context.Context, cluster *Cluster) error {
@@ -668,7 +708,16 @@ func (uc *ClusterUsecase) Reconcile(ctx context.Context, cluster *Cluster) (err 
 
 func (uc *ClusterUsecase) handlerClusterNotInstalled(ctx context.Context, cluster *Cluster) error {
 	cluster.SettingSpecifications()
-	err := uc.clusterInfrastructure.Start(ctx, cluster)
+	err := uc.clusterInfrastructure.GetRegions(ctx, cluster)
+	if err != nil {
+		return err
+	}
+	if cluster.Level == ClusterLevelBasic {
+		singleZone := cluster.GetSingleCloudResource(ResourceTypeAvailabilityZones)
+		cluster.DeleteCloudResource(ResourceTypeAvailabilityZones)
+		cluster.AddCloudResource(ResourceTypeAvailabilityZones, singleZone)
+	}
+	err = uc.clusterInfrastructure.Start(ctx, cluster)
 	if err != nil {
 		return err
 	}
