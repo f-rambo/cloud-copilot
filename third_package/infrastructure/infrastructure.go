@@ -492,10 +492,10 @@ func (cc *ClusterInfrastructure) GetNodesSystemInfo(ctx context.Context, cluster
 			nodegroup.Memory = systemInfo.Memory
 			nodegroup.GPU = systemInfo.Gpu
 			nodegroup.OS = systemInfo.Os
+			nodegroup.SystemDisk = systemInfo.DataDisk
+			nodegroup.GpuSpec = systemInfo.GpuSpec
+			nodegroup.DataDisk = systemInfo.DataDisk
 			// node
-			node.SystemDisk = systemInfo.DataDisk
-			node.GpuSpec = systemInfo.GpuSpec
-			node.DataDisk = systemInfo.DataDisk
 			node.Kernel = systemInfo.Kernel
 			node.ContainerRuntime = systemInfo.Container
 			node.Kubelet = systemInfo.Kubelet

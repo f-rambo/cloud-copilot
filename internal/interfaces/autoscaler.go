@@ -147,7 +147,8 @@ func (a *Autoscaler) PricingNodePrice(ctx context.Context, in *autoscaler.Pricin
 	if resNode == nil {
 		return nil, errors.New("node not found")
 	}
-	return &autoscaler.PricingNodePriceResponse{Price: resNode.NodePrice}, nil
+	nodeGroup := cluster.GetNodeGroup(resNode.NodeGroupID)
+	return &autoscaler.PricingNodePriceResponse{Price: nodeGroup.NodePrice}, nil
 }
 
 // PricingPodPrice：返回在指定时间段内运行一个 Pod 的理论最低价格。
@@ -165,7 +166,8 @@ func (a *Autoscaler) PricingPodPrice(ctx context.Context, in *autoscaler.Pricing
 	if resNode == nil {
 		return nil, errors.New("node not found")
 	}
-	return &autoscaler.PricingPodPriceResponse{Price: resNode.NodePrice}, nil
+	nodeGroup := cluster.GetNodeGroup(resNode.NodeGroupID)
+	return &autoscaler.PricingPodPriceResponse{Price: nodeGroup.NodePrice}, nil
 }
 
 // GPULabel：返回添加到具有 GPU 资源的节点的标签。
@@ -178,8 +180,12 @@ func (a *Autoscaler) GPULabel(ctx context.Context, in *autoscaler.GPULabelReques
 	}
 	gpuLable := ""
 	for _, node := range cluster.Nodes {
-		if node.GpuSpec != "" {
-			gpuLable = node.GpuSpec
+		nodeGroup := cluster.GetNodeGroup(node.NodeGroupID)
+		if nodeGroup == nil {
+			continue
+		}
+		if nodeGroup.GpuSpec != "" {
+			gpuLable = nodeGroup.GpuSpec
 			break
 		}
 	}
@@ -196,10 +202,14 @@ func (a *Autoscaler) GetAvailableGPUTypes(ctx context.Context, in *autoscaler.Ge
 	}
 	pbGpuTypes := make(map[string]*anypb.Any)
 	for _, node := range cluster.Nodes {
-		if node.GpuSpec == "" {
+		nodeGroup := cluster.GetNodeGroup(node.NodeGroupID)
+		if nodeGroup == nil {
 			continue
 		}
-		pbGpuTypes[node.GpuSpec] = nil
+		if nodeGroup.GpuSpec == "" {
+			continue
+		}
+		pbGpuTypes[nodeGroup.GpuSpec] = nil
 	}
 	return &autoscaler.GetAvailableGPUTypesResponse{
 		GpuTypes: pbGpuTypes,

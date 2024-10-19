@@ -3,6 +3,7 @@ package biz
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/f-rambo/ocean/internal/conf"
@@ -153,6 +154,7 @@ const (
 	ResourceTypeAvailabilityZones ResourceType = "AvailabilityZones"
 	ResourceTypeKeyPair           ResourceType = "KeyPair"
 	ResourceTypeInstance          ResourceType = "Instance"
+	ResourceTypeVpcEndpointS3     ResourceType = "VpcEndpointS3"
 )
 
 // CloudResource represents a cloud provider resource
@@ -329,56 +331,61 @@ func (c *Cluster) SettingSpecifications() {
 	if len(c.NodeGroups) != 0 || len(c.Nodes) != 0 {
 		return
 	}
-	c.IpCidr = "10.0.0.0/16"
+
+	ipCidr := os.Getenv("CLUSTER_IP_CIDR")
+	if ipCidr == "" {
+		ipCidr = "10.0.0.0/16"
+	}
+	c.IpCidr = ipCidr
+
 	nodegroup := c.NewNodeGroup()
 	nodegroup.Name = "default-nodegroup"
 	nodegroup.Type = NodeGroupTypeNormal
 	c.GenerateNodeGroupName(nodegroup)
-	switch {
-	case c.Level == ClusterLevelBasic:
-		nodegroup.CPU = 2
-		nodegroup.Memory = 4
-		nodegroup.TargetSize = 3
-		nodegroup.MinSize = 1
-		nodegroup.MaxSize = 5
-	case c.Level == ClusterLevelStandard:
+
+	nodegroup.CPU = 2
+	nodegroup.Memory = 4
+	nodegroup.TargetSize = 3
+	nodegroup.MinSize = 1
+	nodegroup.MaxSize = 5
+
+	switch c.Level {
+	case ClusterLevelStandard:
 		nodegroup.CPU = 4
 		nodegroup.Memory = 8
 		nodegroup.TargetSize = 5
 		nodegroup.MinSize = 5
 		nodegroup.MaxSize = 10
-	case c.Level == ClusterLevelAdvanced:
+	case ClusterLevelAdvanced:
 		nodegroup.CPU = 4
 		nodegroup.Memory = 8
 		nodegroup.TargetSize = 5
 		nodegroup.MinSize = 5
-		nodegroup.MaxSize = 0
-	default:
-		nodegroup.CPU = 2
-		nodegroup.Memory = 4
-		nodegroup.TargetSize = 3
-		nodegroup.MinSize = 1
-		nodegroup.MaxSize = 5
+		nodegroup.MaxSize = 10
 	}
-	c.NodeGroups = append(c.NodeGroups, nodegroup)
+
+	nodegroup.SystemDisk = 10
+	nodegroup.DataDisk = 0
+	if nodegroup.TargetSize > 0 {
+		c.NodeGroups = append(c.NodeGroups, nodegroup)
+	}
 	if c.Type.IsIntegratedCloud() {
 		return
 	}
+	labels := c.generateNodeLables(nodegroup)
 	for i := 0; i < int(nodegroup.TargetSize); i++ {
 		node := &Node{
 			Name:        fmt.Sprintf("%s-%s-%s", c.Name, nodegroup.Name, utils.GetRandomString()),
 			Status:      NodeStatusUnspecified,
 			ClusterID:   c.ID,
 			NodeGroupID: nodegroup.ID,
-			SystemDisk:  30,
-			DataDisk:    0,
 		}
 		if i < 3 {
 			node.Role = NodeRoleMaster
 		} else {
 			node.Role = NodeRoleWorker
 		}
-		node.Labels = c.generateNodeLables(nodegroup)
+		node.Labels = labels
 		c.Nodes = append(c.Nodes, node)
 	}
 }
@@ -393,11 +400,18 @@ type NodeGroup struct {
 	CPU            int32         `json:"cpu" gorm:"column:cpu; default:0; NOT NULL"`
 	Memory         float64       `json:"memory" gorm:"column:memory; default:0; NOT NULL"`
 	GPU            int32         `json:"gpu" gorm:"column:gpu; default:0; NOT NULL"`
-	NodeInitScript string        `json:"cloud_init_script" gorm:"column:cloud_init_script; default:''; NOT NULL"`
+	GpuSpec        string        `json:"gpu_spec" gorm:"column:gpu_spec; default:''; NOT NULL"`
+	SystemDisk     int32         `json:"system_disk" gorm:"column:system_disk; default:0; NOT NULL"`
+	DataDisk       int32         `json:"data_disk" gorm:"column:data_disk; default:0; NOT NULL"`
 	MinSize        int32         `json:"min_size" gorm:"column:min_size; default:0; NOT NULL"`
 	MaxSize        int32         `json:"max_size" gorm:"column:max_size; default:0; NOT NULL"`
 	TargetSize     int32         `json:"target_size" gorm:"column:target_size; default:0; NOT NULL"`
 	InstanceType   string        `json:"instance_type" gorm:"column:instance_type; default:''; NOT NULL"`
+	NodePrice      float64       `json:"node_price" gorm:"column:node_price; default:0; NOT NULL;"`
+	PodPrice       float64       `json:"pod_price" gorm:"column:pod_price; default:0; NOT NULL;"`
+	Zone           string        `json:"zone" gorm:"column:zone; default:''; NOT NULL"`
+	SubnetIpCidr   string        `json:"subnet_ip_cidr" gorm:"column:subnet_ip_cidr; default:''; NOT NULL"`
+	NodeInitScript string        `json:"cloud_init_script" gorm:"column:cloud_init_script; default:''; NOT NULL"`
 	ClusterID      int64         `json:"cluster_id" gorm:"column:cluster_id; default:0; NOT NULL"`
 }
 
@@ -460,32 +474,24 @@ func (c *Cluster) GenerateNodeGroupName(nodeGroup *NodeGroup) {
 }
 
 type Node struct {
-	ID                      int64      `json:"id" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
-	Name                    string     `json:"name" gorm:"column:name; default:''; NOT NULL"`
-	Labels                  string     `json:"labels" gorm:"column:labels; default:''; NOT NULL"`
-	Kernel                  string     `json:"kernel" gorm:"column:kernel; default:''; NOT NULL"`
-	ContainerRuntime        string     `json:"container_runtime" gorm:"column:container_runtime; default:''; NOT NULL"`
-	Kubelet                 string     `json:"kubelet" gorm:"column:kubelet; default:''; NOT NULL"`
-	KubeProxy               string     `json:"kube_proxy" gorm:"column:kube_proxy; default:''; NOT NULL"`
-	SshPort                 int32      `json:"ssh_port" gorm:"column:ssh_port; default:0; NOT NULL"`
-	GrpcPort                int32      `json:"grpc_port" gorm:"column:grpc_port; default:0; NOT NULL"`
-	InternalIP              string     `json:"internal_ip" gorm:"column:internal_ip; default:''; NOT NULL"`
-	ExternalIP              string     `json:"external_ip" gorm:"column:external_ip; default:''; NOT NULL"`
-	User                    string     `json:"user" gorm:"column:user; default:''; NOT NULL"`
-	Role                    NodeRole   `json:"role" gorm:"column:role; default:''; NOT NULL;"`
-	Status                  NodeStatus `json:"status" gorm:"column:status; default:0; NOT NULL;"`
-	GpuSpec                 string     `json:"gpu_spec" gorm:"column:gpu_spec; default:''; NOT NULL"`
-	SystemDisk              int32      `json:"system_disk" gorm:"column:system_disk; default:0; NOT NULL"`
-	DataDisk                int32      `json:"data_disk" gorm:"column:data_disk; default:0; NOT NULL"`
-	NodePrice               float64    `json:"node_price" gorm:"column:node_price; default:0; NOT NULL;"`
-	PodPrice                float64    `json:"pod_price" gorm:"column:pod_price; default:0; NOT NULL;"`
-	InternetMaxBandwidthOut int32      `json:"internet_max_bandwidth_out" gorm:"column:internet_max_bandwidth_out; default:0; NOT NULL"`
-	Zone                    string     `json:"zone" gorm:"column:zone; default:''; NOT NULL"`
-	SubnetIpCidr            string     `json:"subnet_ip_cidr" gorm:"column:subnet_ip_cidr; default:''; NOT NULL"`
-	ClusterID               int64      `json:"cluster_id" gorm:"column:cluster_id; default:0; NOT NULL"`
-	NodeGroupID             string     `json:"node_group_id" gorm:"column:node_group_id; default:''; NOT NULL"`
-	InstanceID              string     `json:"instance_id" gorm:"column:instance_id; default:''; NOT NULL"`
-	ErrorInfo               string     `json:"error_info" gorm:"column:error_info; default:''; NOT NULL"`
+	ID               int64      `json:"id" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
+	Name             string     `json:"name" gorm:"column:name; default:''; NOT NULL"`
+	Labels           string     `json:"labels" gorm:"column:labels; default:''; NOT NULL"`
+	Kernel           string     `json:"kernel" gorm:"column:kernel; default:''; NOT NULL"`
+	ContainerRuntime string     `json:"container_runtime" gorm:"column:container_runtime; default:''; NOT NULL"`
+	Kubelet          string     `json:"kubelet" gorm:"column:kubelet; default:''; NOT NULL"`
+	KubeProxy        string     `json:"kube_proxy" gorm:"column:kube_proxy; default:''; NOT NULL"`
+	SshPort          int32      `json:"ssh_port" gorm:"column:ssh_port; default:0; NOT NULL"`
+	GrpcPort         int32      `json:"grpc_port" gorm:"column:grpc_port; default:0; NOT NULL"`
+	InternalIP       string     `json:"internal_ip" gorm:"column:internal_ip; default:''; NOT NULL"`
+	ExternalIP       string     `json:"external_ip" gorm:"column:external_ip; default:''; NOT NULL"`
+	User             string     `json:"user" gorm:"column:user; default:''; NOT NULL"`
+	Role             NodeRole   `json:"role" gorm:"column:role; default:''; NOT NULL;"`
+	Status           NodeStatus `json:"status" gorm:"column:status; default:0; NOT NULL;"`
+	ClusterID        int64      `json:"cluster_id" gorm:"column:cluster_id; default:0; NOT NULL"`
+	NodeGroupID      string     `json:"node_group_id" gorm:"column:node_group_id; default:''; NOT NULL"`
+	InstanceID       string     `json:"instance_id" gorm:"column:instance_id; default:''; NOT NULL"`
+	ErrorInfo        string     `json:"error_info" gorm:"column:error_info; default:''; NOT NULL"`
 	gorm.Model
 }
 
