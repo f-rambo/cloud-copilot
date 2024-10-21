@@ -382,99 +382,38 @@ func (a InstanceTypeResults) Less(i, j int) bool {
 
 // get instance type familiy
 func (a *AwsCloud) SetByNodeGroups(ctx context.Context) error {
+	image, err := a.findImage(ctx)
+	if err != nil {
+		return err
+	}
 	for _, ng := range a.cluster.NodeGroups {
-		os := ng.OS
-		if os == "" {
-			os = "ubuntu/images/hvm-ssd-gp3/ubuntu-noble-24.04-amd64-server-*"
-		}
-		architecture := ng.ARCH
-		if architecture == "" {
-			architecture = "x86_64"
-		}
-		images, err := a.ec2Client.DescribeImages(ctx, &ec2.DescribeImagesInput{
-			Owners: []string{"amazon"},
-			Filters: []ec2Types.Filter{
-				{
-					Name:   aws.String("name"),
-					Values: []string{os},
-				},
-				{
-					Name:   aws.String("architecture"),
-					Values: []string{architecture},
-				},
-				{
-					Name:   aws.String("state"),
-					Values: []string{"available"},
-				},
-			},
-		})
-		if err != nil || len(images.Images) == 0 {
-			return errors.Wrap(err, "failed to describe images")
-		}
-		image := images.Images[0]
-		ng.Image = *image.ImageId
-		ng.OS = *image.Name
+		ng.Image = aws.ToString(image.ImageId)
+		ng.OS = aws.ToString(image.Name)
 		ng.ARCH = string(image.Architecture)
-		a.log.Info("image found", "image", image.ImageId)
+		ng.DefaultUsername = determineUsername(aws.ToString(image.Name), aws.ToString(image.Description))
+		a.log.Info("image found", aws.ToString(image.Name), aws.ToString(image.Description))
 
-		// set instance type
 		if ng.InstanceType != "" {
 			continue
 		}
+
 		instanceTypeFamiliy := getIntanceTypeFamilies(ng)
-		instanceData := make(InstanceTypeResults, 0)
-		instanceTypeInput := &ec2.DescribeInstanceTypesInput{
-			Filters: []ec2Types.Filter{
-				{
-					Name:   aws.String("current-generation"),
-					Values: []string{"true"},
-				},
-				{
-					Name:   aws.String("processor-info.supported-architecture"),
-					Values: []string{ng.ARCH},
-				},
-				{
-					Name:   aws.String("instance-type"),
-					Values: []string{instanceTypeFamiliy},
-				},
-			},
+		instanceInfo, err := a.findInstanceType(ctx, instanceTypeFamiliy, ng.CPU, ng.GPU, ng.Memory)
+		if err != nil {
+			return err
 		}
-		for {
-			instanceTypes, err := a.ec2Client.DescribeInstanceTypes(ctx, instanceTypeInput)
-			if err != nil {
-				return errors.Wrap(err, "failed to describe instance types")
-			}
-			for _, instanceType := range instanceTypes.InstanceTypes {
-				instanceData = append(instanceData, instanceType)
-			}
-			if instanceTypes.NextToken == nil {
-				break
-			}
-			instanceTypeInput.NextToken = instanceTypes.NextToken
+		ng.InstanceType = string(instanceInfo.InstanceType)
+		if instanceInfo.VCpuInfo != nil && instanceInfo.VCpuInfo.DefaultVCpus != nil {
+			ng.CPU = aws.ToInt32(instanceInfo.VCpuInfo.DefaultVCpus)
 		}
-		sort.Sort(instanceData)
-		for _, instanceType := range instanceData {
-			if *instanceType.MemoryInfo.SizeInMiB == 0 {
-				continue
-			}
-			memoryGBiSize := float64(*instanceType.MemoryInfo.SizeInMiB) / 1024.0
-			if memoryGBiSize >= ng.Memory && int(*instanceType.VCpuInfo.DefaultVCpus) >= int(ng.CPU) {
-				ng.InstanceType = string(instanceType.InstanceType)
-			}
-			if ng.InstanceType == "" {
-				continue
-			}
-			if ng.GPU == 0 {
-				break
-			}
-			for _, gpues := range instanceType.GpuInfo.Gpus {
-				if *gpues.Count >= ng.GPU {
-					break
-				}
-			}
+		if instanceInfo.MemoryInfo != nil && instanceInfo.MemoryInfo.SizeInMiB != nil {
+			ng.Memory = int32(aws.ToInt64(instanceInfo.MemoryInfo.SizeInMiB) / 1024)
 		}
-		if ng.InstanceType == "" {
-			return errors.New("no instance type found")
+		if ng.GPU != 0 && instanceInfo.GpuInfo != nil && len(instanceInfo.GpuInfo.Gpus) > 0 {
+			for _, g := range instanceInfo.GpuInfo.Gpus {
+				ng.GPU += aws.ToInt32(g.Count)
+				ng.GpuSpec += fmt.Sprintf("-%s", aws.ToString(g.Name))
+			}
 		}
 		a.log.Info("instance type found", "instanceType", ng.InstanceType)
 	}
@@ -493,7 +432,7 @@ func (a *AwsCloud) ImportKeyPair(ctx context.Context) error {
 	if err != nil && !strings.Contains(err.Error(), AwsNotFound) {
 		return fmt.Errorf("failed to describe key pair: %v", err)
 	}
-	if len(keyPairOutputs.KeyPairs) != 0 {
+	if keyPairOutputs != nil && len(keyPairOutputs.KeyPairs) != 0 {
 		for _, keyPair := range keyPairOutputs.KeyPairs {
 			if keyPair.KeyPairId == nil {
 				continue
@@ -603,7 +542,6 @@ func (a *AwsCloud) ManageInstance(ctx context.Context) error {
 			continue
 		}
 		nodeGroup := a.cluster.GetNodeGroup(node.NodeGroupID)
-		subnetID := a.distributeNodeSubnets(index)
 		nodeTags := make(map[string]string)
 		if node.Labels != "" {
 			err = json.Unmarshal([]byte(node.Labels), &nodeTags)
@@ -641,14 +579,16 @@ func (a *AwsCloud) ManageInstance(ctx context.Context) error {
 		for _, v := range sgs {
 			sgIDs = append(sgIDs, v.ID)
 		}
-		instanceRunInput := &ec2.RunInstancesInput{
+		keyName := a.cluster.GetSingleCloudResource(biz.ResourceTypeKeyPair).Name
+		privateSubnetID := a.distributeNodeSubnets(index, a.cluster.GetCloudResourceByTags(biz.ResourceTypeSubnet, AwsTagKeyType, AwsResourcePrivate))
+		instanceOutput, err := a.ec2Client.RunInstances(ctx, &ec2.RunInstancesInput{
 			ImageId:             aws.String(nodeGroup.Image),
 			InstanceType:        ec2Types.InstanceType(nodeGroup.InstanceType),
-			KeyName:             aws.String(a.cluster.GetSingleCloudResource(biz.ResourceTypeKeyPair).Name),
+			KeyName:             aws.String(keyName),
 			MaxCount:            aws.Int32(1),
 			MinCount:            aws.Int32(1),
 			SecurityGroupIds:    sgIDs,
-			SubnetId:            aws.String(subnetID),
+			SubnetId:            aws.String(privateSubnetID),
 			BlockDeviceMappings: blockDeviceMappings,
 			TagSpecifications: []ec2Types.TagSpecification{
 				{
@@ -656,37 +596,11 @@ func (a *AwsCloud) ManageInstance(ctx context.Context) error {
 					Tags:         a.mapToEc2Tags(nodeTags),
 				},
 			},
-		}
-		if node.Role == biz.NodeRoleMaster {
-			instanceRunInput.UserData = aws.String(installScript)
-			instanceRunInput.SubnetId = nil
-			publicSubnets := a.cluster.GetCloudResourceByTags(biz.ResourceTypeSubnet, AwsTagKeyType, AwsResourcePublic)
-			if publicSubnets == nil {
-				return errors.New("ec2 no public subnet found")
-			}
-			sshSgs := a.cluster.GetCloudResourceByTags(biz.ResourceTypeSecurityGroup, AwsTagKeyType, AwsReousrceSshSG)
-			if sshSgs == nil {
-				return errors.Wrap(err, "SSH security group not found")
-			}
-			instanceRunInput.NetworkInterfaces = []ec2Types.InstanceNetworkInterfaceSpecification{
-				{
-					DeviceIndex:              aws.Int32(0),
-					AssociatePublicIpAddress: aws.Bool(true),
-					SubnetId:                 aws.String(publicSubnets[0].ID),
-					Groups:                   []string{sshSgs[0].ID},
-				},
-			}
-		}
-		instanceOutput, err := a.ec2Client.RunInstances(ctx, instanceRunInput)
+		})
 		if err != nil {
 			return errors.Wrap(err, "failed to run instances")
 		}
 		for _, instance := range instanceOutput.Instances {
-			a.cluster.AddCloudResource(biz.ResourceTypeInstance, &biz.CloudResource{
-				Name: node.Name,
-				ID:   *instance.InstanceId,
-				Tags: nodeTags,
-			})
 			a.log.Info("instance createing", "name", node.Name, "id", *instance.InstanceId)
 			if instance.PrivateIpAddress != nil {
 				node.InternalIP = aws.ToString(instance.PrivateIpAddress)
@@ -694,8 +608,9 @@ func (a *AwsCloud) ManageInstance(ctx context.Context) error {
 			if instance.PublicIpAddress != nil {
 				node.ExternalIP = aws.ToString(instance.PublicIpAddress)
 			}
-			instanceIds = append(instanceIds, *instance.InstanceId)
+			instanceIds = append(instanceIds, aws.ToString(instance.InstanceId))
 		}
+		node.User = nodeGroup.DefaultUsername
 		node.Status = biz.NodeStatusCreating
 	}
 	if len(instanceIds) > 0 {
@@ -706,20 +621,24 @@ func (a *AwsCloud) ManageInstance(ctx context.Context) error {
 		if err != nil {
 			return fmt.Errorf("failed to wait for instance running: %w", err)
 		}
+		for _, instanceId := range instanceIds {
+			for _, node := range a.cluster.Nodes {
+				if node.InstanceID == instanceId {
+					node.Status = biz.NodeStatusRunning
+					break
+				}
+			}
+		}
 	}
 	return nil
 }
 
 func (a *AwsCloud) DeleteClusterAllInstance(ctx context.Context) error {
-	instances, err := a.getInstances(ctx)
-	if err != nil {
-		return err
-	}
 	instanceIds := make([]string, 0)
-	for _, instance := range instances {
-		instanceIds = append(instanceIds, *instance.InstanceId)
+	for _, node := range a.cluster.Nodes {
+		instanceIds = append(instanceIds, node.InstanceID)
 	}
-	_, err = a.ec2Client.TerminateInstances(ctx, &ec2.TerminateInstancesInput{
+	_, err := a.ec2Client.TerminateInstances(ctx, &ec2.TerminateInstancesInput{
 		InstanceIds: instanceIds,
 	})
 	if err != nil {
@@ -735,9 +654,217 @@ func (a *AwsCloud) DeleteClusterAllInstance(ctx context.Context) error {
 	for _, node := range a.cluster.Nodes {
 		node.Status = biz.NodeStatusDeleted
 	}
-	a.cluster.DeleteCloudResource(biz.ResourceTypeInstance)
 	a.log.Info("instances terminated")
 	return nil
+}
+
+// Manage BostionHost
+func (a *AwsCloud) ManageBostionHost(ctx context.Context) error {
+	if a.cluster.BostionHost == nil {
+		return nil
+	}
+	if a.cluster.BostionHost.Status != biz.NodeStatusUnspecified {
+		return nil
+	}
+	// find image
+	image, err := a.findImage(ctx)
+	if err != nil {
+		return err
+	}
+	// find instance type
+	instanceType, err := a.findInstanceType(ctx, "t3", a.cluster.BostionHost.CPU, 0, a.cluster.BostionHost.Memory)
+	if err != nil {
+		return err
+	}
+	a.cluster.BostionHost.OS = aws.ToString(image.Name)
+	a.cluster.BostionHost.ARCH = string(image.Architecture)
+
+	publicSubnet := a.cluster.GetCloudResourceByTags(biz.ResourceTypeSubnet, AwsTagKeyType, AwsResourcePublic)
+	if publicSubnet == nil {
+		return errors.New("public subnet not found in the ManageBostionHost")
+	}
+	sgs := a.cluster.GetCloudResourceByTags(biz.ResourceTypeSecurityGroup, AwsTagKeyType, AwsReousrceSshSG)
+	if sgs == nil {
+		return errors.New("security group not found in the ManageBostionHost")
+	}
+	sgIds := make([]string, 0)
+	for _, v := range sgs {
+		sgIds = append(sgIds, v.ID)
+	}
+
+	keyPair := a.cluster.GetSingleCloudResource(biz.ResourceTypeKeyPair)
+	if keyPair == nil {
+		return errors.New("key pair not found in the ManageBostionHost")
+	}
+
+	// Create a network interface in the public subnet
+	networkInterface, err := a.ec2Client.CreateNetworkInterface(ctx, &ec2.CreateNetworkInterfaceInput{
+		SubnetId:    aws.String(publicSubnet[0].ID),
+		Groups:      sgIds,
+		Description: aws.String("ManageBostionHost public network interface"),
+	})
+	if err != nil {
+		return errors.Wrap(err, "failed to create network interface")
+	}
+
+	bostionHostTag := map[string]string{
+		"cluster_name": a.cluster.Name,
+	}
+	instanceOutput, err := a.ec2Client.RunInstances(ctx, &ec2.RunInstancesInput{
+		ImageId:      image.ImageId,
+		InstanceType: ec2Types.InstanceType(instanceType.InstanceType),
+		MaxCount:     aws.Int32(1),
+		MinCount:     aws.Int32(1),
+		KeyName:      aws.String(keyPair.Name),
+		NetworkInterfaces: []ec2Types.InstanceNetworkInterfaceSpecification{
+			{
+				DeviceIndex:              aws.Int32(0),
+				NetworkInterfaceId:       networkInterface.NetworkInterface.NetworkInterfaceId,
+				AssociatePublicIpAddress: aws.Bool(true),
+				DeleteOnTermination:      aws.Bool(true),
+			},
+		},
+		TagSpecifications: []ec2Types.TagSpecification{
+			{
+				ResourceType: ec2Types.ResourceTypeInstance,
+				Tags:         a.mapToEc2Tags(bostionHostTag),
+			},
+		},
+		BlockDeviceMappings: []ec2Types.BlockDeviceMapping{
+			{
+				DeviceName: aws.String("/dev/xvda"), // root volume
+				Ebs: &ec2Types.EbsBlockDevice{
+					VolumeSize:          aws.Int32(20),
+					VolumeType:          ec2Types.VolumeTypeGp3,
+					DeleteOnTermination: aws.Bool(true),
+				},
+			},
+		},
+	})
+	if err != nil {
+		return errors.Wrap(err, "failed to run instances in the ManageBostionHost")
+	}
+
+	for _, instance := range instanceOutput.Instances {
+		waiter := ec2.NewInstanceRunningWaiter(a.ec2Client)
+		err := waiter.Wait(ctx, &ec2.DescribeInstancesInput{
+			InstanceIds: []string{*instance.InstanceId},
+		}, time.Duration(1)*TimeoutPerInstance)
+		if err != nil {
+			return fmt.Errorf("failed to wait for instance running: %w", err)
+		}
+		a.cluster.BostionHost.InternalIP = aws.ToString(instance.PrivateIpAddress)
+		a.cluster.BostionHost.ExternalIP = aws.ToString(instance.PublicIpAddress)
+		a.cluster.BostionHost.Status = biz.NodeStatusRunning
+		a.cluster.BostionHost.InstanceID = aws.ToString(instance.InstanceId)
+		a.cluster.BostionHost.User = determineUsername(aws.ToString(image.Name), aws.ToString(image.Description))
+		// cpu
+		if instanceType.VCpuInfo != nil && instanceType.VCpuInfo.DefaultVCpus != nil {
+			a.cluster.BostionHost.CPU = aws.ToInt32(instanceType.VCpuInfo.DefaultVCpus)
+		}
+		// memory
+		if instanceType.MemoryInfo != nil && instanceType.MemoryInfo.SizeInMiB != nil {
+			a.cluster.BostionHost.Memory = int32(aws.ToInt64(instanceType.MemoryInfo.SizeInMiB) / 1024)
+		}
+	}
+	return nil
+}
+
+func (a *AwsCloud) DeleteBostionHost(ctx context.Context) error {
+	if a.cluster.BostionHost == nil {
+		return nil
+	}
+	// find instance type
+
+	return nil
+}
+
+// find image
+func (a *AwsCloud) findImage(ctx context.Context) (ec2Types.Image, error) {
+	image := ec2Types.Image{}
+	images, err := a.ec2Client.DescribeImages(ctx, &ec2.DescribeImagesInput{
+		Owners: []string{"amazon"},
+		Filters: []ec2Types.Filter{
+			{
+				Name:   aws.String("name"),
+				Values: []string{"ubuntu/images/hvm-ssd-gp3/ubuntu-noble-24.04-amd64-server-*"},
+			},
+			{
+				Name:   aws.String("architecture"),
+				Values: []string{"x86_64"},
+			},
+			{
+				Name:   aws.String("state"),
+				Values: []string{"available"},
+			},
+		},
+	})
+	if err != nil || len(images.Images) == 0 {
+		return image, errors.Wrap(err, "failed to describe images")
+	}
+	for _, image := range images.Images {
+		return image, nil
+	}
+	return image, nil
+}
+
+func (a *AwsCloud) findInstanceType(ctx context.Context, instanceTypeFamiliy string, CPU, GPU, Memory int32) (ec2Types.InstanceTypeInfo, error) {
+	instanceTypeInfo := ec2Types.InstanceTypeInfo{}
+	instanceData := make(InstanceTypeResults, 0)
+	instanceTypeInput := &ec2.DescribeInstanceTypesInput{
+		Filters: []ec2Types.Filter{
+			{
+				Name:   aws.String("current-generation"),
+				Values: []string{"true"},
+			},
+			{
+				Name:   aws.String("processor-info.supported-architecture"),
+				Values: []string{"x86_64"},
+			},
+			{
+				Name:   aws.String("instance-type"),
+				Values: []string{instanceTypeFamiliy},
+			},
+		},
+	}
+	for {
+		instanceTypes, err := a.ec2Client.DescribeInstanceTypes(ctx, instanceTypeInput)
+		if err != nil {
+			return instanceTypeInfo, errors.Wrap(err, "failed to describe instance types")
+		}
+		for _, instanceType := range instanceTypes.InstanceTypes {
+			instanceData = append(instanceData, instanceType)
+		}
+		if instanceTypes.NextToken == nil {
+			break
+		}
+		instanceTypeInput.NextToken = instanceTypes.NextToken
+	}
+	sort.Sort(instanceData)
+	for _, instanceType := range instanceData {
+		if aws.ToInt64(instanceType.MemoryInfo.SizeInMiB) == 0 {
+			continue
+		}
+		memoryGBiSize := aws.ToInt64(instanceType.MemoryInfo.SizeInMiB) / 1024
+		if int32(memoryGBiSize) >= Memory && aws.ToInt32(instanceType.VCpuInfo.DefaultVCpus) >= CPU {
+			instanceTypeInfo = instanceType
+		}
+		if instanceTypeInfo.InstanceType == "" {
+			continue
+		}
+		if GPU == 0 {
+			break
+		}
+		for _, gpues := range instanceType.GpuInfo.Gpus {
+			if aws.ToInt32(gpues.Count) >= GPU {
+				break
+			}
+		}
+	}
+	if instanceTypeInfo.InstanceType == "" {
+		return instanceTypeInfo, errors.New("no instance type found")
+	}
+	return instanceTypeInfo, nil
 }
 
 func (a *AwsCloud) getInstances(ctx context.Context) ([]ec2Types.Instance, error) {
@@ -778,13 +905,7 @@ func (a *AwsCloud) getInstances(ctx context.Context) ([]ec2Types.Instance, error
 	return instances, nil
 }
 
-func (a *AwsCloud) distributeNodeSubnets(nodeIndex int) (subNetID string) {
-	subnets := make([]*biz.CloudResource, 0)
-	for _, subnet := range a.cluster.GetCloudResource(biz.ResourceTypeSubnet) {
-		if typeValue, ok := subnet.Tags[AwsTagKeyType]; ok && typeValue == AwsResourcePrivate {
-			subnets = append(subnets, subnet)
-		}
-	}
+func (a *AwsCloud) distributeNodeSubnets(nodeIndex int, subnets []*biz.CloudResource) (subNetID string) {
 	if len(subnets) == 0 {
 		return ""
 	}
@@ -1517,8 +1638,9 @@ func (a *AwsCloud) createSecurityGroup(ctx context.Context) error {
 			tags[AwsTagKeyType] = AwsReousrceSshSG
 		}
 		sgOutput, err := a.ec2Client.CreateSecurityGroup(ctx, &ec2.CreateSecurityGroupInput{
-			GroupName: aws.String(sgName),
-			VpcId:     aws.String(a.cluster.GetSingleCloudResource(biz.ResourceTypeVPC).ID),
+			GroupName:   aws.String(sgName),
+			VpcId:       aws.String(a.cluster.GetSingleCloudResource(biz.ResourceTypeVPC).ID),
+			Description: aws.String(sgName),
 			TagSpecifications: []ec2Types.TagSpecification{
 				{
 					ResourceType: ec2Types.ResourceTypeSecurityGroup,
@@ -1792,4 +1914,30 @@ func getIntanceTypeFamilies(nodeGroup *biz.NodeGroup) string {
 	default:
 		return "m5.*"
 	}
+}
+
+func determineUsername(amiName, amiDescription string) string {
+	amiName = strings.ToLower(amiName)
+	amiDescription = strings.ToLower(amiDescription)
+
+	if strings.Contains(amiName, "amazon linux") || strings.Contains(amiDescription, "amazon linux") {
+		return "ec2-user"
+	} else if strings.Contains(amiName, "ubuntu") || strings.Contains(amiDescription, "ubuntu") {
+		return "ubuntu"
+	} else if strings.Contains(amiName, "centos") || strings.Contains(amiDescription, "centos") {
+		return "centos"
+	} else if strings.Contains(amiName, "debian") || strings.Contains(amiDescription, "debian") {
+		return "admin"
+	} else if strings.Contains(amiName, "rhel") || strings.Contains(amiDescription, "red hat") {
+		return "ec2-user"
+	} else if strings.Contains(amiName, "suse") || strings.Contains(amiDescription, "suse") {
+		return "ec2-user"
+	} else if strings.Contains(amiName, "fedora") || strings.Contains(amiDescription, "fedora") {
+		return "fedora"
+	} else if strings.Contains(amiName, "bitnami") || strings.Contains(amiDescription, "bitnami") {
+		return "bitnami"
+	}
+
+	// Default to ec2-user if we can't determine the username
+	return "ec2-user"
 }

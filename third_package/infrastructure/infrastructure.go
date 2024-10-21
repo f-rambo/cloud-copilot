@@ -91,7 +91,7 @@ func (c *ClusterInfrastructure) Start(ctx context.Context, cluster *biz.Cluster)
 		if err != nil {
 			return err
 		}
-		return nil
+		return awsCloud.ManageBostionHost(ctx)
 	}
 	return errors.New("cluster type is not supported")
 }
@@ -117,6 +117,7 @@ func (c *ClusterInfrastructure) Stop(ctx context.Context, cluster *biz.Cluster) 
 		if err != nil {
 			return err
 		}
+		return awsCloud.DeleteBostionHost(ctx)
 	}
 	return errors.New("cluster type is not supported")
 }
@@ -489,7 +490,7 @@ func (cc *ClusterInfrastructure) GetNodesSystemInfo(ctx context.Context, cluster
 			// node group
 			nodegroup.ARCH = systemInfo.Arch
 			nodegroup.CPU = systemInfo.Cpu
-			nodegroup.Memory = systemInfo.Memory
+			nodegroup.Memory = int32(systemInfo.Memory)
 			nodegroup.GPU = systemInfo.Gpu
 			nodegroup.OS = systemInfo.Os
 			nodegroup.SystemDisk = systemInfo.DataDisk
@@ -514,7 +515,7 @@ func (cc *ClusterInfrastructure) GetNodesSystemInfo(ctx context.Context, cluster
 	nodeGroupMap := make(map[string]*biz.NodeGroup)
 	nodeGroupIdMaps := make(map[string][]string)
 	for _, nodeGroup := range cluster.NodeGroups {
-		key := fmt.Sprintf("%s-%d-%.0f-%d-%s", nodeGroup.ARCH, nodeGroup.CPU, nodeGroup.Memory, nodeGroup.GPU, nodeGroup.OS)
+		key := fmt.Sprintf("%s-%d-%d-%d-%s", nodeGroup.ARCH, nodeGroup.CPU, nodeGroup.Memory, nodeGroup.GPU, nodeGroup.OS)
 		if _, exists := nodeGroupMap[key]; !exists {
 			nodeGroup.Name = key
 			nodeGroupMap[key] = nodeGroup
