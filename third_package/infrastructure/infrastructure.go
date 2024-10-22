@@ -105,7 +105,11 @@ func (c *ClusterInfrastructure) Stop(ctx context.Context, cluster *biz.Cluster) 
 		if err != nil {
 			return err
 		}
-		err = awsCloud.DeleteClusterAllInstance(ctx)
+		err = awsCloud.ManageInstance(ctx)
+		if err != nil {
+			return err
+		}
+		err = awsCloud.ManageBostionHost(ctx)
 		if err != nil {
 			return err
 		}
@@ -113,11 +117,7 @@ func (c *ClusterInfrastructure) Stop(ctx context.Context, cluster *biz.Cluster) 
 		if err != nil {
 			return err
 		}
-		err = awsCloud.DeleteNetwork(ctx)
-		if err != nil {
-			return err
-		}
-		return awsCloud.DeleteBostionHost(ctx)
+		return awsCloud.DeleteNetwork(ctx)
 	}
 	return errors.New("cluster type is not supported")
 }
@@ -493,7 +493,6 @@ func (cc *ClusterInfrastructure) GetNodesSystemInfo(ctx context.Context, cluster
 			nodegroup.Memory = int32(systemInfo.Memory)
 			nodegroup.GPU = systemInfo.Gpu
 			nodegroup.OS = systemInfo.Os
-			nodegroup.SystemDisk = systemInfo.DataDisk
 			nodegroup.GpuSpec = systemInfo.GpuSpec
 			nodegroup.DataDisk = systemInfo.DataDisk
 			// node

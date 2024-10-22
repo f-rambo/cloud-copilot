@@ -391,7 +391,7 @@ func (a *AwsCloud) SetByNodeGroups(ctx context.Context) error {
 		ng.OS = aws.ToString(image.Name)
 		ng.ARCH = string(image.Architecture)
 		ng.DefaultUsername = determineUsername(aws.ToString(image.Name), aws.ToString(image.Description))
-		a.log.Info("image found", aws.ToString(image.Name), aws.ToString(image.Description))
+		a.log.Info(strings.Join([]string{"image found: ", aws.ToString(image.Name), aws.ToString(image.Description)}, " "))
 
 		if ng.InstanceType != "" {
 			continue
@@ -415,7 +415,7 @@ func (a *AwsCloud) SetByNodeGroups(ctx context.Context) error {
 				ng.GpuSpec += fmt.Sprintf("-%s", aws.ToString(g.Name))
 			}
 		}
-		a.log.Info("instance type found", "instanceType", ng.InstanceType)
+		a.log.Info("instance type found: ", ng.InstanceType)
 	}
 	return nil
 }
@@ -494,24 +494,21 @@ func (a *AwsCloud) DeleteKeyPair(ctx context.Context) error {
 }
 
 func (a *AwsCloud) ManageInstance(ctx context.Context) error {
-	instances, err := a.getInstances(ctx)
+	// Delete instances
+	needDeleteInstanceIDs := make([]string, 0)
+	for _, node := range a.cluster.Nodes {
+		if node.Status == biz.NodeStatusDeleting {
+			needDeleteInstanceIDs = append(needDeleteInstanceIDs, node.InstanceID)
+		}
+	}
+	instances, err := a.getInstances(ctx, needDeleteInstanceIDs, []string{})
 	if err != nil {
 		return err
 	}
 	deleteInstanceIDs := make([]string, 0)
 	for _, instance := range instances {
-		nodeExists := false
-		for _, node := range a.cluster.Nodes {
-			if node.InternalIP == *instance.InstanceId {
-				nodeExists = true
-				break
-			}
-		}
-		if !nodeExists {
-			deleteInstanceIDs = append(deleteInstanceIDs, *instance.InstanceId)
-		}
+		deleteInstanceIDs = append(deleteInstanceIDs, aws.ToString(instance.InstanceId))
 	}
-	// Delete instances
 	if len(deleteInstanceIDs) > 0 {
 		_, err = a.ec2Client.TerminateInstances(ctx, &ec2.TerminateInstancesInput{
 			InstanceIds: deleteInstanceIDs,
@@ -526,8 +523,14 @@ func (a *AwsCloud) ManageInstance(ctx context.Context) error {
 		if err != nil {
 			return fmt.Errorf("failed to wait for instance termination: %w", err)
 		}
+		for _, node := range a.cluster.Nodes {
+			if utils.InArray(node.InstanceID, deleteInstanceIDs) {
+				node.Status = biz.NodeStatusDeleted
+			}
+		}
 		a.log.Info("instances terminated")
 	}
+
 	// Create instances
 	instanceIds := make([]string, 0)
 	for index, node := range a.cluster.Nodes {
@@ -551,16 +554,6 @@ func (a *AwsCloud) ManageInstance(ctx context.Context) error {
 		}
 		nodeTags[AwsTagKeyName] = node.Name
 		blockDeviceMappings := make([]ec2Types.BlockDeviceMapping, 0)
-		if nodeGroup.SystemDisk > 0 {
-			blockDeviceMappings = append(blockDeviceMappings, ec2Types.BlockDeviceMapping{
-				DeviceName: aws.String("/dev/xvda"), // root volume
-				Ebs: &ec2Types.EbsBlockDevice{
-					VolumeSize:          aws.Int32(nodeGroup.SystemDisk),
-					VolumeType:          ec2Types.VolumeTypeGp3,
-					DeleteOnTermination: aws.Bool(true),
-				},
-			})
-		}
 		if nodeGroup.DataDisk > 0 {
 			blockDeviceMappings = append(blockDeviceMappings, ec2Types.BlockDeviceMapping{
 				DeviceName: aws.String("/dev/sdf"), // data volume
@@ -608,6 +601,7 @@ func (a *AwsCloud) ManageInstance(ctx context.Context) error {
 			if instance.PublicIpAddress != nil {
 				node.ExternalIP = aws.ToString(instance.PublicIpAddress)
 			}
+			node.InstanceID = aws.ToString(instance.InstanceId)
 			instanceIds = append(instanceIds, aws.ToString(instance.InstanceId))
 		}
 		node.User = nodeGroup.DefaultUsername
@@ -633,52 +627,51 @@ func (a *AwsCloud) ManageInstance(ctx context.Context) error {
 	return nil
 }
 
-func (a *AwsCloud) DeleteClusterAllInstance(ctx context.Context) error {
-	instanceIds := make([]string, 0)
-	for _, node := range a.cluster.Nodes {
-		instanceIds = append(instanceIds, node.InstanceID)
-	}
-	_, err := a.ec2Client.TerminateInstances(ctx, &ec2.TerminateInstancesInput{
-		InstanceIds: instanceIds,
-	})
-	if err != nil {
-		return errors.Wrap(err, "failed to terminate instances")
-	}
-	waiter := ec2.NewInstanceTerminatedWaiter(a.ec2Client)
-	err = waiter.Wait(ctx, &ec2.DescribeInstancesInput{
-		InstanceIds: instanceIds,
-	}, time.Duration(len(instanceIds))*TimeoutPerInstance)
-	if err != nil {
-		return fmt.Errorf("failed to wait for instance termination: %w", err)
-	}
-	for _, node := range a.cluster.Nodes {
-		node.Status = biz.NodeStatusDeleted
-	}
-	a.log.Info("instances terminated")
-	return nil
-}
-
 // Manage BostionHost
 func (a *AwsCloud) ManageBostionHost(ctx context.Context) error {
 	if a.cluster.BostionHost == nil {
 		return nil
 	}
-	if a.cluster.BostionHost.Status != biz.NodeStatusUnspecified {
+	if a.cluster.BostionHost.Status == biz.NodeStatusDeleting {
+		_, err := a.ec2Client.TerminateInstances(ctx, &ec2.TerminateInstancesInput{
+			InstanceIds: []string{a.cluster.BostionHost.InstanceID},
+		})
+		if err != nil {
+			return errors.Wrap(err, "failed to terminate instances")
+		}
+		waiter := ec2.NewInstanceTerminatedWaiter(a.ec2Client)
+		err = waiter.Wait(ctx, &ec2.DescribeInstancesInput{
+			InstanceIds: []string{a.cluster.BostionHost.InstanceID},
+		}, time.Duration(1)*TimeoutPerInstance)
+		if err != nil {
+			return fmt.Errorf("failed to wait for instance termination: %w", err)
+		}
+		a.cluster.BostionHost.Status = biz.NodeStatusDeleted
 		return nil
+	}
+	if a.cluster.BostionHost.InstanceID != "" {
+		instances, err := a.getInstances(ctx, []string{a.cluster.BostionHost.InstanceID}, []string{})
+		if err != nil {
+			return err
+		}
+		if len(instances) != 0 {
+			return nil
+		}
 	}
 	// find image
 	image, err := a.findImage(ctx)
 	if err != nil {
 		return err
 	}
+	a.cluster.BostionHost.OS = aws.ToString(image.Name)
+	a.cluster.BostionHost.ARCH = string(image.Architecture)
+	a.cluster.BostionHost.Image = aws.ToString(image.ImageId)
+
 	// find instance type
-	instanceType, err := a.findInstanceType(ctx, "t3", a.cluster.BostionHost.CPU, 0, a.cluster.BostionHost.Memory)
+	instanceType, err := a.findInstanceType(ctx, "t3.*", a.cluster.BostionHost.CPU, 0, a.cluster.BostionHost.Memory)
 	if err != nil {
 		return err
 	}
-	a.cluster.BostionHost.OS = aws.ToString(image.Name)
-	a.cluster.BostionHost.ARCH = string(image.Architecture)
-
 	publicSubnet := a.cluster.GetCloudResourceByTags(biz.ResourceTypeSubnet, AwsTagKeyType, AwsResourcePublic)
 	if publicSubnet == nil {
 		return errors.New("public subnet not found in the ManageBostionHost")
@@ -697,18 +690,8 @@ func (a *AwsCloud) ManageBostionHost(ctx context.Context) error {
 		return errors.New("key pair not found in the ManageBostionHost")
 	}
 
-	// Create a network interface in the public subnet
-	networkInterface, err := a.ec2Client.CreateNetworkInterface(ctx, &ec2.CreateNetworkInterfaceInput{
-		SubnetId:    aws.String(publicSubnet[0].ID),
-		Groups:      sgIds,
-		Description: aws.String("ManageBostionHost public network interface"),
-	})
-	if err != nil {
-		return errors.Wrap(err, "failed to create network interface")
-	}
-
 	bostionHostTag := map[string]string{
-		"cluster_name": a.cluster.Name,
+		AwsTagKeyName: fmt.Sprintf("%s-%s", a.cluster.Name, "bostion"),
 	}
 	instanceOutput, err := a.ec2Client.RunInstances(ctx, &ec2.RunInstancesInput{
 		ImageId:      image.ImageId,
@@ -719,9 +702,11 @@ func (a *AwsCloud) ManageBostionHost(ctx context.Context) error {
 		NetworkInterfaces: []ec2Types.InstanceNetworkInterfaceSpecification{
 			{
 				DeviceIndex:              aws.Int32(0),
-				NetworkInterfaceId:       networkInterface.NetworkInterface.NetworkInterfaceId,
 				AssociatePublicIpAddress: aws.Bool(true),
 				DeleteOnTermination:      aws.Bool(true),
+				SubnetId:                 aws.String(publicSubnet[0].ID),
+				Groups:                   sgIds,
+				Description:              aws.String("ManageBostionHost network interface"),
 			},
 		},
 		TagSpecifications: []ec2Types.TagSpecification{
@@ -730,29 +715,27 @@ func (a *AwsCloud) ManageBostionHost(ctx context.Context) error {
 				Tags:         a.mapToEc2Tags(bostionHostTag),
 			},
 		},
-		BlockDeviceMappings: []ec2Types.BlockDeviceMapping{
-			{
-				DeviceName: aws.String("/dev/xvda"), // root volume
-				Ebs: &ec2Types.EbsBlockDevice{
-					VolumeSize:          aws.Int32(20),
-					VolumeType:          ec2Types.VolumeTypeGp3,
-					DeleteOnTermination: aws.Bool(true),
-				},
-			},
-		},
 	})
 	if err != nil {
 		return errors.Wrap(err, "failed to run instances in the ManageBostionHost")
 	}
 
+	instanceIds := make([]string, 0)
 	for _, instance := range instanceOutput.Instances {
-		waiter := ec2.NewInstanceRunningWaiter(a.ec2Client)
-		err := waiter.Wait(ctx, &ec2.DescribeInstancesInput{
-			InstanceIds: []string{*instance.InstanceId},
-		}, time.Duration(1)*TimeoutPerInstance)
-		if err != nil {
-			return fmt.Errorf("failed to wait for instance running: %w", err)
-		}
+		instanceIds = append(instanceIds, aws.ToString(instance.InstanceId))
+	}
+	waiter := ec2.NewInstanceRunningWaiter(a.ec2Client)
+	err = waiter.Wait(ctx, &ec2.DescribeInstancesInput{
+		InstanceIds: instanceIds,
+	}, time.Duration(1)*TimeoutPerInstance)
+	if err != nil {
+		return fmt.Errorf("failed to wait for instance running: %w", err)
+	}
+	instances, err := a.getInstances(ctx, instanceIds, []string{})
+	if err != nil {
+		return err
+	}
+	for _, instance := range instances {
 		a.cluster.BostionHost.InternalIP = aws.ToString(instance.PrivateIpAddress)
 		a.cluster.BostionHost.ExternalIP = aws.ToString(instance.PublicIpAddress)
 		a.cluster.BostionHost.Status = biz.NodeStatusRunning
@@ -767,15 +750,6 @@ func (a *AwsCloud) ManageBostionHost(ctx context.Context) error {
 			a.cluster.BostionHost.Memory = int32(aws.ToInt64(instanceType.MemoryInfo.SizeInMiB) / 1024)
 		}
 	}
-	return nil
-}
-
-func (a *AwsCloud) DeleteBostionHost(ctx context.Context) error {
-	if a.cluster.BostionHost == nil {
-		return nil
-	}
-	// find instance type
-
 	return nil
 }
 
@@ -867,24 +841,29 @@ func (a *AwsCloud) findInstanceType(ctx context.Context, instanceTypeFamiliy str
 	return instanceTypeInfo, nil
 }
 
-func (a *AwsCloud) getInstances(ctx context.Context) ([]ec2Types.Instance, error) {
-	input := &ec2.DescribeInstancesInput{
-		Filters: []ec2Types.Filter{
-			{
-				Name:   aws.String("tag:Name"),
-				Values: []string{fmt.Sprintf("%s-node-*", a.cluster.Name)},
-			},
-			{
-				Name:   aws.String("vpc-id"),
-				Values: []string{a.cluster.GetSingleCloudResource(biz.ResourceTypeVPC).ID},
-			},
-			{
-				Name:   aws.String("instance-state-name"),
-				Values: []string{string(ec2Types.InstanceStateNameRunning)},
-			},
+func (a *AwsCloud) getInstances(ctx context.Context, instanceIDs, tagNames []string) ([]ec2Types.Instance, error) {
+	filters := []ec2Types.Filter{
+		{
+			Name:   aws.String("vpc-id"),
+			Values: []string{a.cluster.GetSingleCloudResource(biz.ResourceTypeVPC).ID},
+		},
+		{
+			Name:   aws.String("instance-state-name"),
+			Values: []string{string(ec2Types.InstanceStateNameRunning)},
 		},
 	}
-
+	if len(tagNames) > 0 {
+		filters = append(filters, ec2Types.Filter{
+			Name:   aws.String("tag:Name"),
+			Values: tagNames,
+		})
+	}
+	input := &ec2.DescribeInstancesInput{
+		Filters: filters,
+	}
+	if len(instanceIDs) > 0 {
+		input.InstanceIds = instanceIDs
+	}
 	var instances []ec2Types.Instance
 	for {
 		output, err := a.ec2Client.DescribeInstances(ctx, input)

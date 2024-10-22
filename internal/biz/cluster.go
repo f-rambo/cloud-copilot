@@ -330,41 +330,26 @@ func (c *Cluster) SettingSpecifications() {
 	if len(c.NodeGroups) != 0 || len(c.Nodes) != 0 {
 		return
 	}
-
 	ipCidr := os.Getenv("CLUSTER_IP_CIDR")
 	if ipCidr == "" {
 		ipCidr = "10.0.0.0/16"
 	}
 	c.IpCidr = ipCidr
-
 	nodegroup := c.NewNodeGroup()
-	nodegroup.Name = "default-nodegroup"
 	nodegroup.Type = NodeGroupTypeNormal
 	c.GenerateNodeGroupName(nodegroup)
-
 	nodegroup.CPU = 2
 	nodegroup.Memory = 4
 	nodegroup.TargetSize = 3
 	nodegroup.MinSize = 1
 	nodegroup.MaxSize = 5
-
-	switch c.Level {
-	case ClusterLevelStandard:
-		nodegroup.CPU = 4
-		nodegroup.Memory = 8
-		nodegroup.TargetSize = 5
-		nodegroup.MinSize = 5
-		nodegroup.MaxSize = 10
-	case ClusterLevelAdvanced:
+	if c.Level != ClusterLevelBasic {
 		nodegroup.CPU = 4
 		nodegroup.Memory = 8
 		nodegroup.TargetSize = 5
 		nodegroup.MinSize = 5
 		nodegroup.MaxSize = 10
 	}
-
-	nodegroup.SystemDisk = 10
-	nodegroup.DataDisk = 0
 	if nodegroup.TargetSize > 0 {
 		c.NodeGroups = append(c.NodeGroups, nodegroup)
 	}
@@ -372,9 +357,9 @@ func (c *Cluster) SettingSpecifications() {
 		return
 	}
 	labels := c.generateNodeLables(nodegroup)
-	for i := 0; i < int(nodegroup.TargetSize); i++ {
+	for i := 0; i < int(nodegroup.MinSize); i++ {
 		node := &Node{
-			Name:        fmt.Sprintf("%s-%s-%s", c.Name, nodegroup.Name, utils.GetRandomString()),
+			Name:        fmt.Sprintf("%s-node-%s-%s", c.Name, nodegroup.Name, utils.GetRandomString()),
 			Status:      NodeStatusUnspecified,
 			ClusterID:   c.ID,
 			NodeGroupID: nodegroup.ID,
@@ -394,6 +379,7 @@ func (c *Cluster) SettingSpecifications() {
 		Status:    NodeStatusUnspecified,
 		CPU:       2,
 		Memory:    4,
+		SshPort:   22,
 	}
 }
 
@@ -408,7 +394,6 @@ type NodeGroup struct {
 	Memory          int32         `json:"memory" gorm:"column:memory; default:0; NOT NULL"`
 	GPU             int32         `json:"gpu" gorm:"column:gpu; default:0; NOT NULL"`
 	GpuSpec         string        `json:"gpu_spec" gorm:"column:gpu_spec; default:''; NOT NULL"`
-	SystemDisk      int32         `json:"system_disk" gorm:"column:system_disk; default:0; NOT NULL"`
 	DataDisk        int32         `json:"data_disk" gorm:"column:data_disk; default:0; NOT NULL"`
 	MinSize         int32         `json:"min_size" gorm:"column:min_size; default:0; NOT NULL"`
 	MaxSize         int32         `json:"max_size" gorm:"column:max_size; default:0; NOT NULL"`
@@ -478,7 +463,7 @@ func (c *Cluster) GetNodeGroup(nodeGroupId string) *NodeGroup {
 }
 
 func (c *Cluster) GenerateNodeGroupName(nodeGroup *NodeGroup) {
-	nodeGroup.Name = strings.Join([]string{c.Name, nodeGroup.Type.String()}, "-")
+	nodeGroup.Name = strings.Join([]string{"nodegroup", c.Name, nodeGroup.Type.String()}, "-")
 }
 
 type Node struct {
