@@ -633,6 +633,9 @@ func (a *AwsCloud) ManageBostionHost(ctx context.Context) error {
 		return nil
 	}
 	if a.cluster.BostionHost.Status == biz.NodeStatusDeleting {
+		if a.cluster.BostionHost.InstanceID == "" {
+			return nil
+		}
 		_, err := a.ec2Client.TerminateInstances(ctx, &ec2.TerminateInstancesInput{
 			InstanceIds: []string{a.cluster.BostionHost.InstanceID},
 		})
