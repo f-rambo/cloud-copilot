@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/f-rambo/ocean/api/common"
 	v1alpha1 "github.com/f-rambo/ocean/api/service/v1alpha1"
 	"github.com/f-rambo/ocean/internal/biz"
 	"github.com/pkg/errors"
@@ -58,12 +59,12 @@ func (s *ServicesInterface) List(ctx context.Context, serviceParam *v1alpha1.Ser
 	}, nil
 }
 
-func (s *ServicesInterface) Save(ctx context.Context, serviceParam *v1alpha1.Service) (*v1alpha1.Msg, error) {
+func (s *ServicesInterface) Save(ctx context.Context, serviceParam *v1alpha1.Service) (*common.Msg, error) {
 	err := s.serviceUc.Save(ctx, s.interfaceToBiz(serviceParam))
 	if err != nil {
 		return nil, err
 	}
-	return &v1alpha1.Msg{}, nil
+	return common.Response(), nil
 }
 
 func (s *ServicesInterface) Get(ctx context.Context, serviceParam *v1alpha1.ServiceRequest) (*v1alpha1.Service, error) {
@@ -74,7 +75,7 @@ func (s *ServicesInterface) Get(ctx context.Context, serviceParam *v1alpha1.Serv
 	return s.bizToInterface(service), nil
 }
 
-func (s *ServicesInterface) Delete(ctx context.Context, serviceParam *v1alpha1.ServiceRequest) (*v1alpha1.Msg, error) {
+func (s *ServicesInterface) Delete(ctx context.Context, serviceParam *v1alpha1.ServiceRequest) (*common.Msg, error) {
 	if serviceParam.Id == 0 {
 		return nil, errors.New("id is required")
 	}
@@ -83,7 +84,7 @@ func (s *ServicesInterface) Delete(ctx context.Context, serviceParam *v1alpha1.S
 	if err != nil {
 		return nil, err
 	}
-	return &v1alpha1.Msg{}, nil
+	return common.Response(), nil
 }
 
 // GetDefaultWorkflow
@@ -170,7 +171,7 @@ func (s *ServicesInterface) GetWorkflow(ctx context.Context, serviceParam *v1alp
 	return wfData, nil
 }
 
-func (s *ServicesInterface) SaveWorkflow(ctx context.Context, request *v1alpha1.ServiceRequest) (*v1alpha1.Msg, error) {
+func (s *ServicesInterface) SaveWorkflow(ctx context.Context, request *v1alpha1.ServiceRequest) (*common.Msg, error) {
 	if request.Id == 0 {
 		return nil, errors.New("service id is required")
 	}
@@ -189,10 +190,10 @@ func (s *ServicesInterface) SaveWorkflow(ctx context.Context, request *v1alpha1.
 	if err != nil {
 		return nil, err
 	}
-	return &v1alpha1.Msg{}, nil
+	return common.Response(), nil
 }
 
-func (s *ServicesInterface) CommitWorklfow(ctx context.Context, request *v1alpha1.ServiceRequest) (*v1alpha1.Msg, error) {
+func (s *ServicesInterface) CommitWorklfow(ctx context.Context, request *v1alpha1.ServiceRequest) (*common.Msg, error) {
 	if request.Id == 0 {
 		return nil, errors.New("service id is required")
 	}
@@ -214,7 +215,7 @@ func (s *ServicesInterface) CommitWorklfow(ctx context.Context, request *v1alpha
 	if err != nil {
 		return nil, err
 	}
-	return &v1alpha1.Msg{}, nil
+	return common.Response(), nil
 }
 
 func (s *ServicesInterface) GetServiceCis(ctx context.Context, request *v1alpha1.CIsRequest) (*v1alpha1.CIsResult, error) {

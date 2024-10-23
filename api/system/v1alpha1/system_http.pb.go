@@ -8,6 +8,7 @@ package v1alpha1
 
 import (
 	context "context"
+	common "github.com/f-rambo/ocean/api/common"
 	http "github.com/go-kratos/kratos/v2/transport/http"
 	binding "github.com/go-kratos/kratos/v2/transport/http/binding"
 	emptypb "google.golang.org/protobuf/types/known/emptypb"
@@ -25,7 +26,7 @@ const OperationSystemInterfacePing = "/system.v1alpha1.SystemInterface/Ping"
 
 type SystemInterfaceHTTPServer interface {
 	GetSystem(context.Context, *emptypb.Empty) (*System, error)
-	Ping(context.Context, *emptypb.Empty) (*Msg, error)
+	Ping(context.Context, *emptypb.Empty) (*common.Msg, error)
 }
 
 func RegisterSystemInterfaceHTTPServer(s *http.Server, srv SystemInterfaceHTTPServer) {
@@ -48,7 +49,7 @@ func _SystemInterface_Ping3_HTTP_Handler(srv SystemInterfaceHTTPServer) func(ctx
 		if err != nil {
 			return err
 		}
-		reply := out.(*Msg)
+		reply := out.(*common.Msg)
 		return ctx.Result(200, reply)
 	}
 }
@@ -74,7 +75,7 @@ func _SystemInterface_GetSystem0_HTTP_Handler(srv SystemInterfaceHTTPServer) fun
 
 type SystemInterfaceHTTPClient interface {
 	GetSystem(ctx context.Context, req *emptypb.Empty, opts ...http.CallOption) (rsp *System, err error)
-	Ping(ctx context.Context, req *emptypb.Empty, opts ...http.CallOption) (rsp *Msg, err error)
+	Ping(ctx context.Context, req *emptypb.Empty, opts ...http.CallOption) (rsp *common.Msg, err error)
 }
 
 type SystemInterfaceHTTPClientImpl struct {
@@ -98,8 +99,8 @@ func (c *SystemInterfaceHTTPClientImpl) GetSystem(ctx context.Context, in *empty
 	return &out, nil
 }
 
-func (c *SystemInterfaceHTTPClientImpl) Ping(ctx context.Context, in *emptypb.Empty, opts ...http.CallOption) (*Msg, error) {
-	var out Msg
+func (c *SystemInterfaceHTTPClientImpl) Ping(ctx context.Context, in *emptypb.Empty, opts ...http.CallOption) (*common.Msg, error) {
+	var out common.Msg
 	pattern := "/api/v1alpha1/system/ping"
 	path := binding.EncodeURL(pattern, in, true)
 	opts = append(opts, http.Operation(OperationSystemInterfacePing))

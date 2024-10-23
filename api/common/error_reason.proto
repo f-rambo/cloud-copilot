@@ -1,8 +1,8 @@
 syntax = "proto3";
 
-package cloud.v1alpha1;
+package common;
 
-option go_package = "api/cloud/v1alpha1;v1alpha1";
+option go_package = "github.com/f-rambo/ocean/api/common;";
 
 enum ErrorReason {
   SUCCEED = 0;

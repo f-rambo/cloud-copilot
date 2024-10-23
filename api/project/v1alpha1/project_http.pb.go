@@ -8,6 +8,7 @@ package v1alpha1
 
 import (
 	context "context"
+	common "github.com/f-rambo/ocean/api/common"
 	http "github.com/go-kratos/kratos/v2/transport/http"
 	binding "github.com/go-kratos/kratos/v2/transport/http/binding"
 	emptypb "google.golang.org/protobuf/types/known/emptypb"
@@ -30,14 +31,14 @@ const OperationProjectServicePing = "/project.v1alpha1.ProjectService/Ping"
 const OperationProjectServiceSave = "/project.v1alpha1.ProjectService/Save"
 
 type ProjectServiceHTTPServer interface {
-	Delete(context.Context, *ProjectReq) (*Msg, error)
-	Disable(context.Context, *ProjectReq) (*Msg, error)
-	Enable(context.Context, *ProjectReq) (*Msg, error)
+	Delete(context.Context, *ProjectReq) (*common.Msg, error)
+	Disable(context.Context, *ProjectReq) (*common.Msg, error)
+	Enable(context.Context, *ProjectReq) (*common.Msg, error)
 	Get(context.Context, *ProjectReq) (*Project, error)
 	GetProjectMockData(context.Context, *emptypb.Empty) (*Project, error)
 	List(context.Context, *ProjectReq) (*ProjectList, error)
-	Ping(context.Context, *emptypb.Empty) (*Msg, error)
-	Save(context.Context, *Project) (*Msg, error)
+	Ping(context.Context, *emptypb.Empty) (*common.Msg, error)
+	Save(context.Context, *Project) (*common.Msg, error)
 }
 
 func RegisterProjectServiceHTTPServer(s *http.Server, srv ProjectServiceHTTPServer) {
@@ -66,7 +67,7 @@ func _ProjectService_Ping2_HTTP_Handler(srv ProjectServiceHTTPServer) func(ctx h
 		if err != nil {
 			return err
 		}
-		reply := out.(*Msg)
+		reply := out.(*common.Msg)
 		return ctx.Result(200, reply)
 	}
 }
@@ -88,7 +89,7 @@ func _ProjectService_Save2_HTTP_Handler(srv ProjectServiceHTTPServer) func(ctx h
 		if err != nil {
 			return err
 		}
-		reply := out.(*Msg)
+		reply := out.(*common.Msg)
 		return ctx.Result(200, reply)
 	}
 }
@@ -145,7 +146,7 @@ func _ProjectService_Delete2_HTTP_Handler(srv ProjectServiceHTTPServer) func(ctx
 		if err != nil {
 			return err
 		}
-		reply := out.(*Msg)
+		reply := out.(*common.Msg)
 		return ctx.Result(200, reply)
 	}
 }
@@ -186,7 +187,7 @@ func _ProjectService_Enable0_HTTP_Handler(srv ProjectServiceHTTPServer) func(ctx
 		if err != nil {
 			return err
 		}
-		reply := out.(*Msg)
+		reply := out.(*common.Msg)
 		return ctx.Result(200, reply)
 	}
 }
@@ -208,20 +209,20 @@ func _ProjectService_Disable0_HTTP_Handler(srv ProjectServiceHTTPServer) func(ct
 		if err != nil {
 			return err
 		}
-		reply := out.(*Msg)
+		reply := out.(*common.Msg)
 		return ctx.Result(200, reply)
 	}
 }
 
 type ProjectServiceHTTPClient interface {
-	Delete(ctx context.Context, req *ProjectReq, opts ...http.CallOption) (rsp *Msg, err error)
-	Disable(ctx context.Context, req *ProjectReq, opts ...http.CallOption) (rsp *Msg, err error)
-	Enable(ctx context.Context, req *ProjectReq, opts ...http.CallOption) (rsp *Msg, err error)
+	Delete(ctx context.Context, req *ProjectReq, opts ...http.CallOption) (rsp *common.Msg, err error)
+	Disable(ctx context.Context, req *ProjectReq, opts ...http.CallOption) (rsp *common.Msg, err error)
+	Enable(ctx context.Context, req *ProjectReq, opts ...http.CallOption) (rsp *common.Msg, err error)
 	Get(ctx context.Context, req *ProjectReq, opts ...http.CallOption) (rsp *Project, err error)
 	GetProjectMockData(ctx context.Context, req *emptypb.Empty, opts ...http.CallOption) (rsp *Project, err error)
 	List(ctx context.Context, req *ProjectReq, opts ...http.CallOption) (rsp *ProjectList, err error)
-	Ping(ctx context.Context, req *emptypb.Empty, opts ...http.CallOption) (rsp *Msg, err error)
-	Save(ctx context.Context, req *Project, opts ...http.CallOption) (rsp *Msg, err error)
+	Ping(ctx context.Context, req *emptypb.Empty, opts ...http.CallOption) (rsp *common.Msg, err error)
+	Save(ctx context.Context, req *Project, opts ...http.CallOption) (rsp *common.Msg, err error)
 }
 
 type ProjectServiceHTTPClientImpl struct {
@@ -232,8 +233,8 @@ func NewProjectServiceHTTPClient(client *http.Client) ProjectServiceHTTPClient {
 	return &ProjectServiceHTTPClientImpl{client}
 }
 
-func (c *ProjectServiceHTTPClientImpl) Delete(ctx context.Context, in *ProjectReq, opts ...http.CallOption) (*Msg, error) {
-	var out Msg
+func (c *ProjectServiceHTTPClientImpl) Delete(ctx context.Context, in *ProjectReq, opts ...http.CallOption) (*common.Msg, error) {
+	var out common.Msg
 	pattern := "/api/v1alpha1/project"
 	path := binding.EncodeURL(pattern, in, true)
 	opts = append(opts, http.Operation(OperationProjectServiceDelete))
@@ -245,8 +246,8 @@ func (c *ProjectServiceHTTPClientImpl) Delete(ctx context.Context, in *ProjectRe
 	return &out, nil
 }
 
-func (c *ProjectServiceHTTPClientImpl) Disable(ctx context.Context, in *ProjectReq, opts ...http.CallOption) (*Msg, error) {
-	var out Msg
+func (c *ProjectServiceHTTPClientImpl) Disable(ctx context.Context, in *ProjectReq, opts ...http.CallOption) (*common.Msg, error) {
+	var out common.Msg
 	pattern := "/api/v1alpha1/project/disable"
 	path := binding.EncodeURL(pattern, in, false)
 	opts = append(opts, http.Operation(OperationProjectServiceDisable))
@@ -258,8 +259,8 @@ func (c *ProjectServiceHTTPClientImpl) Disable(ctx context.Context, in *ProjectR
 	return &out, nil
 }
 
-func (c *ProjectServiceHTTPClientImpl) Enable(ctx context.Context, in *ProjectReq, opts ...http.CallOption) (*Msg, error) {
-	var out Msg
+func (c *ProjectServiceHTTPClientImpl) Enable(ctx context.Context, in *ProjectReq, opts ...http.CallOption) (*common.Msg, error) {
+	var out common.Msg
 	pattern := "/api/v1alpha1/project/enable"
 	path := binding.EncodeURL(pattern, in, false)
 	opts = append(opts, http.Operation(OperationProjectServiceEnable))
@@ -310,8 +311,8 @@ func (c *ProjectServiceHTTPClientImpl) List(ctx context.Context, in *ProjectReq,
 	return &out, nil
 }
 
-func (c *ProjectServiceHTTPClientImpl) Ping(ctx context.Context, in *emptypb.Empty, opts ...http.CallOption) (*Msg, error) {
-	var out Msg
+func (c *ProjectServiceHTTPClientImpl) Ping(ctx context.Context, in *emptypb.Empty, opts ...http.CallOption) (*common.Msg, error) {
+	var out common.Msg
 	pattern := "/api/v1alpha1/project/ping"
 	path := binding.EncodeURL(pattern, in, true)
 	opts = append(opts, http.Operation(OperationProjectServicePing))
@@ -323,8 +324,8 @@ func (c *ProjectServiceHTTPClientImpl) Ping(ctx context.Context, in *emptypb.Emp
 	return &out, nil
 }
 
-func (c *ProjectServiceHTTPClientImpl) Save(ctx context.Context, in *Project, opts ...http.CallOption) (*Msg, error) {
-	var out Msg
+func (c *ProjectServiceHTTPClientImpl) Save(ctx context.Context, in *Project, opts ...http.CallOption) (*common.Msg, error) {
+	var out common.Msg
 	pattern := "/api/v1alpha1/project"
 	path := binding.EncodeURL(pattern, in, false)
 	opts = append(opts, http.Operation(OperationProjectServiceSave))

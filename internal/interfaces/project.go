@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 
+	"github.com/f-rambo/ocean/api/common"
 	"github.com/f-rambo/ocean/api/project/v1alpha1"
 	"github.com/f-rambo/ocean/internal/biz"
 	"github.com/f-rambo/ocean/internal/conf"
@@ -25,11 +26,11 @@ func NewProjectInterface(uc *biz.ProjectUsecase, appUc *biz.AppUsecase, clusterU
 	return &ProjectInterface{projectUc: uc, appUc: appUc, clusterUc: clusterUc, c: c, log: log.NewHelper(logger)}
 }
 
-func (p *ProjectInterface) Ping(ctx context.Context, _ *emptypb.Empty) (*v1alpha1.Msg, error) {
-	return &v1alpha1.Msg{}, nil
+func (p *ProjectInterface) Ping(ctx context.Context, _ *emptypb.Empty) (*common.Msg, error) {
+	return common.Response(), nil
 }
 
-func (p *ProjectInterface) Save(ctx context.Context, project *v1alpha1.Project) (*v1alpha1.Msg, error) {
+func (p *ProjectInterface) Save(ctx context.Context, project *v1alpha1.Project) (*common.Msg, error) {
 	if project.Name == "" {
 		return nil, errors.New("project name is required")
 	}
@@ -53,7 +54,7 @@ func (p *ProjectInterface) Save(ctx context.Context, project *v1alpha1.Project) 
 	if err != nil {
 		return nil, err
 	}
-	return &v1alpha1.Msg{}, nil
+	return common.Response(), nil
 }
 
 func (p *ProjectInterface) Get(ctx context.Context, projectReq *v1alpha1.ProjectReq) (*v1alpha1.Project, error) {
@@ -94,7 +95,7 @@ func (p *ProjectInterface) List(ctx context.Context, projectReq *v1alpha1.Projec
 	return &v1alpha1.ProjectList{Projects: projects}, nil
 }
 
-func (p *ProjectInterface) Delete(ctx context.Context, projectReq *v1alpha1.ProjectReq) (*v1alpha1.Msg, error) {
+func (p *ProjectInterface) Delete(ctx context.Context, projectReq *v1alpha1.ProjectReq) (*common.Msg, error) {
 	if projectReq.Id == 0 {
 		return nil, errors.New("project id is required")
 	}
@@ -102,7 +103,7 @@ func (p *ProjectInterface) Delete(ctx context.Context, projectReq *v1alpha1.Proj
 	if err != nil {
 		return nil, err
 	}
-	return &v1alpha1.Msg{}, nil
+	return common.Response(), nil
 }
 
 func (p *ProjectInterface) GetProjectMockData(ctx context.Context, _ *emptypb.Empty) (*v1alpha1.Project, error) {
@@ -115,7 +116,7 @@ func (p *ProjectInterface) GetProjectMockData(ctx context.Context, _ *emptypb.Em
 	return p.bizProjectToProject(bizProject)
 }
 
-func (p *ProjectInterface) Enable(ctx context.Context, projectReq *v1alpha1.ProjectReq) (*v1alpha1.Msg, error) {
+func (p *ProjectInterface) Enable(ctx context.Context, projectReq *v1alpha1.ProjectReq) (*common.Msg, error) {
 	if projectReq.Id == 0 {
 		return nil, errors.New("project id is required")
 	}
@@ -131,14 +132,14 @@ func (p *ProjectInterface) Enable(ctx context.Context, projectReq *v1alpha1.Proj
 	if err != nil {
 		return nil, err
 	}
-	return &v1alpha1.Msg{}, nil
+	return common.Response(), nil
 }
 
-func (p *ProjectInterface) Disable(ctx context.Context, projectReq *v1alpha1.ProjectReq) (*v1alpha1.Msg, error) {
+func (p *ProjectInterface) Disable(ctx context.Context, projectReq *v1alpha1.ProjectReq) (*common.Msg, error) {
 	if projectReq.Id == 0 {
 		return nil, errors.New("project id is required")
 	}
-	return &v1alpha1.Msg{}, nil
+	return common.Response(), nil
 }
 
 func (p *ProjectInterface) projectTobizProject(project *v1alpha1.Project) (*biz.Project, error) {

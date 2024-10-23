@@ -90,7 +90,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/app.v1alpha1.Msg'
+                                $ref: '#/components/schemas/common.Msg'
     /api/v1alpha1/app/deploy:
         get:
             tags:
@@ -270,7 +270,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/app.v1alpha1.Msg'
+                                $ref: '#/components/schemas/common.Msg'
     /api/v1alpha1/app/deploy/list:
         get:
             tags:
@@ -467,7 +467,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/app.v1alpha1.Msg'
+                                $ref: '#/components/schemas/common.Msg'
     /api/v1alpha1/app/repo:
         post:
             tags:
@@ -485,7 +485,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/app.v1alpha1.Msg'
+                                $ref: '#/components/schemas/common.Msg'
         delete:
             tags:
                 - AppInterface
@@ -509,7 +509,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/app.v1alpha1.Msg'
+                                $ref: '#/components/schemas/common.Msg'
     /api/v1alpha1/app/repo/app/detail:
         get:
             tags:
@@ -589,7 +589,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/app.v1alpha1.Msg'
+                                $ref: '#/components/schemas/common.Msg'
     /api/v1alpha1/app/stop:
         post:
             tags:
@@ -607,7 +607,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/app.v1alpha1.Msg'
+                                $ref: '#/components/schemas/common.Msg'
     /api/v1alpha1/app/test:
         post:
             tags:
@@ -643,7 +643,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/app.v1alpha1.Msg'
+                                $ref: '#/components/schemas/common.Msg'
         delete:
             tags:
                 - AppInterface
@@ -659,7 +659,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/app.v1alpha1.Msg'
+                                $ref: '#/components/schemas/common.Msg'
     /api/v1alpha1/app/type/list:
         get:
             tags:
@@ -708,7 +708,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/cloud.v1alpha1.Msg'
+                                $ref: '#/components/schemas/common.Msg'
     /api/v1alpha1/cloud/close_firewall:
         post:
             tags:
@@ -725,7 +725,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/cloud.v1alpha1.Msg'
+                                $ref: '#/components/schemas/common.Msg'
     /api/v1alpha1/cloud/close_swap:
         post:
             tags:
@@ -742,7 +742,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/cloud.v1alpha1.Msg'
+                                $ref: '#/components/schemas/common.Msg'
     /api/v1alpha1/cloud/install_kubeadm_kubelet_crio:
         post:
             tags:
@@ -761,7 +761,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/cloud.v1alpha1.Msg'
+                                $ref: '#/components/schemas/common.Msg'
     /api/v1alpha1/cloud/kubeadm_init:
         post:
             tags:
@@ -780,7 +780,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/cloud.v1alpha1.Msg'
+                                $ref: '#/components/schemas/common.Msg'
     /api/v1alpha1/cloud/kubeadm_join:
         post:
             tags:
@@ -799,7 +799,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/cloud.v1alpha1.Msg'
+                                $ref: '#/components/schemas/common.Msg'
     /api/v1alpha1/cloud/kubeadm_reset:
         post:
             tags:
@@ -818,7 +818,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/cloud.v1alpha1.Msg'
+                                $ref: '#/components/schemas/common.Msg'
     /api/v1alpha1/cloud/kubeadm_upgrade:
         post:
             tags:
@@ -837,7 +837,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/cloud.v1alpha1.Msg'
+                                $ref: '#/components/schemas/common.Msg'
     /api/v1alpha1/cloud/ping:
         get:
             tags:
@@ -849,7 +849,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/cloud.v1alpha1.Msg'
+                                $ref: '#/components/schemas/common.Msg'
     /api/v1alpha1/cloud/setting_ipv4_forward:
         post:
             tags:
@@ -866,7 +866,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/cloud.v1alpha1.Msg'
+                                $ref: '#/components/schemas/common.Msg'
     /api/v1alpha1/cluster:
         get:
             tags:
@@ -980,25 +980,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/cluster.v1alpha1.Msg'
-    /api/v1alpha1/cluster/check_bostion_host:
-        post:
-            tags:
-                - ClusterInterface
-            operationId: ClusterInterface_CheckBostionHost
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/cluster.v1alpha1.CheckBostionHostRequest'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/cluster.v1alpha1.Msg'
+                                $ref: '#/components/schemas/common.Msg'
     /api/v1alpha1/cluster/list:
         get:
             tags:
@@ -1040,7 +1022,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/cluster.v1alpha1.Msg'
+                                $ref: '#/components/schemas/common.Msg'
     /api/v1alpha1/cluster/regions:
         get:
             tags:
@@ -1107,7 +1089,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/cluster.v1alpha1.Msg'
+                                $ref: '#/components/schemas/common.Msg'
     /api/v1alpha1/project:
         get:
             tags:
@@ -1149,7 +1131,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/project.v1alpha1.Msg'
+                                $ref: '#/components/schemas/common.Msg'
         delete:
             tags:
                 - ProjectService
@@ -1173,7 +1155,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/project.v1alpha1.Msg'
+                                $ref: '#/components/schemas/common.Msg'
     /api/v1alpha1/project/disable:
         post:
             tags:
@@ -1191,7 +1173,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/project.v1alpha1.Msg'
+                                $ref: '#/components/schemas/common.Msg'
     /api/v1alpha1/project/enable:
         post:
             tags:
@@ -1209,7 +1191,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/project.v1alpha1.Msg'
+                                $ref: '#/components/schemas/common.Msg'
     /api/v1alpha1/project/list:
         get:
             tags:
@@ -1258,7 +1240,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/project.v1alpha1.Msg'
+                                $ref: '#/components/schemas/common.Msg'
     /api/v1alpha1/service/cis:
         get:
             tags:
@@ -1307,7 +1289,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/service.v1alpha1.Msg'
+                                $ref: '#/components/schemas/common.Msg'
     /api/v1alpha1/service/delete:
         delete:
             tags:
@@ -1360,7 +1342,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/service.v1alpha1.Msg'
+                                $ref: '#/components/schemas/common.Msg'
     /api/v1alpha1/service/get:
         get:
             tags:
@@ -1478,7 +1460,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/service.v1alpha1.Msg'
+                                $ref: '#/components/schemas/common.Msg'
     /api/v1alpha1/service/save:
         post:
             tags:
@@ -1496,7 +1478,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/service.v1alpha1.Msg'
+                                $ref: '#/components/schemas/common.Msg'
     /api/v1alpha1/service/workflow:
         get:
             tags:
@@ -1566,7 +1548,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/service.v1alpha1.Msg'
+                                $ref: '#/components/schemas/common.Msg'
     /api/v1alpha1/system:
         get:
             tags:
@@ -1590,7 +1572,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/system.v1alpha1.Msg'
+                                $ref: '#/components/schemas/common.Msg'
     /api/v1alpha1/user:
         get:
             tags:
@@ -1659,7 +1641,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/user.v1alpha1.Msg'
+                                $ref: '#/components/schemas/common.Msg'
     /api/v1alpha1/user/signin:
         post:
             tags:
@@ -2002,14 +1984,6 @@ components:
                         $ref: '#/components/schemas/app.v1alpha1.Dependency'
                 type:
                     type: string
-        app.v1alpha1.Msg:
-            type: object
-            properties:
-                Reason:
-                    type: integer
-                    format: enum
-                Message:
-                    type: string
         cloud.v1alpha1.Cloud:
             type: object
             properties:
@@ -2043,14 +2017,6 @@ components:
                     type: string
                 joinConfig:
                     type: string
-        cloud.v1alpha1.Msg:
-            type: object
-            properties:
-                Reason:
-                    type: integer
-                    format: enum
-                Message:
-                    type: string
         cluster.v1alpha1.BostionHost:
             type: object
             properties:
@@ -2076,23 +2042,6 @@ components:
                     type: integer
                     format: int32
                 cluster_id:
-                    type: string
-        cluster.v1alpha1.CheckBostionHostRequest:
-            type: object
-            properties:
-                arch:
-                    type: string
-                ocean_version:
-                    type: string
-                ship_version:
-                    type: string
-                ocean_data_tar_gz_package_path:
-                    type: string
-                ocean_data_tar_gz_package_sha256sum_path:
-                    type: string
-                ocean_path:
-                    type: string
-                ship_path:
                     type: string
         cluster.v1alpha1.Cluster:
             type: object
@@ -2199,14 +2148,6 @@ components:
                 last_line:
                     type: integer
                     format: int32
-        cluster.v1alpha1.Msg:
-            type: object
-            properties:
-                Reason:
-                    type: integer
-                    format: enum
-                Message:
-                    type: string
         cluster.v1alpha1.Node:
             type: object
             properties:
@@ -2331,6 +2272,14 @@ components:
                     type: array
                     items:
                         type: string
+        common.Msg:
+            type: object
+            properties:
+                Reason:
+                    type: integer
+                    format: enum
+                Message:
+                    type: string
         project.v1alpha1.Business:
             type: object
             properties:
@@ -2340,14 +2289,6 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/project.v1alpha1.Technology'
-        project.v1alpha1.Msg:
-            type: object
-            properties:
-                Reason:
-                    type: integer
-                    format: enum
-                Message:
-                    type: string
         project.v1alpha1.Project:
             type: object
             properties:
@@ -2427,14 +2368,6 @@ components:
                     items:
                         $ref: '#/components/schemas/service.v1alpha1.CI'
                 total:
-                    type: string
-        service.v1alpha1.Msg:
-            type: object
-            properties:
-                Reason:
-                    type: integer
-                    format: enum
-                Message:
                     type: string
         service.v1alpha1.Port:
             type: object
@@ -2582,14 +2515,6 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/service.v1alpha1.WfTemplate'
-        system.v1alpha1.Msg:
-            type: object
-            properties:
-                Reason:
-                    type: integer
-                    format: enum
-                Message:
-                    type: string
         system.v1alpha1.System:
             type: object
             properties:
@@ -2622,14 +2547,6 @@ components:
                 kubeProxy:
                     type: string
                 internalIp:
-                    type: string
-        user.v1alpha1.Msg:
-            type: object
-            properties:
-                Reason:
-                    type: integer
-                    format: enum
-                Message:
                     type: string
         user.v1alpha1.SignIn:
             type: object

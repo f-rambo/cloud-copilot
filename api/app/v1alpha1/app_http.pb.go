@@ -8,6 +8,7 @@ package v1alpha1
 
 import (
 	context "context"
+	common "github.com/f-rambo/ocean/api/common"
 	http "github.com/go-kratos/kratos/v2/transport/http"
 	binding "github.com/go-kratos/kratos/v2/transport/http/binding"
 	emptypb "google.golang.org/protobuf/types/known/emptypb"
@@ -44,11 +45,11 @@ const OperationAppInterfaceUploadApp = "/app.v1alpha1.AppInterface/UploadApp"
 
 type AppInterfaceHTTPServer interface {
 	AppTest(context.Context, *DeployAppReq) (*DeployApp, error)
-	CreateAppType(context.Context, *AppType) (*Msg, error)
-	Delete(context.Context, *AppReq) (*Msg, error)
-	DeleteAppType(context.Context, *AppTypeReq) (*Msg, error)
-	DeleteDeployedApp(context.Context, *DeployAppReq) (*Msg, error)
-	DeleteRepo(context.Context, *AppHelmRepoReq) (*Msg, error)
+	CreateAppType(context.Context, *AppType) (*common.Msg, error)
+	Delete(context.Context, *AppReq) (*common.Msg, error)
+	DeleteAppType(context.Context, *AppTypeReq) (*common.Msg, error)
+	DeleteDeployedApp(context.Context, *DeployAppReq) (*common.Msg, error)
+	DeleteRepo(context.Context, *AppHelmRepoReq) (*common.Msg, error)
 	DeployApp(context.Context, *DeployAppReq) (*DeployApp, error)
 	Get(context.Context, *AppReq) (*App, error)
 	GetAppDeployed(context.Context, *DeployApp) (*DeployApp, error)
@@ -59,10 +60,10 @@ type AppInterfaceHTTPServer interface {
 	ListAppType(context.Context, *emptypb.Empty) (*AppTypeList, error)
 	ListDeployedApp(context.Context, *DeployAppReq) (*DeployAppList, error)
 	ListRepo(context.Context, *emptypb.Empty) (*AppHelmRepoList, error)
-	Ping(context.Context, *emptypb.Empty) (*Msg, error)
-	Save(context.Context, *App) (*Msg, error)
-	SaveRepo(context.Context, *AppHelmRepo) (*Msg, error)
-	StopApp(context.Context, *DeployAppReq) (*Msg, error)
+	Ping(context.Context, *emptypb.Empty) (*common.Msg, error)
+	Save(context.Context, *App) (*common.Msg, error)
+	SaveRepo(context.Context, *AppHelmRepo) (*common.Msg, error)
+	StopApp(context.Context, *DeployAppReq) (*common.Msg, error)
 	UploadApp(context.Context, *FileUploadRequest) (*App, error)
 }
 
@@ -105,7 +106,7 @@ func _AppInterface_Ping1_HTTP_Handler(srv AppInterfaceHTTPServer) func(ctx http.
 		if err != nil {
 			return err
 		}
-		reply := out.(*Msg)
+		reply := out.(*common.Msg)
 		return ctx.Result(200, reply)
 	}
 }
@@ -149,7 +150,7 @@ func _AppInterface_Save1_HTTP_Handler(srv AppInterfaceHTTPServer) func(ctx http.
 		if err != nil {
 			return err
 		}
-		reply := out.(*Msg)
+		reply := out.(*common.Msg)
 		return ctx.Result(200, reply)
 	}
 }
@@ -206,7 +207,7 @@ func _AppInterface_Delete1_HTTP_Handler(srv AppInterfaceHTTPServer) func(ctx htt
 		if err != nil {
 			return err
 		}
-		reply := out.(*Msg)
+		reply := out.(*common.Msg)
 		return ctx.Result(200, reply)
 	}
 }
@@ -228,7 +229,7 @@ func _AppInterface_CreateAppType0_HTTP_Handler(srv AppInterfaceHTTPServer) func(
 		if err != nil {
 			return err
 		}
-		reply := out.(*Msg)
+		reply := out.(*common.Msg)
 		return ctx.Result(200, reply)
 	}
 }
@@ -266,7 +267,7 @@ func _AppInterface_DeleteAppType0_HTTP_Handler(srv AppInterfaceHTTPServer) func(
 		if err != nil {
 			return err
 		}
-		reply := out.(*Msg)
+		reply := out.(*common.Msg)
 		return ctx.Result(200, reply)
 	}
 }
@@ -370,7 +371,7 @@ func _AppInterface_StopApp0_HTTP_Handler(srv AppInterfaceHTTPServer) func(ctx ht
 		if err != nil {
 			return err
 		}
-		reply := out.(*Msg)
+		reply := out.(*common.Msg)
 		return ctx.Result(200, reply)
 	}
 }
@@ -389,7 +390,7 @@ func _AppInterface_DeleteDeployedApp0_HTTP_Handler(srv AppInterfaceHTTPServer) f
 		if err != nil {
 			return err
 		}
-		reply := out.(*Msg)
+		reply := out.(*common.Msg)
 		return ctx.Result(200, reply)
 	}
 }
@@ -430,7 +431,7 @@ func _AppInterface_SaveRepo0_HTTP_Handler(srv AppInterfaceHTTPServer) func(ctx h
 		if err != nil {
 			return err
 		}
-		reply := out.(*Msg)
+		reply := out.(*common.Msg)
 		return ctx.Result(200, reply)
 	}
 }
@@ -468,7 +469,7 @@ func _AppInterface_DeleteRepo0_HTTP_Handler(srv AppInterfaceHTTPServer) func(ctx
 		if err != nil {
 			return err
 		}
-		reply := out.(*Msg)
+		reply := out.(*common.Msg)
 		return ctx.Result(200, reply)
 	}
 }
@@ -513,11 +514,11 @@ func _AppInterface_GetAppDetailByRepo0_HTTP_Handler(srv AppInterfaceHTTPServer) 
 
 type AppInterfaceHTTPClient interface {
 	AppTest(ctx context.Context, req *DeployAppReq, opts ...http.CallOption) (rsp *DeployApp, err error)
-	CreateAppType(ctx context.Context, req *AppType, opts ...http.CallOption) (rsp *Msg, err error)
-	Delete(ctx context.Context, req *AppReq, opts ...http.CallOption) (rsp *Msg, err error)
-	DeleteAppType(ctx context.Context, req *AppTypeReq, opts ...http.CallOption) (rsp *Msg, err error)
-	DeleteDeployedApp(ctx context.Context, req *DeployAppReq, opts ...http.CallOption) (rsp *Msg, err error)
-	DeleteRepo(ctx context.Context, req *AppHelmRepoReq, opts ...http.CallOption) (rsp *Msg, err error)
+	CreateAppType(ctx context.Context, req *AppType, opts ...http.CallOption) (rsp *common.Msg, err error)
+	Delete(ctx context.Context, req *AppReq, opts ...http.CallOption) (rsp *common.Msg, err error)
+	DeleteAppType(ctx context.Context, req *AppTypeReq, opts ...http.CallOption) (rsp *common.Msg, err error)
+	DeleteDeployedApp(ctx context.Context, req *DeployAppReq, opts ...http.CallOption) (rsp *common.Msg, err error)
+	DeleteRepo(ctx context.Context, req *AppHelmRepoReq, opts ...http.CallOption) (rsp *common.Msg, err error)
 	DeployApp(ctx context.Context, req *DeployAppReq, opts ...http.CallOption) (rsp *DeployApp, err error)
 	Get(ctx context.Context, req *AppReq, opts ...http.CallOption) (rsp *App, err error)
 	GetAppDeployed(ctx context.Context, req *DeployApp, opts ...http.CallOption) (rsp *DeployApp, err error)
@@ -528,10 +529,10 @@ type AppInterfaceHTTPClient interface {
 	ListAppType(ctx context.Context, req *emptypb.Empty, opts ...http.CallOption) (rsp *AppTypeList, err error)
 	ListDeployedApp(ctx context.Context, req *DeployAppReq, opts ...http.CallOption) (rsp *DeployAppList, err error)
 	ListRepo(ctx context.Context, req *emptypb.Empty, opts ...http.CallOption) (rsp *AppHelmRepoList, err error)
-	Ping(ctx context.Context, req *emptypb.Empty, opts ...http.CallOption) (rsp *Msg, err error)
-	Save(ctx context.Context, req *App, opts ...http.CallOption) (rsp *Msg, err error)
-	SaveRepo(ctx context.Context, req *AppHelmRepo, opts ...http.CallOption) (rsp *Msg, err error)
-	StopApp(ctx context.Context, req *DeployAppReq, opts ...http.CallOption) (rsp *Msg, err error)
+	Ping(ctx context.Context, req *emptypb.Empty, opts ...http.CallOption) (rsp *common.Msg, err error)
+	Save(ctx context.Context, req *App, opts ...http.CallOption) (rsp *common.Msg, err error)
+	SaveRepo(ctx context.Context, req *AppHelmRepo, opts ...http.CallOption) (rsp *common.Msg, err error)
+	StopApp(ctx context.Context, req *DeployAppReq, opts ...http.CallOption) (rsp *common.Msg, err error)
 	UploadApp(ctx context.Context, req *FileUploadRequest, opts ...http.CallOption) (rsp *App, err error)
 }
 
@@ -556,8 +557,8 @@ func (c *AppInterfaceHTTPClientImpl) AppTest(ctx context.Context, in *DeployAppR
 	return &out, nil
 }
 
-func (c *AppInterfaceHTTPClientImpl) CreateAppType(ctx context.Context, in *AppType, opts ...http.CallOption) (*Msg, error) {
-	var out Msg
+func (c *AppInterfaceHTTPClientImpl) CreateAppType(ctx context.Context, in *AppType, opts ...http.CallOption) (*common.Msg, error) {
+	var out common.Msg
 	pattern := "/api/v1alpha1/app/type"
 	path := binding.EncodeURL(pattern, in, false)
 	opts = append(opts, http.Operation(OperationAppInterfaceCreateAppType))
@@ -569,8 +570,8 @@ func (c *AppInterfaceHTTPClientImpl) CreateAppType(ctx context.Context, in *AppT
 	return &out, nil
 }
 
-func (c *AppInterfaceHTTPClientImpl) Delete(ctx context.Context, in *AppReq, opts ...http.CallOption) (*Msg, error) {
-	var out Msg
+func (c *AppInterfaceHTTPClientImpl) Delete(ctx context.Context, in *AppReq, opts ...http.CallOption) (*common.Msg, error) {
+	var out common.Msg
 	pattern := "/api/v1alpha1/app"
 	path := binding.EncodeURL(pattern, in, true)
 	opts = append(opts, http.Operation(OperationAppInterfaceDelete))
@@ -582,8 +583,8 @@ func (c *AppInterfaceHTTPClientImpl) Delete(ctx context.Context, in *AppReq, opt
 	return &out, nil
 }
 
-func (c *AppInterfaceHTTPClientImpl) DeleteAppType(ctx context.Context, in *AppTypeReq, opts ...http.CallOption) (*Msg, error) {
-	var out Msg
+func (c *AppInterfaceHTTPClientImpl) DeleteAppType(ctx context.Context, in *AppTypeReq, opts ...http.CallOption) (*common.Msg, error) {
+	var out common.Msg
 	pattern := "/api/v1alpha1/app/type"
 	path := binding.EncodeURL(pattern, in, true)
 	opts = append(opts, http.Operation(OperationAppInterfaceDeleteAppType))
@@ -595,8 +596,8 @@ func (c *AppInterfaceHTTPClientImpl) DeleteAppType(ctx context.Context, in *AppT
 	return &out, nil
 }
 
-func (c *AppInterfaceHTTPClientImpl) DeleteDeployedApp(ctx context.Context, in *DeployAppReq, opts ...http.CallOption) (*Msg, error) {
-	var out Msg
+func (c *AppInterfaceHTTPClientImpl) DeleteDeployedApp(ctx context.Context, in *DeployAppReq, opts ...http.CallOption) (*common.Msg, error) {
+	var out common.Msg
 	pattern := "/api/v1alpha1/app/deploy"
 	path := binding.EncodeURL(pattern, in, true)
 	opts = append(opts, http.Operation(OperationAppInterfaceDeleteDeployedApp))
@@ -608,8 +609,8 @@ func (c *AppInterfaceHTTPClientImpl) DeleteDeployedApp(ctx context.Context, in *
 	return &out, nil
 }
 
-func (c *AppInterfaceHTTPClientImpl) DeleteRepo(ctx context.Context, in *AppHelmRepoReq, opts ...http.CallOption) (*Msg, error) {
-	var out Msg
+func (c *AppInterfaceHTTPClientImpl) DeleteRepo(ctx context.Context, in *AppHelmRepoReq, opts ...http.CallOption) (*common.Msg, error) {
+	var out common.Msg
 	pattern := "/api/v1alpha1/app/repo"
 	path := binding.EncodeURL(pattern, in, true)
 	opts = append(opts, http.Operation(OperationAppInterfaceDeleteRepo))
@@ -751,8 +752,8 @@ func (c *AppInterfaceHTTPClientImpl) ListRepo(ctx context.Context, in *emptypb.E
 	return &out, nil
 }
 
-func (c *AppInterfaceHTTPClientImpl) Ping(ctx context.Context, in *emptypb.Empty, opts ...http.CallOption) (*Msg, error) {
-	var out Msg
+func (c *AppInterfaceHTTPClientImpl) Ping(ctx context.Context, in *emptypb.Empty, opts ...http.CallOption) (*common.Msg, error) {
+	var out common.Msg
 	pattern := "/api/v1alpha1/app/ping"
 	path := binding.EncodeURL(pattern, in, true)
 	opts = append(opts, http.Operation(OperationAppInterfacePing))
@@ -764,8 +765,8 @@ func (c *AppInterfaceHTTPClientImpl) Ping(ctx context.Context, in *emptypb.Empty
 	return &out, nil
 }
 
-func (c *AppInterfaceHTTPClientImpl) Save(ctx context.Context, in *App, opts ...http.CallOption) (*Msg, error) {
-	var out Msg
+func (c *AppInterfaceHTTPClientImpl) Save(ctx context.Context, in *App, opts ...http.CallOption) (*common.Msg, error) {
+	var out common.Msg
 	pattern := "/api/v1alpha1/app/save"
 	path := binding.EncodeURL(pattern, in, false)
 	opts = append(opts, http.Operation(OperationAppInterfaceSave))
@@ -777,8 +778,8 @@ func (c *AppInterfaceHTTPClientImpl) Save(ctx context.Context, in *App, opts ...
 	return &out, nil
 }
 
-func (c *AppInterfaceHTTPClientImpl) SaveRepo(ctx context.Context, in *AppHelmRepo, opts ...http.CallOption) (*Msg, error) {
-	var out Msg
+func (c *AppInterfaceHTTPClientImpl) SaveRepo(ctx context.Context, in *AppHelmRepo, opts ...http.CallOption) (*common.Msg, error) {
+	var out common.Msg
 	pattern := "/api/v1alpha1/app/repo"
 	path := binding.EncodeURL(pattern, in, false)
 	opts = append(opts, http.Operation(OperationAppInterfaceSaveRepo))
@@ -790,8 +791,8 @@ func (c *AppInterfaceHTTPClientImpl) SaveRepo(ctx context.Context, in *AppHelmRe
 	return &out, nil
 }
 
-func (c *AppInterfaceHTTPClientImpl) StopApp(ctx context.Context, in *DeployAppReq, opts ...http.CallOption) (*Msg, error) {
-	var out Msg
+func (c *AppInterfaceHTTPClientImpl) StopApp(ctx context.Context, in *DeployAppReq, opts ...http.CallOption) (*common.Msg, error) {
+	var out common.Msg
 	pattern := "/api/v1alpha1/app/stop"
 	path := binding.EncodeURL(pattern, in, false)
 	opts = append(opts, http.Operation(OperationAppInterfaceStopApp))

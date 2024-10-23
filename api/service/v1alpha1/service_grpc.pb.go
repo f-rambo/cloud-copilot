@@ -8,6 +8,7 @@ package v1alpha1
 
 import (
 	context "context"
+	common "github.com/f-rambo/ocean/api/common"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -35,14 +36,14 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ServiceInterfaceClient interface {
-	Ping(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*Msg, error)
+	Ping(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*common.Msg, error)
 	List(ctx context.Context, in *ServiceRequest, opts ...grpc.CallOption) (*Services, error)
-	Save(ctx context.Context, in *Service, opts ...grpc.CallOption) (*Msg, error)
+	Save(ctx context.Context, in *Service, opts ...grpc.CallOption) (*common.Msg, error)
 	Get(ctx context.Context, in *ServiceRequest, opts ...grpc.CallOption) (*Service, error)
-	Delete(ctx context.Context, in *ServiceRequest, opts ...grpc.CallOption) (*Msg, error)
+	Delete(ctx context.Context, in *ServiceRequest, opts ...grpc.CallOption) (*common.Msg, error)
 	GetWorkflow(ctx context.Context, in *ServiceRequest, opts ...grpc.CallOption) (*Worklfow, error)
-	SaveWorkflow(ctx context.Context, in *ServiceRequest, opts ...grpc.CallOption) (*Msg, error)
-	CommitWorklfow(ctx context.Context, in *ServiceRequest, opts ...grpc.CallOption) (*Msg, error)
+	SaveWorkflow(ctx context.Context, in *ServiceRequest, opts ...grpc.CallOption) (*common.Msg, error)
+	CommitWorklfow(ctx context.Context, in *ServiceRequest, opts ...grpc.CallOption) (*common.Msg, error)
 	GetServiceCis(ctx context.Context, in *CIsRequest, opts ...grpc.CallOption) (*CIsResult, error)
 }
 
@@ -54,9 +55,9 @@ func NewServiceInterfaceClient(cc grpc.ClientConnInterface) ServiceInterfaceClie
 	return &serviceInterfaceClient{cc}
 }
 
-func (c *serviceInterfaceClient) Ping(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*Msg, error) {
+func (c *serviceInterfaceClient) Ping(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*common.Msg, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Msg)
+	out := new(common.Msg)
 	err := c.cc.Invoke(ctx, ServiceInterface_Ping_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -74,9 +75,9 @@ func (c *serviceInterfaceClient) List(ctx context.Context, in *ServiceRequest, o
 	return out, nil
 }
 
-func (c *serviceInterfaceClient) Save(ctx context.Context, in *Service, opts ...grpc.CallOption) (*Msg, error) {
+func (c *serviceInterfaceClient) Save(ctx context.Context, in *Service, opts ...grpc.CallOption) (*common.Msg, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Msg)
+	out := new(common.Msg)
 	err := c.cc.Invoke(ctx, ServiceInterface_Save_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -94,9 +95,9 @@ func (c *serviceInterfaceClient) Get(ctx context.Context, in *ServiceRequest, op
 	return out, nil
 }
 
-func (c *serviceInterfaceClient) Delete(ctx context.Context, in *ServiceRequest, opts ...grpc.CallOption) (*Msg, error) {
+func (c *serviceInterfaceClient) Delete(ctx context.Context, in *ServiceRequest, opts ...grpc.CallOption) (*common.Msg, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Msg)
+	out := new(common.Msg)
 	err := c.cc.Invoke(ctx, ServiceInterface_Delete_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -114,9 +115,9 @@ func (c *serviceInterfaceClient) GetWorkflow(ctx context.Context, in *ServiceReq
 	return out, nil
 }
 
-func (c *serviceInterfaceClient) SaveWorkflow(ctx context.Context, in *ServiceRequest, opts ...grpc.CallOption) (*Msg, error) {
+func (c *serviceInterfaceClient) SaveWorkflow(ctx context.Context, in *ServiceRequest, opts ...grpc.CallOption) (*common.Msg, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Msg)
+	out := new(common.Msg)
 	err := c.cc.Invoke(ctx, ServiceInterface_SaveWorkflow_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -124,9 +125,9 @@ func (c *serviceInterfaceClient) SaveWorkflow(ctx context.Context, in *ServiceRe
 	return out, nil
 }
 
-func (c *serviceInterfaceClient) CommitWorklfow(ctx context.Context, in *ServiceRequest, opts ...grpc.CallOption) (*Msg, error) {
+func (c *serviceInterfaceClient) CommitWorklfow(ctx context.Context, in *ServiceRequest, opts ...grpc.CallOption) (*common.Msg, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Msg)
+	out := new(common.Msg)
 	err := c.cc.Invoke(ctx, ServiceInterface_CommitWorklfow_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -148,14 +149,14 @@ func (c *serviceInterfaceClient) GetServiceCis(ctx context.Context, in *CIsReque
 // All implementations must embed UnimplementedServiceInterfaceServer
 // for forward compatibility.
 type ServiceInterfaceServer interface {
-	Ping(context.Context, *emptypb.Empty) (*Msg, error)
+	Ping(context.Context, *emptypb.Empty) (*common.Msg, error)
 	List(context.Context, *ServiceRequest) (*Services, error)
-	Save(context.Context, *Service) (*Msg, error)
+	Save(context.Context, *Service) (*common.Msg, error)
 	Get(context.Context, *ServiceRequest) (*Service, error)
-	Delete(context.Context, *ServiceRequest) (*Msg, error)
+	Delete(context.Context, *ServiceRequest) (*common.Msg, error)
 	GetWorkflow(context.Context, *ServiceRequest) (*Worklfow, error)
-	SaveWorkflow(context.Context, *ServiceRequest) (*Msg, error)
-	CommitWorklfow(context.Context, *ServiceRequest) (*Msg, error)
+	SaveWorkflow(context.Context, *ServiceRequest) (*common.Msg, error)
+	CommitWorklfow(context.Context, *ServiceRequest) (*common.Msg, error)
 	GetServiceCis(context.Context, *CIsRequest) (*CIsResult, error)
 	mustEmbedUnimplementedServiceInterfaceServer()
 }
@@ -167,28 +168,28 @@ type ServiceInterfaceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedServiceInterfaceServer struct{}
 
-func (UnimplementedServiceInterfaceServer) Ping(context.Context, *emptypb.Empty) (*Msg, error) {
+func (UnimplementedServiceInterfaceServer) Ping(context.Context, *emptypb.Empty) (*common.Msg, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Ping not implemented")
 }
 func (UnimplementedServiceInterfaceServer) List(context.Context, *ServiceRequest) (*Services, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method List not implemented")
 }
-func (UnimplementedServiceInterfaceServer) Save(context.Context, *Service) (*Msg, error) {
+func (UnimplementedServiceInterfaceServer) Save(context.Context, *Service) (*common.Msg, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Save not implemented")
 }
 func (UnimplementedServiceInterfaceServer) Get(context.Context, *ServiceRequest) (*Service, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Get not implemented")
 }
-func (UnimplementedServiceInterfaceServer) Delete(context.Context, *ServiceRequest) (*Msg, error) {
+func (UnimplementedServiceInterfaceServer) Delete(context.Context, *ServiceRequest) (*common.Msg, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Delete not implemented")
 }
 func (UnimplementedServiceInterfaceServer) GetWorkflow(context.Context, *ServiceRequest) (*Worklfow, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetWorkflow not implemented")
 }
-func (UnimplementedServiceInterfaceServer) SaveWorkflow(context.Context, *ServiceRequest) (*Msg, error) {
+func (UnimplementedServiceInterfaceServer) SaveWorkflow(context.Context, *ServiceRequest) (*common.Msg, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SaveWorkflow not implemented")
 }
-func (UnimplementedServiceInterfaceServer) CommitWorklfow(context.Context, *ServiceRequest) (*Msg, error) {
+func (UnimplementedServiceInterfaceServer) CommitWorklfow(context.Context, *ServiceRequest) (*common.Msg, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CommitWorklfow not implemented")
 }
 func (UnimplementedServiceInterfaceServer) GetServiceCis(context.Context, *CIsRequest) (*CIsResult, error) {

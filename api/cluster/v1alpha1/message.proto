@@ -119,16 +119,6 @@ message BostionHost {
 }
 
 
-message CheckBostionHostRequest {
-    string arch = 1 [json_name = "arch"];
-    string ocean_version = 2 [json_name = "ocean_version"];
-    string ship_version = 3 [json_name = "ship_version"];
-    string ocean_data_tar_gz_package_path = 4 [json_name = "ocean_data_tar_gz_package_path"];
-    string ocean_data_tar_gz_package_sha256sum_path = 5 [json_name = "ocean_data_tar_gz_package_sha256sum_path"];
-    string ocean_path = 6 [json_name = "ocean_path"];
-    string ship_path = 7 [json_name = "ship_path"];
-}
-
 message ClusterLogsRequest {
     int64 cluster_id = 1 [json_name = "cluster_id"];
     int32 tail_lines = 2 [json_name = "tail_lines"];

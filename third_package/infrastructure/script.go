@@ -5,7 +5,6 @@ import "fmt"
 var oceanPath string = "/app/ocean"
 var shipPath string = "/app/ship"
 var oceanDataTargzPackagePath string = "/tmp/oceandata.tar.gz"
-var oceanDataTsha256sumFilePath string = "/tmp/oceandata.tar.gz.sha256sum"
 
 var installScript string = fmt.Sprintf(`#!/bin/bash
 
@@ -20,13 +19,6 @@ echo SYSTEM: $SYSTEM
 echo ARCH: $ARCH
 echo OCEAN_VERSION: $OCEAN_VERSION
 echo SHIP_VERSION: $SHIP_VERSION
-
-OCEAN_DATA_TARGZ_PACKAGE_PATH=%s
-OCEAN_DATA_TARGZ_PACKAGE_PATH_SHA256SUM=%s
-
-sha256sum -c $OCEAN_DATA_TARGZ_PACKAGE_PATH_SHA256SUM || { echo "Failed to verify $OCEAN_DATA_TARGZ_PACKAGE_PATH_SHA256SUM"; exit 1; }
-
-tar -xzvf $OCEAN_DATA_TARGZ_PACKAGE_PATH -C $HOME || { echo "Failed to extract $OCEAN_DATA_TARGZ_PACKAGE_PATH"; exit 1; }
 
 # linux/amd64 linux/arm64 linux/riscv64 linux/ppc64le
 # Define supported platforms
@@ -144,7 +136,7 @@ supervisorctl start ocean
 
 # Query the status of all services managed by supervisor
 supervisorctl status
-`, oceanDataTargzPackagePath, oceanDataTsha256sumFilePath, oceanPath, shipPath)
+`, oceanPath, shipPath)
 
 var shipStartScript string = `#!/bin/bash
 

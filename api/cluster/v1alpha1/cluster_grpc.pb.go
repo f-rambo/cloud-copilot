@@ -8,6 +8,7 @@ package v1alpha1
 
 import (
 	context "context"
+	common "github.com/f-rambo/ocean/api/common"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -20,29 +21,27 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	ClusterInterface_Ping_FullMethodName             = "/cluster.v1alpha1.ClusterInterface/Ping"
-	ClusterInterface_Get_FullMethodName              = "/cluster.v1alpha1.ClusterInterface/Get"
-	ClusterInterface_Save_FullMethodName             = "/cluster.v1alpha1.ClusterInterface/Save"
-	ClusterInterface_List_FullMethodName             = "/cluster.v1alpha1.ClusterInterface/List"
-	ClusterInterface_Delete_FullMethodName           = "/cluster.v1alpha1.ClusterInterface/Delete"
-	ClusterInterface_StartCluster_FullMethodName     = "/cluster.v1alpha1.ClusterInterface/StartCluster"
-	ClusterInterface_CheckBostionHost_FullMethodName = "/cluster.v1alpha1.ClusterInterface/CheckBostionHost"
-	ClusterInterface_GetRegions_FullMethodName       = "/cluster.v1alpha1.ClusterInterface/GetRegions"
-	ClusterInterface_PollingLogs_FullMethodName      = "/cluster.v1alpha1.ClusterInterface/PollingLogs"
-	ClusterInterface_GetLogs_FullMethodName          = "/cluster.v1alpha1.ClusterInterface/GetLogs"
+	ClusterInterface_Ping_FullMethodName         = "/cluster.v1alpha1.ClusterInterface/Ping"
+	ClusterInterface_Get_FullMethodName          = "/cluster.v1alpha1.ClusterInterface/Get"
+	ClusterInterface_Save_FullMethodName         = "/cluster.v1alpha1.ClusterInterface/Save"
+	ClusterInterface_List_FullMethodName         = "/cluster.v1alpha1.ClusterInterface/List"
+	ClusterInterface_Delete_FullMethodName       = "/cluster.v1alpha1.ClusterInterface/Delete"
+	ClusterInterface_StartCluster_FullMethodName = "/cluster.v1alpha1.ClusterInterface/StartCluster"
+	ClusterInterface_GetRegions_FullMethodName   = "/cluster.v1alpha1.ClusterInterface/GetRegions"
+	ClusterInterface_PollingLogs_FullMethodName  = "/cluster.v1alpha1.ClusterInterface/PollingLogs"
+	ClusterInterface_GetLogs_FullMethodName      = "/cluster.v1alpha1.ClusterInterface/GetLogs"
 )
 
 // ClusterInterfaceClient is the client API for ClusterInterface service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ClusterInterfaceClient interface {
-	Ping(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*Msg, error)
+	Ping(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*common.Msg, error)
 	Get(ctx context.Context, in *ClusterArgs, opts ...grpc.CallOption) (*Cluster, error)
 	Save(ctx context.Context, in *ClusterArgs, opts ...grpc.CallOption) (*Cluster, error)
 	List(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*ClusterList, error)
-	Delete(ctx context.Context, in *ClusterArgs, opts ...grpc.CallOption) (*Msg, error)
-	StartCluster(ctx context.Context, in *ClusterArgs, opts ...grpc.CallOption) (*Msg, error)
-	CheckBostionHost(ctx context.Context, in *CheckBostionHostRequest, opts ...grpc.CallOption) (*Msg, error)
+	Delete(ctx context.Context, in *ClusterArgs, opts ...grpc.CallOption) (*common.Msg, error)
+	StartCluster(ctx context.Context, in *ClusterArgs, opts ...grpc.CallOption) (*common.Msg, error)
 	GetRegions(ctx context.Context, in *ClusterArgs, opts ...grpc.CallOption) (*Regions, error)
 	PollingLogs(ctx context.Context, in *ClusterLogsRequest, opts ...grpc.CallOption) (*ClusterLogsResponse, error)
 	GetLogs(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[ClusterLogsRequest, ClusterLogsResponse], error)
@@ -56,9 +55,9 @@ func NewClusterInterfaceClient(cc grpc.ClientConnInterface) ClusterInterfaceClie
 	return &clusterInterfaceClient{cc}
 }
 
-func (c *clusterInterfaceClient) Ping(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*Msg, error) {
+func (c *clusterInterfaceClient) Ping(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*common.Msg, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Msg)
+	out := new(common.Msg)
 	err := c.cc.Invoke(ctx, ClusterInterface_Ping_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -96,9 +95,9 @@ func (c *clusterInterfaceClient) List(ctx context.Context, in *emptypb.Empty, op
 	return out, nil
 }
 
-func (c *clusterInterfaceClient) Delete(ctx context.Context, in *ClusterArgs, opts ...grpc.CallOption) (*Msg, error) {
+func (c *clusterInterfaceClient) Delete(ctx context.Context, in *ClusterArgs, opts ...grpc.CallOption) (*common.Msg, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Msg)
+	out := new(common.Msg)
 	err := c.cc.Invoke(ctx, ClusterInterface_Delete_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -106,20 +105,10 @@ func (c *clusterInterfaceClient) Delete(ctx context.Context, in *ClusterArgs, op
 	return out, nil
 }
 
-func (c *clusterInterfaceClient) StartCluster(ctx context.Context, in *ClusterArgs, opts ...grpc.CallOption) (*Msg, error) {
+func (c *clusterInterfaceClient) StartCluster(ctx context.Context, in *ClusterArgs, opts ...grpc.CallOption) (*common.Msg, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Msg)
+	out := new(common.Msg)
 	err := c.cc.Invoke(ctx, ClusterInterface_StartCluster_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *clusterInterfaceClient) CheckBostionHost(ctx context.Context, in *CheckBostionHostRequest, opts ...grpc.CallOption) (*Msg, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Msg)
-	err := c.cc.Invoke(ctx, ClusterInterface_CheckBostionHost_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -163,13 +152,12 @@ type ClusterInterface_GetLogsClient = grpc.BidiStreamingClient[ClusterLogsReques
 // All implementations must embed UnimplementedClusterInterfaceServer
 // for forward compatibility.
 type ClusterInterfaceServer interface {
-	Ping(context.Context, *emptypb.Empty) (*Msg, error)
+	Ping(context.Context, *emptypb.Empty) (*common.Msg, error)
 	Get(context.Context, *ClusterArgs) (*Cluster, error)
 	Save(context.Context, *ClusterArgs) (*Cluster, error)
 	List(context.Context, *emptypb.Empty) (*ClusterList, error)
-	Delete(context.Context, *ClusterArgs) (*Msg, error)
-	StartCluster(context.Context, *ClusterArgs) (*Msg, error)
-	CheckBostionHost(context.Context, *CheckBostionHostRequest) (*Msg, error)
+	Delete(context.Context, *ClusterArgs) (*common.Msg, error)
+	StartCluster(context.Context, *ClusterArgs) (*common.Msg, error)
 	GetRegions(context.Context, *ClusterArgs) (*Regions, error)
 	PollingLogs(context.Context, *ClusterLogsRequest) (*ClusterLogsResponse, error)
 	GetLogs(grpc.BidiStreamingServer[ClusterLogsRequest, ClusterLogsResponse]) error
@@ -183,7 +171,7 @@ type ClusterInterfaceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedClusterInterfaceServer struct{}
 
-func (UnimplementedClusterInterfaceServer) Ping(context.Context, *emptypb.Empty) (*Msg, error) {
+func (UnimplementedClusterInterfaceServer) Ping(context.Context, *emptypb.Empty) (*common.Msg, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Ping not implemented")
 }
 func (UnimplementedClusterInterfaceServer) Get(context.Context, *ClusterArgs) (*Cluster, error) {
@@ -195,14 +183,11 @@ func (UnimplementedClusterInterfaceServer) Save(context.Context, *ClusterArgs) (
 func (UnimplementedClusterInterfaceServer) List(context.Context, *emptypb.Empty) (*ClusterList, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method List not implemented")
 }
-func (UnimplementedClusterInterfaceServer) Delete(context.Context, *ClusterArgs) (*Msg, error) {
+func (UnimplementedClusterInterfaceServer) Delete(context.Context, *ClusterArgs) (*common.Msg, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Delete not implemented")
 }
-func (UnimplementedClusterInterfaceServer) StartCluster(context.Context, *ClusterArgs) (*Msg, error) {
+func (UnimplementedClusterInterfaceServer) StartCluster(context.Context, *ClusterArgs) (*common.Msg, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method StartCluster not implemented")
-}
-func (UnimplementedClusterInterfaceServer) CheckBostionHost(context.Context, *CheckBostionHostRequest) (*Msg, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method CheckBostionHost not implemented")
 }
 func (UnimplementedClusterInterfaceServer) GetRegions(context.Context, *ClusterArgs) (*Regions, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetRegions not implemented")
@@ -342,24 +327,6 @@ func _ClusterInterface_StartCluster_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ClusterInterface_CheckBostionHost_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CheckBostionHostRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ClusterInterfaceServer).CheckBostionHost(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ClusterInterface_CheckBostionHost_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ClusterInterfaceServer).CheckBostionHost(ctx, req.(*CheckBostionHostRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _ClusterInterface_GetRegions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ClusterArgs)
 	if err := dec(in); err != nil {
@@ -433,10 +400,6 @@ var ClusterInterface_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "StartCluster",
 			Handler:    _ClusterInterface_StartCluster_Handler,
-		},
-		{
-			MethodName: "CheckBostionHost",
-			Handler:    _ClusterInterface_CheckBostionHost_Handler,
 		},
 		{
 			MethodName: "GetRegions",

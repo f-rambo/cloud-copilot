@@ -8,6 +8,7 @@ package v1alpha1
 
 import (
 	context "context"
+	common "github.com/f-rambo/ocean/api/common"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -29,7 +30,7 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type SystemInterfaceClient interface {
-	Ping(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*Msg, error)
+	Ping(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*common.Msg, error)
 	GetSystem(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*System, error)
 	GetLogs(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[LogRequest, LogResponse], error)
 }
@@ -42,9 +43,9 @@ func NewSystemInterfaceClient(cc grpc.ClientConnInterface) SystemInterfaceClient
 	return &systemInterfaceClient{cc}
 }
 
-func (c *systemInterfaceClient) Ping(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*Msg, error) {
+func (c *systemInterfaceClient) Ping(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*common.Msg, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Msg)
+	out := new(common.Msg)
 	err := c.cc.Invoke(ctx, SystemInterface_Ping_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -79,7 +80,7 @@ type SystemInterface_GetLogsClient = grpc.BidiStreamingClient[LogRequest, LogRes
 // All implementations must embed UnimplementedSystemInterfaceServer
 // for forward compatibility.
 type SystemInterfaceServer interface {
-	Ping(context.Context, *emptypb.Empty) (*Msg, error)
+	Ping(context.Context, *emptypb.Empty) (*common.Msg, error)
 	GetSystem(context.Context, *emptypb.Empty) (*System, error)
 	GetLogs(grpc.BidiStreamingServer[LogRequest, LogResponse]) error
 	mustEmbedUnimplementedSystemInterfaceServer()
@@ -92,7 +93,7 @@ type SystemInterfaceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedSystemInterfaceServer struct{}
 
-func (UnimplementedSystemInterfaceServer) Ping(context.Context, *emptypb.Empty) (*Msg, error) {
+func (UnimplementedSystemInterfaceServer) Ping(context.Context, *emptypb.Empty) (*common.Msg, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Ping not implemented")
 }
 func (UnimplementedSystemInterfaceServer) GetSystem(context.Context, *emptypb.Empty) (*System, error) {

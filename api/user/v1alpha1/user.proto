@@ -4,7 +4,7 @@ package user.v1alpha1;
 
 import "google/api/annotations.proto";
 import "google/protobuf/empty.proto";
-import "api/user/v1alpha1/error_reason.proto";
+import "api/common/error_reason.proto";
 import "api/user/v1alpha1/message.proto";
 
 option go_package = "api/user/v1alpha1;v1alpha1";
@@ -36,7 +36,7 @@ service UserInterface {
             };
       }
 
-      rpc DeleteUser(user.v1alpha1.User) returns (user.v1alpha1.Msg) {
+      rpc DeleteUser(user.v1alpha1.User) returns (common.Msg) {
             option (google.api.http) = {
               delete: "/api/v1alpha1/user"
             };

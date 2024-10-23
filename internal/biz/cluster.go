@@ -384,28 +384,31 @@ func (c *Cluster) SettingSpecifications() {
 }
 
 type NodeGroup struct {
-	ID              string        `json:"id" gorm:"column:id;primaryKey; NOT NULL"`
-	Name            string        `json:"name" gorm:"column:name; default:''; NOT NULL"`
-	Type            NodeGroupType `json:"type" gorm:"column:type; default:''; NOT NULL;"`
-	Image           string        `json:"image" gorm:"column:image; default:''; NOT NULL"`
-	OS              string        `json:"os" gorm:"column:os; default:''; NOT NULL"`
-	ARCH            string        `json:"arch" gorm:"column:arch; default:''; NOT NULL"`
-	CPU             int32         `json:"cpu" gorm:"column:cpu; default:0; NOT NULL"`
-	Memory          int32         `json:"memory" gorm:"column:memory; default:0; NOT NULL"`
-	GPU             int32         `json:"gpu" gorm:"column:gpu; default:0; NOT NULL"`
-	GpuSpec         string        `json:"gpu_spec" gorm:"column:gpu_spec; default:''; NOT NULL"`
-	DataDisk        int32         `json:"data_disk" gorm:"column:data_disk; default:0; NOT NULL"`
-	MinSize         int32         `json:"min_size" gorm:"column:min_size; default:0; NOT NULL"`
-	MaxSize         int32         `json:"max_size" gorm:"column:max_size; default:0; NOT NULL"`
-	TargetSize      int32         `json:"target_size" gorm:"column:target_size; default:0; NOT NULL"`
-	InstanceType    string        `json:"instance_type" gorm:"column:instance_type; default:''; NOT NULL"`
-	DefaultUsername string        `json:"default_username" gorm:"column:default_username; default:''; NOT NULL"`
-	NodePrice       float64       `json:"node_price" gorm:"column:node_price; default:0; NOT NULL;"`
-	PodPrice        float64       `json:"pod_price" gorm:"column:pod_price; default:0; NOT NULL;"`
-	Zone            string        `json:"zone" gorm:"column:zone; default:''; NOT NULL"`
-	SubnetIpCidr    string        `json:"subnet_ip_cidr" gorm:"column:subnet_ip_cidr; default:''; NOT NULL"`
-	NodeInitScript  string        `json:"cloud_init_script" gorm:"column:cloud_init_script; default:''; NOT NULL"`
-	ClusterID       int64         `json:"cluster_id" gorm:"column:cluster_id; default:0; NOT NULL"`
+	ID               string        `json:"id" gorm:"column:id;primaryKey; NOT NULL"`
+	Name             string        `json:"name" gorm:"column:name; default:''; NOT NULL"`
+	Type             NodeGroupType `json:"type" gorm:"column:type; default:''; NOT NULL;"`
+	Image            string        `json:"image" gorm:"column:image; default:''; NOT NULL"`
+	ImageDescription string        `json:"image_description" gorm:"column:image_description; default:''; NOT NULL"`
+	OS               string        `json:"os" gorm:"column:os; default:''; NOT NULL"`
+	ARCH             string        `json:"arch" gorm:"column:arch; default:''; NOT NULL"`
+	CPU              int32         `json:"cpu" gorm:"column:cpu; default:0; NOT NULL"`
+	Memory           int32         `json:"memory" gorm:"column:memory; default:0; NOT NULL"`
+	GPU              int32         `json:"gpu" gorm:"column:gpu; default:0; NOT NULL"`
+	GpuSpec          string        `json:"gpu_spec" gorm:"column:gpu_spec; default:''; NOT NULL"`
+	DataDisk         int32         `json:"data_disk" gorm:"column:data_disk; default:0; NOT NULL"`
+	RootDeviceName   string        `json:"root_device_name" gorm:"column:root_device_name; default:''; NOT NULL"`
+	DataDeviceName   string        `json:"data_device_name" gorm:"column:data_device_name; default:''; NOT NULL"`
+	MinSize          int32         `json:"min_size" gorm:"column:min_size; default:0; NOT NULL"`
+	MaxSize          int32         `json:"max_size" gorm:"column:max_size; default:0; NOT NULL"`
+	TargetSize       int32         `json:"target_size" gorm:"column:target_size; default:0; NOT NULL"`
+	InstanceType     string        `json:"instance_type" gorm:"column:instance_type; default:''; NOT NULL"`
+	DefaultUsername  string        `json:"default_username" gorm:"column:default_username; default:''; NOT NULL"`
+	NodePrice        float64       `json:"node_price" gorm:"column:node_price; default:0; NOT NULL;"`
+	PodPrice         float64       `json:"pod_price" gorm:"column:pod_price; default:0; NOT NULL;"`
+	Zone             string        `json:"zone" gorm:"column:zone; default:''; NOT NULL"`
+	SubnetIpCidr     string        `json:"subnet_ip_cidr" gorm:"column:subnet_ip_cidr; default:''; NOT NULL"`
+	NodeInitScript   string        `json:"cloud_init_script" gorm:"column:cloud_init_script; default:''; NOT NULL"`
+	ClusterID        int64         `json:"cluster_id" gorm:"column:cluster_id; default:0; NOT NULL"`
 }
 
 type NodeGroupType string
@@ -537,20 +540,21 @@ func (s NodeStatus) String() string {
 }
 
 type BostionHost struct {
-	ID         int64      `json:"id" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
-	User       string     `json:"user" gorm:"column:user; default:''; NOT NULL"`
-	Image      string     `json:"image" gorm:"column:image; default:''; NOT NULL"`
-	OS         string     `json:"os" gorm:"column:os; default:''; NOT NULL"`
-	ARCH       string     `json:"arch" gorm:"column:arch; default:''; NOT NULL"`
-	CPU        int32      `json:"cpu" gorm:"column:cpu; default:0; NOT NULL"`
-	Memory     int32      `json:"memory" gorm:"column:memory; default:0; NOT NULL"`
-	Hostname   string     `json:"hostname" gorm:"column:hostname; default:''; NOT NULL"`
-	ExternalIP string     `json:"external_ip" gorm:"column:external_ip; default:''; NOT NULL"`
-	InternalIP string     `json:"internal_ip" gorm:"column:internal_ip; default:''; NOT NULL"`
-	SshPort    int32      `json:"ssh_port" gorm:"column:ssh_port; default:0; NOT NULL"`
-	Status     NodeStatus `json:"status" gorm:"column:status; default:0; NOT NULL;"`
-	InstanceID string     `json:"instance_id" gorm:"column:instance_id; default:''; NOT NULL"`
-	ClusterID  int64      `json:"cluster_id" gorm:"column:cluster_id; default:0; NOT NULL"`
+	ID               int64      `json:"id" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
+	User             string     `json:"user" gorm:"column:user; default:''; NOT NULL"`
+	Image            string     `json:"image" gorm:"column:image; default:''; NOT NULL"`
+	ImageDescription string     `json:"image_description" gorm:"column:image_description; default:''; NOT NULL"`
+	OS               string     `json:"os" gorm:"column:os; default:''; NOT NULL"`
+	ARCH             string     `json:"arch" gorm:"column:arch; default:''; NOT NULL"`
+	CPU              int32      `json:"cpu" gorm:"column:cpu; default:0; NOT NULL"`
+	Memory           int32      `json:"memory" gorm:"column:memory; default:0; NOT NULL"`
+	Hostname         string     `json:"hostname" gorm:"column:hostname; default:''; NOT NULL"`
+	ExternalIP       string     `json:"external_ip" gorm:"column:external_ip; default:''; NOT NULL"`
+	InternalIP       string     `json:"internal_ip" gorm:"column:internal_ip; default:''; NOT NULL"`
+	SshPort          int32      `json:"ssh_port" gorm:"column:ssh_port; default:0; NOT NULL"`
+	Status           NodeStatus `json:"status" gorm:"column:status; default:0; NOT NULL;"`
+	InstanceID       string     `json:"instance_id" gorm:"column:instance_id; default:''; NOT NULL"`
+	ClusterID        int64      `json:"cluster_id" gorm:"column:cluster_id; default:0; NOT NULL"`
 	gorm.Model
 }
 

@@ -1,4 +1,4 @@
-package v1alpha1
+package common
 
 func Response(failMsg ...string) *Msg {
 	if len(failMsg) <= 0 {

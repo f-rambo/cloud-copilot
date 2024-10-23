@@ -8,6 +8,7 @@ package v1alpha1
 
 import (
 	context "context"
+	common "github.com/f-rambo/ocean/api/common"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -35,7 +36,7 @@ type UserInterfaceClient interface {
 	GetUserInfo(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*User, error)
 	GetUsers(ctx context.Context, in *UsersRequest, opts ...grpc.CallOption) (*Users, error)
 	SaveUser(ctx context.Context, in *User, opts ...grpc.CallOption) (*User, error)
-	DeleteUser(ctx context.Context, in *User, opts ...grpc.CallOption) (*Msg, error)
+	DeleteUser(ctx context.Context, in *User, opts ...grpc.CallOption) (*common.Msg, error)
 }
 
 type userInterfaceClient struct {
@@ -86,9 +87,9 @@ func (c *userInterfaceClient) SaveUser(ctx context.Context, in *User, opts ...gr
 	return out, nil
 }
 
-func (c *userInterfaceClient) DeleteUser(ctx context.Context, in *User, opts ...grpc.CallOption) (*Msg, error) {
+func (c *userInterfaceClient) DeleteUser(ctx context.Context, in *User, opts ...grpc.CallOption) (*common.Msg, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Msg)
+	out := new(common.Msg)
 	err := c.cc.Invoke(ctx, UserInterface_DeleteUser_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -104,7 +105,7 @@ type UserInterfaceServer interface {
 	GetUserInfo(context.Context, *emptypb.Empty) (*User, error)
 	GetUsers(context.Context, *UsersRequest) (*Users, error)
 	SaveUser(context.Context, *User) (*User, error)
-	DeleteUser(context.Context, *User) (*Msg, error)
+	DeleteUser(context.Context, *User) (*common.Msg, error)
 	mustEmbedUnimplementedUserInterfaceServer()
 }
 
@@ -127,7 +128,7 @@ func (UnimplementedUserInterfaceServer) GetUsers(context.Context, *UsersRequest)
 func (UnimplementedUserInterfaceServer) SaveUser(context.Context, *User) (*User, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SaveUser not implemented")
 }
-func (UnimplementedUserInterfaceServer) DeleteUser(context.Context, *User) (*Msg, error) {
+func (UnimplementedUserInterfaceServer) DeleteUser(context.Context, *User) (*common.Msg, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteUser not implemented")
 }
 func (UnimplementedUserInterfaceServer) mustEmbedUnimplementedUserInterfaceServer() {}

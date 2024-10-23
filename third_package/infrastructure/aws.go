@@ -387,16 +387,26 @@ func (a *AwsCloud) SetByNodeGroups(ctx context.Context) error {
 		return err
 	}
 	for _, ng := range a.cluster.NodeGroups {
+		platformDetails := strings.Split(aws.ToString(image.PlatformDetails), "/")
+		if len(platformDetails) > 0 {
+			ng.OS = strings.ToLower(platformDetails[0])
+		}
 		ng.Image = aws.ToString(image.ImageId)
-		ng.OS = aws.ToString(image.Name)
+		ng.ImageDescription = aws.ToString(image.Description)
 		ng.ARCH = string(image.Architecture)
 		ng.DefaultUsername = determineUsername(aws.ToString(image.Name), aws.ToString(image.Description))
+		ng.RootDeviceName = aws.ToString(image.RootDeviceName)
+		for _, dataDeivce := range image.BlockDeviceMappings {
+			if dataDeivce.DeviceName != nil && aws.ToString(dataDeivce.DeviceName) != ng.RootDeviceName {
+				ng.DataDeviceName = aws.ToString(dataDeivce.DeviceName)
+				break
+			}
+		}
 		a.log.Info(strings.Join([]string{"image found: ", aws.ToString(image.Name), aws.ToString(image.Description)}, " "))
 
 		if ng.InstanceType != "" {
 			continue
 		}
-
 		instanceTypeFamiliy := getIntanceTypeFamilies(ng)
 		instanceInfo, err := a.findInstanceType(ctx, instanceTypeFamiliy, ng.CPU, ng.GPU, ng.Memory)
 		if err != nil {
@@ -497,17 +507,19 @@ func (a *AwsCloud) ManageInstance(ctx context.Context) error {
 	// Delete instances
 	needDeleteInstanceIDs := make([]string, 0)
 	for _, node := range a.cluster.Nodes {
-		if node.Status == biz.NodeStatusDeleting {
+		if node.Status == biz.NodeStatusDeleting && node.InstanceID != "" {
 			needDeleteInstanceIDs = append(needDeleteInstanceIDs, node.InstanceID)
 		}
 	}
-	instances, err := a.getInstances(ctx, needDeleteInstanceIDs, []string{})
+	instances, err := a.getInstances(ctx, []string{}, []string{fmt.Sprintf("%s-node*", a.cluster.Name)})
 	if err != nil {
 		return err
 	}
 	deleteInstanceIDs := make([]string, 0)
 	for _, instance := range instances {
-		deleteInstanceIDs = append(deleteInstanceIDs, aws.ToString(instance.InstanceId))
+		if utils.InArray(aws.ToString(instance.InstanceId), needDeleteInstanceIDs) {
+			deleteInstanceIDs = append(deleteInstanceIDs, aws.ToString(instance.InstanceId))
+		}
 	}
 	if len(deleteInstanceIDs) > 0 {
 		_, err = a.ec2Client.TerminateInstances(ctx, &ec2.TerminateInstancesInput{
@@ -534,16 +546,10 @@ func (a *AwsCloud) ManageInstance(ctx context.Context) error {
 	// Create instances
 	instanceIds := make([]string, 0)
 	for index, node := range a.cluster.Nodes {
-		instanceExits := false
-		for _, instance := range instances {
-			if node.InstanceID == *instance.InstanceId {
-				instanceExits = true
-				break
-			}
-		}
-		if instanceExits {
+		if node.Status != biz.NodeStatusCreating {
 			continue
 		}
+
 		nodeGroup := a.cluster.GetNodeGroup(node.NodeGroupID)
 		nodeTags := make(map[string]string)
 		if node.Labels != "" {
@@ -553,10 +559,20 @@ func (a *AwsCloud) ManageInstance(ctx context.Context) error {
 			}
 		}
 		nodeTags[AwsTagKeyName] = node.Name
-		blockDeviceMappings := make([]ec2Types.BlockDeviceMapping, 0)
+		// root Volume
+		blockDeviceMappings := []ec2Types.BlockDeviceMapping{
+			{
+				DeviceName: aws.String(nodeGroup.RootDeviceName),
+				Ebs: &ec2Types.EbsBlockDevice{
+					VolumeSize:          aws.Int32(30),
+					VolumeType:          ec2Types.VolumeTypeGp3,
+					DeleteOnTermination: aws.Bool(true),
+				},
+			},
+		}
 		if nodeGroup.DataDisk > 0 {
 			blockDeviceMappings = append(blockDeviceMappings, ec2Types.BlockDeviceMapping{
-				DeviceName: aws.String("/dev/sdf"), // data volume
+				DeviceName: aws.String(nodeGroup.DataDeviceName),
 				Ebs: &ec2Types.EbsBlockDevice{
 					VolumeSize:          aws.Int32(nodeGroup.DataDisk),
 					VolumeType:          ec2Types.VolumeTypeGp3,
@@ -607,6 +623,8 @@ func (a *AwsCloud) ManageInstance(ctx context.Context) error {
 		node.User = nodeGroup.DefaultUsername
 		node.Status = biz.NodeStatusCreating
 	}
+
+	// wait for instance running
 	if len(instanceIds) > 0 {
 		waiter := ec2.NewInstanceRunningWaiter(a.ec2Client)
 		err := waiter.Wait(ctx, &ec2.DescribeInstancesInput{
@@ -652,23 +670,23 @@ func (a *AwsCloud) ManageBostionHost(ctx context.Context) error {
 		a.cluster.BostionHost.Status = biz.NodeStatusDeleted
 		return nil
 	}
-	if a.cluster.BostionHost.InstanceID != "" {
-		instances, err := a.getInstances(ctx, []string{a.cluster.BostionHost.InstanceID}, []string{})
-		if err != nil {
-			return err
-		}
-		if len(instances) != 0 {
-			return nil
-		}
+
+	if a.cluster.BostionHost.Status != biz.NodeStatusCreating {
+		return nil
 	}
+
 	// find image
 	image, err := a.findImage(ctx)
 	if err != nil {
 		return err
 	}
-	a.cluster.BostionHost.OS = aws.ToString(image.Name)
+	platformDetails := strings.Split(aws.ToString(image.PlatformDetails), "/")
+	if len(platformDetails) > 0 {
+		a.cluster.BostionHost.OS = strings.ToLower(platformDetails[0])
+	}
 	a.cluster.BostionHost.ARCH = string(image.Architecture)
 	a.cluster.BostionHost.Image = aws.ToString(image.ImageId)
+	a.cluster.BostionHost.ImageDescription = aws.ToString(image.Description)
 
 	// find instance type
 	instanceType, err := a.findInstanceType(ctx, "t3.*", a.cluster.BostionHost.CPU, 0, a.cluster.BostionHost.Memory)
@@ -716,6 +734,16 @@ func (a *AwsCloud) ManageBostionHost(ctx context.Context) error {
 			{
 				ResourceType: ec2Types.ResourceTypeInstance,
 				Tags:         a.mapToEc2Tags(bostionHostTag),
+			},
+		},
+		BlockDeviceMappings: []ec2Types.BlockDeviceMapping{
+			{
+				DeviceName: aws.String(aws.ToString(image.RootDeviceName)),
+				Ebs: &ec2Types.EbsBlockDevice{
+					VolumeSize:          aws.Int32(10),
+					VolumeType:          ec2Types.VolumeTypeGp3,
+					DeleteOnTermination: aws.Bool(true),
+				},
 			},
 		},
 	})

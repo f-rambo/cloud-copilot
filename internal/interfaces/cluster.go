@@ -5,10 +5,9 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"os/exec"
-	"runtime"
 
 	"github.com/f-rambo/ocean/api/cluster/v1alpha1"
+	"github.com/f-rambo/ocean/api/common"
 	systemv1alpha1 "github.com/f-rambo/ocean/api/system/v1alpha1"
 	"github.com/f-rambo/ocean/internal/biz"
 	"github.com/f-rambo/ocean/internal/conf"
@@ -62,8 +61,8 @@ func (uc *ClusterInterface) StopReconcile(ctx context.Context) error {
 	return nil
 }
 
-func (c *ClusterInterface) Ping(ctx context.Context, _ *emptypb.Empty) (*v1alpha1.Msg, error) {
-	return &v1alpha1.Msg{Message: "pong"}, nil
+func (c *ClusterInterface) Ping(ctx context.Context, _ *emptypb.Empty) (*common.Msg, error) {
+	return common.Response(), nil
 }
 
 func (c *ClusterInterface) Get(ctx context.Context, clusterID *v1alpha1.ClusterArgs) (*v1alpha1.Cluster, error) {
@@ -204,7 +203,7 @@ func (c *ClusterInterface) List(ctx context.Context, _ *emptypb.Empty) (*v1alpha
 	return data, nil
 }
 
-func (c *ClusterInterface) Delete(ctx context.Context, clusterID *v1alpha1.ClusterArgs) (*v1alpha1.Msg, error) {
+func (c *ClusterInterface) Delete(ctx context.Context, clusterID *v1alpha1.ClusterArgs) (*common.Msg, error) {
 	if clusterID.Id == 0 {
 		return nil, errors.New("cluster id is required")
 	}
@@ -212,10 +211,10 @@ func (c *ClusterInterface) Delete(ctx context.Context, clusterID *v1alpha1.Clust
 	if err != nil {
 		return nil, err
 	}
-	return &v1alpha1.Msg{}, nil
+	return common.Response(), nil
 }
 
-func (c *ClusterInterface) StartCluster(ctx context.Context, clusterID *v1alpha1.ClusterArgs) (*v1alpha1.Msg, error) {
+func (c *ClusterInterface) StartCluster(ctx context.Context, clusterID *v1alpha1.ClusterArgs) (*common.Msg, error) {
 	if clusterID == nil || clusterID.Id == 0 {
 		return nil, errors.New("cluster id is required")
 	}
@@ -230,53 +229,7 @@ func (c *ClusterInterface) StartCluster(ctx context.Context, clusterID *v1alpha1
 	if err != nil {
 		return nil, err
 	}
-	return &v1alpha1.Msg{}, nil
-}
-
-// check bostion host data and resources
-func (c *ClusterInterface) CheckBostionHost(ctx context.Context, req *v1alpha1.CheckBostionHostRequest) (*v1alpha1.Msg, error) {
-	if req.Arch == "" {
-		return nil, errors.New("arch is required")
-	}
-	if req.OceanVersion == "" {
-		return nil, errors.New("ocean version is required")
-	}
-	if req.ShipVersion == "" {
-		return nil, errors.New("ship version is required")
-	}
-	if req.OceanDataTarGzPackagePath == "" {
-		return nil, errors.New("ocean data tar gz package path is required")
-	}
-	if req.OceanDataTarGzPackageSha256SumPath == "" {
-		return nil, errors.New("ocean data tar gz package sha256sum path is required")
-	}
-	if req.OceanPath == "" {
-		return nil, errors.New("ocean path is required")
-	}
-	if req.ShipPath == "" {
-		return nil, errors.New("ship path is required")
-	}
-	if req.Arch != runtime.GOOS {
-		return nil, errors.New("arch is wrong")
-	}
-	// check ocean data tar gz package
-	if ok := utils.IsFileExist(req.OceanDataTarGzPackagePath); !ok {
-		return nil, errors.New("ocean data tar gz package is not exist")
-	}
-	// check ship
-	if ok := utils.IsFileExist(req.ShipPath); !ok {
-		return nil, errors.New("ship is not exist")
-	}
-	// check ocean data tar gz package sha256sum
-	output, err := exec.Command("sudo", "sha256sum", "-c", req.OceanDataTarGzPackageSha256SumPath).CombinedOutput()
-	if err != nil {
-		return nil, errors.New(string(output))
-	}
-	// check ocean
-	if ok := utils.IsFileExist(req.OceanPath); !ok {
-		return nil, errors.New("ocean is not exist")
-	}
-	return &v1alpha1.Msg{}, nil
+	return common.Response(), nil
 }
 
 // get regions

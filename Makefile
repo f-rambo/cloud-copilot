@@ -156,7 +156,9 @@ multi-platform-build-clean:
 	@for platform in $(PLATFORMS); do \
 		image_name=$$platform/$(IMG); \
 		echo "Cleaning for platform $$platform to image $$image_name"; \
-		docker rmi $$image_name ; \
+		docker rmi $$image_name; \
+		docker buildx use default; \
+		docker buildx stop $(BUILDER_NAME); \
 		docker buildx rm $(BUILDER_NAME); \
 	done
 

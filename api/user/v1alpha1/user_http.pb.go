@@ -8,6 +8,7 @@ package v1alpha1
 
 import (
 	context "context"
+	common "github.com/f-rambo/ocean/api/common"
 	http "github.com/go-kratos/kratos/v2/transport/http"
 	binding "github.com/go-kratos/kratos/v2/transport/http/binding"
 	emptypb "google.golang.org/protobuf/types/known/emptypb"
@@ -27,7 +28,7 @@ const OperationUserInterfaceSaveUser = "/user.v1alpha1.UserInterface/SaveUser"
 const OperationUserInterfaceSignIn = "/user.v1alpha1.UserInterface/SignIn"
 
 type UserInterfaceHTTPServer interface {
-	DeleteUser(context.Context, *User) (*Msg, error)
+	DeleteUser(context.Context, *User) (*common.Msg, error)
 	GetUserInfo(context.Context, *emptypb.Empty) (*User, error)
 	GetUsers(context.Context, *UsersRequest) (*Users, error)
 	SaveUser(context.Context, *User) (*User, error)
@@ -139,13 +140,13 @@ func _UserInterface_DeleteUser0_HTTP_Handler(srv UserInterfaceHTTPServer) func(c
 		if err != nil {
 			return err
 		}
-		reply := out.(*Msg)
+		reply := out.(*common.Msg)
 		return ctx.Result(200, reply)
 	}
 }
 
 type UserInterfaceHTTPClient interface {
-	DeleteUser(ctx context.Context, req *User, opts ...http.CallOption) (rsp *Msg, err error)
+	DeleteUser(ctx context.Context, req *User, opts ...http.CallOption) (rsp *common.Msg, err error)
 	GetUserInfo(ctx context.Context, req *emptypb.Empty, opts ...http.CallOption) (rsp *User, err error)
 	GetUsers(ctx context.Context, req *UsersRequest, opts ...http.CallOption) (rsp *Users, err error)
 	SaveUser(ctx context.Context, req *User, opts ...http.CallOption) (rsp *User, err error)
@@ -160,8 +161,8 @@ func NewUserInterfaceHTTPClient(client *http.Client) UserInterfaceHTTPClient {
 	return &UserInterfaceHTTPClientImpl{client}
 }
 
-func (c *UserInterfaceHTTPClientImpl) DeleteUser(ctx context.Context, in *User, opts ...http.CallOption) (*Msg, error) {
-	var out Msg
+func (c *UserInterfaceHTTPClientImpl) DeleteUser(ctx context.Context, in *User, opts ...http.CallOption) (*common.Msg, error) {
+	var out common.Msg
 	pattern := "/api/v1alpha1/user"
 	path := binding.EncodeURL(pattern, in, true)
 	opts = append(opts, http.Operation(OperationUserInterfaceDeleteUser))

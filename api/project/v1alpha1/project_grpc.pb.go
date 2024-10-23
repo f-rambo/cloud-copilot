@@ -8,6 +8,7 @@ package v1alpha1
 
 import (
 	context "context"
+	common "github.com/f-rambo/ocean/api/common"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -34,14 +35,14 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ProjectServiceClient interface {
-	Ping(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*Msg, error)
-	Save(ctx context.Context, in *Project, opts ...grpc.CallOption) (*Msg, error)
+	Ping(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*common.Msg, error)
+	Save(ctx context.Context, in *Project, opts ...grpc.CallOption) (*common.Msg, error)
 	Get(ctx context.Context, in *ProjectReq, opts ...grpc.CallOption) (*Project, error)
 	List(ctx context.Context, in *ProjectReq, opts ...grpc.CallOption) (*ProjectList, error)
-	Delete(ctx context.Context, in *ProjectReq, opts ...grpc.CallOption) (*Msg, error)
+	Delete(ctx context.Context, in *ProjectReq, opts ...grpc.CallOption) (*common.Msg, error)
 	GetProjectMockData(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*Project, error)
-	Enable(ctx context.Context, in *ProjectReq, opts ...grpc.CallOption) (*Msg, error)
-	Disable(ctx context.Context, in *ProjectReq, opts ...grpc.CallOption) (*Msg, error)
+	Enable(ctx context.Context, in *ProjectReq, opts ...grpc.CallOption) (*common.Msg, error)
+	Disable(ctx context.Context, in *ProjectReq, opts ...grpc.CallOption) (*common.Msg, error)
 }
 
 type projectServiceClient struct {
@@ -52,9 +53,9 @@ func NewProjectServiceClient(cc grpc.ClientConnInterface) ProjectServiceClient {
 	return &projectServiceClient{cc}
 }
 
-func (c *projectServiceClient) Ping(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*Msg, error) {
+func (c *projectServiceClient) Ping(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*common.Msg, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Msg)
+	out := new(common.Msg)
 	err := c.cc.Invoke(ctx, ProjectService_Ping_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -62,9 +63,9 @@ func (c *projectServiceClient) Ping(ctx context.Context, in *emptypb.Empty, opts
 	return out, nil
 }
 
-func (c *projectServiceClient) Save(ctx context.Context, in *Project, opts ...grpc.CallOption) (*Msg, error) {
+func (c *projectServiceClient) Save(ctx context.Context, in *Project, opts ...grpc.CallOption) (*common.Msg, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Msg)
+	out := new(common.Msg)
 	err := c.cc.Invoke(ctx, ProjectService_Save_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -92,9 +93,9 @@ func (c *projectServiceClient) List(ctx context.Context, in *ProjectReq, opts ..
 	return out, nil
 }
 
-func (c *projectServiceClient) Delete(ctx context.Context, in *ProjectReq, opts ...grpc.CallOption) (*Msg, error) {
+func (c *projectServiceClient) Delete(ctx context.Context, in *ProjectReq, opts ...grpc.CallOption) (*common.Msg, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Msg)
+	out := new(common.Msg)
 	err := c.cc.Invoke(ctx, ProjectService_Delete_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -112,9 +113,9 @@ func (c *projectServiceClient) GetProjectMockData(ctx context.Context, in *empty
 	return out, nil
 }
 
-func (c *projectServiceClient) Enable(ctx context.Context, in *ProjectReq, opts ...grpc.CallOption) (*Msg, error) {
+func (c *projectServiceClient) Enable(ctx context.Context, in *ProjectReq, opts ...grpc.CallOption) (*common.Msg, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Msg)
+	out := new(common.Msg)
 	err := c.cc.Invoke(ctx, ProjectService_Enable_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -122,9 +123,9 @@ func (c *projectServiceClient) Enable(ctx context.Context, in *ProjectReq, opts 
 	return out, nil
 }
 
-func (c *projectServiceClient) Disable(ctx context.Context, in *ProjectReq, opts ...grpc.CallOption) (*Msg, error) {
+func (c *projectServiceClient) Disable(ctx context.Context, in *ProjectReq, opts ...grpc.CallOption) (*common.Msg, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Msg)
+	out := new(common.Msg)
 	err := c.cc.Invoke(ctx, ProjectService_Disable_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -136,14 +137,14 @@ func (c *projectServiceClient) Disable(ctx context.Context, in *ProjectReq, opts
 // All implementations must embed UnimplementedProjectServiceServer
 // for forward compatibility.
 type ProjectServiceServer interface {
-	Ping(context.Context, *emptypb.Empty) (*Msg, error)
-	Save(context.Context, *Project) (*Msg, error)
+	Ping(context.Context, *emptypb.Empty) (*common.Msg, error)
+	Save(context.Context, *Project) (*common.Msg, error)
 	Get(context.Context, *ProjectReq) (*Project, error)
 	List(context.Context, *ProjectReq) (*ProjectList, error)
-	Delete(context.Context, *ProjectReq) (*Msg, error)
+	Delete(context.Context, *ProjectReq) (*common.Msg, error)
 	GetProjectMockData(context.Context, *emptypb.Empty) (*Project, error)
-	Enable(context.Context, *ProjectReq) (*Msg, error)
-	Disable(context.Context, *ProjectReq) (*Msg, error)
+	Enable(context.Context, *ProjectReq) (*common.Msg, error)
+	Disable(context.Context, *ProjectReq) (*common.Msg, error)
 	mustEmbedUnimplementedProjectServiceServer()
 }
 
@@ -154,10 +155,10 @@ type ProjectServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedProjectServiceServer struct{}
 
-func (UnimplementedProjectServiceServer) Ping(context.Context, *emptypb.Empty) (*Msg, error) {
+func (UnimplementedProjectServiceServer) Ping(context.Context, *emptypb.Empty) (*common.Msg, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Ping not implemented")
 }
-func (UnimplementedProjectServiceServer) Save(context.Context, *Project) (*Msg, error) {
+func (UnimplementedProjectServiceServer) Save(context.Context, *Project) (*common.Msg, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Save not implemented")
 }
 func (UnimplementedProjectServiceServer) Get(context.Context, *ProjectReq) (*Project, error) {
@@ -166,16 +167,16 @@ func (UnimplementedProjectServiceServer) Get(context.Context, *ProjectReq) (*Pro
 func (UnimplementedProjectServiceServer) List(context.Context, *ProjectReq) (*ProjectList, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method List not implemented")
 }
-func (UnimplementedProjectServiceServer) Delete(context.Context, *ProjectReq) (*Msg, error) {
+func (UnimplementedProjectServiceServer) Delete(context.Context, *ProjectReq) (*common.Msg, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Delete not implemented")
 }
 func (UnimplementedProjectServiceServer) GetProjectMockData(context.Context, *emptypb.Empty) (*Project, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetProjectMockData not implemented")
 }
-func (UnimplementedProjectServiceServer) Enable(context.Context, *ProjectReq) (*Msg, error) {
+func (UnimplementedProjectServiceServer) Enable(context.Context, *ProjectReq) (*common.Msg, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Enable not implemented")
 }
-func (UnimplementedProjectServiceServer) Disable(context.Context, *ProjectReq) (*Msg, error) {
+func (UnimplementedProjectServiceServer) Disable(context.Context, *ProjectReq) (*common.Msg, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Disable not implemented")
 }
 func (UnimplementedProjectServiceServer) mustEmbedUnimplementedProjectServiceServer() {}

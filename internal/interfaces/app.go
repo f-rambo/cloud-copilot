@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	v1alpha1 "github.com/f-rambo/ocean/api/app/v1alpha1"
+	"github.com/f-rambo/ocean/api/common"
 	"github.com/f-rambo/ocean/internal/biz"
 	"github.com/f-rambo/ocean/internal/conf"
 	"github.com/f-rambo/ocean/utils"
@@ -28,13 +29,13 @@ func NewAppInterface(uc *biz.AppUsecase, user *biz.UserUseCase, c *conf.Bootstra
 	return &AppInterface{uc: uc, c: c, user: user, log: log.NewHelper(logger)}
 }
 
-func (a *AppInterface) Ping(ctx context.Context, _ *emptypb.Empty) (*v1alpha1.Msg, error) {
-	return v1alpha1.Response(), nil
+func (a *AppInterface) Ping(ctx context.Context, _ *emptypb.Empty) (*common.Msg, error) {
+	return common.Response(), nil
 }
 
-func (a *AppInterface) Save(ctx context.Context, app *v1alpha1.App) (*v1alpha1.Msg, error) {
+func (a *AppInterface) Save(ctx context.Context, app *v1alpha1.App) (*common.Msg, error) {
 	if app.Name == "" || len(app.Versions) == 0 {
-		return v1alpha1.Response("name and version is required"), nil
+		return common.Response("name and version is required"), nil
 	}
 	bizApp, err := a.appTobizApp(app)
 	if err != nil {
@@ -44,7 +45,7 @@ func (a *AppInterface) Save(ctx context.Context, app *v1alpha1.App) (*v1alpha1.M
 	if err != nil {
 		return nil, err
 	}
-	return v1alpha1.Response(), nil
+	return common.Response(), nil
 }
 
 func (a *AppInterface) Get(ctx context.Context, appReq *v1alpha1.AppReq) (*v1alpha1.App, error) {
@@ -106,22 +107,22 @@ func (a *AppInterface) List(ctx context.Context, appReq *v1alpha1.AppReq) (*v1al
 	return appList, nil
 }
 
-func (a *AppInterface) Delete(ctx context.Context, appReq *v1alpha1.AppReq) (*v1alpha1.Msg, error) {
+func (a *AppInterface) Delete(ctx context.Context, appReq *v1alpha1.AppReq) (*common.Msg, error) {
 	if appReq.Id == 0 {
-		return v1alpha1.Response("app id is required"), nil
+		return common.Response("app id is required"), nil
 	}
 	app, err := a.uc.Get(ctx, appReq.Id, appReq.VersionId)
 	if err != nil {
 		return nil, err
 	}
 	if app == nil || app.ID == 0 {
-		return v1alpha1.Response("app not found"), nil
+		return common.Response("app not found"), nil
 	}
 	err = a.uc.Delete(ctx, appReq.Id, appReq.VersionId)
 	if err != nil {
 		return nil, err
 	}
-	return v1alpha1.Response(), nil
+	return common.Response(), nil
 }
 
 func (a *AppInterface) UploadApp(ctx context.Context, req *v1alpha1.FileUploadRequest) (*v1alpha1.App, error) {
@@ -186,9 +187,9 @@ func (a *AppInterface) upload(path, filename, chunk string) (string, error) {
 	return file.GetFileName(), nil
 }
 
-func (a *AppInterface) CreateAppType(ctx context.Context, appType *v1alpha1.AppType) (*v1alpha1.Msg, error) {
+func (a *AppInterface) CreateAppType(ctx context.Context, appType *v1alpha1.AppType) (*common.Msg, error) {
 	if appType.Name == "" {
-		return v1alpha1.Response("app type name is required"), nil
+		return common.Response("app type name is required"), nil
 	}
 	err := a.uc.CreateAppType(ctx, &biz.AppType{
 		Name: appType.Name,
@@ -196,7 +197,7 @@ func (a *AppInterface) CreateAppType(ctx context.Context, appType *v1alpha1.AppT
 	if err != nil {
 		return nil, err
 	}
-	return v1alpha1.Response(), nil
+	return common.Response(), nil
 }
 
 func (a *AppInterface) ListAppType(ctx context.Context, _ *emptypb.Empty) (*v1alpha1.AppTypeList, error) {
@@ -216,15 +217,15 @@ func (a *AppInterface) ListAppType(ctx context.Context, _ *emptypb.Empty) (*v1al
 	return appTypeList, nil
 }
 
-func (a *AppInterface) DeleteAppType(ctx context.Context, appTypeReq *v1alpha1.AppTypeReq) (*v1alpha1.Msg, error) {
+func (a *AppInterface) DeleteAppType(ctx context.Context, appTypeReq *v1alpha1.AppTypeReq) (*common.Msg, error) {
 	if appTypeReq.Id == 0 {
-		return v1alpha1.Response("app type id is required"), nil
+		return common.Response("app type id is required"), nil
 	}
 	err := a.uc.DeleteAppType(ctx, appTypeReq.Id)
 	if err != nil {
 		return nil, err
 	}
-	return v1alpha1.Response(), nil
+	return common.Response(), nil
 }
 
 func (a *AppInterface) AppTest(ctx context.Context, deployAppReq *v1alpha1.DeployAppReq) (*v1alpha1.DeployApp, error) {
@@ -303,7 +304,7 @@ func (a *AppInterface) ListDeployedApp(ctx context.Context, deployAppReq *v1alph
 	}, nil
 }
 
-func (a *AppInterface) StopApp(ctx context.Context, deployAppReq *v1alpha1.DeployAppReq) (*v1alpha1.Msg, error) {
+func (a *AppInterface) StopApp(ctx context.Context, deployAppReq *v1alpha1.DeployAppReq) (*common.Msg, error) {
 	if deployAppReq.Id == 0 {
 		return nil, errors.New("app deploy id is required")
 	}
@@ -311,7 +312,7 @@ func (a *AppInterface) StopApp(ctx context.Context, deployAppReq *v1alpha1.Deplo
 	if err != nil {
 		return nil, err
 	}
-	return v1alpha1.Response(), nil
+	return common.Response(), nil
 }
 
 func (a *AppInterface) DeployApp(ctx context.Context, deployAppReq *v1alpha1.DeployAppReq) (*v1alpha1.DeployApp, error) {
@@ -377,7 +378,7 @@ func (a *AppInterface) GetDeployedAppResources(ctx context.Context, deployAppReq
 	return data, nil
 }
 
-func (a *AppInterface) DeleteDeployedApp(ctx context.Context, deployAppReq *v1alpha1.DeployAppReq) (*v1alpha1.Msg, error) {
+func (a *AppInterface) DeleteDeployedApp(ctx context.Context, deployAppReq *v1alpha1.DeployAppReq) (*common.Msg, error) {
 	if deployAppReq.Id == 0 {
 		return nil, errors.New("app deploy id is required")
 	}
@@ -385,10 +386,10 @@ func (a *AppInterface) DeleteDeployedApp(ctx context.Context, deployAppReq *v1al
 	if err != nil {
 		return nil, err
 	}
-	return v1alpha1.Response(), nil
+	return common.Response(), nil
 }
 
-func (a *AppInterface) SaveRepo(ctx context.Context, repo *v1alpha1.AppHelmRepo) (*v1alpha1.Msg, error) {
+func (a *AppInterface) SaveRepo(ctx context.Context, repo *v1alpha1.AppHelmRepo) (*common.Msg, error) {
 	if repo.Name == "" {
 		return nil, errors.New("repo name is required")
 	}
@@ -404,7 +405,7 @@ func (a *AppInterface) SaveRepo(ctx context.Context, repo *v1alpha1.AppHelmRepo)
 	if err != nil {
 		return nil, err
 	}
-	return v1alpha1.Response(), nil
+	return common.Response(), nil
 }
 
 func (a *AppInterface) ListRepo(ctx context.Context, _ *emptypb.Empty) (*v1alpha1.AppHelmRepoList, error) {
@@ -426,7 +427,7 @@ func (a *AppInterface) ListRepo(ctx context.Context, _ *emptypb.Empty) (*v1alpha
 	return repoList, nil
 }
 
-func (a *AppInterface) DeleteRepo(ctx context.Context, repoReq *v1alpha1.AppHelmRepoReq) (*v1alpha1.Msg, error) {
+func (a *AppInterface) DeleteRepo(ctx context.Context, repoReq *v1alpha1.AppHelmRepoReq) (*common.Msg, error) {
 	if repoReq.Id == 0 {
 		return nil, errors.New("repo id is required")
 	}
@@ -434,7 +435,7 @@ func (a *AppInterface) DeleteRepo(ctx context.Context, repoReq *v1alpha1.AppHelm
 	if err != nil {
 		return nil, err
 	}
-	return v1alpha1.Response(), nil
+	return common.Response(), nil
 }
 
 func (a *AppInterface) GetAppsByRepo(ctx context.Context, repoReq *v1alpha1.AppHelmRepoReq) (*v1alpha1.AppList, error) {

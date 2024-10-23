@@ -3,14 +3,14 @@ syntax = "proto3";
 package app.v1alpha1;
 
 import "google/api/annotations.proto";
-import "api/app/v1alpha1/error_reason.proto";
+import "api/common/error_reason.proto";
 import "api/app/v1alpha1/message.proto";
 import "google/protobuf/empty.proto";
 
 option go_package = "api/app/v1alpha1;v1alpha1";
 
 service AppInterface {
-      rpc Ping(google.protobuf.Empty) returns (app.v1alpha1.Msg) {
+      rpc Ping(google.protobuf.Empty) returns (common.Msg) {
             option (google.api.http) = {
                   get: "/api/v1alpha1/app/ping"
             };
@@ -23,7 +23,7 @@ service AppInterface {
             };
       }
 
-      rpc Save(app.v1alpha1.App) returns (app.v1alpha1.Msg) {
+      rpc Save(app.v1alpha1.App) returns (common.Msg) {
             option (google.api.http) = {
                   post: "/api/v1alpha1/app/save"
                   body: "*"
@@ -42,13 +42,13 @@ service AppInterface {
             };
       }
 
-      rpc Delete(app.v1alpha1.AppReq) returns (app.v1alpha1.Msg) {
+      rpc Delete(app.v1alpha1.AppReq) returns (common.Msg) {
             option (google.api.http) = {
                   delete: "/api/v1alpha1/app"
             };
       }
 
-      rpc CreateAppType(app.v1alpha1.AppType) returns (app.v1alpha1.Msg) {
+      rpc CreateAppType(app.v1alpha1.AppType) returns (common.Msg) {
             option (google.api.http) = {
                   post: "/api/v1alpha1/app/type"
                   body: "*"
@@ -61,7 +61,7 @@ service AppInterface {
             };
       }
 
-      rpc DeleteAppType(app.v1alpha1.AppTypeReq) returns (app.v1alpha1.Msg) {
+      rpc DeleteAppType(app.v1alpha1.AppTypeReq) returns (common.Msg) {
             option (google.api.http) = {
                   delete: "/api/v1alpha1/app/type"
             };
@@ -93,14 +93,14 @@ service AppInterface {
             };
       }
 
-      rpc StopApp(app.v1alpha1.DeployAppReq) returns (app.v1alpha1.Msg) {
+      rpc StopApp(app.v1alpha1.DeployAppReq) returns (common.Msg) {
             option (google.api.http) = {
                   post: "/api/v1alpha1/app/stop"
                   body: "*"
             };
       }
 
-      rpc DeleteDeployedApp(app.v1alpha1.DeployAppReq) returns (app.v1alpha1.Msg) {
+      rpc DeleteDeployedApp(app.v1alpha1.DeployAppReq) returns (common.Msg) {
             option (google.api.http) = {
                   delete: "/api/v1alpha1/app/deploy"
             };
@@ -112,7 +112,7 @@ service AppInterface {
             };
       }
 
-      rpc SaveRepo(app.v1alpha1.AppHelmRepo) returns (app.v1alpha1.Msg) {
+      rpc SaveRepo(app.v1alpha1.AppHelmRepo) returns (common.Msg) {
             option (google.api.http) = {
                   post: "/api/v1alpha1/app/repo"
                   body: "*"
@@ -125,7 +125,7 @@ service AppInterface {
             };
       }
 
-      rpc DeleteRepo(app.v1alpha1.AppHelmRepoReq) returns (app.v1alpha1.Msg) {
+      rpc DeleteRepo(app.v1alpha1.AppHelmRepoReq) returns (common.Msg) {
             option (google.api.http) = {
                   delete: "/api/v1alpha1/app/repo"
             };

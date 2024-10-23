@@ -8,6 +8,7 @@ package v1alpha1
 
 import (
 	context "context"
+	common "github.com/f-rambo/ocean/api/common"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -47,25 +48,25 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type AppInterfaceClient interface {
-	Ping(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*Msg, error)
+	Ping(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*common.Msg, error)
 	UploadApp(ctx context.Context, in *FileUploadRequest, opts ...grpc.CallOption) (*App, error)
-	Save(ctx context.Context, in *App, opts ...grpc.CallOption) (*Msg, error)
+	Save(ctx context.Context, in *App, opts ...grpc.CallOption) (*common.Msg, error)
 	Get(ctx context.Context, in *AppReq, opts ...grpc.CallOption) (*App, error)
 	List(ctx context.Context, in *AppReq, opts ...grpc.CallOption) (*AppList, error)
-	Delete(ctx context.Context, in *AppReq, opts ...grpc.CallOption) (*Msg, error)
-	CreateAppType(ctx context.Context, in *AppType, opts ...grpc.CallOption) (*Msg, error)
+	Delete(ctx context.Context, in *AppReq, opts ...grpc.CallOption) (*common.Msg, error)
+	CreateAppType(ctx context.Context, in *AppType, opts ...grpc.CallOption) (*common.Msg, error)
 	ListAppType(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*AppTypeList, error)
-	DeleteAppType(ctx context.Context, in *AppTypeReq, opts ...grpc.CallOption) (*Msg, error)
+	DeleteAppType(ctx context.Context, in *AppTypeReq, opts ...grpc.CallOption) (*common.Msg, error)
 	AppTest(ctx context.Context, in *DeployAppReq, opts ...grpc.CallOption) (*DeployApp, error)
 	GetAppDeployed(ctx context.Context, in *DeployApp, opts ...grpc.CallOption) (*DeployApp, error)
 	DeployApp(ctx context.Context, in *DeployAppReq, opts ...grpc.CallOption) (*DeployApp, error)
 	ListDeployedApp(ctx context.Context, in *DeployAppReq, opts ...grpc.CallOption) (*DeployAppList, error)
-	StopApp(ctx context.Context, in *DeployAppReq, opts ...grpc.CallOption) (*Msg, error)
-	DeleteDeployedApp(ctx context.Context, in *DeployAppReq, opts ...grpc.CallOption) (*Msg, error)
+	StopApp(ctx context.Context, in *DeployAppReq, opts ...grpc.CallOption) (*common.Msg, error)
+	DeleteDeployedApp(ctx context.Context, in *DeployAppReq, opts ...grpc.CallOption) (*common.Msg, error)
 	GetDeployedAppResources(ctx context.Context, in *DeployAppReq, opts ...grpc.CallOption) (*DeployAppResources, error)
-	SaveRepo(ctx context.Context, in *AppHelmRepo, opts ...grpc.CallOption) (*Msg, error)
+	SaveRepo(ctx context.Context, in *AppHelmRepo, opts ...grpc.CallOption) (*common.Msg, error)
 	ListRepo(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*AppHelmRepoList, error)
-	DeleteRepo(ctx context.Context, in *AppHelmRepoReq, opts ...grpc.CallOption) (*Msg, error)
+	DeleteRepo(ctx context.Context, in *AppHelmRepoReq, opts ...grpc.CallOption) (*common.Msg, error)
 	GetAppsByRepo(ctx context.Context, in *AppHelmRepoReq, opts ...grpc.CallOption) (*AppList, error)
 	GetAppDetailByRepo(ctx context.Context, in *AppHelmRepoReq, opts ...grpc.CallOption) (*App, error)
 }
@@ -78,9 +79,9 @@ func NewAppInterfaceClient(cc grpc.ClientConnInterface) AppInterfaceClient {
 	return &appInterfaceClient{cc}
 }
 
-func (c *appInterfaceClient) Ping(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*Msg, error) {
+func (c *appInterfaceClient) Ping(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*common.Msg, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Msg)
+	out := new(common.Msg)
 	err := c.cc.Invoke(ctx, AppInterface_Ping_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -98,9 +99,9 @@ func (c *appInterfaceClient) UploadApp(ctx context.Context, in *FileUploadReques
 	return out, nil
 }
 
-func (c *appInterfaceClient) Save(ctx context.Context, in *App, opts ...grpc.CallOption) (*Msg, error) {
+func (c *appInterfaceClient) Save(ctx context.Context, in *App, opts ...grpc.CallOption) (*common.Msg, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Msg)
+	out := new(common.Msg)
 	err := c.cc.Invoke(ctx, AppInterface_Save_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -128,9 +129,9 @@ func (c *appInterfaceClient) List(ctx context.Context, in *AppReq, opts ...grpc.
 	return out, nil
 }
 
-func (c *appInterfaceClient) Delete(ctx context.Context, in *AppReq, opts ...grpc.CallOption) (*Msg, error) {
+func (c *appInterfaceClient) Delete(ctx context.Context, in *AppReq, opts ...grpc.CallOption) (*common.Msg, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Msg)
+	out := new(common.Msg)
 	err := c.cc.Invoke(ctx, AppInterface_Delete_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -138,9 +139,9 @@ func (c *appInterfaceClient) Delete(ctx context.Context, in *AppReq, opts ...grp
 	return out, nil
 }
 
-func (c *appInterfaceClient) CreateAppType(ctx context.Context, in *AppType, opts ...grpc.CallOption) (*Msg, error) {
+func (c *appInterfaceClient) CreateAppType(ctx context.Context, in *AppType, opts ...grpc.CallOption) (*common.Msg, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Msg)
+	out := new(common.Msg)
 	err := c.cc.Invoke(ctx, AppInterface_CreateAppType_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -158,9 +159,9 @@ func (c *appInterfaceClient) ListAppType(ctx context.Context, in *emptypb.Empty,
 	return out, nil
 }
 
-func (c *appInterfaceClient) DeleteAppType(ctx context.Context, in *AppTypeReq, opts ...grpc.CallOption) (*Msg, error) {
+func (c *appInterfaceClient) DeleteAppType(ctx context.Context, in *AppTypeReq, opts ...grpc.CallOption) (*common.Msg, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Msg)
+	out := new(common.Msg)
 	err := c.cc.Invoke(ctx, AppInterface_DeleteAppType_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -208,9 +209,9 @@ func (c *appInterfaceClient) ListDeployedApp(ctx context.Context, in *DeployAppR
 	return out, nil
 }
 
-func (c *appInterfaceClient) StopApp(ctx context.Context, in *DeployAppReq, opts ...grpc.CallOption) (*Msg, error) {
+func (c *appInterfaceClient) StopApp(ctx context.Context, in *DeployAppReq, opts ...grpc.CallOption) (*common.Msg, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Msg)
+	out := new(common.Msg)
 	err := c.cc.Invoke(ctx, AppInterface_StopApp_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -218,9 +219,9 @@ func (c *appInterfaceClient) StopApp(ctx context.Context, in *DeployAppReq, opts
 	return out, nil
 }
 
-func (c *appInterfaceClient) DeleteDeployedApp(ctx context.Context, in *DeployAppReq, opts ...grpc.CallOption) (*Msg, error) {
+func (c *appInterfaceClient) DeleteDeployedApp(ctx context.Context, in *DeployAppReq, opts ...grpc.CallOption) (*common.Msg, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Msg)
+	out := new(common.Msg)
 	err := c.cc.Invoke(ctx, AppInterface_DeleteDeployedApp_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -238,9 +239,9 @@ func (c *appInterfaceClient) GetDeployedAppResources(ctx context.Context, in *De
 	return out, nil
 }
 
-func (c *appInterfaceClient) SaveRepo(ctx context.Context, in *AppHelmRepo, opts ...grpc.CallOption) (*Msg, error) {
+func (c *appInterfaceClient) SaveRepo(ctx context.Context, in *AppHelmRepo, opts ...grpc.CallOption) (*common.Msg, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Msg)
+	out := new(common.Msg)
 	err := c.cc.Invoke(ctx, AppInterface_SaveRepo_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -258,9 +259,9 @@ func (c *appInterfaceClient) ListRepo(ctx context.Context, in *emptypb.Empty, op
 	return out, nil
 }
 
-func (c *appInterfaceClient) DeleteRepo(ctx context.Context, in *AppHelmRepoReq, opts ...grpc.CallOption) (*Msg, error) {
+func (c *appInterfaceClient) DeleteRepo(ctx context.Context, in *AppHelmRepoReq, opts ...grpc.CallOption) (*common.Msg, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Msg)
+	out := new(common.Msg)
 	err := c.cc.Invoke(ctx, AppInterface_DeleteRepo_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -292,25 +293,25 @@ func (c *appInterfaceClient) GetAppDetailByRepo(ctx context.Context, in *AppHelm
 // All implementations must embed UnimplementedAppInterfaceServer
 // for forward compatibility.
 type AppInterfaceServer interface {
-	Ping(context.Context, *emptypb.Empty) (*Msg, error)
+	Ping(context.Context, *emptypb.Empty) (*common.Msg, error)
 	UploadApp(context.Context, *FileUploadRequest) (*App, error)
-	Save(context.Context, *App) (*Msg, error)
+	Save(context.Context, *App) (*common.Msg, error)
 	Get(context.Context, *AppReq) (*App, error)
 	List(context.Context, *AppReq) (*AppList, error)
-	Delete(context.Context, *AppReq) (*Msg, error)
-	CreateAppType(context.Context, *AppType) (*Msg, error)
+	Delete(context.Context, *AppReq) (*common.Msg, error)
+	CreateAppType(context.Context, *AppType) (*common.Msg, error)
 	ListAppType(context.Context, *emptypb.Empty) (*AppTypeList, error)
-	DeleteAppType(context.Context, *AppTypeReq) (*Msg, error)
+	DeleteAppType(context.Context, *AppTypeReq) (*common.Msg, error)
 	AppTest(context.Context, *DeployAppReq) (*DeployApp, error)
 	GetAppDeployed(context.Context, *DeployApp) (*DeployApp, error)
 	DeployApp(context.Context, *DeployAppReq) (*DeployApp, error)
 	ListDeployedApp(context.Context, *DeployAppReq) (*DeployAppList, error)
-	StopApp(context.Context, *DeployAppReq) (*Msg, error)
-	DeleteDeployedApp(context.Context, *DeployAppReq) (*Msg, error)
+	StopApp(context.Context, *DeployAppReq) (*common.Msg, error)
+	DeleteDeployedApp(context.Context, *DeployAppReq) (*common.Msg, error)
 	GetDeployedAppResources(context.Context, *DeployAppReq) (*DeployAppResources, error)
-	SaveRepo(context.Context, *AppHelmRepo) (*Msg, error)
+	SaveRepo(context.Context, *AppHelmRepo) (*common.Msg, error)
 	ListRepo(context.Context, *emptypb.Empty) (*AppHelmRepoList, error)
-	DeleteRepo(context.Context, *AppHelmRepoReq) (*Msg, error)
+	DeleteRepo(context.Context, *AppHelmRepoReq) (*common.Msg, error)
 	GetAppsByRepo(context.Context, *AppHelmRepoReq) (*AppList, error)
 	GetAppDetailByRepo(context.Context, *AppHelmRepoReq) (*App, error)
 	mustEmbedUnimplementedAppInterfaceServer()
@@ -323,13 +324,13 @@ type AppInterfaceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedAppInterfaceServer struct{}
 
-func (UnimplementedAppInterfaceServer) Ping(context.Context, *emptypb.Empty) (*Msg, error) {
+func (UnimplementedAppInterfaceServer) Ping(context.Context, *emptypb.Empty) (*common.Msg, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Ping not implemented")
 }
 func (UnimplementedAppInterfaceServer) UploadApp(context.Context, *FileUploadRequest) (*App, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UploadApp not implemented")
 }
-func (UnimplementedAppInterfaceServer) Save(context.Context, *App) (*Msg, error) {
+func (UnimplementedAppInterfaceServer) Save(context.Context, *App) (*common.Msg, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Save not implemented")
 }
 func (UnimplementedAppInterfaceServer) Get(context.Context, *AppReq) (*App, error) {
@@ -338,16 +339,16 @@ func (UnimplementedAppInterfaceServer) Get(context.Context, *AppReq) (*App, erro
 func (UnimplementedAppInterfaceServer) List(context.Context, *AppReq) (*AppList, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method List not implemented")
 }
-func (UnimplementedAppInterfaceServer) Delete(context.Context, *AppReq) (*Msg, error) {
+func (UnimplementedAppInterfaceServer) Delete(context.Context, *AppReq) (*common.Msg, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Delete not implemented")
 }
-func (UnimplementedAppInterfaceServer) CreateAppType(context.Context, *AppType) (*Msg, error) {
+func (UnimplementedAppInterfaceServer) CreateAppType(context.Context, *AppType) (*common.Msg, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateAppType not implemented")
 }
 func (UnimplementedAppInterfaceServer) ListAppType(context.Context, *emptypb.Empty) (*AppTypeList, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListAppType not implemented")
 }
-func (UnimplementedAppInterfaceServer) DeleteAppType(context.Context, *AppTypeReq) (*Msg, error) {
+func (UnimplementedAppInterfaceServer) DeleteAppType(context.Context, *AppTypeReq) (*common.Msg, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteAppType not implemented")
 }
 func (UnimplementedAppInterfaceServer) AppTest(context.Context, *DeployAppReq) (*DeployApp, error) {
@@ -362,22 +363,22 @@ func (UnimplementedAppInterfaceServer) DeployApp(context.Context, *DeployAppReq)
 func (UnimplementedAppInterfaceServer) ListDeployedApp(context.Context, *DeployAppReq) (*DeployAppList, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListDeployedApp not implemented")
 }
-func (UnimplementedAppInterfaceServer) StopApp(context.Context, *DeployAppReq) (*Msg, error) {
+func (UnimplementedAppInterfaceServer) StopApp(context.Context, *DeployAppReq) (*common.Msg, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method StopApp not implemented")
 }
-func (UnimplementedAppInterfaceServer) DeleteDeployedApp(context.Context, *DeployAppReq) (*Msg, error) {
+func (UnimplementedAppInterfaceServer) DeleteDeployedApp(context.Context, *DeployAppReq) (*common.Msg, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteDeployedApp not implemented")
 }
 func (UnimplementedAppInterfaceServer) GetDeployedAppResources(context.Context, *DeployAppReq) (*DeployAppResources, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetDeployedAppResources not implemented")
 }
-func (UnimplementedAppInterfaceServer) SaveRepo(context.Context, *AppHelmRepo) (*Msg, error) {
+func (UnimplementedAppInterfaceServer) SaveRepo(context.Context, *AppHelmRepo) (*common.Msg, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SaveRepo not implemented")
 }
 func (UnimplementedAppInterfaceServer) ListRepo(context.Context, *emptypb.Empty) (*AppHelmRepoList, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListRepo not implemented")
 }
-func (UnimplementedAppInterfaceServer) DeleteRepo(context.Context, *AppHelmRepoReq) (*Msg, error) {
+func (UnimplementedAppInterfaceServer) DeleteRepo(context.Context, *AppHelmRepoReq) (*common.Msg, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteRepo not implemented")
 }
 func (UnimplementedAppInterfaceServer) GetAppsByRepo(context.Context, *AppHelmRepoReq) (*AppList, error) {

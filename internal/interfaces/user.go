@@ -4,6 +4,7 @@ import (
 	"context"
 	"strings"
 
+	"github.com/f-rambo/ocean/api/common"
 	"github.com/f-rambo/ocean/api/user/v1alpha1"
 	"github.com/f-rambo/ocean/internal/biz"
 	"github.com/f-rambo/ocean/internal/conf"
@@ -103,7 +104,7 @@ func (u *UserInterface) SaveUser(ctx context.Context, request *v1alpha1.User) (*
 	}, nil
 }
 
-func (u *UserInterface) DeleteUser(ctx context.Context, request *v1alpha1.User) (*v1alpha1.Msg, error) {
+func (u *UserInterface) DeleteUser(ctx context.Context, request *v1alpha1.User) (*common.Msg, error) {
 	if request.Id == 0 {
 		return nil, errors.New("id is required")
 	}
@@ -111,7 +112,5 @@ func (u *UserInterface) DeleteUser(ctx context.Context, request *v1alpha1.User) 
 	if err != nil {
 		return nil, err
 	}
-	return &v1alpha1.Msg{
-		Message: "success",
-	}, nil
+	return common.Response(), nil
 }
