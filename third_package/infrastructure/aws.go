@@ -16,6 +16,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2"
 	elasticloadbalancingv2Types "github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2/types"
 	"github.com/f-rambo/ocean/internal/biz"
+	"github.com/f-rambo/ocean/internal/conf"
 	"github.com/f-rambo/ocean/utils"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/pkg/errors"
@@ -26,6 +27,7 @@ type AwsCloud struct {
 	ec2Client   *ec2.Client
 	elbv2Client *elasticloadbalancingv2.Client
 	log         *log.Helper
+	conf        *conf.Bootstrap
 }
 
 const (
@@ -36,12 +38,12 @@ const (
 	AwsTagKeyBind    = "Bind"
 	AwsTagKeyVpc     = "Vpc"
 
-	AwsResourcePublic  = "Public"
-	AwsResourcePrivate = "Private"
-	AwsResourceBind    = "true"
-	AwsReosurceUnBind  = "false"
-	AwsReousrceSshSG   = "ssh"
-	AwsResourceHttpSG  = "http"
+	AwsResourcePublic        = "Public"
+	AwsResourcePrivate       = "Private"
+	AwsResourceBind          = "true"
+	AwsReosurceUnBind        = "false"
+	AwsReousrceBostionHostSG = "ssh"
+	AwsResourceHttpSG        = "http"
 )
 
 const (
@@ -49,7 +51,7 @@ const (
 	AwsNotFound        = "NotFound"
 )
 
-func NewAwsCloud(ctx context.Context, cluster *biz.Cluster, log *log.Helper) (*AwsCloud, error) {
+func NewAwsCloud(ctx context.Context, cluster *biz.Cluster, conf *conf.Bootstrap, log *log.Helper) (*AwsCloud, error) {
 	if cluster.Region == "" {
 		cluster.Region = awsDefaultRegion
 	}
@@ -65,6 +67,7 @@ func NewAwsCloud(ctx context.Context, cluster *biz.Cluster, log *log.Helper) (*A
 		cluster:     cluster,
 		ec2Client:   ec2.NewFromConfig(cfg),
 		elbv2Client: elasticloadbalancingv2.NewFromConfig(cfg),
+		conf:        conf,
 		log:         log,
 	}, nil
 }
@@ -697,7 +700,7 @@ func (a *AwsCloud) ManageBostionHost(ctx context.Context) error {
 	if publicSubnet == nil {
 		return errors.New("public subnet not found in the ManageBostionHost")
 	}
-	sgs := a.cluster.GetCloudResourceByTags(biz.ResourceTypeSecurityGroup, AwsTagKeyType, AwsReousrceSshSG)
+	sgs := a.cluster.GetCloudResourceByTags(biz.ResourceTypeSecurityGroup, AwsTagKeyType, AwsReousrceBostionHostSG)
 	if sgs == nil {
 		return errors.New("security group not found in the ManageBostionHost")
 	}
@@ -1603,7 +1606,7 @@ func (a *AwsCloud) createRouteTables(ctx context.Context) error {
 func (a *AwsCloud) createSecurityGroup(ctx context.Context) error {
 	sgNames := []string{
 		fmt.Sprintf("%s-%s-sg", a.cluster.Name, AwsResourceHttpSG),
-		fmt.Sprintf("%s-%s-sg", a.cluster.Name, AwsReousrceSshSG),
+		fmt.Sprintf("%s-%s-sg", a.cluster.Name, AwsReousrceBostionHostSG),
 	}
 
 	existingSecurityGroups, err := a.ec2Client.DescribeSecurityGroups(ctx, &ec2.DescribeSecurityGroupsInput{
@@ -1644,8 +1647,8 @@ func (a *AwsCloud) createSecurityGroup(ctx context.Context) error {
 		if strings.Contains(sgName, AwsResourceHttpSG) {
 			tags[AwsTagKeyType] = AwsResourceHttpSG
 		}
-		if strings.Contains(sgName, AwsReousrceSshSG) {
-			tags[AwsTagKeyType] = AwsReousrceSshSG
+		if strings.Contains(sgName, AwsReousrceBostionHostSG) {
+			tags[AwsTagKeyType] = AwsReousrceBostionHostSG
 		}
 		sgOutput, err := a.ec2Client.CreateSecurityGroup(ctx, &ec2.CreateSecurityGroupInput{
 			GroupName:   aws.String(sgName),
@@ -1666,31 +1669,67 @@ func (a *AwsCloud) createSecurityGroup(ctx context.Context) error {
 			ID:   *sgOutput.GroupId,
 			Tags: tags,
 		})
-		_, err = a.ec2Client.AuthorizeSecurityGroupIngress(ctx, &ec2.AuthorizeSecurityGroupIngressInput{
-			GroupId: sgOutput.GroupId,
-			IpPermissions: []ec2Types.IpPermission{
-				{
-					IpProtocol: aws.String(string(ec2Types.ProtocolTcp)),
-					FromPort:   aws.Int32(22),
-					ToPort:     aws.Int32(22),
-					IpRanges:   []ec2Types.IpRange{{CidrIp: aws.String("0.0.0.0/0")}},
+		if v, ok := tags[AwsTagKeyType]; ok && v == AwsReousrceBostionHostSG {
+			_, err = a.ec2Client.AuthorizeSecurityGroupIngress(ctx, &ec2.AuthorizeSecurityGroupIngressInput{
+				GroupId: sgOutput.GroupId,
+				IpPermissions: []ec2Types.IpPermission{
+					{
+						IpProtocol: aws.String(string(ec2Types.ProtocolTcp)),
+						FromPort:   aws.Int32(22),
+						ToPort:     aws.Int32(22),
+						IpRanges:   []ec2Types.IpRange{{CidrIp: aws.String("0.0.0.0/0")}},
+					},
+					{
+						IpProtocol: aws.String(string(ec2Types.ProtocolTcp)),
+						FromPort:   aws.Int32(utils.GetPortByAddr(a.conf.Server.HTTP.Addr)),
+						ToPort:     aws.Int32(utils.GetPortByAddr(a.conf.Server.HTTP.Addr)),
+						IpRanges:   []ec2Types.IpRange{{CidrIp: aws.String("0.0.0.0/0")}},
+					},
+					{
+						IpProtocol: aws.String(string(ec2Types.ProtocolTcp)),
+						FromPort:   aws.Int32(utils.GetPortByAddr(a.conf.Server.GRPC.Addr)),
+						ToPort:     aws.Int32(utils.GetPortByAddr(a.conf.Server.GRPC.Addr)),
+						IpRanges:   []ec2Types.IpRange{{CidrIp: aws.String("0.0.0.0/0")}},
+					},
 				},
-				{
-					IpProtocol: aws.String(string(ec2Types.ProtocolTcp)),
-					FromPort:   aws.Int32(80),
-					ToPort:     aws.Int32(80),
-					IpRanges:   []ec2Types.IpRange{{CidrIp: aws.String("0.0.0.0/0")}},
+				TagSpecifications: []ec2Types.TagSpecification{
+					{
+						ResourceType: ec2Types.ResourceTypeSecurityGroupRule,
+						Tags:         a.mapToEc2Tags(tags),
+					},
 				},
-			},
-			TagSpecifications: []ec2Types.TagSpecification{
-				{
-					ResourceType: ec2Types.ResourceTypeSecurityGroupRule,
-					Tags:         a.mapToEc2Tags(tags),
+			})
+			if err != nil {
+				return errors.Wrap(err, "failed to add inbound rules to security group")
+			}
+		}
+		if v, ok := tags[AwsTagKeyType]; ok && v == AwsResourceHttpSG {
+			_, err = a.ec2Client.AuthorizeSecurityGroupIngress(ctx, &ec2.AuthorizeSecurityGroupIngressInput{
+				GroupId: sgOutput.GroupId,
+				IpPermissions: []ec2Types.IpPermission{
+					{
+						IpProtocol: aws.String(string(ec2Types.ProtocolTcp)),
+						FromPort:   aws.Int32(80),
+						ToPort:     aws.Int32(80),
+						IpRanges:   []ec2Types.IpRange{{CidrIp: aws.String("0.0.0.0/0")}},
+					},
+					{
+						IpProtocol: aws.String(string(ec2Types.ProtocolTcp)),
+						FromPort:   aws.Int32(443),
+						ToPort:     aws.Int32(443),
+						IpRanges:   []ec2Types.IpRange{{CidrIp: aws.String("0.0.0.0/0")}},
+					},
 				},
-			},
-		})
-		if err != nil {
-			return errors.Wrap(err, "failed to add inbound rules to security group")
+				TagSpecifications: []ec2Types.TagSpecification{
+					{
+						ResourceType: ec2Types.ResourceTypeSecurityGroupRule,
+						Tags:         a.mapToEc2Tags(tags),
+					},
+				},
+			})
+			if err != nil {
+				return errors.Wrap(err, "failed to add inbound rules to security group")
+			}
 		}
 	}
 	return nil

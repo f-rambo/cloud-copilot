@@ -1,12 +1,11 @@
 package infrastructure
 
-import "fmt"
+import (
+	"fmt"
+)
 
-var oceanPath string = "/app/ocean"
-var shipPath string = "/app/ship"
-var oceanDataTargzPackagePath string = "/tmp/oceandata.tar.gz"
-
-var installScript string = fmt.Sprintf(`#!/bin/bash
+func getInstallScriptAndStartOcean(oceanPath, shipPath, scriptEnv string) string {
+	return fmt.Sprintf(`#!/bin/bash
 
 SYSTEM=$(uname -s | tr '[:upper:]' '[:lower:]')
 ARCH=$1
@@ -48,10 +47,10 @@ fi
 install_tools() {
     if [ -f /etc/debian_version ]; then
         apt update
-        apt install -y curl tar file supervisor net-tools || { echo "Failed to install tools"; exit 1; }
+        apt install -y curl tar file net-tools || { echo "Failed to install tools"; exit 1; }
     elif [ -f /etc/redhat-release ]; then
         yum update -y
-        yum install -y curl tar file supervisor net-tools || { echo "Failed to install tools"; exit 1; }
+        yum install -y curl tar file net-tools || { echo "Failed to install tools"; exit 1; }
     else
         echo "unknown system type"
         exit 1
@@ -112,37 +111,38 @@ for platform in "${PLATFORMS[@]}"; do
     download_and_extract $platform $SHIP_NAME $SHIP_GITHUB_URL $SHIP_TARGET_DIR $SHIP_REPO_PATH
 done
 
-# Create supervisor configuration for ocean
-SUPERVISOR_CONF_DIR="/etc/supervisor/conf.d"
-OCEAN_SUPERVISOR_CONF="$SUPERVISOR_CONF_DIR/ocean.conf"
 
-cat <<EOF > $OCEAN_SUPERVISOR_CONF
-[program:ocean]
-command=$OCEAN_TARGET_DIR/bin/ocean -conf $OCEAN_TARGET_DIR/configs/
-autostart=true
-autorestart=true
-stderr_logfile=/var/log/ocean.err.log
-stdout_logfile=/var/log/ocean.out.log
-environment=ENV="bostionhost"
+OCEAN_SYSTEMED_CONF="/etc/systemd/system/ocean.service"
+
+cat <<EOF > $OCEAN_SYSTEMED_CONF
+[Unit]
+Description=Ocean Service
+After=network.target
+
+[Service]
+User=root
+ExecStart=$OCEAN_TARGET_DIR/bin/ocean -conf $OCEAN_TARGET_DIR/configs/config.yaml
+Restart=on-failure
+WorkingDirectory=$OCEAN_TARGET_DIR
+
+[Install]
+WantedBy=multi-user.target
 EOF
 
-# Start supervisord
-supervisord -c /etc/supervisor/supervisord.conf
+ENV=%s
+sed -i 's/^  env: .*/  env: $ENV/' $OCEAN_TARGET_DIR/configs/config.yaml
 
-# Reload supervisor to apply the new configuration
-supervisorctl reread
-supervisorctl update
-supervisorctl start ocean
+systemctl daemon-reload && systemctl enable ocean && systemctl start ocean && systemctl status ocean
+    
+`, oceanPath, shipPath, scriptEnv)
+}
 
-# Query the status of all services managed by supervisor
-supervisorctl status
-`, oceanPath, shipPath)
-
-var shipStartScript string = `#!/bin/bash
+func getShipStartScript(shipPath, scriptEnv string) string {
+	return fmt.Sprintf(`#!/bin/bash
 
 # ship server not network
 
-SHIP_TARGET_DIR=$1
+SHIP_TARGET_DIR=%s
 
 if [ -z "$SHIP_TARGET_DIR" ]; then
     echo "Usage: $0 <SHIP_TARGET_DIR>"
@@ -154,15 +154,33 @@ chmod +x $SHIP_TARGET_DIR/bin/ship
 # Start the ship service
 $SHIP_TARGET_DIR/bin/ship -conf $SHIP_TARGET_DIR/configs/ &
 
-# Check if the ship service started successfully
-if [ $? -eq 0 ]; then
-    echo "Ship service started successfully."
-else
-    echo "Failed to start ship service."
-    exit 1
-fi`
+SHIP_SYSTEMED_CONF="/etc/systemd/system/ship.service"
 
-var downloadAndCopyScript string = `#!/bin/bash
+cat <<EOF > $SHIP_SYSTEMED_CONF
+[Unit]
+Description=Ship Service
+After=network.target
+
+[Service]
+User=root
+ExecStart=$SHIP_TARGET_DIR/bin/ship -conf $SHIP_TARGET_DIR/configs/config.yaml
+Restart=on-failure
+WorkingDirectory=$SHIP_TARGET_DIR
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+ENV=%s
+sed -i 's/^  env: .*/  env: $ENV/' $SHIP_TARGET_DIR/configs/config.yaml
+
+systemctl daemon-reload && systemctl enable ship && systemctl start ship && systemctl status ship
+    
+`, shipPath, scriptEnv)
+}
+
+func getdownloadAndCopyScript() string {
+	return `#!/bin/bash
 
 # Parameters
 DOWNLOAD_URL=$1
@@ -181,3 +199,4 @@ scp -P $PORT $FILE_NAME $USER_NAME@$SERVER_IP:$SERVER_FILE_PATH/$FILE_NAME
 # Clean up the downloaded file
 rm $FILE_NAME
 `
+}

@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/go-kratos/kratos/v2"
+	"github.com/spf13/cast"
 	"gopkg.in/yaml.v2"
 )
 
@@ -554,4 +555,13 @@ func ReadFileFromLine(filePath string, startLine int64) (string, int64, error) {
 	}
 
 	return content.String(), currentLine, nil
+}
+
+func GetPortByAddr(addr string) int32 {
+	parts := strings.Split(addr, ":")
+	if len(parts) == 2 {
+		port := parts[1]
+		return cast.ToInt32(port)
+	}
+	return 0
 }

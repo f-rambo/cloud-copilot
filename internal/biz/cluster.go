@@ -360,7 +360,7 @@ func (c *Cluster) SettingSpecifications() {
 	for i := 0; i < int(nodegroup.MinSize); i++ {
 		node := &Node{
 			Name:        fmt.Sprintf("%s-node-%s-%s", c.Name, nodegroup.Name, utils.GetRandomString()),
-			Status:      NodeStatusUnspecified,
+			Status:      NodeStatusCreating,
 			ClusterID:   c.ID,
 			NodeGroupID: nodegroup.ID,
 		}
@@ -376,7 +376,7 @@ func (c *Cluster) SettingSpecifications() {
 		ID:        1,
 		ClusterID: c.ID,
 		Hostname:  "bostion-host",
-		Status:    NodeStatusUnspecified,
+		Status:    NodeStatusCreating,
 		CPU:       2,
 		Memory:    4,
 		SshPort:   22,

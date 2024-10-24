@@ -32,14 +32,18 @@ var ARCH_MAP = map[string]string{
 }
 
 type ClusterInfrastructure struct {
-	log *log.Helper
-	c   *conf.Bootstrap
+	log       *log.Helper
+	conf      *conf.Bootstrap
+	oceanPath string
+	shipPath  string
 }
 
 func NewClusterInfrastructure(c *conf.Bootstrap, logger log.Logger) biz.ClusterInfrastructure {
 	return &ClusterInfrastructure{
-		log: log.NewHelper(logger),
-		c:   c,
+		log:       log.NewHelper(logger),
+		conf:      c,
+		oceanPath: "/app/ocean",
+		shipPath:  "/app/ship",
 	}
 }
 
@@ -48,7 +52,7 @@ func (c *ClusterInfrastructure) GetRegions(ctx context.Context, cluster *biz.Clu
 		return nil
 	}
 	if cluster.Type == biz.ClusterTypeAWSEc2 || cluster.Type == biz.ClusterTypeAWSEks {
-		awsCloud, err := NewAwsCloud(ctx, cluster, c.log)
+		awsCloud, err := NewAwsCloud(ctx, cluster, c.conf, c.log)
 		if err != nil {
 			return err
 		}
@@ -72,7 +76,7 @@ func (c *ClusterInfrastructure) Start(ctx context.Context, cluster *biz.Cluster)
 		return errors.New("availability zones is empty")
 	}
 	if cluster.Type == biz.ClusterTypeAWSEc2 {
-		awsCloud, err := NewAwsCloud(ctx, cluster, c.log)
+		awsCloud, err := NewAwsCloud(ctx, cluster, c.conf, c.log)
 		if err != nil {
 			return err
 		}
@@ -102,7 +106,7 @@ func (c *ClusterInfrastructure) Stop(ctx context.Context, cluster *biz.Cluster) 
 		return nil
 	}
 	if cluster.Type == biz.ClusterTypeAWSEc2 {
-		awsCloud, err := NewAwsCloud(ctx, cluster, c.log)
+		awsCloud, err := NewAwsCloud(ctx, cluster, c.conf, c.log)
 		if err != nil {
 			return err
 		}
@@ -155,26 +159,26 @@ func (cc *ClusterInfrastructure) MigrateToBostionHost(ctx context.Context, clust
 		return err
 	}
 
-	err = os.WriteFile(currentOceanFilePath+"/install.sh", []byte(installScript), 0644)
-	if err != nil {
-		return errors.Wrap(err, "failed to write install.sh")
-	}
+	var oceanDataTargzPackagePath string = "/tmp/oceandata.tar.gz"
+	var installScriptAndStartOceanName = "install_and_start_ocean.sh"
+	var startShipName = "start_ship.sh"
+	var downloadAndCopyScriptName = "download_and_copy.sh"
 
-	err = os.WriteFile(currentOceanFilePath+"/ship-start.sh", []byte(shipStartScript), 0644)
-	if err != nil {
-		return errors.Wrap(err, "failed to write ship-start.sh")
+	scriptMaps := map[string]string{
+		fmt.Sprintf("%s/%s", currentOceanFilePath, installScriptAndStartOceanName): getInstallScriptAndStartOcean(cc.oceanPath, cc.shipPath, conf.EnvBostionHost.String()),
+		fmt.Sprintf("%s/%s", currentOceanFilePath, startShipName):                  getShipStartScript(cc.shipPath, conf.EnvBostionHost.String()),
+		fmt.Sprintf("%s/%s", currentOceanFilePath, downloadAndCopyScriptName):      getdownloadAndCopyScript(),
 	}
-
-	err = os.WriteFile(currentOceanFilePath+"/download-and-copy.sh", []byte(downloadAndCopyScript), 0644)
-	if err != nil {
-		return errors.Wrap(err, "failed to write download-and-copy.sh")
-	}
-
-	if !utils.IsFileExist(oceanDataTargzPackagePath) {
-		err = cc.runCommandWithLogging("tar", "-czvf", oceanDataTargzPackagePath, "-C", filepath.Dir(currentOceanFilePath), utils.PackageStoreDirName)
+	for scriptPath, script := range scriptMaps {
+		err = os.WriteFile(scriptPath, []byte(script), 0644)
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "failed to write %s", scriptPath)
 		}
+	}
+
+	err = cc.runCommandWithLogging("tar", "-czvf", oceanDataTargzPackagePath, "-C", filepath.Dir(currentOceanFilePath), utils.PackageStoreDirName)
+	if err != nil {
+		return err
 	}
 
 	// scp package to bostion host
@@ -185,21 +189,22 @@ func (cc *ClusterInfrastructure) MigrateToBostionHost(ctx context.Context, clust
 		return err
 	}
 
-	err = remoteBash.RunWithLogging("tar", "-xzvf", oceanDataTargzPackagePath, "-C", "$HOME")
+	rootUserHomePath := "/root"
+	err = remoteBash.RunWithLogging("tar", "-xzvf", oceanDataTargzPackagePath, "-C", rootUserHomePath)
 	if err != nil {
 		return err
 	}
 
 	// install ocean and ship to bostion host
-	installScriptPath := fmt.Sprintf("$HOME/%s/install.sh", utils.PackageStoreDirName)
-	err = remoteBash.RunWithLogging("bash", installScriptPath, cluster.BostionHost.ARCH, cc.c.Server.Version, cc.c.Server.ShipVersion)
+	err = remoteBash.RunWithLogging("bash", fmt.Sprintf("%s/%s/%s", rootUserHomePath, utils.PackageStoreDirName, installScriptAndStartOceanName),
+		cluster.BostionHost.ARCH, cc.conf.Server.Version, cc.conf.Server.ShipVersion)
 	if err != nil {
 		return err
 	}
 
 	// grpc check bostion host data and resources
 	conn, err := grpc.DialInsecure(ctx,
-		grpc.WithEndpoint(fmt.Sprintf("%s:%d", cluster.BostionHost.ExternalIP, 9000)),
+		grpc.WithEndpoint(fmt.Sprintf("%s:%d", cluster.BostionHost.ExternalIP, utils.GetPortByAddr(cc.conf.Server.GRPC.Addr))),
 		grpc.WithMiddleware(mmd.Client()),
 	)
 	if err != nil {
@@ -427,18 +432,18 @@ func (cc *ClusterInfrastructure) DistributeDaemonApp(ctx context.Context, cluste
 			}
 
 			// get ship arch path
-			shipArchPath := fmt.Sprintf("%s/%s", shipPath, ARCH_MAP[arch])
+			shipArchPath := fmt.Sprintf("%s/%s", cc.shipPath, ARCH_MAP[arch])
 			if !utils.IsFileExist(shipArchPath) {
 				return errors.New("ship arch is not exist")
 			}
 			// scp ship arch to node
 			output, err := cc.execCommand("scp", "-r", "-P", fmt.Sprintf("%d", node.SshPort), shipArchPath,
-				fmt.Sprintf("%s@%s:%s", node.User, node.InternalIP, shipPath))
+				fmt.Sprintf("%s@%s:%s", node.User, node.InternalIP, cc.shipPath))
 			if err != nil {
 				return errors.Wrap(err, string(output))
 			}
 			// run ship start script
-			err = remoteBash.RunWithLogging(shipStartScript)
+			err = remoteBash.RunWithLogging(getShipStartScript(cc.shipPath, conf.EnvCluster.String()))
 			if err != nil {
 				return err
 			}
@@ -549,7 +554,7 @@ func (c *ClusterInfrastructure) downloadAndCopyK8sSoftware(_ context.Context, cl
 	}
 	crioFileName := fmt.Sprintf("crio.%s.v%s.tar.gz", nodeGroup.ARCH, crioVersion)
 	crioDownloadUrl := fmt.Sprintf("https://storage.googleapis.com/cri-o/artifacts/%s", crioFileName)
-	output, err := exec.Command("echo", downloadAndCopyScript, "|",
+	output, err := exec.Command("echo", getdownloadAndCopyScript(), "|",
 		"bash -s", crioDownloadUrl, crioFileName, node.InternalIP, node.User, fmt.Sprintf("%d", node.SshPort), fmt.Sprintf("/tmp/%s", crioFileName)).
 		CombinedOutput()
 	if err != nil {
@@ -561,7 +566,7 @@ func (c *ClusterInfrastructure) downloadAndCopyK8sSoftware(_ context.Context, cl
 	}
 	kubeadmFileName := "kubeadm"
 	kubeadmDownloadUrl := fmt.Sprintf("https://dl.k8s.io/release/%s/bin/linux/%s/%s", kubeadmVersion, nodeGroup.ARCH, kubeadmFileName)
-	output, err = exec.Command("echo", downloadAndCopyScript, "|",
+	output, err = exec.Command("echo", getdownloadAndCopyScript(), "|",
 		"bash -s", kubeadmDownloadUrl, kubeadmFileName, node.InternalIP, node.User, fmt.Sprintf("%d", node.SshPort), fmt.Sprintf("/tmp/%s", kubeadmFileName)).
 		CombinedOutput()
 	if err != nil {
@@ -573,7 +578,7 @@ func (c *ClusterInfrastructure) downloadAndCopyK8sSoftware(_ context.Context, cl
 	}
 	kubeletFileName := "kubelet"
 	kubeletDownloadUrl := fmt.Sprintf("https://dl.k8s.io/release/%s/bin/linux/%s/%s", kubeletVersion, nodeGroup.ARCH, kubeletFileName)
-	output, err = exec.Command("echo", downloadAndCopyScript, "|",
+	output, err = exec.Command("echo", getdownloadAndCopyScript(), "|",
 		"bash -s", kubeletDownloadUrl, kubeletFileName, node.InternalIP, node.User, fmt.Sprintf("%d", node.SshPort), fmt.Sprintf("/tmp/%s", kubeletFileName)).
 		CombinedOutput()
 	if err != nil {

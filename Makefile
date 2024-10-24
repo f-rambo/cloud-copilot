@@ -116,6 +116,7 @@ multi-platform-buildx:
 	@if [ -z "$$(docker buildx inspect $(BUILDER_NAME) 2>/dev/null)" ]; then \
 		echo "Creating and bootstrapping buildx builder: $(BUILDER_NAME)"; \
 		docker buildx create --name $(BUILDER_NAME) --use; \
+		sleep 1; \
 		docker buildx inspect $(BUILDER_NAME) --bootstrap; \
 	else \
 		echo "Using and bootstrapping existing buildx builder: $(BUILDER_NAME)"; \
@@ -157,10 +158,11 @@ multi-platform-build-clean:
 		image_name=$$platform/$(IMG); \
 		echo "Cleaning for platform $$platform to image $$image_name"; \
 		docker rmi $$image_name; \
-		docker buildx use default; \
-		docker buildx stop $(BUILDER_NAME); \
-		docker buildx rm $(BUILDER_NAME); \
 	done
+	docker buildx use default; \
+	docker buildx stop $(BUILDER_NAME); \
+	docker buildx rm $(BUILDER_NAME); \
+	
 
 .PHONY: all
 # generate all

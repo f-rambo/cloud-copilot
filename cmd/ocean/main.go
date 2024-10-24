@@ -2,20 +2,19 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"os"
 	"runtime"
 
 	"github.com/f-rambo/ocean/internal/conf"
 	"github.com/f-rambo/ocean/internal/server"
 	"github.com/f-rambo/ocean/utils"
-
 	"github.com/go-kratos/kratos/v2"
 	"github.com/go-kratos/kratos/v2/config"
 	"github.com/go-kratos/kratos/v2/config/file"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-kratos/kratos/v2/transport/grpc"
 	"github.com/go-kratos/kratos/v2/transport/http"
-
 	_ "github.com/joho/godotenv/autoload"
 	_ "go.uber.org/automaxprocs"
 )
@@ -62,6 +61,12 @@ func newApp(logger log.Logger, gs *grpc.Server, hs *http.Server, internalLogic *
 }
 
 func main() {
+	defer func() {
+		if r := recover(); r != nil {
+			logStackTrace(r)
+		}
+	}()
+
 	flag.Parse()
 	c := config.New(
 		config.WithSource(
@@ -71,12 +76,12 @@ func main() {
 	defer c.Close()
 
 	if err := c.Load(); err != nil {
-		panic(err)
+		logFatalWithStack(err)
 	}
 
 	var bc conf.Bootstrap
 	if err := c.Scan(&bc); err != nil {
-		panic(err)
+		logFatalWithStack(err)
 	}
 	if bc.Server.ShipVersion != "" {
 		shipVersion = bc.Server.ShipVersion
@@ -84,7 +89,7 @@ func main() {
 
 	utilLog, err := utils.NewLog(&bc)
 	if err != nil {
-		panic(err)
+		logFatalWithStack(err)
 	}
 	defer utilLog.Close()
 	logger := log.With(utilLog, utilLog.GetLogContenteKeyvals()...)
@@ -93,12 +98,24 @@ func main() {
 		logger,
 	)
 	if err != nil {
-		panic(err)
+		logFatalWithStack(err)
 	}
 
 	defer cleanup()
 	// start and wait for stop signal
 	if err := app.Run(); err != nil {
-		panic(err)
+		logFatalWithStack(err)
 	}
+}
+
+func logStackTrace(err any) {
+	buf := make([]byte, 1024)
+	n := runtime.Stack(buf, true)
+	fmt.Printf("Panic: %v\nStack trace:\n%s", err, buf[:n])
+}
+
+func logFatalWithStack(err error) {
+	buf := make([]byte, 1024)
+	n := runtime.Stack(buf, true)
+	log.Fatalf("Error: %v\nStack trace:\n%s", err, buf[:n])
 }
