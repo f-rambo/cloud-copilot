@@ -27,8 +27,6 @@ var (
 	Version string
 	// flagconf is the config flag.
 	flagconf string
-	// shipVersion is the version of the ship.
-	shipVersion string = "0.0.1"
 
 	id, _ = os.Hostname()
 )
@@ -43,13 +41,12 @@ func newApp(logger log.Logger, gs *grpc.Server, hs *http.Server, internalLogic *
 		kratos.Name(Name),
 		kratos.Version(Version),
 		kratos.Metadata(map[string]string{
-			"service":      Name,
-			"version":      Version,
-			"ship_version": shipVersion,
-			"runtime":      runtime.Version(),
-			"os":           runtime.GOOS,
-			"arch":         runtime.GOARCH,
-			"conf":         flagconf,
+			"service": Name,
+			"version": Version,
+			"runtime": runtime.Version(),
+			"os":      runtime.GOOS,
+			"arch":    runtime.GOARCH,
+			"conf":    flagconf,
 		}),
 		kratos.Logger(logger),
 		kratos.Server(
@@ -82,9 +79,6 @@ func main() {
 	var bc conf.Bootstrap
 	if err := c.Scan(&bc); err != nil {
 		logFatalWithStack(err)
-	}
-	if bc.Server.ShipVersion != "" {
-		shipVersion = bc.Server.ShipVersion
 	}
 
 	utilLog, err := utils.NewLog(&bc)

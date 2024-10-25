@@ -8,6 +8,7 @@ import (
 
 type Bootstrap struct {
 	Server Server `json:"server,omitempty"`
+	Ship   Ship   `json:"ship,omitempty"`
 	Data   Data   `json:"data,omitempty"`
 	ETCD   ETCD   `json:"etcd,omitempty"`
 	Log    Log    `json:"log,omitempty"`
@@ -19,7 +20,6 @@ type Server struct {
 	Name        string `json:"name,omitempty"`
 	ClusterName string `json:"cluster_name,omitempty"`
 	Version     string `json:"version,omitempty"`
-	ShipVersion string `json:"ship_version,omitempty"`
 	HTTP        HTTP   `json:"http,omitempty"`
 	GRPC        GRPC   `json:"grpc,omitempty"`
 	Env         string `json:"env,omitempty"`
@@ -39,6 +39,11 @@ type ETCD struct {
 	Username  string   `json:"username,omitempty"`
 	Password  string   `json:"password,omitempty"`
 	Endpoints []string `json:"endpoints,omitempty"`
+}
+
+type Ship struct {
+	Version  string `json:"version,omitempty"`
+	GrpcPort int32  `json:"grpc_port,omitempty"`
 }
 
 type Data struct {

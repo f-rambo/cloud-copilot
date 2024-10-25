@@ -360,7 +360,7 @@ func (c *ClusterInterface) GetLogs(stream v1alpha1.ClusterInterface_GetLogsServe
 		}
 		if cluster != nil {
 			for _, node := range cluster.Nodes {
-				err = c.getShipLogContent(ctx, shipLogContentChan, node.InternalIP, node.SshPort)
+				err = c.getShipLogContent(ctx, shipLogContentChan, node.InternalIP, 22)
 				if err != nil {
 					return err
 				}
@@ -522,7 +522,6 @@ func (c *ClusterInterface) bizNodeToNode(bizNode *biz.Node) *v1alpha1.Node {
 		ContainerRuntime: bizNode.ContainerRuntime,
 		Kubelet:          bizNode.Kubelet,
 		KubeProxy:        bizNode.KubeProxy,
-		SshPort:          int32(bizNode.SshPort),
 		InternalIp:       bizNode.InternalIP,
 		ExternalIp:       bizNode.ExternalIP,
 		User:             bizNode.User,

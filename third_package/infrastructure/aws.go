@@ -42,7 +42,7 @@ const (
 	AwsResourcePrivate       = "Private"
 	AwsResourceBind          = "true"
 	AwsReosurceUnBind        = "false"
-	AwsReousrceBostionHostSG = "ssh"
+	AwsReousrceBostionHostSG = "bostionHost"
 	AwsResourceHttpSG        = "http"
 )
 
@@ -95,10 +95,10 @@ func (a *AwsCloud) GetAvailabilityZones(ctx context.Context) error {
 	}
 	for _, az := range result.AvailabilityZones {
 		a.cluster.AddCloudResource(biz.ResourceTypeAvailabilityZones, &biz.CloudResource{
-			Name:  *az.ZoneName,
-			ID:    *az.ZoneId,
+			Name:  aws.ToString(az.ZoneName),
+			ID:    aws.ToString(az.ZoneId),
 			Type:  biz.ResourceTypeAvailabilityZones,
-			Value: *az.RegionName,
+			Value: aws.ToString(az.RegionName),
 		})
 	}
 	return nil
@@ -374,11 +374,11 @@ func (a InstanceTypeResults) Swap(i, j int) {
 }
 
 func (a InstanceTypeResults) Less(i, j int) bool {
-	if *a[i].VCpuInfo.DefaultVCpus < *a[j].VCpuInfo.DefaultVCpus {
+	if aws.ToInt32(a[i].VCpuInfo.DefaultVCpus) < aws.ToInt32(a[j].VCpuInfo.DefaultVCpus) {
 		return true
 	}
-	if *a[i].VCpuInfo.DefaultVCpus == *a[j].VCpuInfo.DefaultVCpus {
-		return *a[i].MemoryInfo.SizeInMiB < *a[j].MemoryInfo.SizeInMiB
+	if aws.ToInt32(a[i].VCpuInfo.DefaultVCpus) == aws.ToInt32(a[j].VCpuInfo.DefaultVCpus) {
+		return aws.ToInt64(a[i].MemoryInfo.SizeInMiB) < aws.ToInt64(a[j].MemoryInfo.SizeInMiB)
 	}
 	return false
 }
@@ -450,12 +450,12 @@ func (a *AwsCloud) ImportKeyPair(ctx context.Context) error {
 			if keyPair.KeyPairId == nil {
 				continue
 			}
-			if a.cluster.GetCloudResourceByID(biz.ResourceTypeKeyPair, *keyPair.KeyPairId) != nil {
+			if a.cluster.GetCloudResourceByID(biz.ResourceTypeKeyPair, aws.ToString(keyPair.KeyPairId)) != nil {
 				continue
 			}
 			a.cluster.AddCloudResource(biz.ResourceTypeKeyPair, &biz.CloudResource{
-				Name: *keyPair.KeyName,
-				ID:   *keyPair.KeyPairId,
+				Name: aws.ToString(keyPair.KeyName),
+				ID:   aws.ToString(keyPair.KeyPairId),
 				Tags: tags,
 			})
 			a.log.Info("key pair found")
@@ -479,7 +479,7 @@ func (a *AwsCloud) ImportKeyPair(ctx context.Context) error {
 	a.log.Info("key pair imported")
 	a.cluster.AddCloudResource(biz.ResourceTypeKeyPair, &biz.CloudResource{
 		Name: keyName,
-		ID:   *keyPairOutput.KeyPairId,
+		ID:   aws.ToString(keyPairOutput.KeyPairId),
 		Tags: tags,
 	})
 	return nil
@@ -613,7 +613,7 @@ func (a *AwsCloud) ManageInstance(ctx context.Context) error {
 			return errors.Wrap(err, "failed to run instances")
 		}
 		for _, instance := range instanceOutput.Instances {
-			a.log.Info("instance createing", "name", node.Name, "id", *instance.InstanceId)
+			a.log.Info("instance createing", "name", node.Name, "id", aws.ToString(instance.InstanceId))
 			if instance.PrivateIpAddress != nil {
 				node.InternalIP = aws.ToString(instance.PrivateIpAddress)
 			}
@@ -934,6 +934,7 @@ func (a *AwsCloud) distributeNodeSubnets(nodeIndex int, subnets []*biz.CloudReso
 // create vpc
 func (a *AwsCloud) createVPC(ctx context.Context) error {
 	if a.cluster.GetSingleCloudResource(biz.ResourceTypeVPC) != nil {
+		a.log.Info("vpc already exists ", "vpc ", a.cluster.GetSingleCloudResource(biz.ResourceTypeVPC).Name)
 		return nil
 	}
 	vpcName := a.cluster.Name + "-vpc"
@@ -959,12 +960,13 @@ func (a *AwsCloud) createVPC(ctx context.Context) error {
 	if len(existingVpcs.Vpcs) != 0 {
 		for _, vpc := range existingVpcs.Vpcs {
 			for _, tag := range vpc.Tags {
-				vpcTags[*tag.Key] = *tag.Value
+				vpcTags[aws.ToString(tag.Key)] = aws.ToString(tag.Value)
 			}
 			vpcCloudResource := a.cluster.GetSingleCloudResource(biz.ResourceTypeVPC)
-			vpcCloudResource.ID = *vpc.VpcId
+			vpcCloudResource.ID = aws.ToString(vpc.VpcId)
 			vpcCloudResource.Tags = vpcTags
 		}
+		a.log.Infof("vpc %s already exists", a.cluster.GetSingleCloudResource(biz.ResourceTypeVPC).ID)
 		return nil
 	}
 
@@ -982,7 +984,7 @@ func (a *AwsCloud) createVPC(ctx context.Context) error {
 		return errors.Wrap(err, "failed to create VPC")
 	}
 	vpcCloudResource := a.cluster.GetSingleCloudResource(biz.ResourceTypeVPC)
-	vpcCloudResource.ID = *vpcOutput.Vpc.VpcId
+	vpcCloudResource.ID = aws.ToString(vpcOutput.Vpc.VpcId)
 
 	_, err = a.ec2Client.ModifyVpcAttribute(ctx, &ec2.ModifyVpcAttributeInput{
 		VpcId: vpcOutput.Vpc.VpcId,
@@ -1016,36 +1018,37 @@ func (a *AwsCloud) createSubnets(ctx context.Context) error {
 		if subnet.AvailabilityZone == nil {
 			continue
 		}
-		_, ok := zoneSubnets[*subnet.AvailabilityZone]
-		if ok && len(zoneSubnets[*subnet.AvailabilityZone]) >= 3 {
+		_, ok := zoneSubnets[aws.ToString(subnet.AvailabilityZone)]
+		if ok && len(zoneSubnets[aws.ToString(subnet.AvailabilityZone)]) >= 3 {
 			continue
 		}
-		zoneSubnets[*subnet.AvailabilityZone] = append(zoneSubnets[*subnet.AvailabilityZone], subnet)
+		zoneSubnets[aws.ToString(subnet.AvailabilityZone)] = append(zoneSubnets[aws.ToString(subnet.AvailabilityZone)], subnet)
 	}
 	for zoneName, subzoneSubnets := range zoneSubnets {
 		for i, subnet := range subzoneSubnets {
 			if subnet.SubnetId == nil {
 				continue
 			}
-			if a.cluster.GetCloudResourceByID(biz.ResourceTypeSubnet, *subnet.SubnetId) != nil {
+			if a.cluster.GetCloudResourceByID(biz.ResourceTypeSubnet, aws.ToString(subnet.SubnetId)) != nil {
+				a.log.Infof("subnet %s already exists", aws.ToString(subnet.SubnetId))
 				continue
 			}
 			tags := make(map[string]string)
 			name := ""
 			for _, tag := range subnet.Tags {
-				tags[*tag.Key] = *tag.Value
+				tags[aws.ToString(tag.Key)] = aws.ToString(tag.Value)
 			}
 			tags[AwsTagKeyZone] = zoneName
 			if i < 2 {
-				name = fmt.Sprintf("%s-private-subnet-%s-%d", a.cluster.Name, *subnet.AvailabilityZone, i+1)
+				name = fmt.Sprintf("%s-private-subnet-%s-%d", a.cluster.Name, aws.ToString(subnet.AvailabilityZone), i+1)
 				tags[AwsTagKeyType] = AwsResourcePrivate
 			} else {
-				name = fmt.Sprintf("%s-public-subnet-%s", a.cluster.Name, *subnet.AvailabilityZone)
+				name = fmt.Sprintf("%s-public-subnet-%s", a.cluster.Name, aws.ToString(subnet.AvailabilityZone))
 				tags[AwsTagKeyType] = AwsResourcePublic
 			}
 			if nameVal, ok := tags[AwsTagKeyName]; !ok || nameVal != name {
 				tags[AwsTagKeyName] = name
-				err = a.createTags(ctx, *subnet.SubnetId, biz.ResourceTypeSubnet, tags)
+				err = a.createTags(ctx, aws.ToString(subnet.SubnetId), biz.ResourceTypeSubnet, tags)
 				if err != nil {
 					return err
 				}
@@ -1053,9 +1056,10 @@ func (a *AwsCloud) createSubnets(ctx context.Context) error {
 			tags[AwsTagKeyName] = name
 			a.cluster.AddCloudResource(biz.ResourceTypeSubnet, &biz.CloudResource{
 				Name: name,
-				ID:   *subnet.SubnetId,
+				ID:   aws.ToString(subnet.SubnetId),
 				Tags: tags,
 			})
+			a.log.Infof("subnet %s already exists", aws.ToString(subnet.SubnetId))
 		}
 	}
 
@@ -1069,7 +1073,7 @@ func (a *AwsCloud) createSubnets(ctx context.Context) error {
 	subnetCidrs := make([]string, 0)
 	existingSubnetCird := make(map[string]bool)
 	for _, subnet := range existingSubnets.Subnets {
-		existingSubnetCird[*subnet.CidrBlock] = true
+		existingSubnetCird[aws.ToString(subnet.CidrBlock)] = true
 	}
 	for _, subnetCidr := range subnetCidrRes {
 		subnetCidrDecode := utils.DecodeCidr(subnetCidr)
@@ -1078,7 +1082,7 @@ func (a *AwsCloud) createSubnets(ctx context.Context) error {
 		}
 		ok := true
 		for _, subnet := range existingSubnets.Subnets {
-			existingSubnetCirdDecode := utils.DecodeCidr(*subnet.CidrBlock)
+			existingSubnetCirdDecode := utils.DecodeCidr(aws.ToString(subnet.CidrBlock))
 			if existingSubnetCirdDecode == "" {
 				continue
 			}
@@ -1122,9 +1126,10 @@ func (a *AwsCloud) createSubnets(ctx context.Context) error {
 			}
 			a.cluster.AddCloudResource(biz.ResourceTypeSubnet, &biz.CloudResource{
 				Name: name,
-				ID:   *subnetOutput.Subnet.SubnetId,
+				ID:   aws.ToString(subnetOutput.Subnet.SubnetId),
 				Tags: tags,
 			})
+			a.log.Infof("private subnet %s created", aws.ToString(subnetOutput.Subnet.SubnetId))
 		}
 
 		name := fmt.Sprintf("%s-public-subnet-%s", a.cluster.Name, az.Name)
@@ -1154,12 +1159,11 @@ func (a *AwsCloud) createSubnets(ctx context.Context) error {
 		}
 		a.cluster.AddCloudResource(biz.ResourceTypeSubnet, &biz.CloudResource{
 			Name: name,
-			ID:   *subnetOutput.Subnet.SubnetId,
+			ID:   aws.ToString(subnetOutput.Subnet.SubnetId),
 			Tags: tags,
 		})
+		a.log.Infof("public subnet %s created", aws.ToString(subnetOutput.Subnet.SubnetId))
 	}
-
-	a.log.Info("subnet finished.")
 	return nil
 }
 
@@ -1182,23 +1186,24 @@ func (a *AwsCloud) createInternetGateway(ctx context.Context) error {
 			if igw.InternetGatewayId == nil {
 				continue
 			}
-			if a.cluster.GetCloudResourceByID(biz.ResourceTypeInternetGateway, *igw.InternetGatewayId) != nil {
+			if a.cluster.GetCloudResourceByID(biz.ResourceTypeInternetGateway, aws.ToString(igw.InternetGatewayId)) != nil {
+				a.log.Infof("internet gateway %s already exists", aws.ToString(igw.InternetGatewayId))
 				continue
 			}
 			name := ""
 			tags := make(map[string]string)
 			for _, tag := range igw.Tags {
-				if *tag.Key == AwsTagKeyName {
-					name = *tag.Value
+				if aws.ToString(tag.Key) == AwsTagKeyName {
+					name = aws.ToString(tag.Value)
 				}
-				tags[*tag.Key] = *tag.Value
+				tags[aws.ToString(tag.Key)] = aws.ToString(tag.Value)
 			}
 			if name == "" {
 				name = fmt.Sprintf("%s-igw", a.cluster.Name)
 			}
 			if nameVal, ok := tags[AwsTagKeyName]; !ok || nameVal != name {
 				tags[AwsTagKeyName] = name
-				err = a.createTags(ctx, *igw.InternetGatewayId, biz.ResourceTypeInternetGateway, tags)
+				err = a.createTags(ctx, aws.ToString(igw.InternetGatewayId), biz.ResourceTypeInternetGateway, tags)
 				if err != nil {
 					return err
 				}
@@ -1206,9 +1211,10 @@ func (a *AwsCloud) createInternetGateway(ctx context.Context) error {
 			tags[AwsTagKeyName] = name
 			a.cluster.AddCloudResource(biz.ResourceTypeInternetGateway, &biz.CloudResource{
 				Name: name,
-				ID:   *igw.InternetGatewayId,
+				ID:   aws.ToString(igw.InternetGatewayId),
 				Tags: tags,
 			})
+			a.log.Infof("internet gateway %s already exists", aws.ToString(igw.InternetGatewayId))
 		}
 		return nil
 	}
@@ -1231,7 +1237,7 @@ func (a *AwsCloud) createInternetGateway(ctx context.Context) error {
 	}
 	a.cluster.AddCloudResource(biz.ResourceTypeInternetGateway, &biz.CloudResource{
 		Name: name,
-		ID:   *igwOutput.InternetGateway.InternetGatewayId,
+		ID:   aws.ToString(igwOutput.InternetGateway.InternetGatewayId),
 		Tags: tags,
 	})
 
@@ -1242,7 +1248,7 @@ func (a *AwsCloud) createInternetGateway(ctx context.Context) error {
 	if err != nil {
 		return errors.Wrap(err, "failed to attach Internet Gateway")
 	}
-
+	a.log.Infof("internet gateway %s created", aws.ToString(igwOutput.InternetGateway.InternetGatewayId))
 	return nil
 }
 
@@ -1265,11 +1271,12 @@ func (a *AwsCloud) createNATGateways(ctx context.Context) error {
 		if natGateway.SubnetId == nil || len(natGateway.NatGatewayAddresses) == 0 {
 			continue
 		}
-		if a.cluster.GetCloudResourceByID(biz.ResourceTypeNATGateway, *natGateway.NatGatewayId) != nil {
+		if a.cluster.GetCloudResourceByID(biz.ResourceTypeNATGateway, aws.ToString(natGateway.NatGatewayId)) != nil {
+			a.log.Infof("nat gateway %s already exists", aws.ToString(natGateway.NatGatewayId))
 			continue
 		}
 		// check public subnet
-		subnetCloudResource := a.cluster.GetCloudResourceByID(biz.ResourceTypeSubnet, *natGateway.SubnetId)
+		subnetCloudResource := a.cluster.GetCloudResourceByID(biz.ResourceTypeSubnet, aws.ToString(natGateway.SubnetId))
 		if subnetCloudResource == nil {
 			continue
 		}
@@ -1278,13 +1285,13 @@ func (a *AwsCloud) createNATGateways(ctx context.Context) error {
 		}
 		tags := make(map[string]string)
 		for _, tag := range natGateway.Tags {
-			tags[*tag.Key] = *tag.Value
+			tags[aws.ToString(tag.Key)] = aws.ToString(tag.Value)
 		}
 		name := fmt.Sprintf("%s-nat-gateway-%s", a.cluster.Name, subnetCloudResource.Tags[AwsTagKeyZone])
 		tags[AwsTagKeyZone] = subnetCloudResource.Tags[AwsTagKeyZone]
 		if nameVal, ok := tags[AwsTagKeyName]; !ok || nameVal != name {
 			tags[AwsTagKeyName] = name
-			err = a.createTags(ctx, *natGateway.NatGatewayId, biz.ResourceTypeNATGateway, tags)
+			err = a.createTags(ctx, aws.ToString(natGateway.NatGatewayId), biz.ResourceTypeNATGateway, tags)
 			if err != nil {
 				return err
 			}
@@ -1292,9 +1299,10 @@ func (a *AwsCloud) createNATGateways(ctx context.Context) error {
 		tags[AwsTagKeyName] = name
 		a.cluster.AddCloudResource(biz.ResourceTypeNATGateway, &biz.CloudResource{
 			Name: name,
-			ID:   *natGateway.NatGatewayId,
+			ID:   aws.ToString(natGateway.NatGatewayId),
 			Tags: tags,
 		})
+		a.log.Infof("nat gateway %s already exists", aws.ToString(natGateway.NatGatewayId))
 	}
 
 	// Get Elastic IP
@@ -1309,23 +1317,25 @@ func (a *AwsCloud) createNATGateways(ctx context.Context) error {
 		if eip.AssociationId != nil || eip.InstanceId != nil || eip.NetworkInterfaceId != nil {
 			continue
 		}
-		if a.cluster.GetCloudResourceByID(biz.ResourceTypeElasticIP, *eip.AllocationId) != nil {
+		if a.cluster.GetCloudResourceByID(biz.ResourceTypeElasticIP, aws.ToString(eip.AllocationId)) != nil {
+			a.log.Infof("elastic ip %s already exists", aws.ToString(eip.PublicIp))
 			continue
 		}
 		name := ""
 		tags := make(map[string]string)
 		for _, tag := range eip.Tags {
-			if *tag.Key == AwsTagKeyName {
-				name = *tag.Value
+			if aws.ToString(tag.Key) == AwsTagKeyName {
+				name = aws.ToString(tag.Value)
 			}
-			tags[*tag.Key] = *tag.Value
+			tags[aws.ToString(tag.Key)] = aws.ToString(tag.Value)
 		}
 		a.cluster.AddCloudResource(biz.ResourceTypeElasticIP, &biz.CloudResource{
-			ID:    *eip.AllocationId,
+			ID:    aws.ToString(eip.AllocationId),
 			Name:  name,
-			Value: *eip.PublicIp,
+			Value: aws.ToString(eip.PublicIp),
 			Tags:  tags,
 		})
+		a.log.Infof("elastic ip %s already exists", aws.ToString(eip.PublicIp))
 	}
 
 	// Allocate Elastic IP
@@ -1367,13 +1377,13 @@ func (a *AwsCloud) createNATGateways(ctx context.Context) error {
 				return errors.Wrap(err, "failed to allocate Elastic IP")
 			}
 			a.cluster.AddCloudResource(biz.ResourceTypeElasticIP, &biz.CloudResource{
-				ID:    *eipOutput.AllocationId,
+				ID:    aws.ToString(eipOutput.AllocationId),
 				Name:  eipName,
-				Value: *eipOutput.PublicIp,
+				Value: aws.ToString(eipOutput.PublicIp),
 				Tags:  eipTags,
 			})
+			a.log.Infof("elastic ip %s allocated", aws.ToString(eipOutput.PublicIp))
 		}
-		a.log.Info("created Elastic IP for NAT Gateway")
 	}
 
 	// Create NAT Gateways if they don't exist for each AZ
@@ -1417,9 +1427,10 @@ func (a *AwsCloud) createNATGateways(ctx context.Context) error {
 		natGateWayIds = append(natGateWayIds, *natGatewayOutput.NatGateway.NatGatewayId)
 		a.cluster.AddCloudResource(biz.ResourceTypeNATGateway, &biz.CloudResource{
 			Name: natGatewayName,
-			ID:   *natGatewayOutput.NatGateway.NatGatewayId,
+			ID:   aws.ToString(natGatewayOutput.NatGateway.NatGatewayId),
 			Tags: natGatewayTags,
 		})
+		a.log.Infof("nat gateway %s createing...", aws.ToString(natGatewayOutput.NatGateway.NatGatewayId))
 	}
 
 	if len(natGateWayIds) != 0 {
@@ -1450,16 +1461,17 @@ func (a *AwsCloud) createRouteTables(ctx context.Context) error {
 		if routeTable.Tags == nil {
 			continue
 		}
-		if a.cluster.GetCloudResourceByID(biz.ResourceTypeRouteTable, *routeTable.RouteTableId) != nil {
+		if a.cluster.GetCloudResourceByID(biz.ResourceTypeRouteTable, aws.ToString(routeTable.RouteTableId)) != nil {
+			a.log.Infof("route table %s already exists", aws.ToString(routeTable.RouteTableId))
 			continue
 		}
 		name := ""
 		tags := make(map[string]string)
 		for _, tag := range routeTable.Tags {
-			if *tag.Key == AwsTagKeyName {
-				name = *tag.Value
+			if aws.ToString(tag.Key) == AwsTagKeyName {
+				name = aws.ToString(tag.Value)
 			}
-			tags[*tag.Key] = *tag.Value
+			tags[aws.ToString(tag.Key)] = aws.ToString(tag.Value)
 		}
 		if val, ok := tags[AwsTagKeyType]; !ok || (val != AwsResourcePublic && val != AwsResourcePrivate) {
 			continue
@@ -1478,9 +1490,10 @@ func (a *AwsCloud) createRouteTables(ctx context.Context) error {
 		}
 		a.cluster.AddCloudResource(biz.ResourceTypeRouteTable, &biz.CloudResource{
 			Name: name,
-			ID:   *routeTable.RouteTableId,
+			ID:   aws.ToString(routeTable.RouteTableId),
 			Tags: tags,
 		})
+		a.log.Infof("route table %s already exists", aws.ToString(routeTable.RouteTableId))
 	}
 
 	// Create public route table
@@ -1504,10 +1517,10 @@ func (a *AwsCloud) createRouteTables(ctx context.Context) error {
 		}
 		a.cluster.AddCloudResource(biz.ResourceTypeRouteTable, &biz.CloudResource{
 			Name: publicRouteTableName,
-			ID:   *publicRouteTable.RouteTable.RouteTableId,
+			ID:   aws.ToString(publicRouteTable.RouteTable.RouteTableId),
 			Tags: publicRouteTableNameTags,
 		})
-		a.log.Info("created public rotertable")
+		a.log.Infof("public route table %s created", aws.ToString(publicRouteTable.RouteTable.RouteTableId))
 
 		// Add route to Internet Gateway in public route table
 		_, err = a.ec2Client.CreateRoute(ctx, &ec2.CreateRouteInput{
@@ -1532,7 +1545,7 @@ func (a *AwsCloud) createRouteTables(ctx context.Context) error {
 				return errors.Wrap(err, "failed to associate public subnet with route table")
 			}
 			a.cluster.AddSubCloudResource(biz.ResourceTypeRouteTable, *publicRouteTable.RouteTable.RouteTableId, &biz.CloudResource{
-				ID:   *publicAssociateRouteTable.AssociationId,
+				ID:   aws.ToString(publicAssociateRouteTable.AssociationId),
 				Name: fmt.Sprintf("public associate routetable %d", i),
 			})
 		}
@@ -1563,9 +1576,10 @@ func (a *AwsCloud) createRouteTables(ctx context.Context) error {
 		}
 		a.cluster.AddCloudResource(biz.ResourceTypeRouteTable, &biz.CloudResource{
 			Name: privateRouteTableName,
-			ID:   *privateRouteTable.RouteTable.RouteTableId,
+			ID:   aws.ToString(privateRouteTable.RouteTable.RouteTableId),
 			Tags: tags,
 		})
+		a.log.Infof("private route table %s created for AZ %s", aws.ToString(privateRouteTable.RouteTable.RouteTableId), az.Name)
 
 		// defalut local
 
@@ -1594,7 +1608,7 @@ func (a *AwsCloud) createRouteTables(ctx context.Context) error {
 				return errors.Wrap(err, "failed to associate private subnet with route table in AZ "+az.Name)
 			}
 			a.cluster.AddSubCloudResource(biz.ResourceTypeRouteTable, *privateRouteTable.RouteTable.RouteTableId, &biz.CloudResource{
-				ID:   *privateAssociateRouteTable.AssociationId,
+				ID:   aws.ToString(privateAssociateRouteTable.AssociationId),
 				Name: fmt.Sprintf("%s-private-associate-routetable", subnet.Name),
 			})
 		}
@@ -1624,18 +1638,20 @@ func (a *AwsCloud) createSecurityGroup(ctx context.Context) error {
 			if securityGroup.GroupId == nil {
 				continue
 			}
-			if a.cluster.GetCloudResourceByID(biz.ResourceTypeSecurityGroup, *securityGroup.GroupId) != nil {
+			if a.cluster.GetCloudResourceByID(biz.ResourceTypeSecurityGroup, aws.ToString(securityGroup.GroupId)) != nil {
+				a.log.Infof("security group %s already exists", aws.ToString(securityGroup.GroupId))
 				continue
 			}
 			tags := make(map[string]string)
 			for _, tag := range securityGroup.Tags {
-				tags[*tag.Key] = *tag.Value
+				tags[aws.ToString(tag.Key)] = aws.ToString(tag.Value)
 			}
 			a.cluster.AddCloudResource(biz.ResourceTypeSecurityGroup, &biz.CloudResource{
 				Name: aws.ToString(securityGroup.GroupName),
 				ID:   aws.ToString(securityGroup.GroupId),
 				Tags: tags,
 			})
+			a.log.Infof("security group %s already exists", aws.ToString(securityGroup.GroupId))
 		}
 	}
 
@@ -1666,9 +1682,10 @@ func (a *AwsCloud) createSecurityGroup(ctx context.Context) error {
 		}
 		a.cluster.AddCloudResource(biz.ResourceTypeSecurityGroup, &biz.CloudResource{
 			Name: sgName,
-			ID:   *sgOutput.GroupId,
+			ID:   aws.ToString(sgOutput.GroupId),
 			Tags: tags,
 		})
+		a.log.Infof("security group %s created", aws.ToString(sgOutput.GroupId))
 		if v, ok := tags[AwsTagKeyType]; ok && v == AwsReousrceBostionHostSG {
 			_, err = a.ec2Client.AuthorizeSecurityGroupIngress(ctx, &ec2.AuthorizeSecurityGroupIngressInput{
 				GroupId: sgOutput.GroupId,
@@ -1750,6 +1767,7 @@ func (a *AwsCloud) createS3Endpoint(ctx context.Context) error {
 	}
 
 	if a.cluster.GetCloudResourceByTags(biz.ResourceTypeVpcEndpointS3, AwsTagKeyVpc, vpcResource.ID) != nil {
+		a.log.Infof("s3 endpoint already exists")
 		return nil
 	}
 
@@ -1775,10 +1793,11 @@ func (a *AwsCloud) createS3Endpoint(ctx context.Context) error {
 			continue
 		}
 		a.cluster.AddCloudResource(biz.ResourceTypeVpcEndpointS3, &biz.CloudResource{
-			ID:   *endpoint.VpcEndpointId,
+			ID:   aws.ToString(endpoint.VpcEndpointId),
 			Name: name,
 			Tags: tags,
 		})
+		a.log.Infof("s3 endpoint %s already exists", aws.ToString(endpoint.VpcEndpointId))
 		return nil
 	}
 	s3enpointoutput, err := a.ec2Client.CreateVpcEndpoint(ctx, &ec2.CreateVpcEndpointInput{
@@ -1798,21 +1817,24 @@ func (a *AwsCloud) createS3Endpoint(ctx context.Context) error {
 		return errors.Wrap(err, "failed to create s3 endpoint")
 	}
 	a.cluster.AddCloudResource(biz.ResourceTypeVpcEndpointS3, &biz.CloudResource{
-		ID:   *s3enpointoutput.VpcEndpoint.VpcEndpointId,
+		ID:   aws.ToString(s3enpointoutput.VpcEndpoint.VpcEndpointId),
 		Name: name,
 		Tags: tags,
 	})
+	a.log.Infof("s3 endpoint %s created", aws.ToString(s3enpointoutput.VpcEndpoint.VpcEndpointId))
 	return nil
 }
 
 // create slb
 func (a *AwsCloud) createSLB(ctx context.Context) error {
 	if a.cluster.Level == biz.ClusterLevelBasic {
+		a.log.Info("skip create slb for basic cluster")
 		return nil
 	}
 	// Check if SLB already exists
 	name := fmt.Sprintf("%s-slb", a.cluster.Name)
 	if a.cluster.GetCloudResourceByName(biz.ResourceTypeLoadBalancer, name) != nil {
+		a.log.Infof("slb %s already exists", name)
 		return nil
 	}
 	publicSubnetIDs := make([]string, 0)
@@ -1845,13 +1867,14 @@ func (a *AwsCloud) createSLB(ctx context.Context) error {
 			if loadBalancer.LoadBalancerArn == nil {
 				continue
 			}
-			if a.cluster.GetCloudResourceByID(biz.ResourceTypeLoadBalancer, *loadBalancer.LoadBalancerArn) != nil {
+			if a.cluster.GetCloudResourceByID(biz.ResourceTypeLoadBalancer, aws.ToString(loadBalancer.LoadBalancerArn)) != nil {
 				continue
 			}
 			a.cluster.AddCloudResource(biz.ResourceTypeLoadBalancer, &biz.CloudResource{
-				Name: *loadBalancer.LoadBalancerName,
-				ID:   *loadBalancer.LoadBalancerArn,
+				Name: aws.ToString(loadBalancer.LoadBalancerName),
+				ID:   aws.ToString(loadBalancer.LoadBalancerArn),
 			})
+			a.log.Infof("slb %s already exists", aws.ToString(loadBalancer.LoadBalancerName))
 		}
 		return nil
 	}
@@ -1872,7 +1895,7 @@ func (a *AwsCloud) createSLB(ctx context.Context) error {
 	slb := slbOutput.LoadBalancers[0]
 	a.cluster.AddCloudResource(biz.ResourceTypeLoadBalancer, &biz.CloudResource{
 		Name: name,
-		ID:   *slb.LoadBalancerArn,
+		ID:   aws.ToString(slb.LoadBalancerArn),
 		Tags: tags,
 	})
 
@@ -1889,6 +1912,7 @@ func (a *AwsCloud) createSLB(ctx context.Context) error {
 		return errors.Wrap(err, "failed to create target group")
 	}
 	targetGroup := taggetGroup.TargetGroups[0]
+	a.log.Infof("target group %s created", aws.ToString(targetGroup.TargetGroupArn))
 
 	// create listener
 	_, err = a.elbv2Client.CreateListener(ctx, &elasticloadbalancingv2.CreateListenerInput{
@@ -1898,7 +1922,7 @@ func (a *AwsCloud) createSLB(ctx context.Context) error {
 				ForwardConfig: &elasticloadbalancingv2Types.ForwardActionConfig{
 					TargetGroups: []elasticloadbalancingv2Types.TargetGroupTuple{
 						{
-							TargetGroupArn: aws.String(*targetGroup.TargetGroupArn),
+							TargetGroupArn: targetGroup.TargetGroupArn,
 							Weight:         aws.Int32(100),
 						},
 					},

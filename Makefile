@@ -159,7 +159,6 @@ multi-platform-build-clean:
 		echo "Cleaning for platform $$platform to image $$image_name"; \
 		docker rmi $$image_name; \
 	done
-	docker buildx use default; \
 	docker buildx stop $(BUILDER_NAME); \
 	docker buildx rm $(BUILDER_NAME); \
 	

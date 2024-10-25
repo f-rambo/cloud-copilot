@@ -137,7 +137,7 @@ systemctl daemon-reload && systemctl enable ocean && systemctl start ocean && sy
 `, oceanPath, shipPath, scriptEnv)
 }
 
-func getShipStartScript(shipPath, scriptEnv string) string {
+func getShipStartScript(shipPath string) string {
 	return fmt.Sprintf(`#!/bin/bash
 
 # ship server not network
@@ -148,11 +148,6 @@ if [ -z "$SHIP_TARGET_DIR" ]; then
     echo "Usage: $0 <SHIP_TARGET_DIR>"
     exit 1
 fi
-
-chmod +x $SHIP_TARGET_DIR/bin/ship
-
-# Start the ship service
-$SHIP_TARGET_DIR/bin/ship -conf $SHIP_TARGET_DIR/configs/ &
 
 SHIP_SYSTEMED_CONF="/etc/systemd/system/ship.service"
 
@@ -171,12 +166,8 @@ WorkingDirectory=$SHIP_TARGET_DIR
 WantedBy=multi-user.target
 EOF
 
-ENV=%s
-sed -i 's/^  env: .*/  env: $ENV/' $SHIP_TARGET_DIR/configs/config.yaml
-
 systemctl daemon-reload && systemctl enable ship && systemctl start ship && systemctl status ship
-    
-`, shipPath, scriptEnv)
+`, shipPath)
 }
 
 func getdownloadAndCopyScript() string {
@@ -187,8 +178,7 @@ DOWNLOAD_URL=$1
 FILE_NAME=$2
 SERVER_IP=$3
 USER_NAME=$4
-PORT=$5
-SERVER_FILE_PATH=$6
+SERVER_FILE_PATH=$5
 
 # Download the file
 wget -O $FILE_NAME $DOWNLOAD_URL
