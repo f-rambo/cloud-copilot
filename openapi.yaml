@@ -2528,8 +2528,8 @@ components:
                     type: integer
                     format: int32
                 memory:
-                    type: number
-                    format: double
+                    type: integer
+                    format: int32
                 gpu:
                     type: integer
                     format: int32

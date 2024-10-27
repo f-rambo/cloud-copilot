@@ -505,12 +505,10 @@ func (cc *ClusterInfrastructure) DistributeDaemonApp(ctx context.Context, cluste
 }
 
 func (cc *ClusterInfrastructure) GetNodesSystemInfo(ctx context.Context, cluster *biz.Cluster) error {
+	// cloud local
 	errGroup, ctx := errgroup.WithContext(ctx)
 	for _, node := range cluster.Nodes {
-		nodegroup := cluster.GetNodeGroup(node.NodeGroupID)
-		if nodegroup == nil {
-			nodegroup = cluster.NewNodeGroup()
-		}
+		nodegroup := cluster.NewNodeGroup()
 		node := node
 		errGroup.Go(func() error {
 			conn, err := grpc.DialInsecure(ctx,
@@ -533,11 +531,18 @@ func (cc *ClusterInfrastructure) GetNodesSystemInfo(ctx context.Context, cluster
 			// node group
 			nodegroup.ARCH = systemInfo.Arch
 			nodegroup.CPU = systemInfo.Cpu
-			nodegroup.Memory = int32(systemInfo.Memory)
+			nodegroup.Memory = systemInfo.Memory
 			nodegroup.GPU = systemInfo.Gpu
 			nodegroup.OS = systemInfo.Os
 			nodegroup.GpuSpec = systemInfo.GpuSpec
 			nodegroup.DataDisk = systemInfo.DataDisk
+			cluster.GenerateNodeGroupName(nodegroup)
+			exitsNodeGroup := cluster.GetNodeGroupByName(nodegroup.Name)
+			if exitsNodeGroup == nil {
+				cluster.NodeGroups = append(cluster.NodeGroups, nodegroup)
+			} else {
+				nodegroup.ID = exitsNodeGroup.ID
+			}
 			// node
 			node.Kernel = systemInfo.Kernel
 			node.ContainerRuntime = systemInfo.Container
@@ -547,40 +552,10 @@ func (cc *ClusterInfrastructure) GetNodesSystemInfo(ctx context.Context, cluster
 			node.NodeGroupID = nodegroup.ID
 			return nil
 		})
-		cluster.NodeGroups = append(cluster.NodeGroups, nodegroup)
 	}
 	err := errGroup.Wait()
 	if err != nil {
 		return err
-	}
-	// Node group De-duplication
-	nodeGroupMap := make(map[string]*biz.NodeGroup)
-	nodeGroupIdMaps := make(map[string][]string)
-	for _, nodeGroup := range cluster.NodeGroups {
-		key := fmt.Sprintf("%s-%d-%d-%d-%s", nodeGroup.ARCH, nodeGroup.CPU, nodeGroup.Memory, nodeGroup.GPU, nodeGroup.OS)
-		if _, exists := nodeGroupMap[key]; !exists {
-			nodeGroup.Name = key
-			nodeGroupMap[key] = nodeGroup
-		}
-		nodeGroupIdMaps[key] = append(nodeGroupIdMaps[key], nodeGroup.ID)
-	}
-
-	// Update cluster.NodeGroups with de-duplicated node groups
-	cluster.NodeGroups = make([]*biz.NodeGroup, 0, len(nodeGroupMap))
-	for _, nodeGroup := range nodeGroupMap {
-		cluster.NodeGroups = append(cluster.NodeGroups, nodeGroup)
-	}
-
-	// Update node group id
-	for _, node := range cluster.Nodes {
-		for _, nodeGroupIDs := range nodeGroupIdMaps {
-			for _, id := range nodeGroupIDs {
-				if node.NodeGroupID == id {
-					node.NodeGroupID = nodeGroupIDs[0]
-					break
-				}
-			}
-		}
 	}
 	return nil
 }

@@ -11,6 +11,7 @@ import (
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
+	"github.com/spf13/cast"
 	"gorm.io/gorm"
 )
 
@@ -465,8 +466,26 @@ func (c *Cluster) GetNodeGroup(nodeGroupId string) *NodeGroup {
 	return nil
 }
 
+func (c *Cluster) GetNodeGroupByName(nodeGroupName string) *NodeGroup {
+	for _, nodeGroup := range c.NodeGroups {
+		if nodeGroup.Name == nodeGroupName {
+			return nodeGroup
+		}
+	}
+	return nil
+}
+
 func (c *Cluster) GenerateNodeGroupName(nodeGroup *NodeGroup) {
-	nodeGroup.Name = strings.Join([]string{"nodegroup", c.Name, nodeGroup.Type.String()}, "-")
+	nodeGroup.Name = strings.Join([]string{
+		c.Name,
+		nodeGroup.Type.String(),
+		nodeGroup.OS,
+		nodeGroup.ARCH,
+		cast.ToString(nodeGroup.CPU),
+		cast.ToString(nodeGroup.Memory),
+		cast.ToString(nodeGroup.GPU),
+		cast.ToString(nodeGroup.GpuSpec),
+	}, "-")
 }
 
 type Node struct {

@@ -9,7 +9,7 @@ message System {
     string os = 2;
     string arch = 3;
     int32 cpu = 4;
-    double memory = 5;
+    int32 memory = 5;
     int32 gpu = 6;
     string gpu_spec = 7;
     int32 data_disk = 8;

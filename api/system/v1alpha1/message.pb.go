@@ -25,19 +25,19 @@ type System struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Id         int64   `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
-	Os         string  `protobuf:"bytes,2,opt,name=os,proto3" json:"os,omitempty"`
-	Arch       string  `protobuf:"bytes,3,opt,name=arch,proto3" json:"arch,omitempty"`
-	Cpu        int32   `protobuf:"varint,4,opt,name=cpu,proto3" json:"cpu,omitempty"`
-	Memory     float64 `protobuf:"fixed64,5,opt,name=memory,proto3" json:"memory,omitempty"`
-	Gpu        int32   `protobuf:"varint,6,opt,name=gpu,proto3" json:"gpu,omitempty"`
-	GpuSpec    string  `protobuf:"bytes,7,opt,name=gpu_spec,json=gpuSpec,proto3" json:"gpu_spec,omitempty"`
-	DataDisk   int32   `protobuf:"varint,8,opt,name=data_disk,json=dataDisk,proto3" json:"data_disk,omitempty"`
-	Kernel     string  `protobuf:"bytes,9,opt,name=kernel,proto3" json:"kernel,omitempty"`
-	Container  string  `protobuf:"bytes,10,opt,name=container,proto3" json:"container,omitempty"`
-	Kubelet    string  `protobuf:"bytes,11,opt,name=kubelet,proto3" json:"kubelet,omitempty"`
-	KubeProxy  string  `protobuf:"bytes,12,opt,name=kube_proxy,json=kubeProxy,proto3" json:"kube_proxy,omitempty"`
-	InternalIp string  `protobuf:"bytes,13,opt,name=internal_ip,json=internalIp,proto3" json:"internal_ip,omitempty"`
+	Id         int64  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	Os         string `protobuf:"bytes,2,opt,name=os,proto3" json:"os,omitempty"`
+	Arch       string `protobuf:"bytes,3,opt,name=arch,proto3" json:"arch,omitempty"`
+	Cpu        int32  `protobuf:"varint,4,opt,name=cpu,proto3" json:"cpu,omitempty"`
+	Memory     int32  `protobuf:"varint,5,opt,name=memory,proto3" json:"memory,omitempty"`
+	Gpu        int32  `protobuf:"varint,6,opt,name=gpu,proto3" json:"gpu,omitempty"`
+	GpuSpec    string `protobuf:"bytes,7,opt,name=gpu_spec,json=gpuSpec,proto3" json:"gpu_spec,omitempty"`
+	DataDisk   int32  `protobuf:"varint,8,opt,name=data_disk,json=dataDisk,proto3" json:"data_disk,omitempty"`
+	Kernel     string `protobuf:"bytes,9,opt,name=kernel,proto3" json:"kernel,omitempty"`
+	Container  string `protobuf:"bytes,10,opt,name=container,proto3" json:"container,omitempty"`
+	Kubelet    string `protobuf:"bytes,11,opt,name=kubelet,proto3" json:"kubelet,omitempty"`
+	KubeProxy  string `protobuf:"bytes,12,opt,name=kube_proxy,json=kubeProxy,proto3" json:"kube_proxy,omitempty"`
+	InternalIp string `protobuf:"bytes,13,opt,name=internal_ip,json=internalIp,proto3" json:"internal_ip,omitempty"`
 }
 
 func (x *System) Reset() {
@@ -100,7 +100,7 @@ func (x *System) GetCpu() int32 {
 	return 0
 }
 
-func (x *System) GetMemory() float64 {
+func (x *System) GetMemory() int32 {
 	if x != nil {
 		return x.Memory
 	}
@@ -269,7 +269,7 @@ var file_api_system_v1alpha1_message_proto_rawDesc = []byte{
 	0x12, 0x0a, 0x04, 0x61, 0x72, 0x63, 0x68, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x61,
 	0x72, 0x63, 0x68, 0x12, 0x10, 0x0a, 0x03, 0x63, 0x70, 0x75, 0x18, 0x04, 0x20, 0x01, 0x28, 0x05,
 	0x52, 0x03, 0x63, 0x70, 0x75, 0x12, 0x16, 0x0a, 0x06, 0x6d, 0x65, 0x6d, 0x6f, 0x72, 0x79, 0x18,
-	0x05, 0x20, 0x01, 0x28, 0x01, 0x52, 0x06, 0x6d, 0x65, 0x6d, 0x6f, 0x72, 0x79, 0x12, 0x10, 0x0a,
+	0x05, 0x20, 0x01, 0x28, 0x05, 0x52, 0x06, 0x6d, 0x65, 0x6d, 0x6f, 0x72, 0x79, 0x12, 0x10, 0x0a,
 	0x03, 0x67, 0x70, 0x75, 0x18, 0x06, 0x20, 0x01, 0x28, 0x05, 0x52, 0x03, 0x67, 0x70, 0x75, 0x12,
 	0x19, 0x0a, 0x08, 0x67, 0x70, 0x75, 0x5f, 0x73, 0x70, 0x65, 0x63, 0x18, 0x07, 0x20, 0x01, 0x28,
 	0x09, 0x52, 0x07, 0x67, 0x70, 0x75, 0x53, 0x70, 0x65, 0x63, 0x12, 0x1b, 0x0a, 0x09, 0x64, 0x61,
