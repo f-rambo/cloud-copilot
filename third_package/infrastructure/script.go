@@ -133,7 +133,6 @@ ENV=%s
 sed -i 's/^  env: .*/  env: $ENV/' $OCEAN_TARGET_DIR/configs/config.yaml
 
 systemctl daemon-reload && systemctl enable ocean && systemctl start ocean && systemctl status ocean
-    
 `, oceanPath, shipPath, scriptEnv)
 }
 
@@ -179,14 +178,42 @@ FILE_NAME=$2
 SERVER_IP=$3
 USER_NAME=$4
 SERVER_FILE_PATH=$5
+PORT=$6
 
-# Download the file
-wget -O $FILE_NAME $DOWNLOAD_URL
+# Check if all parameters are provided
+if [ $# -ne 6 ]; then
+  echo "Usage: $0 <download_url> <file_name> <server_ip> <user_name> <server_file_path> <port>"
+  exit 1
+fi
+
+# Check if the file already exists on the remote server
+if ssh -p "$PORT" "$USER_NAME@$SERVER_IP" "[ -f '$SERVER_FILE_PATH/$FILE_NAME' ]"; then
+  echo "File $FILE_NAME already exists on the remote server. Exiting."
+  exit 0
+fi
+
+# Check if the file already exists locally
+if [ -f "$FILE_NAME" ]; then
+  echo "File $FILE_NAME already exists locally. Skipping download."
+else
+  # Download the file using curl
+  if ! curl -o "$FILE_NAME" "$DOWNLOAD_URL"; then
+    echo "Failed to download file from $DOWNLOAD_URL"
+    exit 1
+  fi
+fi
 
 # Copy the file to the specified path on the server
-scp -P $PORT $FILE_NAME $USER_NAME@$SERVER_IP:$SERVER_FILE_PATH/$FILE_NAME
+if ! scp -P "$PORT" "$FILE_NAME" "$USER_NAME@$SERVER_IP:$SERVER_FILE_PATH/$FILE_NAME"; then
+  echo "Failed to copy $FILE_NAME to $USER_NAME@$SERVER_IP:$SERVER_FILE_PATH"
+  exit 1
+fi
 
-# Clean up the downloaded file
-rm $FILE_NAME
-`
+# Clean up the downloaded file (if it was newly downloaded)
+if [ ! -f "$FILE_NAME.bak" ]; then
+  rm "$FILE_NAME"
+  echo "File $FILE_NAME downloaded and copied successfully."
+else
+  echo "File $FILE_NAME copied successfully."
+fi`
 }

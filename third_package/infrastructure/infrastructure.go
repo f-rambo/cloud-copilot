@@ -166,7 +166,6 @@ func (cc *ClusterInfrastructure) MigrateToBostionHost(ctx context.Context, clust
 	if err != nil {
 		return err
 	}
-
 	scriptMaps := map[string]string{
 		fmt.Sprintf("%s/%s", currentOceanFilePath, cc.installScriptAndStartOceanName): getInstallScriptAndStartOcean(cc.oceanPath, cc.shipPath, conf.EnvBostionHost.String()),
 		fmt.Sprintf("%s/%s", currentOceanFilePath, cc.startShipName):                  getShipStartScript(cc.shipPath),
@@ -248,10 +247,6 @@ func (cc *ClusterInfrastructure) Install(ctx context.Context, cluster *biz.Clust
 	for _, node := range cluster.Nodes {
 		node := node
 		errGroup.Go(func() error {
-			err := cc.downloadAndCopyK8sSoftware(ctx, cluster, node)
-			if err != nil {
-				return err
-			}
 			// grpc to ship server
 			conn, err := grpc.DialInsecure(
 				ctx,
@@ -414,6 +409,11 @@ func (cc *ClusterInfrastructure) DistributeDaemonApp(ctx context.Context, cluste
 				return nil
 			}
 
+			oceanHomePath, err := utils.GetPackageStorePathByNames()
+			if err != nil {
+				return err
+			}
+
 			// get node arch
 			remoteBash := NewBash(Server{
 				Name:       node.Name,
@@ -431,18 +431,48 @@ func (cc *ClusterInfrastructure) DistributeDaemonApp(ctx context.Context, cluste
 				return errors.New("node arch is not supported")
 			}
 
-			output, err := remoteBash.Run("mkdir -p", cc.shipPath)
+			// kuberentes software
+			downloadAndCopyScrip := fmt.Sprintf("%s/%s", cc.shipPath, cc.downloadAndCopyScriptName)
+			cloudSowftwareVersion := utils.GetCloudSowftwareVersion(cluster.Version)
+			if cloudSowftwareVersion.KubernetesVersion == "" {
+				return errors.New("kubernetes version is not supported")
+			}
+			crioFileName := fmt.Sprintf("crio.%s.v%s.tar.gz", arch, cloudSowftwareVersion.GetCrioLatestVersion())
+			output, err := cc.execCommand(
+				"bash", downloadAndCopyScrip,
+				fmt.Sprintf("https://storage.googleapis.com/cri-o/artifacts/%s", crioFileName),
+				fmt.Sprintf("%s/%s", oceanHomePath, crioFileName),
+				node.InternalIP, node.User, fmt.Sprintf("/tmp/%s", crioFileName), "22")
 			if err != nil {
 				return errors.Wrap(err, output)
 			}
-			// get ship arch path in the bostion host
+			kubeadmFileName := "kubeadm"
+			output, err = cc.execCommand("bash", downloadAndCopyScrip,
+				fmt.Sprintf("https://dl.k8s.io/release/%s/bin/linux/%s/%s", cloudSowftwareVersion.GetKubeadmLatestVersion(), arch, kubeadmFileName),
+				fmt.Sprintf("%s/%s", oceanHomePath, kubeadmFileName),
+				node.InternalIP, node.User, fmt.Sprintf("/tmp/%s", kubeadmFileName), "22")
+			if err != nil {
+				return errors.Wrap(err, output)
+			}
+			kubeletFileName := "kubelet"
+			output, err = cc.execCommand("bash", downloadAndCopyScrip,
+				fmt.Sprintf("https://dl.k8s.io/release/%s/bin/linux/%s/%s", cloudSowftwareVersion.GetKubeletLatestVersion(), arch, kubeletFileName),
+				fmt.Sprintf("%s/%s", oceanHomePath, kubeletFileName),
+				node.InternalIP, node.User, fmt.Sprintf("/tmp/%s", kubeletFileName), "22")
+			if err != nil {
+				return errors.Wrap(err, output)
+			}
+
+			// ship
+			output, err = remoteBash.Run("mkdir -p", cc.shipPath)
+			if err != nil {
+				return errors.Wrap(err, output)
+			}
 			shipArchPath := fmt.Sprintf("%s/%s", cc.shipPath, ARCH_MAP[arch])
 			if !utils.IsFileExist(shipArchPath) {
 				return errors.New("ship arch is not exist")
 			}
-			// scp ship arch to node
 			tmpShipPath := "/tmp/ship"
-			// rm  tmpShipPath
 			_, err = remoteBash.Run("rm", "-rf", tmpShipPath)
 			if err != nil {
 				return err
@@ -457,11 +487,7 @@ func (cc *ClusterInfrastructure) DistributeDaemonApp(ctx context.Context, cluste
 				return errors.Wrap(err, output)
 			}
 			// scp ship start script to node in the bostion host
-			currentOceanFilePath, err := utils.GetPackageStorePathByNames()
-			if err != nil {
-				return err
-			}
-			shipStartScriptPath := fmt.Sprintf("%s/%s", currentOceanFilePath, cc.startShipName)
+			shipStartScriptPath := fmt.Sprintf("%s/%s", oceanHomePath, cc.startShipName)
 			if !utils.IsFileExist(shipStartScriptPath) {
 				return errors.New("ship start script is not exist")
 			}
@@ -471,18 +497,17 @@ func (cc *ClusterInfrastructure) DistributeDaemonApp(ctx context.Context, cluste
 			if err != nil {
 				return err
 			}
-			nodeShipStartScriptPath := fmt.Sprintf("%s/%s", cc.shipPath, cc.startShipName)
 			output, err = cc.execCommand("scp", "-o", "StrictHostKeyChecking=no", "-r", shipStartScriptPath,
 				fmt.Sprintf("%s@%s:%s", node.User, node.InternalIP, nodeShipStartScriptTmpPath))
 			if err != nil {
 				return errors.Wrap(err, output)
 			}
-			output, err = remoteBash.Run("cp -r", nodeShipStartScriptTmpPath, nodeShipStartScriptPath)
+			output, err = remoteBash.Run("cp -r", nodeShipStartScriptTmpPath, fmt.Sprintf("%s/%s", cc.shipPath, cc.startShipName))
 			if err != nil {
 				return errors.Wrap(err, output)
 			}
 			// run ship start script
-			err = remoteBash.RunWithLogging("bash", nodeShipStartScriptPath)
+			err = remoteBash.RunWithLogging("bash", fmt.Sprintf("%s/%s", cc.shipPath, cc.startShipName))
 			if err != nil {
 				return err
 			}
@@ -556,49 +581,6 @@ func (cc *ClusterInfrastructure) GetNodesSystemInfo(ctx context.Context, cluster
 	err := errGroup.Wait()
 	if err != nil {
 		return err
-	}
-	return nil
-}
-
-// https://github.com/cri-o/cri-o/releases
-func (c *ClusterInfrastructure) downloadAndCopyK8sSoftware(_ context.Context, cluster *biz.Cluster, node *biz.Node) error {
-	cloudSowftwareVersion := utils.GetCloudSowftwareVersion(cluster.Version)
-	crioVersion := cloudSowftwareVersion.GetCrioLatestVersion()
-	if crioVersion == "" {
-		return errors.New("crio version is empty")
-	}
-	nodeGroup := cluster.GetNodeGroup(node.NodeGroupID)
-	if nodeGroup == nil {
-		return errors.New("node group is nil")
-	}
-	crioFileName := fmt.Sprintf("crio.%s.v%s.tar.gz", nodeGroup.ARCH, crioVersion)
-	crioDownloadUrl := fmt.Sprintf("https://storage.googleapis.com/cri-o/artifacts/%s", crioFileName)
-	output, err := c.execCommand("echo", getdownloadAndCopyScript(), "|",
-		"bash -s", crioDownloadUrl, crioFileName, node.InternalIP, node.User, fmt.Sprintf("/tmp/%s", crioFileName))
-	if err != nil {
-		return errors.Wrap(err, output)
-	}
-	kubeadmVersion := cloudSowftwareVersion.GetKubeadmLatestVersion()
-	if kubeadmVersion == "" {
-		return errors.New("kubeadm version is empty")
-	}
-	kubeadmFileName := "kubeadm"
-	kubeadmDownloadUrl := fmt.Sprintf("https://dl.k8s.io/release/%s/bin/linux/%s/%s", kubeadmVersion, nodeGroup.ARCH, kubeadmFileName)
-	output, err = c.execCommand("echo", getdownloadAndCopyScript(), "|",
-		"bash -s", kubeadmDownloadUrl, kubeadmFileName, node.InternalIP, node.User, fmt.Sprintf("/tmp/%s", kubeadmFileName))
-	if err != nil {
-		return errors.Wrap(err, output)
-	}
-	kubeletVersion := cloudSowftwareVersion.GetKubeletLatestVersion()
-	if kubeletVersion == "" {
-		return errors.New("kubelet version is empty")
-	}
-	kubeletFileName := "kubelet"
-	kubeletDownloadUrl := fmt.Sprintf("https://dl.k8s.io/release/%s/bin/linux/%s/%s", kubeletVersion, nodeGroup.ARCH, kubeletFileName)
-	output, err = c.execCommand("echo", getdownloadAndCopyScript(), "|",
-		"bash -s", kubeletDownloadUrl, kubeletFileName, node.InternalIP, node.User, fmt.Sprintf("/tmp/%s", kubeletFileName))
-	if err != nil {
-		return errors.Wrap(err, output)
 	}
 	return nil
 }
