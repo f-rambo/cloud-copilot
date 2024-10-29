@@ -31,6 +31,15 @@ var ARCH_MAP = map[string]string{
 	"aarch64": "arm64",
 }
 
+const (
+	CrioFileName        string = "crio.%s.v%s.tar.gz"                                // arch and version
+	CrioFileDownload    string = "https://storage.googleapis.com/cri-o/artifacts/%s" // CrioFileName
+	KubeadmFileName     string = "kubeadm"
+	KubeadmFileDownload string = "https://dl.k8s.io/release/%s/bin/linux/%s/%s" // kubeadm version, arch, KubeadmFileName
+	KubeletFileName     string = "kubelet"
+	KubeletFileDownload string = "https://dl.k8s.io/release/%s/bin/linux/%s/%s" // kubelet version, arch, kubeletFileName
+)
+
 type ClusterInfrastructure struct {
 	log                            *log.Helper
 	conf                           *conf.Bootstrap
@@ -184,11 +193,6 @@ func (cc *ClusterInfrastructure) MigrateToBostionHost(ctx context.Context, clust
 	}
 
 	// scp package to bostion host
-	// rm  cc.oceanDataTargzPackagePath
-	_, err = remoteBash.Run("rm", "-rf", cc.oceanDataTargzPackagePath)
-	if err != nil {
-		return err
-	}
 	err = cc.runCommandWithLogging("scp", "-o", "StrictHostKeyChecking=no", "-r", "-P",
 		fmt.Sprintf("%d", cluster.BostionHost.SshPort), cc.oceanDataTargzPackagePath,
 		fmt.Sprintf("%s@%s:%s", cluster.BostionHost.User, cluster.BostionHost.ExternalIP, cc.oceanDataTargzPackagePath))
@@ -393,7 +397,6 @@ func (cc *ClusterInfrastructure) DistributeDaemonApp(ctx context.Context, cluste
 	for _, node := range cluster.Nodes {
 		node := node
 		errGroup.Go(func() error {
-			// check node information
 			if node.InternalIP == "" || node.User == "" {
 				return errors.New("node required parameter is empty; (InternalIP and User)")
 			}
@@ -432,33 +435,33 @@ func (cc *ClusterInfrastructure) DistributeDaemonApp(ctx context.Context, cluste
 			}
 
 			// kuberentes software
-			downloadAndCopyScrip := fmt.Sprintf("%s/%s", cc.shipPath, cc.downloadAndCopyScriptName)
+			downloadAndCopyScrip := fmt.Sprintf("%s/%s", oceanHomePath, cc.downloadAndCopyScriptName)
 			cloudSowftwareVersion := utils.GetCloudSowftwareVersion(cluster.Version)
 			if cloudSowftwareVersion.KubernetesVersion == "" {
 				return errors.New("kubernetes version is not supported")
 			}
-			crioFileName := fmt.Sprintf("crio.%s.v%s.tar.gz", arch, cloudSowftwareVersion.GetCrioLatestVersion())
+			crioFileName := fmt.Sprintf(CrioFileName, arch, cloudSowftwareVersion.GetCrioLatestVersion())
 			output, err := cc.execCommand(
 				"bash", downloadAndCopyScrip,
-				fmt.Sprintf("https://storage.googleapis.com/cri-o/artifacts/%s", crioFileName),
+				fmt.Sprintf(CrioFileDownload, crioFileName),
 				fmt.Sprintf("%s/%s", oceanHomePath, crioFileName),
 				node.InternalIP, node.User, fmt.Sprintf("/tmp/%s", crioFileName), "22")
 			if err != nil {
 				return errors.Wrap(err, output)
 			}
-			kubeadmFileName := "kubeadm"
+
 			output, err = cc.execCommand("bash", downloadAndCopyScrip,
-				fmt.Sprintf("https://dl.k8s.io/release/%s/bin/linux/%s/%s", cloudSowftwareVersion.GetKubeadmLatestVersion(), arch, kubeadmFileName),
-				fmt.Sprintf("%s/%s", oceanHomePath, kubeadmFileName),
-				node.InternalIP, node.User, fmt.Sprintf("/tmp/%s", kubeadmFileName), "22")
+				fmt.Sprintf(KubeadmFileDownload, cloudSowftwareVersion.GetKubeadmLatestVersion(), arch, KubeadmFileName),
+				fmt.Sprintf("%s/%s", oceanHomePath, KubeadmFileName),
+				node.InternalIP, node.User, fmt.Sprintf("/tmp/%s", KubeadmFileName), "22")
 			if err != nil {
 				return errors.Wrap(err, output)
 			}
-			kubeletFileName := "kubelet"
+
 			output, err = cc.execCommand("bash", downloadAndCopyScrip,
-				fmt.Sprintf("https://dl.k8s.io/release/%s/bin/linux/%s/%s", cloudSowftwareVersion.GetKubeletLatestVersion(), arch, kubeletFileName),
-				fmt.Sprintf("%s/%s", oceanHomePath, kubeletFileName),
-				node.InternalIP, node.User, fmt.Sprintf("/tmp/%s", kubeletFileName), "22")
+				fmt.Sprintf(KubeletFileDownload, cloudSowftwareVersion.GetKubeletLatestVersion(), arch, KubeletFileName),
+				fmt.Sprintf("%s/%s", oceanHomePath, KubeletFileName),
+				node.InternalIP, node.User, fmt.Sprintf("/tmp/%s", KubeletFileName), "22")
 			if err != nil {
 				return errors.Wrap(err, output)
 			}

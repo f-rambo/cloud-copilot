@@ -204,16 +204,10 @@ else
 fi
 
 # Copy the file to the specified path on the server
-if ! scp -P "$PORT" "$FILE_NAME" "$USER_NAME@$SERVER_IP:$SERVER_FILE_PATH/$FILE_NAME"; then
+if ! scp -P "$PORT" "$FILE_NAME" "$USER_NAME@$SERVER_IP:$SERVER_FILE_PATH"; then
   echo "Failed to copy $FILE_NAME to $USER_NAME@$SERVER_IP:$SERVER_FILE_PATH"
   exit 1
-fi
-
-# Clean up the downloaded file (if it was newly downloaded)
-if [ ! -f "$FILE_NAME.bak" ]; then
-  rm "$FILE_NAME"
-  echo "File $FILE_NAME downloaded and copied successfully."
 else
-  echo "File $FILE_NAME copied successfully."
+  echo "File $FILE_NAME to $USER_NAME@$SERVER_IP:$SERVER_FILE_PATH copied successfully."
 fi`
 }
