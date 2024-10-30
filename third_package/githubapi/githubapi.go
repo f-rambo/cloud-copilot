@@ -27,3 +27,29 @@ func (g *GithubApi) GetCurrentUser(ctx context.Context) (*github.User, error) {
 	}
 	return user, nil
 }
+
+// get repo releases
+func (g *GithubApi) GetReleases(ctx context.Context, owner string, repo string) ([]*github.RepositoryRelease, error) {
+	opts := &github.ListOptions{PerPage: 100}
+	allReleases := make([]*github.RepositoryRelease, 0)
+	for {
+		releases, res, err := g.client.Repositories.ListReleases(ctx, owner, repo, opts)
+		if err != nil {
+			return nil, err
+		}
+		if res.StatusCode != 200 {
+			return nil, errors.New("failed toget repo releases")
+		}
+		for _, release := range releases {
+			if release.Prerelease != nil && *release.Prerelease {
+				continue
+			}
+			allReleases = append(allReleases, release)
+		}
+		if res.NextPage == 0 {
+			break
+		}
+		opts.Page = res.NextPage
+	}
+	return allReleases, nil
+}

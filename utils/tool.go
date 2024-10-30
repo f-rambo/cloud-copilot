@@ -391,7 +391,8 @@ func RemoveDuplicateString(arr []string) []string {
 }
 
 const (
-	PackageStoreDirName = ".ocean"
+	PackageStoreDirName     = ".ocean"
+	ShipPackageStoreDirName = ".ship"
 )
 
 func GetPackageStorePathByNames(packageNames ...string) (string, error) {
@@ -564,4 +565,12 @@ func GetPortByAddr(addr string) int32 {
 		return cast.ToInt32(port)
 	}
 	return 0
+}
+
+func MergePath(paths ...string) string {
+	pathArr := make([]string, 0)
+	for _, path := range paths {
+		pathArr = append(pathArr, strings.Split(path, "/")...)
+	}
+	return strings.Join(pathArr, "/")
 }

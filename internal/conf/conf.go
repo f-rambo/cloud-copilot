@@ -23,6 +23,8 @@ type Server struct {
 	HTTP        HTTP   `json:"http,omitempty"`
 	GRPC        GRPC   `json:"grpc,omitempty"`
 	Env         string `json:"env,omitempty"`
+	Shell       string `json:"shell,omitempty"`
+	Resource    string `json:"resource,omitempty"`
 }
 
 type HTTP struct {

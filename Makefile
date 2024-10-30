@@ -13,11 +13,10 @@ MOCK_FILES := $(patsubst $(PACKAGE_PATH)/%.go,$(DESTINATION_DIR)/mock_%.go,$(GO_
 # 设置 GOHOSTOS 和 GOPATH
 GOHOSTOS:=$(shell go env GOHOSTOS)
 GOPATH:=$(shell go env GOPATH)
-VERSION=0.0.1
+VERSION=v0.0.1
 SERVER_NAME=ocean
 AUTHOR=frambos
 IMG=$(AUTHOR)/$(SERVER_NAME):$(VERSION)
-# PLATFORMS = linux/amd64 linux/arm64 linux/riscv64 linux/ppc64le
 PLATFORMS = linux/amd64 linux/arm64
 BUILDER_NAME = $(SERVER_NAME)-multi-platform-buildx
 
@@ -115,53 +114,69 @@ cleantest:
 multi-platform-buildx:
 	@if [ -z "$$(docker buildx inspect $(BUILDER_NAME) 2>/dev/null)" ]; then \
 		echo "Creating and bootstrapping buildx builder: $(BUILDER_NAME)"; \
-		docker buildx create --name $(BUILDER_NAME) --use; \
+		docker buildx create --name $(BUILDER_NAME) --use || (echo "Failed to create buildx builder" && exit 1); \
 		sleep 1; \
-		docker buildx inspect $(BUILDER_NAME) --bootstrap; \
+		docker buildx inspect $(BUILDER_NAME) --bootstrap || (echo "Failed to bootstrap buildx builder" && exit 1); \
 	else \
 		echo "Using and bootstrapping existing buildx builder: $(BUILDER_NAME)"; \
-		docker buildx use $(BUILDER_NAME); \
-		docker buildx inspect $(BUILDER_NAME) --bootstrap; \
+		docker buildx use $(BUILDER_NAME) || (echo "Failed to use buildx builder" && exit 1); \
+		docker buildx inspect $(BUILDER_NAME) --bootstrap || (echo "Failed to bootstrap buildx builder" && exit 1); \
 	fi
 
 .PHONY: multi-platform-build
 multi-platform-build:
+	@if [ -z "$(PLATFORMS)" ]; then \
+		echo "PLATFORMS is not set"; \
+		exit 1; \
+	fi
 	@for platform in $(PLATFORMS); do \
 		image_name=$$platform/$(IMG); \
 		echo "Building for platform $$platform to image $$image_name"; \
-		docker buildx build -f Dockerfile.multi_platform_build --platform=$$platform -t $$image_name --load . ; \
+		docker buildx build -f Dockerfile.multi_platform_build --platform=$$platform -t $$image_name --load . || (echo "Failed to build for platform $$platform" && exit 1); \
 	done
 
 .PHONY: multi-platform-build-release
 multi-platform-build-release:
 	@mkdir -p ./built/
+	@if [ -z "$(PLATFORMS)" ] || [ -z "$(SERVER_NAME)" ] || [ -z "$(VERSION)" ]; then \
+		echo "PLATFORMS, SERVER_NAME, or VERSION is not set"; \
+		exit 1; \
+	fi
 	@for platform in $(PLATFORMS); do \
 		platform_formated=$$(echo $$platform | tr '[:upper:]' '[:lower:]' | tr '/' '-'); \
 		container_name=$$platform_formated-$(SERVER_NAME)-$(VERSION); \
 		echo "Building for platform $$platform_formated to container $$container_name"; \
-		docker run -it -d --rm --name $$container_name $$platform/$(IMG) ; \
-		docker cp $$container_name:/app.tar.gz ./built/$$container_name.tar.gz ; \
-		docker cp $$container_name:/app.tar.gz.sha256sum ./built/$$container_name.tar.gz.sha256sum ; \
-		docker stop $$container_name; \
+		docker run -it -d --rm --name $$container_name $$platform/$(IMG) || (echo "Failed to run container for platform $$platform" && exit 1); \
+		docker cp $$container_name:/app.tar.gz ./built/$$container_name.tar.gz || (echo "Failed to copy app.tar.gz from container $$container_name" && exit 1); \
+		docker cp $$container_name:/app.tar.gz.sha256sum ./built/$$container_name.tar.gz.sha256sum || (echo "Failed to copy app.tar.gz.sha256sum from container $$container_name" && exit 1); \
+		docker rm -f $$container_name || (echo "Failed to remove container $$container_name" && exit 1); \
 	done
 
 .PHONY: multi-platform-build-push
 multi-platform-build-push:
+	@if [ -z "$(PLATFORMS)" ]; then \
+		echo "PLATFORMS is not set"; \
+		exit 1; \
+	fi
 	@for platform in $(PLATFORMS); do \
 		echo "Pushing for platform $$platform..."; \
-		docker push $$platform/$(IMG) ; \
+		docker push $$platform/$(IMG) || (echo "Failed to push for platform $$platform" && exit 1); \
 	done
 
 .PHONY: multi-platform-build-clean
 multi-platform-build-clean:
+	@if [ -z "$(PLATFORMS)" ]; then \
+		echo "PLATFORMS is not set"; \
+		exit 1; \
+	fi
 	@for platform in $(PLATFORMS); do \
 		image_name=$$platform/$(IMG); \
 		echo "Cleaning for platform $$platform to image $$image_name"; \
-		docker rmi $$image_name; \
+		docker rmi $$image_name || (echo "Failed to remove image $$image_name" && exit 1); \
 	done
-	docker buildx stop $(BUILDER_NAME); \
-	docker buildx rm $(BUILDER_NAME); \
-	
+	docker buildx stop $(BUILDER_NAME) || (echo "Failed to stop buildx builder" && exit 1); \
+	docker buildx rm $(BUILDER_NAME) || (echo "Failed to remove buildx builder" && exit 1); \
+
 
 .PHONY: all
 # generate all

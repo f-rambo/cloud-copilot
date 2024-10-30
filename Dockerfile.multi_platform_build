@@ -8,7 +8,7 @@ ENV GOPROXY=https://goproxy.cn
 ENV GOPRIVATE=github.com/f-rambo/
 ENV CGO_ENABLED=1
 
-RUN make build && mkdir -p /app && cp -r bin /app/ && cp -r configs /app/
+RUN make build && mkdir -p /app && cp -r bin /app/ && cp -r configs /app/ && cp -r shell /app/
 
 FROM debian:stable-slim
 

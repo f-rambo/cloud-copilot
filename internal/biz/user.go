@@ -2,6 +2,7 @@ package biz
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/spf13/cast"
@@ -79,6 +80,7 @@ func (u *UserUseCase) GetUsers(ctx context.Context, name, email string, pageNum,
 
 func (u *UserUseCase) SignIn(ctx context.Context, user *User) error {
 	if user.AccessToken != "" {
+		fmt.Println(user.AccessToken)
 		email, err := u.thirdparty.GetUserEmail(ctx, user.AccessToken)
 		if err != nil {
 			return err

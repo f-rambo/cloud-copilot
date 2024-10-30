@@ -141,3 +141,19 @@ func (s *Bash) RunWithLogging(command string, args ...string) error {
 
 	return nil
 }
+
+func (s *Bash) GetUserHome() (string, error) {
+	homePath, err := s.Run("echo", "$HOME")
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(homePath), nil
+}
+
+func (s *Bash) GetRootHome() (string, error) {
+	homePath, err := s.Run("grep '^root:' /etc/passwd | cut -d: -f6")
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(homePath), nil
+}
