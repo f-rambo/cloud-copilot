@@ -238,15 +238,10 @@ func (cc *ClusterInfrastructure) Install(ctx context.Context, cluster *biz.Clust
 			for k, v := range appInfo {
 				ctx = metadata.AppendToClientContext(ctx, k, v)
 			}
-			_, err = client.SetingIpv4Forward(ctx, &emptypb.Empty{})
-			if err != nil {
-				return err
-			}
-			_, err = client.CloseSwap(ctx, &emptypb.Empty{})
-			if err != nil {
-				return err
-			}
-			_, err = client.CloseFirewall(ctx, &emptypb.Empty{})
+			_, err = client.NodeInit(ctx, &cloudv1alpha1.Cloud{
+				NodeId:   node.ID,
+				NodeName: node.Name,
+			})
 			if err != nil {
 				return err
 			}
@@ -255,23 +250,12 @@ func (cc *ClusterInfrastructure) Install(ctx context.Context, cluster *biz.Clust
 				return errors.New("node group is nil")
 			}
 			_, err = client.InstallKubeadmKubeletCriO(ctx, &cloudv1alpha1.Cloud{
-				Arch:        nodeGroup.ARCH,
-				CrioVersion: node.ContainerRuntime,
+				ClusterVersion: cluster.Version,
 			})
 			if err != nil {
 				return err
 			}
-			_, err = client.AddKubeletServiceAndSettingKubeadmConfig(ctx, &cloudv1alpha1.Cloud{
-				KubeadmConfig:  utils.KubeadmConfig,
-				KubeletService: utils.KubeletService,
-			})
-			if err != nil {
-				return err
-			}
-			_, err = client.KubeadmInit(ctx, &cloudv1alpha1.Cloud{
-				KubeadmInitConfig:        utils.KubeadmInitConfig,
-				KubeadmInitClusterConfig: utils.KubeadmClusterConfig,
-			})
+			_, err = client.KubeadmInit(ctx, &cloudv1alpha1.Cloud{})
 			if err != nil {
 				return err
 			}
@@ -310,9 +294,7 @@ func (cc *ClusterInfrastructure) AddNodes(ctx context.Context, cluster *biz.Clus
 			for k, v := range appInfo {
 				ctx = metadata.AppendToClientContext(ctx, k, v)
 			}
-			_, err = client.KubeadmJoin(ctx, &cloudv1alpha1.Cloud{
-				JoinConfig: utils.KubeadmJoinConfig,
-			})
+			_, err = client.KubeadmJoin(ctx, &cloudv1alpha1.Cloud{})
 			if err != nil {
 				return err
 			}
@@ -347,9 +329,7 @@ func (cc *ClusterInfrastructure) RemoveNodes(ctx context.Context, cluster *biz.C
 			for k, v := range appInfo {
 				ctx = metadata.AppendToClientContext(ctx, k, v)
 			}
-			_, err = client.KubeadmReset(ctx, &cloudv1alpha1.Cloud{
-				KubeadmResetConfig: utils.KubeadmResetConfig,
-			})
+			_, err = client.KubeadmReset(ctx, &cloudv1alpha1.Cloud{})
 			if err != nil {
 				return err
 			}

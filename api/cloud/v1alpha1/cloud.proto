@@ -16,18 +16,18 @@ service CloudInterface {
             };
       }
 
-      // InstallKubeadmKubeletCriO
-      rpc InstallKubeadmKubeletCriO(cloud.v1alpha1.Cloud) returns (common.Msg) {
+      // node init
+      rpc NodeInit(cloud.v1alpha1.Cloud) returns (common.Msg) {
             option (google.api.http) = {
-              post: "/api/v1alpha1/cloud/install_kubeadm_kubelet_crio"
+              post: "/api/v1alpha1/cloud/node_init"
               body: "*"
             };
       }
 
-      // AddKubeletServiceAndSettingKubeadmConfig
-      rpc AddKubeletServiceAndSettingKubeadmConfig(cloud.v1alpha1.Cloud) returns (common.Msg) {
+      // InstallKubeadmKubeletCriO
+      rpc InstallKubeadmKubeletCriO(cloud.v1alpha1.Cloud) returns (common.Msg) {
             option (google.api.http) = {
-              post: "/api/v1alpha1/cloud/add_kubelet_service_and_setting_kubeadm_config"
+              post: "/api/v1alpha1/cloud/install_kubeadm_kubelet_crio"
               body: "*"
             };
       }
@@ -60,30 +60,6 @@ service CloudInterface {
       rpc KubeadmUpgrade(cloud.v1alpha1.Cloud) returns (common.Msg) {
             option (google.api.http) = {
               post: "/api/v1alpha1/cloud/kubeadm_upgrade"
-              body: "*"
-            };
-      }
-      
-      // SetingIpv4Forward
-      rpc SetingIpv4Forward(google.protobuf.Empty) returns (common.Msg) {
-            option (google.api.http) = {
-              post: "/api/v1alpha1/cloud/setting_ipv4_forward"
-              body: "*"
-            };
-      }
-
-      // CloseSwap
-      rpc CloseSwap(google.protobuf.Empty) returns (common.Msg) {
-            option (google.api.http) = {
-              post: "/api/v1alpha1/cloud/close_swap"
-              body: "*"
-            };
-      }
-
-      // CloseFirewall
-      rpc CloseFirewall(google.protobuf.Empty) returns (common.Msg) {
-            option (google.api.http) = {
-              post: "/api/v1alpha1/cloud/close_firewall"
               body: "*"
             };
       }

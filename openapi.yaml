@@ -690,59 +690,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/app.v1alpha1.App'
-    /api/v1alpha1/cloud/add_kubelet_service_and_setting_kubeadm_config:
-        post:
-            tags:
-                - CloudInterface
-            description: AddKubeletServiceAndSettingKubeadmConfig
-            operationId: CloudInterface_AddKubeletServiceAndSettingKubeadmConfig
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/cloud.v1alpha1.Cloud'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/common.Msg'
-    /api/v1alpha1/cloud/close_firewall:
-        post:
-            tags:
-                - CloudInterface
-            description: CloseFirewall
-            operationId: CloudInterface_CloseFirewall
-            requestBody:
-                content:
-                    application/json: {}
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/common.Msg'
-    /api/v1alpha1/cloud/close_swap:
-        post:
-            tags:
-                - CloudInterface
-            description: CloseSwap
-            operationId: CloudInterface_CloseSwap
-            requestBody:
-                content:
-                    application/json: {}
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/common.Msg'
     /api/v1alpha1/cloud/install_kubeadm_kubelet_crio:
         post:
             tags:
@@ -838,11 +785,18 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/common.Msg'
-    /api/v1alpha1/cloud/ping:
-        get:
+    /api/v1alpha1/cloud/node_init:
+        post:
             tags:
                 - CloudInterface
-            operationId: CloudInterface_Ping
+            description: node init
+            operationId: CloudInterface_NodeInit
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/cloud.v1alpha1.Cloud'
+                required: true
             responses:
                 "200":
                     description: OK
@@ -850,16 +804,11 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/common.Msg'
-    /api/v1alpha1/cloud/setting_ipv4_forward:
-        post:
+    /api/v1alpha1/cloud/ping:
+        get:
             tags:
                 - CloudInterface
-            description: SetingIpv4Forward
-            operationId: CloudInterface_SetingIpv4Forward
-            requestBody:
-                content:
-                    application/json: {}
-                required: true
+            operationId: CloudInterface_Ping
             responses:
                 "200":
                     description: OK
@@ -1989,25 +1938,11 @@ components:
             properties:
                 id:
                     type: string
-                kubeProxyConfig:
+                nodeId:
                     type: string
-                kubeletConfig:
+                nodeName:
                     type: string
-                kubeadmInitClusterConfig:
-                    type: string
-                kubeadmInitConfig:
-                    type: string
-                kubeadmResetConfig:
-                    type: string
-                kubeadmUpgradeConfig:
-                    type: string
-                kubeadmConfig:
-                    type: string
-                kubeletService:
-                    type: string
-                crioVersion:
-                    type: string
-                arch:
+                clusterVersion:
                     type: string
                 token:
                     type: string

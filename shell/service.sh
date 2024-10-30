@@ -57,7 +57,7 @@ Description=Ocean Service
 After=network.target
 
 [Service]
-User=root
+User=$USER
 ExecStart=$OCEAN_PATH/bin/ocean -conf $OCEAN_PATH/configs/config.yaml
 Restart=on-failure
 WorkingDirectory=$OCEAN_PATH
@@ -96,7 +96,7 @@ Description=Ship Service
 After=network.target
 
 [Service]
-User=root
+User=$USER
 ExecStart=$SHIP_PATH/bin/ship -conf $SHIP_PATH/configs/config.yaml
 Restart=on-failure
 WorkingDirectory=$SHIP_PATH

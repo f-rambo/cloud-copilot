@@ -1,8 +1,6 @@
 #!/bin/bash
 set -e
 
-
-
 REMOTE_USER=$1
 REMOTE_IP=$2
 REMOTE_PORT=$3
