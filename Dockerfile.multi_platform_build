@@ -14,4 +14,4 @@ FROM debian:stable-slim
 
 COPY --from=builder /app /app
 
-RUN tar -czvf /app.tar.gz /app && sha256sum /app.tar.gz > /app.tar.gz.sha256sum
+RUN tar -czvf /app.tar.gz /app
