@@ -515,22 +515,18 @@ func (c *ClusterInterface) bizCLusterToCluster(bizCluster *biz.Cluster) *v1alpha
 
 func (c *ClusterInterface) bizNodeToNode(bizNode *biz.Node) *v1alpha1.Node {
 	return &v1alpha1.Node{
-		Id:               bizNode.ID,
-		Name:             bizNode.Name,
-		Labels:           bizNode.Labels,
-		Kernel:           bizNode.Kernel,
-		ContainerRuntime: bizNode.ContainerRuntime,
-		Kubelet:          bizNode.Kubelet,
-		KubeProxy:        bizNode.KubeProxy,
-		InternalIp:       bizNode.InternalIP,
-		ExternalIp:       bizNode.ExternalIP,
-		User:             bizNode.User,
-		Role:             string(bizNode.Role),
-		Status:           uint32(bizNode.Status),
-		ErrorInfo:        bizNode.ErrorInfo,
-		ClusterId:        bizNode.ClusterID,
-		NodeGroupId:      bizNode.NodeGroupID,
-		StatusString:     bizNode.Status.String(),
+		Id:           bizNode.ID,
+		Name:         bizNode.Name,
+		Labels:       bizNode.Labels,
+		InternalIp:   bizNode.InternalIP,
+		ExternalIp:   bizNode.ExternalIP,
+		User:         bizNode.User,
+		Role:         string(bizNode.Role),
+		Status:       uint32(bizNode.Status),
+		ErrorInfo:    bizNode.ErrorInfo,
+		ClusterId:    bizNode.ClusterID,
+		NodeGroupId:  bizNode.NodeGroupID,
+		StatusString: bizNode.Status.String(),
 	}
 }
 

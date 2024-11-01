@@ -489,22 +489,18 @@ func (c *Cluster) GenerateNodeGroupName(nodeGroup *NodeGroup) {
 }
 
 type Node struct {
-	ID               int64      `json:"id" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
-	Name             string     `json:"name" gorm:"column:name; default:''; NOT NULL"`
-	Labels           string     `json:"labels" gorm:"column:labels; default:''; NOT NULL"`
-	Kernel           string     `json:"kernel" gorm:"column:kernel; default:''; NOT NULL"`
-	ContainerRuntime string     `json:"container_runtime" gorm:"column:container_runtime; default:''; NOT NULL"`
-	Kubelet          string     `json:"kubelet" gorm:"column:kubelet; default:''; NOT NULL"`
-	KubeProxy        string     `json:"kube_proxy" gorm:"column:kube_proxy; default:''; NOT NULL"`
-	InternalIP       string     `json:"internal_ip" gorm:"column:internal_ip; default:''; NOT NULL"`
-	ExternalIP       string     `json:"external_ip" gorm:"column:external_ip; default:''; NOT NULL"`
-	User             string     `json:"user" gorm:"column:user; default:''; NOT NULL"`
-	Role             NodeRole   `json:"role" gorm:"column:role; default:''; NOT NULL;"`
-	Status           NodeStatus `json:"status" gorm:"column:status; default:0; NOT NULL;"`
-	ClusterID        int64      `json:"cluster_id" gorm:"column:cluster_id; default:0; NOT NULL"`
-	NodeGroupID      string     `json:"node_group_id" gorm:"column:node_group_id; default:''; NOT NULL"`
-	InstanceID       string     `json:"instance_id" gorm:"column:instance_id; default:''; NOT NULL"`
-	ErrorInfo        string     `json:"error_info" gorm:"column:error_info; default:''; NOT NULL"`
+	ID          int64      `json:"id" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
+	Name        string     `json:"name" gorm:"column:name; default:''; NOT NULL"`
+	Labels      string     `json:"labels" gorm:"column:labels; default:''; NOT NULL"`
+	InternalIP  string     `json:"internal_ip" gorm:"column:internal_ip; default:''; NOT NULL"`
+	ExternalIP  string     `json:"external_ip" gorm:"column:external_ip; default:''; NOT NULL"`
+	User        string     `json:"user" gorm:"column:user; default:''; NOT NULL"`
+	Role        NodeRole   `json:"role" gorm:"column:role; default:''; NOT NULL;"`
+	Status      NodeStatus `json:"status" gorm:"column:status; default:0; NOT NULL;"`
+	ClusterID   int64      `json:"cluster_id" gorm:"column:cluster_id; default:0; NOT NULL"`
+	NodeGroupID string     `json:"node_group_id" gorm:"column:node_group_id; default:''; NOT NULL"`
+	InstanceID  string     `json:"instance_id" gorm:"column:instance_id; default:''; NOT NULL"`
+	ErrorInfo   string     `json:"error_info" gorm:"column:error_info; default:''; NOT NULL"`
 	gorm.Model
 }
 

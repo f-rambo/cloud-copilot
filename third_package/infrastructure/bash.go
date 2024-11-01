@@ -28,6 +28,9 @@ type Server struct {
 }
 
 func NewBash(server Server, log *log.Helper) *Bash {
+	if server.Port == 0 {
+		server.Port = 22
+	}
 	return &Bash{server: server, log: log}
 }
 

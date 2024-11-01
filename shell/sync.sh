@@ -1,7 +1,6 @@
 #!/bin/bash
 set -e
 
-
 SERVER_IP=$1
 SERVER_PORT=$2
 SERVER_USER=$3
@@ -12,7 +11,7 @@ RESOURCE=${7:-"$HOME/resource"}
 SHELL_PATH=${8:-"$HOME/shell"}
 PRIVATE_KEY_PATH="/tmp/private_key"
 
-echo "$PRIVATE_KEY" > $PRIVATE_KEY_PATH && chmod 600 $PRIVATE_KEY_PATH
+echo "$PRIVATE_KEY" >$PRIVATE_KEY_PATH && chmod 600 $PRIVATE_KEY_PATH
 
 LOG_FILE="/var/log/data_sync.log"
 
@@ -92,18 +91,19 @@ function sync_data_resource() {
 
 function extract_tar() {
     log "Extracting data resource..."
-    ssh -i $PRIVATE_KEY_PATH -p $SERVER_PORT $SERVER_USER@$SERVER_IP "tar -xzf /tmp/data_resource.tar.gz -C /tmp"
+    ssh -i $PRIVATE_KEY_PATH -p $SERVER_PORT $SERVER_USER@$SERVER_IP "tar -xzf /tmp/data_resource.tar.gz -C $HOME"
     log "Data resource extracted successfully."
     log "Data resource extract path: /tmp/data_resource"
+    rm /tmp/data_resource.tar.gz
 }
 
 function move_files() {
     local source_dir=$1
     local target_dir=$2
     local target_user=$3
-    
+
     if [ -d "$source_dir" ]; then
-        ssh -i $PRIVATE_KEY_PATH -p $SERVER_PORT $target_user@$SERVER_IP "mkdir -p $target_dir && mv /tmp/data_resource/$(basename $source_dir) $target_dir"
+        ssh -i $PRIVATE_KEY_PATH -p $SERVER_PORT $target_user@$SERVER_IP "mkdir -p $target_dir && mv $HOME/data_resource/$(basename $source_dir) $target_dir"
         log "$(basename $source_dir) moved successfully."
         log "Move path: $target_dir"
     fi

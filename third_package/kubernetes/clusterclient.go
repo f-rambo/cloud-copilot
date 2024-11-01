@@ -100,10 +100,6 @@ func (cr *ClusterRuntime) getNodes(ctx context.Context, clientSet *kubernetes.Cl
 				n.ExternalIP = v.Address
 			}
 		}
-		n.Kubelet = node.Status.NodeInfo.KubeletVersion
-		n.ContainerRuntime = node.Status.NodeInfo.ContainerRuntimeVersion
-		n.Kernel = node.Status.NodeInfo.KernelVersion
-		n.KubeProxy = node.Status.NodeInfo.KubeProxyVersion
 		n.Status = biz.NodeStatusUnspecified
 		for _, v := range node.Status.Conditions {
 			if v.Status == corev1.ConditionStatus(corev1.NodeReady) {

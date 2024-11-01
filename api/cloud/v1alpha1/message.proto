@@ -5,12 +5,4 @@ package cloud.v1alpha1;
 option go_package = "api/cloud/v1alpha1;v1alpha1";
 
 message Cloud {
-    int64 id = 1;
-    int64 node_id = 2;
-    string node_name = 3;
-    string cluster_version = 4;
-    string token = 5;
-    string discovery_token_ca_cert_hash = 6;
-    string control_plane_endpoint = 7;
-    string join_config = 8;
 }

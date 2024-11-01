@@ -18,13 +18,13 @@ SHIP_PATH="$HOME/app/ship"
 
 ARCH=$(uname -m)
 case $ARCH in
-  aarch64)
+aarch64)
     ARCH="arm64"
     ;;
-  x86_64)
+x86_64)
     ARCH="amd64"
     ;;
-  *)
+*)
     log "Error: Unsupported architecture $ARCH"
     exit 1
     ;;
@@ -51,7 +51,7 @@ function start_ocean() {
         echo "Error: No write permission for /etc/systemd/system"
         exit 1
     fi
-    cat <<EOF > $OCEAN_SYSTEMED_CONF
+    cat <<EOF >$OCEAN_SYSTEMED_CONF
 [Unit]
 Description=Ocean Service
 After=network.target
@@ -90,7 +90,7 @@ function start_ship() {
         echo "Error: No write permission for /etc/systemd/system"
         exit 1
     fi
-    cat <<EOF > $SHIP_SYSTEMED_CONF
+    cat <<EOF >$SHIP_SYSTEMED_CONF
 [Unit]
 Description=Ship Service
 After=network.target
@@ -109,10 +109,10 @@ EOF
 }
 
 case $ENV in
-  "bostionhost")
+"bostionhost")
     start_ocean
     ;;
-  "cluster")
+"cluster")
     start_ship
     ;;
 esac

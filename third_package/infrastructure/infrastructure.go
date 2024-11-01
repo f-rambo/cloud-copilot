@@ -3,15 +3,14 @@ package infrastructure
 import (
 	"bufio"
 	"context"
+	"encoding/json"
 	"fmt"
 	"os/exec"
 	"path/filepath"
 	"strings"
 
-	cloudv1alpha1 "github.com/f-rambo/ocean/api/cloud/v1alpha1"
 	clusterv1alpha1 "github.com/f-rambo/ocean/api/cluster/v1alpha1"
 	"github.com/f-rambo/ocean/api/common"
-	systemv1alpha1 "github.com/f-rambo/ocean/api/system/v1alpha1"
 	"github.com/f-rambo/ocean/internal/biz"
 	"github.com/f-rambo/ocean/internal/conf"
 	"github.com/f-rambo/ocean/utils"
@@ -31,9 +30,11 @@ var ARCH_MAP = map[string]string{
 }
 
 var (
-	ServiceShell string = "service.sh"
-	SyncShell    string = "sync.sh"
-	RemoteShell  string = "remote.sh"
+	ServiceShell    string = "service.sh"
+	SyncShell       string = "sync.sh"
+	NodeInitShell   string = "nodeinit.sh"
+	KubernetesShell string = "kubernetes.sh"
+	systemInfoShell string = "systeminfo.sh"
 )
 
 type ClusterInfrastructure struct {
@@ -135,9 +136,6 @@ func (cc *ClusterInfrastructure) MigrateToBostionHost(ctx context.Context, clust
 	if cluster.BostionHost.ExternalIP == "" {
 		return errors.New("bostion host external ip is empty")
 	}
-	if cluster.BostionHost.SshPort == 0 {
-		cluster.BostionHost.SshPort = 22
-	}
 	remoteBash := NewBash(Server{
 		Name:       "bostion host",
 		Host:       cluster.BostionHost.ExternalIP,
@@ -174,24 +172,8 @@ func (cc *ClusterInfrastructure) MigrateToBostionHost(ctx context.Context, clust
 	if err != nil {
 		return err
 	}
-	if !utils.IsFileExist(utils.MergePath(cc.conf.Server.Shell, RemoteShell)) {
-		return errors.New("remote shell script is not exist")
-	}
-	if !utils.IsFileExist(utils.MergePath(cc.conf.Server.Shell, ServiceShell)) {
-		return errors.New("service shell script is not exist")
-	}
-	err = cc.runCommandWithLogging("bash", utils.MergePath(cc.conf.Server.Shell, RemoteShell),
-		cluster.BostionHost.User,
-		cluster.BostionHost.ExternalIP,
-		cast.ToString(cluster.BostionHost.SshPort),
-		cluster.PrivateKey,
-		utils.MergePath(cc.conf.Server.Shell, ServiceShell),
-		conf.EnvBostionHost.String(),
-		cc.conf.Server.Version,
-		cc.conf.Ship.Version,
-		cc.conf.Server.Resource,
-		cc.conf.Server.Shell,
-	)
+	remoteServicePath := fmt.Sprintf("/home/%s/shell/%s", cluster.BostionHost.User, ServiceShell)
+	err = remoteBash.RunWithLogging("bash", remoteServicePath, conf.EnvBostionHost.String())
 	if err != nil {
 		return err
 	}
@@ -219,127 +201,18 @@ func (cc *ClusterInfrastructure) MigrateToBostionHost(ctx context.Context, clust
 }
 
 func (cc *ClusterInfrastructure) Install(ctx context.Context, cluster *biz.Cluster) error {
-	errGroup, ctx := errgroup.WithContext(ctx)
-	for _, node := range cluster.Nodes {
-		node := node
-		errGroup.Go(func() error {
-			// grpc to ship server
-			conn, err := grpc.DialInsecure(
-				ctx,
-				grpc.WithEndpoint(fmt.Sprintf("%s:%d", node.InternalIP, cc.conf.Ship.GrpcPort)),
-				grpc.WithMiddleware(mmd.Client()),
-			)
-			if err != nil {
-				return err
-			}
-			defer conn.Close()
-			client := cloudv1alpha1.NewCloudInterfaceClient(conn)
-			appInfo := utils.GetFromContext(ctx)
-			for k, v := range appInfo {
-				ctx = metadata.AppendToClientContext(ctx, k, v)
-			}
-			_, err = client.NodeInit(ctx, &cloudv1alpha1.Cloud{
-				NodeId:   node.ID,
-				NodeName: node.Name,
-			})
-			if err != nil {
-				return err
-			}
-			nodeGroup := cluster.GetNodeGroup(node.NodeGroupID)
-			if nodeGroup == nil {
-				return errors.New("node group is nil")
-			}
-			_, err = client.InstallKubeadmKubeletCriO(ctx, &cloudv1alpha1.Cloud{
-				ClusterVersion: cluster.Version,
-			})
-			if err != nil {
-				return err
-			}
-			_, err = client.KubeadmInit(ctx, &cloudv1alpha1.Cloud{})
-			if err != nil {
-				return err
-			}
-			return nil
-		})
-	}
-	err := errGroup.Wait()
-	if err != nil {
-		return err
-	}
 	return nil
 }
 
 func (cc *ClusterInfrastructure) UnInstall(ctx context.Context, cluster *biz.Cluster) error {
-	return cc.RemoveNodes(ctx, cluster, cluster.Nodes)
+	return nil
 }
 
 func (cc *ClusterInfrastructure) AddNodes(ctx context.Context, cluster *biz.Cluster, nodes []*biz.Node) error {
-	errGroup, ctx := errgroup.WithContext(ctx)
-	for _, node := range nodes {
-		node := node
-		errGroup.Go(func() error {
-			conn, err := grpc.DialInsecure(
-				ctx,
-				grpc.WithEndpoint(fmt.Sprintf("%s:%d", node.InternalIP, cc.conf.Ship.GrpcPort)),
-				grpc.WithMiddleware(
-					mmd.Client(),
-				),
-			)
-			if err != nil {
-				return err
-			}
-			defer conn.Close()
-			client := cloudv1alpha1.NewCloudInterfaceClient(conn)
-			appInfo := utils.GetFromContext(ctx)
-			for k, v := range appInfo {
-				ctx = metadata.AppendToClientContext(ctx, k, v)
-			}
-			_, err = client.KubeadmJoin(ctx, &cloudv1alpha1.Cloud{})
-			if err != nil {
-				return err
-			}
-			return nil
-		})
-	}
-	err := errGroup.Wait()
-	if err != nil {
-		return err
-	}
 	return nil
 }
 
 func (cc *ClusterInfrastructure) RemoveNodes(ctx context.Context, cluster *biz.Cluster, nodes []*biz.Node) error {
-	errGroup, ctx := errgroup.WithContext(ctx)
-	for _, node := range nodes {
-		node := node
-		errGroup.Go(func() error {
-			conn, err := grpc.DialInsecure(
-				ctx,
-				grpc.WithEndpoint(fmt.Sprintf("%s:%d", node.InternalIP, cc.conf.Ship.GrpcPort)),
-				grpc.WithMiddleware(
-					mmd.Client(),
-				),
-			)
-			if err != nil {
-				return err
-			}
-			defer conn.Close()
-			client := cloudv1alpha1.NewCloudInterfaceClient(conn)
-			appInfo := utils.GetFromContext(ctx)
-			for k, v := range appInfo {
-				ctx = metadata.AppendToClientContext(ctx, k, v)
-			}
-			_, err = client.KubeadmReset(ctx, &cloudv1alpha1.Cloud{})
-			if err != nil {
-				return err
-			}
-			return nil
-		})
-	}
-	err := errGroup.Wait()
-	if err != nil {
-		return err
-	}
 	return nil
 }
 
@@ -352,16 +225,6 @@ func (cc *ClusterInfrastructure) DistributeDaemonApp(ctx context.Context, cluste
 			if node.InternalIP == "" || node.User == "" {
 				return errors.New("node required parameter is empty; (InternalIP and User)")
 			}
-			conn, err := grpc.DialInsecure(ctx, grpc.WithEndpoint(fmt.Sprintf("%s:%d", node.InternalIP, cc.conf.Ship.GrpcPort)))
-			if err != nil {
-				return err
-			}
-			defer conn.Close()
-			client := systemv1alpha1.NewSystemInterfaceClient(conn)
-			msg, err := client.Ping(ctx, &emptypb.Empty{})
-			if err == nil && msg.Reason == common.ErrorReason_SUCCEED {
-				return nil
-			}
 			if !utils.IsFileExist(utils.MergePath(cc.conf.Server.Shell, SyncShell)) {
 				return errors.New("sync shell script is not exist")
 			}
@@ -370,47 +233,13 @@ func (cc *ClusterInfrastructure) DistributeDaemonApp(ctx context.Context, cluste
 				return err
 			}
 			err = cc.runCommandWithLogging("bash", utils.MergePath(cc.conf.Server.Shell, SyncShell),
-				node.InternalIP,
-				"22",
-				node.User,
-				cluster.PrivateKey,
-				oceanHomePath,
+				node.InternalIP, "22", node.User, cluster.PrivateKey, oceanHomePath,
 				utils.MergePath(filepath.Dir(oceanHomePath), utils.ShipPackageStoreDirName),
-				cc.conf.Server.Resource,
-				cc.conf.Server.Shell,
+				cc.conf.Server.Resource, cc.conf.Server.Shell,
 			)
 			if err != nil {
 				return err
 			}
-			if !utils.IsFileExist(utils.MergePath(cc.conf.Server.Shell, RemoteShell)) {
-				return errors.New("remote shell script is not exist")
-			}
-			if !utils.IsFileExist(utils.MergePath(cc.conf.Server.Shell, ServiceShell)) {
-				return errors.New("service shell script is not exist")
-			}
-			err = cc.runCommandWithLogging("bash", utils.MergePath(cc.conf.Server.Shell, RemoteShell),
-				node.User,
-				node.InternalIP,
-				"22",
-				cluster.PrivateKey,
-				utils.MergePath(cc.conf.Server.Shell, ServiceShell),
-				conf.EnvCluster.String(),
-				cc.conf.Server.Version,
-				cc.conf.Ship.Version,
-				cc.conf.Server.Resource,
-				cc.conf.Server.Shell,
-			)
-			if err != nil {
-				return err
-			}
-			msg, err = client.Ping(ctx, &emptypb.Empty{})
-			if err != nil {
-				return err
-			}
-			if msg.Reason != common.ErrorReason_SUCCEED {
-				return errors.New(msg.Message)
-			}
-			cc.log.Infof("ship server is installed on node %s", node.Name)
 			return nil
 		})
 	}
@@ -422,37 +251,46 @@ func (cc *ClusterInfrastructure) DistributeDaemonApp(ctx context.Context, cluste
 }
 
 func (cc *ClusterInfrastructure) GetNodesSystemInfo(ctx context.Context, cluster *biz.Cluster) error {
-	// cloud local
-	errGroup, ctx := errgroup.WithContext(ctx)
+	errGroup, _ := errgroup.WithContext(ctx)
 	for _, node := range cluster.Nodes {
 		nodegroup := cluster.NewNodeGroup()
 		node := node
 		errGroup.Go(func() error {
-			conn, err := grpc.DialInsecure(ctx,
-				grpc.WithEndpoint(fmt.Sprintf("%s:%d", node.InternalIP, cc.conf.Ship.GrpcPort)),
-				grpc.WithMiddleware(mmd.Client()),
-			)
+			remoteSysteminfoPath := fmt.Sprintf("/home/%s/shell/%s", cluster.BostionHost.User, systemInfoShell)
+			systemInfoOutput, err := NewBash(Server{
+				Name:       "bostion host",
+				Host:       cluster.BostionHost.ExternalIP,
+				User:       cluster.BostionHost.User,
+				Port:       cluster.BostionHost.SshPort,
+				PrivateKey: cluster.PrivateKey,
+			}, cc.log).Run("bash", remoteSysteminfoPath)
 			if err != nil {
 				return err
 			}
-			defer conn.Close()
-			client := systemv1alpha1.NewSystemInterfaceClient(conn)
-			appInfo := utils.GetFromContext(ctx)
-			for k, v := range appInfo {
-				ctx = metadata.AppendToClientContext(ctx, k, v)
-			}
-			systemInfo, err := client.GetSystem(ctx, &emptypb.Empty{})
-			if err != nil {
+			systemInfoMap := make(map[string]any)
+			if err := json.Unmarshal([]byte(systemInfoOutput), &systemInfoMap); err != nil {
 				return err
 			}
-			// node group
-			nodegroup.ARCH = systemInfo.Arch
-			nodegroup.CPU = systemInfo.Cpu
-			nodegroup.Memory = systemInfo.Memory
-			nodegroup.GPU = systemInfo.Gpu
-			nodegroup.OS = systemInfo.Os
-			nodegroup.GpuSpec = systemInfo.GpuSpec
-			nodegroup.DataDisk = systemInfo.DataDisk
+			for key, val := range systemInfoMap {
+				switch key {
+				case "os":
+					nodegroup.OS = cast.ToString(val)
+				case "arch":
+					nodegroup.ARCH = cast.ToString(val)
+				case "mem":
+					nodegroup.Memory = cast.ToInt32(val)
+				case "cpu":
+					nodegroup.CPU = cast.ToInt32(val)
+				case "gpu":
+					nodegroup.GPU = cast.ToInt32(val)
+				case "gpu_info":
+					nodegroup.GpuSpec = cast.ToString(val)
+				case "disk":
+					nodegroup.DataDisk = cast.ToInt32(val)
+				case "inner_ip":
+					node.InternalIP = cast.ToString(val)
+				}
+			}
 			cluster.GenerateNodeGroupName(nodegroup)
 			exitsNodeGroup := cluster.GetNodeGroupByName(nodegroup.Name)
 			if exitsNodeGroup == nil {
@@ -460,12 +298,6 @@ func (cc *ClusterInfrastructure) GetNodesSystemInfo(ctx context.Context, cluster
 			} else {
 				nodegroup.ID = exitsNodeGroup.ID
 			}
-			// node
-			node.Kernel = systemInfo.Kernel
-			node.ContainerRuntime = systemInfo.Container
-			node.Kubelet = systemInfo.Kubelet
-			node.KubeProxy = systemInfo.KubeProxy
-			node.InternalIP = systemInfo.InternalIp
 			node.NodeGroupID = nodegroup.ID
 			return nil
 		})
@@ -477,7 +309,6 @@ func (cc *ClusterInfrastructure) GetNodesSystemInfo(ctx context.Context, cluster
 	return nil
 }
 
-// log
 func (c *ClusterInfrastructure) Write(content []byte) (n int, err error) {
 	c.log.Info(string(content))
 	return len(content), nil
@@ -500,7 +331,6 @@ func (c *ClusterInfrastructure) runCommandWithLogging(command string, args ...st
 		return errors.Wrap(err, "failed to start command")
 	}
 
-	// use scanner to read stdout
 	go func() {
 		scanner := bufio.NewScanner(stdout)
 		for scanner.Scan() {
@@ -508,7 +338,6 @@ func (c *ClusterInfrastructure) runCommandWithLogging(command string, args ...st
 		}
 	}()
 
-	// use scanner to read stderr
 	go func() {
 		scanner := bufio.NewScanner(stderr)
 		for scanner.Scan() {

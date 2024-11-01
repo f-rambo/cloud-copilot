@@ -16,11 +16,5 @@ service SystemInterface {
             };
       }
 
-      rpc GetSystem(google.protobuf.Empty) returns (system.v1alpha1.System) {
-            option (google.api.http) = {
-              get: "/api/v1alpha1/system"
-            };
-      }
-
       rpc GetLogs(stream system.v1alpha1.LogRequest) returns (stream system.v1alpha1.LogResponse);
 }

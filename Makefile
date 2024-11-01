@@ -149,7 +149,7 @@ multi-platform-build-release:
 		docker run -it -d --rm --name $$container_name $$platform/$(IMG); \
 		docker cp $$container_name:/app.tar.gz ./built/$$container_name.tar.gz; \
 		docker rm -f $$container_name; \
-		cd ./built && sha256sum $$container_name.tar.gz > $$container_name.sha256 && cd - ; \
+		cd ./built && sha256sum $$container_name.tar.gz > $$container_name.tar.gz.sha256sum && cd - ; \
 	done
 
 .PHONY: multi-platform-build-push

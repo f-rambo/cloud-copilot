@@ -92,9 +92,9 @@ extract_tar() {
     }
 }
 
-function install_ocean() {
+function download_ocean() {
     for platform in "${PLATFORMS[@]}"; do
-        echo "install ocean ${OCEAN_VERSION} ${platform}"
+        echo "download ocean ${OCEAN_VERSION} ${platform}"
         ocean_path="${RESOURCE}/${platform}/ocean/${OCEAN_VERSION}"
         create_directory "$ocean_path"
         ocean_tarfile="linux-${platform}-ocean-${OCEAN_VERSION}.tar.gz"
@@ -112,10 +112,10 @@ function install_ocean() {
     done
 }
 
-function install_ship() {
+function download_ship() {
     for platform in "${PLATFORMS[@]}"; do
-        echo "install ship ${SHIP_VERSION} ${platform}"
-        ship_path="$${RESOURCE}/${platform}/ship/${OCEAN_VERSION}"
+        echo "download ship ${SHIP_VERSION} ${platform}"
+        ship_path="${RESOURCE}/${platform}/ship/${SHIP_VERSION}"
         create_directory "$ship_path"
         ship_tarfile="linux-${platform}-ship-${SHIP_VERSION}.tar.gz"
         if ! download_file "https://github.com/f-rambo/ship/releases/download/${SHIP_VERSION}/${ship_tarfile}" "$ship_tarfile" "${ship_tarfile}.sha256sum"; then
@@ -132,27 +132,25 @@ function install_ship() {
     done
 }
 
-# https://github.com/containerd/containerd/releases/download/v2.0.0-rc.6/containerd-2.0.0-rc.6-linux-amd64.tar.gz containerd-2.0.0-rc.6-linux-amd64.tar.gz.sha256sum
-# https://github.com/opencontainers/runc/releases/download/v1.2.0/runc.amd64
-# https://github.com/containernetworking/plugins/releases/download/v1.6.0/cni-plugins-linux-amd64-v1.6.0.tgz cni-plugins-linux-amd64-v1.6.0.tgz.sha256
-function install_containerd() {
+function download_containerd() {
     for platform in "${PLATFORMS[@]}"; do
-        echo "install containerd ${CONTAINERD_VERSION} ${platform}"
+        echo "download containerd ${CONTAINERD_VERSION} ${platform}"
         containerd_path="${RESOURCE}/${platform}/containerd/${CONTAINERD_VERSION}"
         create_directory "$containerd_path"
-        if ! download_file "https://github.com/containerd/containerd/releases/download/${CONTAINERD_VERSION}/containerd-${CONTAINERD_VERSION}-linux-${platform}.tar.gz" "containerd-${CONTAINERD_VERSION}-linux-${platform}.tar.gz"; then
+        containerd_tarfile="containerd-${CONTAINERD_VERSION}-linux-${platform}.tar.gz"
+        if ! download_file "https://github.com/containerd/containerd/releases/download/${CONTAINERD_VERSION}/${containerd_tarfile}" "${containerd_tarfile}" "${containerd_tarfile}.sha256sum"; then
             echo "Failed to download containerd"
             return 1
         fi
-        if ! verify_checksum "containerd-${CONTAINERD_VERSION}-linux-${platform}.tar.gz" "containerd-${CONTAINERD_VERSION}-linux-${platform}.tar.gz.sha256sum"; then
+        if ! verify_checksum "$containerd_tarfile" "${containerd_tarfile}.sha256sum"; then
             echo "Checksum verification failed"
-            rm -f "containerd-${CONTAINERD_VERSION}-linux-${platform}.tar.gz" "containerd-${CONTAINERD_VERSION}-linux-${platform}.tar.gz.sha256sum"
+            rm -f "$containerd_tarfile" "${containerd_tarfile}.sha256sum"
             return 1
         fi
-        extract_tar "containerd-${CONTAINERD_VERSION}-linux-${platform}.tar.gz" "$containerd_path"
-        rm -f "containerd-${CONTAINERD_VERSION}-linux-${platform}.tar.gz" "containerd-${CONTAINERD_VERSION}-linux-${platform}.tar.gz.sha256sum"
+        extract_tar "$containerd_tarfile" "$containerd_path"
+        rm -f "$containerd_tarfile" "${containerd_tarfile}.sha256sum"
 
-        echo "install runc ${RUNC_VERSION} ${platform}"
+        echo "download runc ${RUNC_VERSION} ${platform}"
         runc_path="${RESOURCE}/${platform}/runc/${RUNC_VERSION}"
         create_directory "$runc_path"
         if ! download_file "https://github.com/opencontainers/runc/releases/download/${RUNC_VERSION}/runc.${platform}" "runc.${platform}"; then
@@ -161,26 +159,21 @@ function install_containerd() {
         fi
         mv runc.${platform} "$runc_path/runc"
 
-        echo "install cni ${CNI_VERSION} ${platform}"
-        cni_path="${RESOURCE}/${platform}/cni/${CNI_VERSION}"
+        echo "download cni ${CNI_VERSION} ${platform}"
+        cni_path="${RESOURCE}/${platform}/cni-plugins/${CNI_VERSION}"
         create_directory "$cni_path"
         if ! download_file "https://github.com/containernetworking/plugins/releases/download/${CNI_VERSION}/cni-plugins-linux-${platform}-${CNI_VERSION}.tgz" "cni-plugins-linux-${platform}-${CNI_VERSION}.tgz"; then
             echo "Failed to download cni"
             return 1
         fi
-        if ! verify_checksum "cni-plugins-linux-${platform}-${CNI_VERSION}.tgz" "cni-plugins-linux-${platform}-${CNI_VERSION}.tgz.sha256"; then
-            echo "Checksum verification failed"
-            rm -f "cni-plugins-linux-${platform}-${CNI_VERSION}.tgz" "cni-plugins-linux-${platform}-${CNI_VERSION}.tgz.sha256"
-            return 1
-        fi
         extract_tar "cni-plugins-linux-${platform}-${CNI_VERSION}.tgz" "$cni_path"
-        rm -f "cni-plugins-linux-${platform}-${CNI_VERSION}.tgz" "cni-plugins-linux-${platform}-${CNI_VERSION}.tgz.sha256"
+        rm -f "cni-plugins-linux-${platform}-${CNI_VERSION}.tgz"
     done
 }
 
-function install_kubeadm_kubelet() {
+function download_kubeadm_kubelet() {
     for platform in "${PLATFORMS[@]}"; do
-        echo "install kubeadm kubelet ${KUBERNETES_VERSION} ${platform}"
+        echo "download kubeadm kubelet ${KUBERNETES_VERSION} ${platform}"
         kubernetes_path="${RESOURCE}/${platform}/kubernetes/${KUBERNETES_VERSION}"
         create_directory "$kubernetes_path"
         if ! download_file "https://dl.k8s.io/release/${KUBERNETES_VERSION}/bin/linux/${platform}/kubeadm" "kubeadm"; then
@@ -196,7 +189,7 @@ function install_kubeadm_kubelet() {
     done
 }
 
-function install_kubernetes_images() {
+function download_kubernete_images() {
     local kubeadm_path="${RESOURCE}/${ARCH}/kubernetes/${KUBERNETES_VERSION}/kubeadm"
     if [ ! -f "$kubeadm_path" ]; then
         echo "Error: kubeadm not found"
@@ -216,7 +209,7 @@ function install_kubernetes_images() {
     mapfile -t images_array <<<"$kube_images"
 
     for platform in "${PLATFORMS[@]}"; do
-        local images_dir="${SOFTWARE_RESOURCE_PATH}/${KUBERNETES_VERSION}/kubernetes/${ARCH}/images/"
+        local images_dir="${RESOURCE}/${platform}/kubernetes/${KUBERNETES_VERSION}/"
         if ! create_directory "$images_dir"; then
             echo "Error: Failed to create directory $images_dir"
             return 1
@@ -243,8 +236,8 @@ function install_kubernetes_images() {
 }
 
 create_directory "$RESOURCE"
-install_ocean
-install_ship
-install_containerd
-install_kubeadm_kubelet
-install_kubernete_images
+download_ocean
+download_ship
+download_containerd
+download_kubeadm_kubelet
+download_kubernete_images
