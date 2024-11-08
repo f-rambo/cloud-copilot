@@ -6,9 +6,8 @@ SERVER_PORT=$2
 SERVER_USER=$3
 PRIVATE_KEY=$4
 OCEAN_DATA=${5:-"$HOME/.ocean"}
-SHIP_DATA=${6:-"$HOME/.ship"}
-RESOURCE=${7:-"$HOME/resource"}
-SHELL_PATH=${8:-"$HOME/shell"}
+RESOURCE=${6:-"$HOME/resource"}
+SHELL_PATH=${7:-"$HOME/shell"}
 PRIVATE_KEY_PATH="/tmp/private_key"
 
 echo "$PRIVATE_KEY" >$PRIVATE_KEY_PATH && chmod 600 $PRIVATE_KEY_PATH
@@ -51,11 +50,6 @@ function verify_params() {
         exit 1
     fi
 
-    if [ ! -d "$SHIP_DATA" ]; then
-        log "Ship Data directory does not exist"
-        exit 1
-    fi
-
     if [ ! -d "$RESOURCE" ]; then
         log "Resource directory does not exist"
         exit 1
@@ -73,9 +67,6 @@ function package_data_resource() {
     fi
     if [ -d "$OCEAN_DATA" ]; then
         cp -r $OCEAN_DATA/* /tmp/data_resource/
-    fi
-    if [ -d "$SHIP_DATA" ]; then
-        cp -r $SHIP_DATA/* /tmp/data_resource/
     fi
     tar -czvf /tmp/data_resource.tar.gz -C /tmp/data_resource .
     rm -rf /tmp/data_resource
@@ -113,7 +104,6 @@ function mvfile() {
     log "Moving files..."
     move_files $RESOURCE /home/$SERVER_USER/resource $SERVER_USER
     move_files $OCEAN_DATA /home/$SERVER_USER/.ocean $SERVER_USER
-    move_files $SHIP_DATA /home/$SERVER_USER/.ship $SERVER_USER
     move_files $SHELL_PATH /home/$SERVER_USER/shell $SERVER_USER
 }
 

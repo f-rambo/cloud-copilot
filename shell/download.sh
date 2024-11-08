@@ -5,8 +5,7 @@ RESOURCE=${1:-"$HOME/resource"}
 KUBERNETES_VERSION=${2:-"v1.31.2"}
 CONTAINERD_VERSION=${3:-"v2.0.0"}
 RUNC_VERSION=${4:-"v1.2.1"}
-OCEAN_VERSION=${5:-"v0.0.1"}
-SHIP_VERSION=${6:-"v0.0.1"}
+SERVICE_VERSION=${5:-"v0.0.1"}
 
 log() {
     local message="$1"
@@ -108,11 +107,11 @@ extract_tar() {
 }
 
 function download_ocean() {
-    log "download ocean ${OCEAN_VERSION} ${ARCH}"
-    ocean_path="${RESOURCE}/ocean/${OCEAN_VERSION}"
+    log "download ocean ${SERVICE_VERSION} ${ARCH}"
+    ocean_path="${RESOURCE}/ocean/${SERVICE_VERSION}"
     create_directory "$ocean_path"
-    ocean_tarfile="linux-${ARCH}-ocean-${OCEAN_VERSION}.tar.gz"
-    if ! download_file "https://github.com/f-rambo/ocean/releases/download/${OCEAN_VERSION}/${ocean_tarfile}" "$ocean_tarfile" "${ocean_tarfile}.sha256sum"; then
+    ocean_tarfile="linux-${ARCH}-ocean-${SERVICE_VERSION}.tar.gz"
+    if ! download_file "https://github.com/f-rambo/ocean/releases/download/${SERVICE_VERSION}/${ocean_tarfile}" "$ocean_tarfile" "${ocean_tarfile}.sha256sum"; then
         log "Failed to download file"
         return 1
     fi
@@ -126,11 +125,11 @@ function download_ocean() {
 }
 
 function download_ship() {
-    log "download ship ${SHIP_VERSION} ${ARCH}"
-    ship_path="${RESOURCE}/ship/${SHIP_VERSION}"
+    log "download ship ${SERVICE_VERSION} ${ARCH}"
+    ship_path="${RESOURCE}/ship/${SERVICE_VERSION}"
     create_directory "$ship_path"
-    ship_tarfile="linux-${ARCH}-ship-${SHIP_VERSION}.tar.gz"
-    if ! download_file "https://github.com/f-rambo/ship/releases/download/${SHIP_VERSION}/${ship_tarfile}" "$ship_tarfile" "${ship_tarfile}.sha256sum"; then
+    ship_tarfile="linux-${ARCH}-ship-${SERVICE_VERSION}.tar.gz"
+    if ! download_file "https://github.com/f-rambo/ship/releases/download/${SERVICE_VERSION}/${ship_tarfile}" "$ship_tarfile" "${ship_tarfile}.sha256sum"; then
         log "Failed to download file"
         return 1
     fi

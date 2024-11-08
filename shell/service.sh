@@ -7,11 +7,11 @@ log() {
     echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a $log_file
 }
 
-ENV=${1:-"bostionhost"}
-OCEAN_VERSION=${2:-"0.0.1"}
-SHIP_VERSION=${3:-"0.0.1"}
-RESOURCE=${4:-"$HOME/resource"}
-SHELL_PATH=${5:-"$HOME/shell"}
+SERVICE=$1
+ENV=$2
+VERSION=${3:-"0.0.1"}
+RESOURCE=${5:-"$HOME/resource"}
+SHELL_PATH=${6:-"$HOME/shell"}
 
 OCEAN_PATH="$HOME/app/ocean"
 SHIP_PATH="$HOME/app/ship"
@@ -38,7 +38,7 @@ function start_ocean() {
         echo "Error: No write permission for $OCEAN_PATH"
         exit 1
     fi
-    mv $RESOURCE/ocean/${OCEAN_VERSION}/${ARCH}/* $OCEAN_PATH/
+    mv $RESOURCE/ocean/${VERSION}/${ARCH}/* $OCEAN_PATH/
     if [ ! -f "$OCEAN_PATH/configs/config.yaml" ]; then
         echo "Error: Config file $OCEAN_PATH/configs/config.yaml not found"
         exit 1
@@ -77,7 +77,7 @@ function start_ship() {
         echo "Error: No write permission for $SHIP_PATH"
         exit 1
     fi
-    mv $RESOURCE/ship/${SHIP_VERSION}/${ARCH}/* $SHIP_PATH/
+    mv $RESOURCE/ship/${VERSION}/${ARCH}/* $SHIP_PATH/
     if [ ! -f "$SHIP_PATH/configs/config.yaml" ]; then
         echo "Error: Config file $SHIP_PATH/configs/config.yaml not found"
         exit 1
@@ -108,11 +108,11 @@ EOF
     systemctl start ship
 }
 
-case $ENV in
-"bostionhost")
+case $SERVICE in
+"ocean")
     start_ocean
     ;;
-"cluster")
+"ship")
     start_ship
     ;;
 esac

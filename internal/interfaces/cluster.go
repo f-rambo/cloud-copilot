@@ -500,7 +500,6 @@ func (c *ClusterInterface) bizCLusterToCluster(bizCluster *biz.Cluster) *v1alpha
 		AddonsConfig:         bizCluster.AddonsConfig,
 		Status:               uint32(bizCluster.Status),
 		Type:                 string(bizCluster.Type),
-		KubeConfig:           bizCluster.KubeConfig,
 		PublicKey:            bizCluster.PublicKey,
 		PrivateKey:           bizCluster.PrivateKey,
 		Region:               bizCluster.Region,

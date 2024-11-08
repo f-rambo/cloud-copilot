@@ -6,8 +6,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"os/exec"
-	"path/filepath"
 	"strings"
+	"time"
 
 	clusterv1alpha1 "github.com/f-rambo/ocean/api/cluster/v1alpha1"
 	"github.com/f-rambo/ocean/api/common"
@@ -35,6 +35,9 @@ var (
 	NodeInitShell   string = "nodeinit.sh"
 	KubernetesShell string = "kubernetes.sh"
 	systemInfoShell string = "systeminfo.sh"
+
+	ClusterConfiguration string = "cluster-configuration.yaml"
+	JoinConfiguration    string = "join-configuration.yaml"
 )
 
 type ClusterInfrastructure struct {
@@ -165,15 +168,13 @@ func (cc *ClusterInfrastructure) MigrateToBostionHost(ctx context.Context, clust
 		cluster.BostionHost.User,
 		cluster.PrivateKey,
 		oceanHomePath,
-		utils.MergePath(filepath.Dir(oceanHomePath), utils.ShipPackageStoreDirName),
 		cc.conf.Server.Resource,
 		cc.conf.Server.Shell,
 	)
 	if err != nil {
 		return err
 	}
-	remoteServicePath := fmt.Sprintf("/home/%s/shell/%s", cluster.BostionHost.User, ServiceShell)
-	err = remoteBash.RunWithLogging("bash", remoteServicePath, conf.EnvBostionHost.String())
+	err = remoteBash.RunWithLogging("bash", utils.MergePath(cc.conf.Server.Shell, ServiceShell), conf.EnvBostionHost.String())
 	if err != nil {
 		return err
 	}
@@ -201,17 +202,81 @@ func (cc *ClusterInfrastructure) MigrateToBostionHost(ctx context.Context, clust
 }
 
 func (cc *ClusterInfrastructure) Install(ctx context.Context, cluster *biz.Cluster) error {
-	var masterNode *biz.Node
-	for _, node := range cluster.Nodes {
-		if node.Role == biz.NodeRoleMaster {
-			masterNode = node
-			break
+	remoteBash := NewBash(Server{Name: cluster.Name, Host: cluster.MasterIP, User: cluster.MasterUser, Port: 22, PrivateKey: cluster.PrivateKey}, cc.log)
+	err := remoteBash.RunWithLogging("bash", utils.MergePath(cc.conf.Server.Shell, NodeInitShell))
+	if err != nil {
+		return err
+	}
+	clusterConfigData, err := utils.ReadFile(utils.MergePath(cc.conf.Server.Install, ClusterConfiguration))
+	if err != nil {
+		return err
+	}
+	clusterConfigMap := map[string]string{
+		"CLUSTER_NAME":    cluster.Name,
+		"CLUSTER_VERSION": cluster.Version,
+		"MASTER_IP":       cluster.MasterIP,
+		"IMAGE_REPO":      "",
+	}
+	clusterConfigDataStr := utils.DecodeYaml(string(clusterConfigData), clusterConfigMap)
+	clusterConfigPath := fmt.Sprintf("$HOME/%s", ClusterConfiguration)
+	err = remoteBash.RunWithLogging("echo", clusterConfigDataStr, ">", clusterConfigPath)
+	if err != nil {
+		return err
+	}
+	errGroup, _ := errgroup.WithContext(ctx)
+	errGroup.Go(func() error {
+		err = remoteBash.RunWithLogging("kubeadm init --config", clusterConfigPath, "--v=5")
+		if err != nil {
+			remoteBash.RunWithLogging("kubeadm reset --force")
+			return err
 		}
+		return nil
+	})
+	errGroup.Go(func() error {
+		for {
+			time.Sleep(time.Second * 10)
+			output, err := remoteBash.Run("ll /etc/kubernetes/kubelet.conf | wc -l")
+			if err != nil {
+				return err
+			}
+			if cast.ToInt(output) == 0 {
+				continue
+			}
+			_, err = remoteBash.Run("systemctl enable kubelet && systemctl restart kubelet")
+			if err != nil {
+				return err
+			}
+			return nil
+		}
+	})
+	err = errGroup.Wait()
+	if err != nil {
+		return err
 	}
-	if masterNode == nil {
-		return errors.New("master node is not found")
+	err = remoteBash.RunWithLogging("mkdir -p $HOME/.kube && cp -i /etc/kubernetes/admin.conf $HOME/.kube/config && chown $(id -u):$(id -g) $HOME/.kube/config")
+	if err != nil {
+		return err
 	}
-
+	token, err := remoteBash.Run("kubeadm token create")
+	if err != nil {
+		return err
+	}
+	cluster.Token = token
+	ca, err := remoteBash.Run("cat /etc/kubernetes/pki/ca.crt")
+	if err != nil {
+		return err
+	}
+	cluster.CAData = ca
+	cert, err := remoteBash.Run("cat /etc/kubernetes/pki/apiserver.crt")
+	if err != nil {
+		return err
+	}
+	cluster.CertData = cert
+	key, err := remoteBash.Run("cat /etc/kubernetes/pki/apiserver.key")
+	if err != nil {
+		return err
+	}
+	cluster.KeyData = key
 	return nil
 }
 
@@ -220,10 +285,26 @@ func (cc *ClusterInfrastructure) UnInstall(ctx context.Context, cluster *biz.Clu
 }
 
 func (cc *ClusterInfrastructure) AddNodes(ctx context.Context, cluster *biz.Cluster, nodes []*biz.Node) error {
+	// kubeadm join 192.168.1.100:6443 --config=join-control-plane.yaml --control-plane
 	return nil
 }
 
 func (cc *ClusterInfrastructure) RemoveNodes(ctx context.Context, cluster *biz.Cluster, nodes []*biz.Node) error {
+	// kubectl drain --delete-local-data <node-name >--ignore-daemonsets
+
+	// kubeadm reset
+
+	// rm -rf ~/.kube
+
+	// rm -rf /etc/kubernetes
+
+	// rm -rf /etc/cni
+
+	// # delete containerd images
+	// for i in $(ctr -n k8s.io images list | awk '{print $3}' | grep -v REPOSITORY); do
+	//       ctr -n k8s.io images remove "$i"
+	// done
+
 	return nil
 }
 
@@ -236,14 +317,8 @@ func (cc *ClusterInfrastructure) GetNodesSystemInfo(ctx context.Context, cluster
 		nodegroup := cluster.NewNodeGroup()
 		node := node
 		errGroup.Go(func() error {
-			remoteSysteminfoPath := fmt.Sprintf("/home/%s/shell/%s", cluster.BostionHost.User, systemInfoShell)
-			systemInfoOutput, err := NewBash(Server{
-				Name:       node.Name,
-				Host:       node.InternalIP,
-				User:       node.User,
-				Port:       22,
-				PrivateKey: cluster.PrivateKey,
-			}, cc.log).Run("bash", remoteSysteminfoPath)
+			remoteBash := NewBash(Server{Name: node.Name, Host: node.InternalIP, User: node.User, Port: 22, PrivateKey: cluster.PrivateKey}, cc.log)
+			systemInfoOutput, err := remoteBash.Run("bash", utils.MergePath(cc.conf.Server.Shell, systemInfoShell))
 			if err != nil {
 				return err
 			}

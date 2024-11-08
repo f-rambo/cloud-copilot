@@ -6,7 +6,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
-func getKubeClient(KubeConfigPath string) (clientset *kubernetes.Clientset, err error) {
+func GetKubeClientByKubeConfig(KubeConfigPath string) (clientset *kubernetes.Clientset, err error) {
 	if KubeConfigPath == "" {
 		KubeConfigPath = clientcmd.RecommendedHomeFile
 	}
@@ -16,6 +16,27 @@ func getKubeClient(KubeConfigPath string) (clientset *kubernetes.Clientset, err 
 		if err != nil {
 			return nil, err
 		}
+	}
+	return kubernetes.NewForConfig(config)
+}
+
+func GetKubeClientByInCluster() (clientset *kubernetes.Clientset, err error) {
+	config, err := rest.InClusterConfig()
+	if err != nil {
+		return nil, err
+	}
+	return kubernetes.NewForConfig(config)
+}
+
+func GetKubeClientByRestConfig(masterIp, token, ca, key, cert string) (clientset *kubernetes.Clientset, err error) {
+	config := &rest.Config{
+		Host:        masterIp + ":6443",
+		BearerToken: token,
+		TLSClientConfig: rest.TLSClientConfig{
+			CAData:   []byte(ca),
+			KeyData:  []byte(key),
+			CertData: []byte(cert),
+		},
 	}
 	return kubernetes.NewForConfig(config)
 }

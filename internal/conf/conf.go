@@ -25,6 +25,7 @@ type Server struct {
 	Env         string `json:"env,omitempty"`
 	Shell       string `json:"shell,omitempty"`
 	Resource    string `json:"resource,omitempty"`
+	Install     string `json:"install,omitempty"`
 }
 
 type HTTP struct {

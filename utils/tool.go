@@ -391,8 +391,7 @@ func RemoveDuplicateString(arr []string) []string {
 }
 
 const (
-	PackageStoreDirName     = ".ocean"
-	ShipPackageStoreDirName = ".ship"
+	PackageStoreDirName = ".ocean"
 )
 
 func GetPackageStorePathByNames(packageNames ...string) (string, error) {
@@ -573,4 +572,12 @@ func MergePath(paths ...string) string {
 		pathArr = append(pathArr, strings.Split(path, "/")...)
 	}
 	return strings.Join(pathArr, "/")
+}
+
+func DecodeYaml(yamlContent string, keyVal map[string]string) string {
+	for key, val := range keyVal {
+		placeholder := "{" + key + "}"
+		yamlContent = strings.ReplaceAll(yamlContent, placeholder, val)
+	}
+	return yamlContent
 }

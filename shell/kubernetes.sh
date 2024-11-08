@@ -8,8 +8,8 @@ log() {
 
 RESOURCE=${1:-"$HOME/resource"}
 KUBERNETES_VERSION=${2:-"v1.31.2"}
-CONTAINERD_VERSION=${3:-"v1.7.23"}
-RUNC_VERSION=${4:-"v1.2.0"}
+CONTAINERD_VERSION=${3:-"v2.0.0"}
+RUNC_VERSION=${4:-"v1.2.1"}
 
 if [ ! -d "$RESOURCE" ] || [ ! -r "$RESOURCE" ]; then
   log "Error: RESOURCE directory $RESOURCE does not exist or is not readable"

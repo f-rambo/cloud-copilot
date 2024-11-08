@@ -32,7 +32,6 @@ type Cluster struct {
 	Status               ClusterStatus                     `json:"status" gorm:"column:status; default:0; NOT NULL;"`
 	Type                 ClusterType                       `json:"type" gorm:"column:type; default:''; NOT NULL;"`
 	Level                ClusterLevel                      `json:"level" gorm:"column:level; default:''; NOT NULL;"`
-	KubeConfig           string                            `json:"kube_config" gorm:"column:kube_config; default:''; NOT NULL; type:json"`
 	PublicKey            string                            `json:"public_key" gorm:"column:public_key; default:''; NOT NULL;"`
 	PrivateKey           string                            `json:"private_key" gorm:"column:private_key; default:''; NOT NULL;"`
 	Connections          string                            `json:"connections" gorm:"column:connections; default:''; NOT NULL"`
@@ -41,6 +40,12 @@ type Cluster struct {
 	IpCidr               string                            `json:"ip_cidr" gorm:"column:ip_cidr; default:''; NOT NULL;"`
 	AccessID             string                            `json:"access_id" gorm:"column:access_id; default:''; NOT NULL;"`
 	AccessKey            string                            `json:"access_key" gorm:"column:access_key; default:''; NOT NULL;"`
+	MasterIP             string                            `json:"master_ip" gorm:"column:master_ip; default:''; NOT NULL;"`
+	MasterUser           string                            `json:"master_user" gorm:"column:master_user; default:''; NOT NULL;"`
+	Token                string                            `json:"token" gorm:"column:token; default:''; NOT NULL;"`
+	CAData               string                            `json:"ca_data" gorm:"column:ca_data; default:''; NOT NULL;"`
+	CertData             string                            `json:"cert_data" gorm:"column:cert_data; default:''; NOT NULL;"`
+	KeyData              string                            `json:"key_data" gorm:"column:key_data; default:''; NOT NULL;"`
 	BostionHost          *BostionHost                      `json:"bostion_host" gorm:"-"`
 	Nodes                []*Node                           `json:"nodes" gorm:"-"`
 	NodeGroups           []*NodeGroup                      `json:"node_groups" gorm:"-"`
@@ -595,6 +600,8 @@ type ClusterInfrastructure interface {
 
 type ClusterRuntime interface {
 	CurrentCluster(context.Context, *Cluster) error
+	InstallPlugins(context.Context, *Cluster) error
+	DeployService(context.Context, *Cluster) error
 }
 
 type ClusterUsecase struct {
@@ -755,6 +762,14 @@ func (uc *ClusterUsecase) handlerClusterNotInstalled(ctx context.Context, cluste
 		return err
 	}
 	err = uc.clusterInfrastructure.Install(ctx, cluster)
+	if err != nil {
+		return err
+	}
+	err = uc.clusterRuntime.InstallPlugins(ctx, cluster)
+	if err != nil {
+		return err
+	}
+	err = uc.clusterRuntime.DeployService(ctx, cluster)
 	if err != nil {
 		return err
 	}

@@ -37,7 +37,7 @@ func NewClusterRuntime(c *conf.Bootstrap, logger log.Logger) biz.ClusterRuntime 
 }
 
 func (cr *ClusterRuntime) CurrentCluster(ctx context.Context, cluster *biz.Cluster) (err error) {
-	kubeClient, err := getKubeClient(cluster.KubeConfig)
+	kubeClient, err := GetKubeClientByInCluster()
 	if err != nil {
 		return biz.ErrClusterNotFound
 	}
@@ -55,6 +55,25 @@ func (cr *ClusterRuntime) CurrentCluster(ctx context.Context, cluster *biz.Clust
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+func (cr *ClusterRuntime) InstallPlugins(ctx context.Context, cluster *biz.Cluster) error {
+	// calico cni plugin
+	kubeClient, err := GetKubeClientByRestConfig(cluster.MasterIP, cluster.Token, cluster.CAData, cluster.KeyData, cluster.CertData)
+	if err != nil {
+		return err
+	}
+	kubeClient.RESTClient().Get()
+	return nil
+}
+
+func (cr *ClusterRuntime) DeployService(ctx context.Context, cluster *biz.Cluster) error {
+	kubeClient, err := GetKubeClientByRestConfig(cluster.MasterIP, cluster.Token, cluster.CAData, cluster.KeyData, cluster.CertData)
+	if err != nil {
+		return err
+	}
+	kubeClient.RESTClient().Get()
 	return nil
 }
 

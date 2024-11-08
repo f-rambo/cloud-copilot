@@ -23,7 +23,7 @@ func NewProjectClient(c *conf.Bootstrap, logger log.Logger) biz.ClusterPorjectRe
 }
 
 func (p *ProjectClient) CreateNamespace(ctx context.Context, namespace string) error {
-	kubeClientSet, err := getKubeClient("")
+	kubeClientSet, err := GetKubeClientByInCluster()
 	if err != nil {
 		return err
 	}
@@ -37,7 +37,7 @@ func (p *ProjectClient) CreateNamespace(ctx context.Context, namespace string) e
 
 func (p *ProjectClient) GetNamespaces(ctx context.Context) (namespaces []string, err error) {
 	namespaces = make([]string, 0)
-	kubeClientSet, err := getKubeClient("")
+	kubeClientSet, err := GetKubeClientByInCluster()
 	if err != nil {
 		return
 	}
