@@ -37,4 +37,25 @@ if ! sed -i '/ swap / s/^/#/' /etc/fstab; then
     exit 1
 fi
 
+log "Installing conntrack"
+if command -v apt-get &>/dev/null; then
+    if ! apt-get update && apt-get install -y conntrack; then
+        log "Error: Failed to install conntrack."
+        exit 1
+    fi
+elif command -v yum &>/dev/null; then
+    if ! yum install -y conntrack; then
+        log "Error: Failed to install conntrack."
+        exit 1
+    fi
+elif command -v dnf &>/dev/null; then
+    if ! dnf install -y conntrack; then
+        log "Error: Failed to install conntrack."
+        exit 1
+    fi
+else
+    log "Error: Unsupported package manager."
+    exit 1
+fi
+
 log "Setup completed successfully"

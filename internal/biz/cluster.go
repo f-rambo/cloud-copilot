@@ -586,7 +586,6 @@ type ClusterInfrastructure interface {
 	Stop(context.Context, *Cluster) error
 	GetRegions(context.Context, *Cluster) error
 	MigrateToBostionHost(context.Context, *Cluster) error
-	DistributeDaemonApp(context.Context, *Cluster) error
 	GetNodesSystemInfo(context.Context, *Cluster) error
 	Install(context.Context, *Cluster) error
 	UnInstall(context.Context, *Cluster) error
@@ -750,10 +749,6 @@ func (uc *ClusterUsecase) handlerClusterNotInstalled(ctx context.Context, cluste
 			return err
 		}
 		return nil
-	}
-	err = uc.clusterInfrastructure.DistributeDaemonApp(ctx, cluster)
-	if err != nil {
-		return err
 	}
 	err = uc.clusterInfrastructure.GetNodesSystemInfo(ctx, cluster)
 	if err != nil {

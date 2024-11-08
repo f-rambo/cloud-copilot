@@ -3,8 +3,8 @@ set -e
 
 RESOURCE=${1:-"$HOME/resource"}
 KUBERNETES_VERSION=${2:-"v1.31.2"}
-CONTAINERD_VERSION=${3:-"v1.7.23"}
-RUNC_VERSION=${4:-"v1.2.0"}
+CONTAINERD_VERSION=${3:-"v2.0.0"}
+RUNC_VERSION=${4:-"v1.2.1"}
 OCEAN_VERSION=${5:-"v0.0.1"}
 SHIP_VERSION=${6:-"v0.0.1"}
 
@@ -215,6 +215,7 @@ function pull_images() {
     fi
     local images_tarfile="${images_dir}/kubernetes-images.tar"
 
+    # docker save calico/typha:v3.29.0 calico/kube-controllers:v3.29.0 calico/apiserver:v3.29.0 calico/csi:v3.29.0 calico/node:v3.29.0 calico/pod2daemon-flexvol:v3.29.0 calico/cni:v3.29.0 calico/node-driver-registrar:v3.29.0 -o calico.tar
     for image in "${images_array[@]}"; do
         if ! docker pull --platform=linux/$ARCH "$image"; then
             echo "Error: Failed to pull image $image"

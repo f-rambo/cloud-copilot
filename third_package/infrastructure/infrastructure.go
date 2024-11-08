@@ -137,7 +137,7 @@ func (cc *ClusterInfrastructure) MigrateToBostionHost(ctx context.Context, clust
 		return errors.New("bostion host external ip is empty")
 	}
 	remoteBash := NewBash(Server{
-		Name:       "bostion host",
+		Name:       "bostion-host",
 		Host:       cluster.BostionHost.ExternalIP,
 		User:       cluster.BostionHost.User,
 		Port:       cluster.BostionHost.SshPort,
@@ -201,6 +201,17 @@ func (cc *ClusterInfrastructure) MigrateToBostionHost(ctx context.Context, clust
 }
 
 func (cc *ClusterInfrastructure) Install(ctx context.Context, cluster *biz.Cluster) error {
+	var masterNode *biz.Node
+	for _, node := range cluster.Nodes {
+		if node.Role == biz.NodeRoleMaster {
+			masterNode = node
+			break
+		}
+	}
+	if masterNode == nil {
+		return errors.New("master node is not found")
+	}
+
 	return nil
 }
 
@@ -216,52 +227,21 @@ func (cc *ClusterInfrastructure) RemoveNodes(ctx context.Context, cluster *biz.C
 	return nil
 }
 
-// Distribute the “ship server” to each node in the bostion host
-func (cc *ClusterInfrastructure) DistributeDaemonApp(ctx context.Context, cluster *biz.Cluster) error {
-	errGroup, _ := errgroup.WithContext(ctx)
-	for _, node := range cluster.Nodes {
-		node := node
-		errGroup.Go(func() error {
-			if node.InternalIP == "" || node.User == "" {
-				return errors.New("node required parameter is empty; (InternalIP and User)")
-			}
-			if !utils.IsFileExist(utils.MergePath(cc.conf.Server.Shell, SyncShell)) {
-				return errors.New("sync shell script is not exist")
-			}
-			oceanHomePath, err := utils.GetPackageStorePathByNames()
-			if err != nil {
-				return err
-			}
-			err = cc.runCommandWithLogging("bash", utils.MergePath(cc.conf.Server.Shell, SyncShell),
-				node.InternalIP, "22", node.User, cluster.PrivateKey, oceanHomePath,
-				utils.MergePath(filepath.Dir(oceanHomePath), utils.ShipPackageStoreDirName),
-				cc.conf.Server.Resource, cc.conf.Server.Shell,
-			)
-			if err != nil {
-				return err
-			}
-			return nil
-		})
-	}
-	err := errGroup.Wait()
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 func (cc *ClusterInfrastructure) GetNodesSystemInfo(ctx context.Context, cluster *biz.Cluster) error {
 	errGroup, _ := errgroup.WithContext(ctx)
 	for _, node := range cluster.Nodes {
+		if node.InternalIP == "" || node.User == "" {
+			continue
+		}
 		nodegroup := cluster.NewNodeGroup()
 		node := node
 		errGroup.Go(func() error {
 			remoteSysteminfoPath := fmt.Sprintf("/home/%s/shell/%s", cluster.BostionHost.User, systemInfoShell)
 			systemInfoOutput, err := NewBash(Server{
-				Name:       "bostion host",
-				Host:       cluster.BostionHost.ExternalIP,
-				User:       cluster.BostionHost.User,
-				Port:       cluster.BostionHost.SshPort,
+				Name:       node.Name,
+				Host:       node.InternalIP,
+				User:       node.User,
+				Port:       22,
 				PrivateKey: cluster.PrivateKey,
 			}, cc.log).Run("bash", remoteSysteminfoPath)
 			if err != nil {

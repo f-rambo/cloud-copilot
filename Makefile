@@ -86,10 +86,6 @@ $(DESTINATION_DIR)/mock_%.go: $(PACKAGE_PATH)/%.go
 
 .PHONY: multi-platform-build
 multi-platform-build:
-	@if [ -z "$(PLATFORMS)" ] || [ -z "$(SERVER_NAME)" ] || [ -z "$(VERSION)" ]; then \
-		echo "PLATFORMS, SERVER_NAME, or VERSION is not set"; \
-		exit 1; \
-	fi
 	@mkdir -p ./built/
 	@for platform in $(PLATFORMS); do \
 		image_name=$$platform/$(IMG); \
@@ -97,16 +93,14 @@ multi-platform-build:
 		platform_formated=$$(echo $$platform | tr '[:upper:]' '[:lower:]' | tr '/' '-'); \
 		container_name=$$platform_formated-$(SERVER_NAME)-$(VERSION); \
 		docker run -it -d --rm --name $$container_name $$image_name; \
+		sleep 5; \
 		docker cp $$container_name:/app.tar.gz ./built/$$container_name.tar.gz; \
 		cd ./built && sha256sum $$container_name.tar.gz > $$container_name.tar.gz.sha256sum && cd - ; \
+		sleep 5; \
 	done
 
 .PHONY: download-resources
 download-resources:
-	@if [ -z "$(PLATFORMS)" ]; then \
-		echo "PLATFORMS is not set"; \
-		exit 1; \
-	fi
 	@mkdir -p ./resource/
 	@for platform in $(PLATFORMS); do \
 		image_name=resource/$$platform/$(IMG); \
@@ -117,9 +111,10 @@ download-resources:
 		arch=$$(echo $$platform | cut -d '/' -f2); \
 		mkdir -p ./resource/$$arch; \
 		docker run --privileged --platform=$$platform --name $$container_name -d --rm -v ./resource/$$arch:/resource $$image_name; \
-		docker exec $$container_name /bin/bash /shell/download.sh /resource; \
+		sleep 5; \
+		docker exec -it $$container_name /bin/bash /shell/download.sh /resource; \
 		docker stop $$container_name; \
-		exit 0; \
+		sleep 5; \
 	done
 
 .PHONY: all

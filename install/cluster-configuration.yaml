@@ -3,11 +3,11 @@ kind: ClusterConfiguration
 clusterName: "ocean-cluster"
 kubernetesVersion: "v1.31.2"
 certificatesDir: "/etc/kubernetes/pki"
-imageRepository: "dockerproxy.com/google_containers"
-controlPlaneEndpoint: "192.168.1.10:6443"
+imageRepository: "registry.k8s.io"
+controlPlaneEndpoint: "192.168.90.137:6443"
 etcd:
   local:
-    imageRepository: "dockerproxy.com/google_containers"
+    imageRepository: "registry.k8s.io"
 networking:
   serviceSubnet: "10.96.0.0/12"
   podSubnet: "10.96.0.0/12"
