@@ -1,18 +1,17 @@
 apiVersion: kubeadm.k8s.io/v1beta4
 kind: JoinConfiguration
 nodeRegistration:
-  name: "node-name"
+  name: "{NODE_NAME}"
   kubeletExtraArgs:
     node-labels: "kubernetes.io/role=master"
     authorization-mode: "AlwaysAllow"
-    register-with-taints: "node-role.kubernetes.io/master=:NoSchedule"
 discovery:
   bootstrapToken:
-    apiServerEndpoint: "192.168.1.100:6443"
-    token: "<your-token>"
+    apiServerEndpoint: "{MASTER_IP}:6443"
+    token: "{TOKEN}"
     caCertHashes:
-      - "sha256:<ca-cert-hash>"
+      - "{SHA256_CA_HASH}"
 controlPlane:
   localAPIEndpoint:
-    advertiseAddress: "192.168.1.101"
+    advertiseAddress: "{SELF_IP}"
     bindPort: 6443

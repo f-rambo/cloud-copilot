@@ -19,6 +19,17 @@ if ! hostnamectl set-hostname $HOMSNAME; then
     exit 1
 fi
 
+log "Checking if $HOMSNAME already exists in /etc/hosts"
+if grep -q " $HOMSNAME$" /etc/hosts; then
+    log "$HOMSNAME already exists in /etc/hosts."
+else
+    log "Adding $HOMSNAME to /etc/hosts"
+    if ! echo "127.0.0.1 $HOMSNAME" >>/etc/hosts; then
+        log "Error: Failed to add $HOMSNAME to /etc/hosts."
+        exit 1
+    fi
+fi
+
 log "Enabling IP forwarding"
 if ! sysctl -w net.ipv4.ip_forward=1; then
     log "Error: Failed to enable IP forwarding."

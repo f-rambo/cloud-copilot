@@ -76,7 +76,7 @@ docker-push:
 
 .PHONY: run
 run:
-	go run ./cmd/ocean -conf ./configs/
+	go run ./cmd/ocean -conf ./configs/config.yaml
 
 .PHONY: mock
 mock: $(MOCK_FILES)

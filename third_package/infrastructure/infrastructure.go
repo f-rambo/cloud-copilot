@@ -253,7 +253,7 @@ func (cc *ClusterInfrastructure) Install(ctx context.Context, cluster *biz.Clust
 	if err != nil {
 		return err
 	}
-	err = remoteBash.RunWithLogging("mkdir -p $HOME/.kube && cp -i /etc/kubernetes/admin.conf $HOME/.kube/config && chown $(id -u):$(id -g) $HOME/.kube/config")
+	err = remoteBash.RunWithLogging("rm -f $HOME/.kube/config && mkdir -p $HOME/.kube && cp -i /etc/kubernetes/admin.conf $HOME/.kube/config && chown $(id -u):$(id -g) $HOME/.kube/config")
 	if err != nil {
 		return err
 	}
