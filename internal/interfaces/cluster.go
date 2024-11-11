@@ -302,10 +302,6 @@ func (c *ClusterInterface) GetLogs(stream v1alpha1.ClusterInterface_GetLogsServe
 		if req.TailLines == 0 {
 			req.TailLines = 30
 		}
-		clusterName := c.c.Server.GetClusterName()
-		if req.ClusterName != clusterName {
-			return errors.New("cluster name mismatch")
-		}
 
 		clusterLogPath, err := utils.GetLogFilePath(c.c.Server.Name)
 		if err != nil {

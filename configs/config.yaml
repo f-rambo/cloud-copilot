@@ -2,20 +2,13 @@ server:
   debug: false
   env: local
   name: ocean
-  cluster_name: ocean
   version: 0.0.1
-  shell: "./shell"
-  resource: "./resource"
-  install: "./install"
   http:
     network: tcp
     addr: 0.0.0.0:8000
   grpc:
     network: tcp
     addr: 0.0.0.0:9000
-ship:
-  version: 0.0.1
-  grpc_port: 9001
 data:
   driver: sqlite
   database: ocean

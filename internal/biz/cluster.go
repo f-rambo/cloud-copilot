@@ -594,14 +594,15 @@ type ClusterInfrastructure interface {
 	GetNodesSystemInfo(context.Context, *Cluster) error
 	Install(context.Context, *Cluster) error
 	UnInstall(context.Context, *Cluster) error
-	AddNodes(context.Context, *Cluster, []*Node) error
-	RemoveNodes(context.Context, *Cluster, []*Node) error
+	HandlerNodes(context.Context, *Cluster) error
 }
 
 type ClusterRuntime interface {
 	CurrentCluster(context.Context, *Cluster) error
 	InstallPlugins(context.Context, *Cluster) error
 	DeployService(context.Context, *Cluster) error
+	HandlerNodes(context.Context, *Cluster) error
+	DeleteResource(context.Context, *Cluster) error
 }
 
 type ClusterUsecase struct {
@@ -642,6 +643,13 @@ func (uc *ClusterUsecase) Delete(ctx context.Context, clusterID int64) error {
 	}
 	if isClusterEmpty(cluster) {
 		return nil
+	}
+	for _, node := range cluster.Nodes {
+		node.Status = NodeStatusDeleting
+	}
+	err = uc.clusterRepo.Save(ctx, cluster)
+	if err != nil {
+		return err
 	}
 	err = uc.clusterRepo.Delete(ctx, clusterID)
 	if err != nil {
@@ -699,6 +707,10 @@ func (uc *ClusterUsecase) Reconcile(ctx context.Context, cluster *Cluster) (err 
 		err = uc.clusterRepo.Save(ctx, cluster)
 	}()
 	if cluster.IsDeleteed() {
+		err = uc.clusterRuntime.DeleteResource(ctx, cluster)
+		if err != nil {
+			return err
+		}
 		err = uc.clusterInfrastructure.UnInstall(ctx, cluster)
 		if err != nil {
 			return err
@@ -716,15 +728,15 @@ func (uc *ClusterUsecase) Reconcile(ctx context.Context, cluster *Cluster) (err 
 	if err != nil {
 		return err
 	}
+	err = uc.clusterRuntime.HandlerNodes(ctx, cluster)
+	if err != nil {
+		return err
+	}
 	err = uc.clusterInfrastructure.Start(ctx, cluster)
 	if err != nil {
 		return err
 	}
-	err = uc.handlerAddNode(ctx, cluster)
-	if err != nil {
-		return err
-	}
-	err = uc.handlerRemoveNode(ctx, cluster)
+	err = uc.clusterRuntime.HandlerNodes(ctx, cluster)
 	if err != nil {
 		return err
 	}
@@ -773,53 +785,5 @@ func (uc *ClusterUsecase) handlerClusterNotInstalled(ctx context.Context, cluste
 	if err != nil {
 		return err
 	}
-	return nil
-}
-
-func (uc *ClusterUsecase) handlerAddNode(ctx context.Context, cluster *Cluster) error {
-	addNodes := make([]*Node, 0)
-	for _, node := range cluster.Nodes {
-		if node.Status == NodeStatusCreating {
-			addNodes = append(addNodes, node)
-		}
-	}
-	err := uc.clusterInfrastructure.AddNodes(ctx, cluster, addNodes)
-	if err != nil {
-		return err
-	}
-	for _, node := range cluster.Nodes {
-		for _, n := range addNodes {
-			if node.Name == n.Name {
-				node.Status = NodeStatusRunning
-			}
-		}
-	}
-	return nil
-}
-
-func (uc *ClusterUsecase) handlerRemoveNode(ctx context.Context, cluster *Cluster) error {
-	removeNodes := make([]*Node, 0)
-	for _, node := range cluster.Nodes {
-		if node.Status == NodeStatusDeleting {
-			removeNodes = append(removeNodes, node)
-		}
-	}
-	err := uc.clusterInfrastructure.RemoveNodes(ctx, cluster, removeNodes)
-	if err != nil {
-		return err
-	}
-	newNodes := make([]*Node, 0)
-	for _, node := range cluster.Nodes {
-		ok := false
-		for _, n := range removeNodes {
-			if node.Name == n.Name {
-				ok = true
-			}
-		}
-		if !ok {
-			newNodes = append(newNodes, node)
-		}
-	}
-	cluster.Nodes = newNodes
 	return nil
 }

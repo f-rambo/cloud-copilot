@@ -4,7 +4,6 @@ import (
 	"archive/tar"
 	"bufio"
 	"compress/gzip"
-	"context"
 	"crypto/md5"
 	"encoding/hex"
 	"encoding/json"
@@ -18,7 +17,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-kratos/kratos/v2"
 	"github.com/spf13/cast"
 	"gopkg.in/yaml.v2"
 )
@@ -205,17 +203,14 @@ func ReadFile(path string) ([]byte, error) {
 	return os.ReadFile(path)
 }
 
-// 删除文件
 func DeleteFile(path string) error {
 	return os.Remove(path)
 }
 
-// 修改文件名字
 func RenameFile(oldPath, newPath string) error {
 	return os.Rename(oldPath, newPath)
 }
 
-// 判断文件是否存在
 func IsFileExist(path string) bool {
 	_, err := os.Stat(path)
 	return err == nil || os.IsExist(err)
@@ -234,7 +229,6 @@ func IsValidURL(toTest string) bool {
 	return true
 }
 
-// 通过http url下 获取文件名字
 func GetFileNameByUrl(url string) string {
 	if !IsValidURL(url) {
 		return ""
@@ -242,7 +236,6 @@ func GetFileNameByUrl(url string) string {
 	return url[strings.LastIndex(url, "/")+1:]
 }
 
-// 通过一个http url下载文件， 文件路径和文件名字
 func DownloadFile(url, filePath string) error {
 	if !IsValidURL(url) {
 		return fmt.Errorf("url is not http url")
@@ -279,7 +272,6 @@ func DownloadFileToWriter(url string, writer io.Writer) error {
 	return nil
 }
 
-// 解压文件 param1: tarball: 压缩文件路径 param2: target: 解压目标路径
 func Decompress(tarball, target string) error {
 	reader, err := os.Open(tarball)
 	if err != nil {
@@ -358,7 +350,6 @@ func GetValueFromNestedMap(m map[string]interface{}, key string) (interface{}, b
 	return current, true
 }
 
-// 检查目录是否存在，如果不存在则创建
 func CheckAndCreateDir(dir string) error {
 	// 检查目录是否存在
 	_, err := os.Stat(dir)
@@ -374,7 +365,6 @@ func CheckAndCreateDir(dir string) error {
 	return nil
 }
 
-// 字符串数组去重
 func RemoveDuplicateString(arr []string) []string {
 	m := make(map[string]bool)
 	for _, v := range arr {
@@ -404,26 +394,6 @@ func GetPackageStorePathByNames(packageNames ...string) (string, error) {
 	}
 	packageNames = append([]string{home, PackageStoreDirName}, packageNames...)
 	return filepath.Join(packageNames...), nil
-}
-
-func GetFromContextByKey(ctx context.Context, key string) (string, error) {
-	appInfo, ok := kratos.FromContext(ctx)
-	if !ok {
-		return "", nil
-	}
-	value, ok := appInfo.Metadata()[key]
-	if !ok {
-		return "", nil
-	}
-	return value, nil
-}
-
-func GetFromContext(ctx context.Context) map[string]string {
-	appInfo, ok := kratos.FromContext(ctx)
-	if !ok {
-		return nil
-	}
-	return appInfo.Metadata()
 }
 
 // ReadLastNLines reads the last n lines from a file and returns the content along with the total number of lines in the file.
@@ -509,7 +479,6 @@ func ReadLastNLines(file *os.File, n int) (string, int64, error) {
 	return strings.Join(lines, "\n"), totalLines, nil
 }
 
-// InArray 判断元素是否在切片中
 func InArray(item string, arr []string) bool {
 	for _, v := range arr {
 		if v == item {

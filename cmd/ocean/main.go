@@ -27,12 +27,21 @@ var (
 	Version string
 	// flagconf is the config flag.
 	flagconf string
+	// install file dir
+	flaginstall string
+	// shell file dir
+	flagShell string
+	// resource file dir
+	flagResource string
 
 	id, _ = os.Hostname()
 )
 
 func init() {
 	flag.StringVar(&flagconf, "conf", "configs", "config path, eg: -conf config.yaml")
+	flag.StringVar(&flaginstall, "install", "install", "install file dir, eg: -install install")
+	flag.StringVar(&flagShell, "shell", "shell", "shell file dir, eg: -shell shell")
+	flag.StringVar(&flagResource, "resource", "resource", "resource file dir, eg: -resource resource")
 }
 
 func newApp(logger log.Logger, gs *grpc.Server, hs *http.Server, internalLogic *server.InternalLogic) *kratos.App {
@@ -41,12 +50,15 @@ func newApp(logger log.Logger, gs *grpc.Server, hs *http.Server, internalLogic *
 		kratos.Name(Name),
 		kratos.Version(Version),
 		kratos.Metadata(map[string]string{
-			"service": Name,
-			"version": Version,
-			"runtime": runtime.Version(),
-			"os":      runtime.GOOS,
-			"arch":    runtime.GOARCH,
-			"conf":    flagconf,
+			utils.ServiceNameKey.String():    Name,
+			utils.ServiceVersionKey.String(): Version,
+			utils.RuntimeKey.String():        runtime.Version(),
+			utils.OSKey.String():             runtime.GOOS,
+			utils.ArchKey.String():           runtime.GOARCH,
+			utils.ConfKey.String():           flagconf,
+			utils.InstallKey.String():        flaginstall,
+			utils.ShellKey.String():          flagShell,
+			utils.ResourceKey.String():       flagResource,
 		}),
 		kratos.Logger(logger),
 		kratos.Server(
