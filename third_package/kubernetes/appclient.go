@@ -23,8 +23,8 @@ func NewAppDeployedResource(c *conf.Bootstrap, logger log.Logger) biz.AppRuntime
 	}
 }
 
-func (a *AppDeployedRuntime) GetPodResources(ctx context.Context, appDeployed *biz.DeployApp) ([]*biz.AppDeployedResource, error) {
-	resources := make([]*biz.AppDeployedResource, 0)
+func (a *AppDeployedRuntime) GetPodResources(ctx context.Context, appDeployed *biz.AppRelease) ([]*biz.AppReleaseResource, error) {
+	resources := make([]*biz.AppReleaseResource, 0)
 	clusterClient, err := GetKubeClientByInCluster()
 	if err != nil {
 		return nil, err
@@ -35,7 +35,7 @@ func (a *AppDeployedRuntime) GetPodResources(ctx context.Context, appDeployed *b
 	})
 	if podResources != nil && len(podResources.Items) > 0 {
 		for _, pod := range podResources.Items {
-			resource := &biz.AppDeployedResource{
+			resource := &biz.AppReleaseResource{
 				Name:      pod.Name,
 				Kind:      "Pod",
 				StartedAt: pod.CreationTimestamp.Format("2006-01-02 15:04:05"),
@@ -56,8 +56,8 @@ func (a *AppDeployedRuntime) GetPodResources(ctx context.Context, appDeployed *b
 	return resources, nil
 }
 
-func (a *AppDeployedRuntime) GetNetResouces(ctx context.Context, appDeployed *biz.DeployApp) ([]*biz.AppDeployedResource, error) {
-	resources := make([]*biz.AppDeployedResource, 0)
+func (a *AppDeployedRuntime) GetNetResouces(ctx context.Context, appDeployed *biz.AppRelease) ([]*biz.AppReleaseResource, error) {
+	resources := make([]*biz.AppReleaseResource, 0)
 	clusterClient, err := GetKubeClientByInCluster()
 	if err != nil {
 		return nil, err
@@ -76,7 +76,7 @@ func (a *AppDeployedRuntime) GetNetResouces(ctx context.Context, appDeployed *bi
 			for _, v := range service.Spec.ExternalIPs {
 				externalIPs = fmt.Sprintf("%s,%s", externalIPs, v)
 			}
-			resource := &biz.AppDeployedResource{
+			resource := &biz.AppReleaseResource{
 				Name:      service.Name,
 				Kind:      "Service",
 				StartedAt: service.CreationTimestamp.Format("2006-01-02 15:04:05"),
@@ -113,7 +113,7 @@ func (a *AppDeployedRuntime) GetNetResouces(ctx context.Context, appDeployed *bi
 			for _, v := range ingress.Status.LoadBalancer.Ingress {
 				loadBalancerIP = fmt.Sprintf("%s,%s", loadBalancerIP, v.IP)
 			}
-			resource := &biz.AppDeployedResource{
+			resource := &biz.AppReleaseResource{
 				Name:      ingress.Name,
 				Kind:      "Ingress",
 				StartedAt: ingress.CreationTimestamp.Format("2006-01-02 15:04:05"),
@@ -130,8 +130,8 @@ func (a *AppDeployedRuntime) GetNetResouces(ctx context.Context, appDeployed *bi
 	return resources, nil
 }
 
-func (a *AppDeployedRuntime) GetAppsReouces(ctx context.Context, appDeployed *biz.DeployApp) ([]*biz.AppDeployedResource, error) {
-	resources := make([]*biz.AppDeployedResource, 0)
+func (a *AppDeployedRuntime) GetAppsReouces(ctx context.Context, appDeployed *biz.AppRelease) ([]*biz.AppReleaseResource, error) {
+	resources := make([]*biz.AppReleaseResource, 0)
 	clusterClient, err := GetKubeClientByInCluster()
 	if err != nil {
 		return nil, err
@@ -142,7 +142,7 @@ func (a *AppDeployedRuntime) GetAppsReouces(ctx context.Context, appDeployed *bi
 	})
 	if deploymentResources != nil && len(deploymentResources.Items) > 0 {
 		for _, deployment := range deploymentResources.Items {
-			resource := &biz.AppDeployedResource{
+			resource := &biz.AppReleaseResource{
 				Name:      deployment.Name,
 				Kind:      "Deployment",
 				StartedAt: deployment.CreationTimestamp.Format("2006-01-02 15:04:05"),
@@ -161,7 +161,7 @@ func (a *AppDeployedRuntime) GetAppsReouces(ctx context.Context, appDeployed *bi
 	})
 	if statefulSetResources != nil && len(statefulSetResources.Items) > 0 {
 		for _, statefulSet := range statefulSetResources.Items {
-			resource := &biz.AppDeployedResource{
+			resource := &biz.AppReleaseResource{
 				Name:      statefulSet.Name,
 				Kind:      "StatefulSet",
 				StartedAt: statefulSet.CreationTimestamp.Format("2006-01-02 15:04:05"),
@@ -180,7 +180,7 @@ func (a *AppDeployedRuntime) GetAppsReouces(ctx context.Context, appDeployed *bi
 	})
 	if deamonsetResources != nil && len(deamonsetResources.Items) > 0 {
 		for _, deamonset := range deamonsetResources.Items {
-			resource := &biz.AppDeployedResource{
+			resource := &biz.AppReleaseResource{
 				Name:      deamonset.Name,
 				Kind:      "Deamonset",
 				StartedAt: deamonset.CreationTimestamp.Format("2006-01-02 15:04:05"),
@@ -201,7 +201,7 @@ func (a *AppDeployedRuntime) GetAppsReouces(ctx context.Context, appDeployed *bi
 	})
 	if jobResources != nil && len(jobResources.Items) > 0 {
 		for _, job := range jobResources.Items {
-			resource := &biz.AppDeployedResource{
+			resource := &biz.AppReleaseResource{
 				Name:      job.Name,
 				Kind:      "Job",
 				StartedAt: job.CreationTimestamp.Format("2006-01-02 15:04:05"),
@@ -221,7 +221,7 @@ func (a *AppDeployedRuntime) GetAppsReouces(ctx context.Context, appDeployed *bi
 	if cronjobResources != nil && len(cronjobResources.Items) > 0 {
 		for _, cronjob := range cronjobResources.Items {
 			suspend := *cronjob.Spec.Suspend // Dereference the pointer to bool
-			resource := &biz.AppDeployedResource{
+			resource := &biz.AppReleaseResource{
 				Name:      cronjob.Name,
 				Kind:      "Cronjob",
 				StartedAt: cronjob.CreationTimestamp.Format("2006-01-02 15:04:05"),

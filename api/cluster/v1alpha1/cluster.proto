@@ -41,13 +41,6 @@ service ClusterInterface {
             };
       }
 
-      rpc StartCluster(cluster.v1alpha1.ClusterArgs) returns (common.Msg) {
-            option (google.api.http) = {
-              post: "/api/v1alpha1/cluster/start"
-              body: "*"
-            };
-      }
-
       rpc GetRegions(cluster.v1alpha1.ClusterArgs) returns (cluster.v1alpha1.Regions) {
             option (google.api.http) = {
               get: "/api/v1alpha1/cluster/regions"

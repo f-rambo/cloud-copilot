@@ -1,11 +1,9 @@
 PACKAGE_PATH := internal/biz
-DESTINATION_DIR := mocks
 
 GO_FILES := $(wildcard $(PACKAGE_PATH)/*.go)
 GO_FILES := $(filter-out $(wildcard $(PACKAGE_PATH)/*test*.go), $(GO_FILES))
 GO_FILES := $(filter-out $(wildcard $(PACKAGE_PATH)/*biz*.go), $(GO_FILES))
 
-MOCK_FILES := $(patsubst $(PACKAGE_PATH)/%.go,$(DESTINATION_DIR)/mock_%.go,$(GO_FILES))
 
 GOHOSTOS:=$(shell go env GOHOSTOS)
 GOPATH:=$(shell go env GOPATH)
@@ -36,7 +34,6 @@ init:
 	go install github.com/go-kratos/kratos/cmd/protoc-gen-go-http/v2@latest
 	go install github.com/google/gnostic/cmd/protoc-gen-openapi@latest
 	go install github.com/google/wire/cmd/wire@latest
-	go install github.com/golang/mock/mockgen@v1.6.0
 
 .PHONY: api
 api:
@@ -78,12 +75,6 @@ docker-push:
 run:
 	go run ./cmd/ocean -conf ./configs/config.yaml
 
-.PHONY: mock
-mock: $(MOCK_FILES)
-$(DESTINATION_DIR)/mock_%.go: $(PACKAGE_PATH)/%.go
-	@mkdir -p $(DESTINATION_DIR)
-	mockgen -source=$< -destination=$@ -package=mocks -write_package_comment
-
 .PHONY: multi-platform-build
 multi-platform-build:
 	@mkdir -p ./built/
@@ -121,7 +112,6 @@ download-resources:
 all:
 	make api;
 	make generate;
-	make mock;
 
 help:
 	@echo ''

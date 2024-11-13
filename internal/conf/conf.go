@@ -3,13 +3,11 @@ package conf
 import (
 	"os"
 	"strconv"
-	"strings"
 )
 
 type Bootstrap struct {
 	Server Server `json:"server,omitempty"`
 	Data   Data   `json:"data,omitempty"`
-	ETCD   ETCD   `json:"etcd,omitempty"`
 	Log    Log    `json:"log,omitempty"`
 	Auth   Auth   `json:"auth,omitempty"`
 }
@@ -31,12 +29,6 @@ type HTTP struct {
 type GRPC struct {
 	Network string `json:"network,omitempty"`
 	Addr    string `json:"addr,omitempty"`
-}
-
-type ETCD struct {
-	Username  string   `json:"username,omitempty"`
-	Password  string   `json:"password,omitempty"`
-	Endpoints []string `json:"endpoints,omitempty"`
 }
 
 type Data struct {
@@ -66,31 +58,6 @@ const (
 	EnvBostionHost Env = "bostionhost"
 	EnvCluster     Env = "cluster"
 )
-
-func (e ETCD) GetETCDEndpoints() []string {
-	endpoints := os.Getenv("ETCD_ENDPOINTS")
-	endpointArr := strings.Split(endpoints, ",")
-	if len(endpointArr) > 0 {
-		return endpointArr
-	}
-	return e.Endpoints
-}
-
-func (e ETCD) GetUsername() string {
-	username := os.Getenv("ETCD_USERNAME")
-	if username != "" {
-		return username
-	}
-	return e.Username
-}
-
-func (e ETCD) GetPassword() string {
-	password := os.Getenv("ETCD_PASSWORD")
-	if password != "" {
-		return password
-	}
-	return e.Password
-}
 
 func (h HTTP) GetNetwork() string {
 	newWork := os.Getenv("HTTP_NETWORK")

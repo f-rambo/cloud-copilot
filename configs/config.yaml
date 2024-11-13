@@ -12,19 +12,14 @@ server:
 data:
   driver: sqlite
   database: ocean
-  host: ''
+  host: ""
   port: 3306
-  username: ''
-  password: ''
-etcd:
-  username: ''
-  password: ''
-  endpoints:
-    - ''
+  username: ""
+  password: ""
 log:
   max_size: 500
   max_backups: 3
   max_age: 28
 auth:
   exp: 24
-  key: 'S89XMkyGIpI0tgJkf7b8undK'
+  key: "S89XMkyGIpI0tgJkf7b8undK"

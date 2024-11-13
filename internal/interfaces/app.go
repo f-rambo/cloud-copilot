@@ -270,7 +270,7 @@ func (a *AppInterface) GetAppDeployed(ctx context.Context, appDeployId *v1alpha1
 }
 
 func (a *AppInterface) ListDeployedApp(ctx context.Context, deployAppReq *v1alpha1.DeployAppReq) (*v1alpha1.DeployAppList, error) {
-	bizDeployApp := biz.DeployApp{}
+	bizDeployApp := biz.AppRelease{}
 	err := utils.StructTransform(deployAppReq, &bizDeployApp)
 	if err != nil {
 		return nil, err
@@ -335,7 +335,7 @@ func (a *AppInterface) DeployApp(ctx context.Context, deployAppReq *v1alpha1.Dep
 	if err != nil {
 		return nil, err
 	}
-	appDeployRes, err := a.uc.DeployApp(ctx, &biz.DeployApp{
+	appDeployRes, err := a.uc.DeployApp(ctx, &biz.AppRelease{
 		ID:        deployAppReq.Id,
 		ClusterID: deployAppReq.ClusterId,
 		ProjectID: deployAppReq.ProjectId,
@@ -364,7 +364,7 @@ func (a *AppInterface) GetDeployedAppResources(ctx context.Context, deployAppReq
 	if deployAppReq.Id == 0 {
 		return nil, errors.New("app deploy id is required")
 	}
-	resources, err := a.uc.GetDeployedResources(ctx, deployAppReq.Id)
+	resources, err := a.uc.GetReleaseResources(ctx, deployAppReq.Id)
 	if err != nil {
 		return nil, err
 	}
@@ -478,7 +478,6 @@ func (a *AppInterface) GetAppDetailByRepo(ctx context.Context, repoReq *v1alpha1
 	if err != nil {
 		return nil, err
 	}
-	// mock id
 	appRes.Id = repoReq.Id
 	return appRes, nil
 }
@@ -497,7 +496,6 @@ func (a *AppInterface) bizAppToApp(bizApp *biz.App) (*v1alpha1.App, error) {
 		if err != nil {
 			return nil, err
 		}
-		// mock id
 		appversion.Id = int64(index) + 1
 		app.Versions[index] = appversion
 	}

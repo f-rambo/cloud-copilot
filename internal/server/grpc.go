@@ -19,14 +19,7 @@ import (
 )
 
 // NewGRPCServer new a gRPC server.
-func NewGRPCServer(c *conf.Bootstrap,
-	cluster *interfaces.ClusterInterface,
-	app *interfaces.AppInterface,
-	services *interfaces.ServicesInterface,
-	user *interfaces.UserInterface,
-	project *interfaces.ProjectInterface,
-	autoscaler *interfaces.Autoscaler,
-	logger log.Logger) *grpc.Server {
+func NewGRPCServer(c *conf.Bootstrap, cluster *interfaces.ClusterInterface, app *interfaces.AppInterface, services *interfaces.ServicesInterface, user *interfaces.UserInterface, project *interfaces.ProjectInterface, autoscaler *interfaces.Autoscaler, logger log.Logger) *grpc.Server {
 	var opts = []grpc.ServerOption{
 		grpc.Middleware(
 			selector.Server(NewAuthServer(user)).Match(NewWhiteListMatcher()).Build(),

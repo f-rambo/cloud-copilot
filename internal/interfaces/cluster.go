@@ -22,43 +22,16 @@ import (
 type ClusterInterface struct {
 	v1alpha1.UnimplementedClusterInterfaceServer
 	clusterUc *biz.ClusterUsecase
-	projectUc *biz.ProjectUsecase
-	appUc     *biz.AppUsecase
 	c         *conf.Bootstrap
 	log       *log.Helper
 }
 
-func NewClusterInterface(clusterUc *biz.ClusterUsecase, projectUc *biz.ProjectUsecase, appUc *biz.AppUsecase, c *conf.Bootstrap, logger log.Logger) *ClusterInterface {
+func NewClusterInterface(clusterUc *biz.ClusterUsecase, c *conf.Bootstrap, logger log.Logger) *ClusterInterface {
 	return &ClusterInterface{
 		clusterUc: clusterUc,
-		projectUc: projectUc,
-		appUc:     appUc,
 		c:         c,
 		log:       log.NewHelper(logger),
 	}
-}
-
-func (uc *ClusterInterface) StartReconcile(ctx context.Context) (err error) {
-	uc.log.Info("start watching reconcile...")
-	for {
-		cluster, err := uc.clusterUc.Watch(ctx)
-		if err != nil {
-			return err
-		}
-		if cluster == nil {
-			continue
-		}
-		err = uc.clusterUc.Reconcile(ctx, cluster)
-		if err != nil {
-			uc.log.Error(err)
-			ctx.Done()
-		}
-	}
-}
-
-func (uc *ClusterInterface) StopReconcile(ctx context.Context) error {
-	uc.log.Info("stop watching reconcile...")
-	return nil
 }
 
 func (c *ClusterInterface) Ping(ctx context.Context, _ *emptypb.Empty) (*common.Msg, error) {
@@ -208,24 +181,6 @@ func (c *ClusterInterface) Delete(ctx context.Context, clusterID *v1alpha1.Clust
 		return nil, errors.New("cluster id is required")
 	}
 	err := c.clusterUc.Delete(ctx, clusterID.Id)
-	if err != nil {
-		return nil, err
-	}
-	return common.Response(), nil
-}
-
-func (c *ClusterInterface) StartCluster(ctx context.Context, clusterID *v1alpha1.ClusterArgs) (*common.Msg, error) {
-	if clusterID == nil || clusterID.Id == 0 {
-		return nil, errors.New("cluster id is required")
-	}
-	cluster, err := c.clusterUc.Get(ctx, clusterID.Id)
-	if err != nil {
-		return nil, err
-	}
-	if cluster.Type == biz.ClusterTypeLocal && len(cluster.Nodes) == 0 {
-		return nil, errors.New("at least one node is required")
-	}
-	err = c.clusterUc.Apply(ctx, cluster)
 	if err != nil {
 		return nil, err
 	}

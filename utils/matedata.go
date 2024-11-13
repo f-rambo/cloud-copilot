@@ -19,7 +19,6 @@ const (
 	OSKey             MatedataKey = "os"
 	ArchKey           MatedataKey = "arch"
 	ConfKey           MatedataKey = "conf"
-	InstallKey        MatedataKey = "install"
 	ShellKey          MatedataKey = "shell"
 	ResourceKey       MatedataKey = "resource"
 )

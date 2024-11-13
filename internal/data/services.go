@@ -90,7 +90,6 @@ func (s *servicesRepo) SaveWrkflow(ctx context.Context, workflow *biz.Workflow) 
 
 func (s *servicesRepo) DeleteWrkflow(ctx context.Context, id int64) error {
 	return s.data.db.Delete(&biz.Workflow{}, id).Error
-
 }
 
 func (s *servicesRepo) GetServiceCis(ctx context.Context, serviceId int64, page, pageSize int32) ([]*biz.CI, int64, error) {

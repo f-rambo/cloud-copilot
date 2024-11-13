@@ -164,10 +164,6 @@ func (cc *ClusterInfrastructure) MigrateToBostionHost(ctx context.Context, clust
 	if err != nil {
 		return err
 	}
-	installPath, err := utils.GetFromContextByKey(ctx, utils.InstallKey)
-	if err != nil {
-		return err
-	}
 	syncShellPath := utils.MergePath(shellPath, SyncShell)
 	oceanHomePath, err := utils.GetPackageStorePathByNames()
 	if err != nil {
@@ -181,7 +177,6 @@ func (cc *ClusterInfrastructure) MigrateToBostionHost(ctx context.Context, clust
 		oceanHomePath,
 		shellPath,
 		resourcePath,
-		installPath,
 	)
 	if err != nil {
 		return err
@@ -224,11 +219,11 @@ func (cc *ClusterInfrastructure) Install(ctx context.Context, cluster *biz.Clust
 	if err != nil {
 		return err
 	}
-	installPath, err := utils.GetFromContextByKey(ctx, utils.InstallKey)
+	configPath, err := utils.GetFromContextByKey(ctx, utils.ConfKey)
 	if err != nil {
 		return err
 	}
-	clusterConfigData, err := utils.ReadFile(utils.MergePath(installPath, ClusterConfiguration))
+	clusterConfigData, err := utils.ReadFile(utils.MergePath(configPath, ClusterConfiguration))
 	if err != nil {
 		return err
 	}
@@ -314,41 +309,17 @@ func (cc *ClusterInfrastructure) UnInstall(ctx context.Context, cluster *biz.Clu
 }
 
 func (cc *ClusterInfrastructure) HandlerNodes(ctx context.Context, cluster *biz.Cluster) error {
-	installPath, err := utils.GetFromContextByKey(ctx, utils.InstallKey)
-	if err != nil {
-		return err
-	}
-	normalNodeJoinConfig, err := utils.ReadFile(utils.MergePath(installPath, NormalNodeJoinConfiguration))
-	if err != nil {
-		return err
-	}
-	masterNodeJoinConfig, err := utils.ReadFile(utils.MergePath(installPath, MasterNodeJoinConfiguration))
-	if err != nil {
-		return err
-	}
 	for _, node := range cluster.Nodes {
 		remoteBash := NewBash(Server{Name: node.Name, Host: node.InternalIP, User: node.User, Port: 22, PrivateKey: cluster.PrivateKey}, cc.log)
 		if node.Status == biz.NodeStatusCreating {
-			var nodeJoinYamlData string
-			var controlPlane string
-			if node.Role == biz.NodeRoleWorker {
-				nodeJoinYamlData = utils.DecodeYaml(string(normalNodeJoinConfig), map[string]string{})
-			}
+			joinShell := fmt.Sprintf("kubeadm join --token %s --discovery-token-ca-cert-hash sha256:%s --certificate-key %s",
+				cluster.Token, cluster.CertData, cluster.KeyData)
 			if node.Role == biz.NodeRoleMaster {
-				controlPlane = "--control-plane"
-				nodeJoinYamlData = utils.DecodeYaml(string(masterNodeJoinConfig), map[string]string{})
+				joinShell += " --control-plane"
 			}
-			if nodeJoinYamlData == "" {
-				return errors.New("node join yaml data is empty")
-			}
-			err = remoteBash.RunWithLogging("echo", nodeJoinYamlData, "> $HOME/nodejoin.yaml")
-			if err != nil {
-				return err
-			}
-			remoteBashShell := fmt.Sprintf("kubeadm join --config $HOME/nodejoin.yaml %s", controlPlane)
 			errGroup, _ := errgroup.WithContext(ctx)
 			errGroup.Go(func() error {
-				err = remoteBash.RunWithLogging(remoteBashShell)
+				err := remoteBash.RunWithLogging(joinShell)
 				if err != nil {
 					remoteBash.RunWithLogging("kubeadm reset --force")
 					return err
@@ -358,14 +329,14 @@ func (cc *ClusterInfrastructure) HandlerNodes(ctx context.Context, cluster *biz.
 			errGroup.Go(func() error {
 				return cc.restartKubelet(remoteBash)
 			})
-			err = errGroup.Wait()
+			err := errGroup.Wait()
 			if err != nil {
 				return err
 			}
 			node.Status = biz.NodeStatusRunning
 		}
 		if node.Status == biz.NodeStatusDeleting {
-			err = cc.uninstallNode(remoteBash)
+			err := cc.uninstallNode(remoteBash)
 			if err != nil {
 				return err
 			}

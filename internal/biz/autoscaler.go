@@ -43,7 +43,7 @@ func (uc *ClusterUsecase) NodeGroupIncreaseSize(ctx context.Context, cluster *Cl
 		}
 		cluster.Nodes = append(cluster.Nodes, node)
 	}
-	return uc.Apply(ctx, cluster)
+	return uc.Save(ctx, cluster)
 }
 
 // 删除节点
@@ -56,7 +56,7 @@ func (uc *ClusterUsecase) DeleteNodes(ctx context.Context, cluster *Cluster, nod
 			}
 		}
 	}
-	return uc.Apply(ctx, cluster)
+	return uc.Save(ctx, cluster)
 }
 
 // 预测一个节点配置，也就是根据当前节点组目前还可以配置的节点

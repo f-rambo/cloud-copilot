@@ -8,6 +8,17 @@ import (
 	"gorm.io/gorm"
 )
 
+type WorkflowType string
+
+const (
+	WorkflowTypeCI WorkflowType = "ci"
+	WorkflowTypeCD WorkflowType = "cd"
+)
+
+func (w WorkflowType) String() string {
+	return string(w)
+}
+
 type Service struct {
 	ID           int64   `json:"id" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
 	Name         string  `json:"name,omitempty" gorm:"column:name; default:''; NOT NULL"`
@@ -86,17 +97,6 @@ type ServicesUseCase struct {
 	repo   ServicesRepo
 	wfrepo WorkflowRepo
 	log    *log.Helper
-}
-
-type WorkflowType string
-
-const (
-	WorkflowTypeCI WorkflowType = "ci"
-	WorkflowTypeCD WorkflowType = "cd"
-)
-
-func (w WorkflowType) String() string {
-	return string(w)
 }
 
 func NewServicesUseCase(repo ServicesRepo, wfrepo WorkflowRepo, logger log.Logger) *ServicesUseCase {

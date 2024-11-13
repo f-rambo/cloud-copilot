@@ -17,7 +17,6 @@ import (
 	"github.com/f-rambo/ocean/third_package/helm"
 	"github.com/f-rambo/ocean/third_package/infrastructure"
 	"github.com/f-rambo/ocean/third_package/kubernetes"
-	"github.com/f-rambo/ocean/third_package/sailor"
 	"github.com/go-kratos/kratos/v2"
 	"github.com/go-kratos/kratos/v2/log"
 )
@@ -39,15 +38,11 @@ func wireApp(bootstrap *conf.Bootstrap, logger log.Logger) (*kratos.App, func(),
 	clusterInfrastructure := infrastructure.NewClusterInfrastructure(bootstrap, logger)
 	clusterRuntime := kubernetes.NewClusterRuntime(bootstrap, logger)
 	clusterUsecase := biz.NewClusterUseCase(bootstrap, clusterRepo, clusterInfrastructure, clusterRuntime, logger)
-	projectRepo := data.NewProjectRepo(dataData, bootstrap, logger)
-	clusterPorjectRepo := kubernetes.NewProjectClient(bootstrap, logger)
-	projectUsecase := biz.NewProjectUseCase(projectRepo, clusterPorjectRepo, logger)
+	clusterInterface := interfaces.NewClusterInterface(clusterUsecase, bootstrap, logger)
 	appRepo := data.NewAppRepo(dataData, logger)
-	sailorRepo := sailor.NewSailorClient(bootstrap, logger)
 	appRuntime := kubernetes.NewAppDeployedResource(bootstrap, logger)
 	appConstruct := helm.NewAppConstructRepo(bootstrap, logger)
-	appUsecase := biz.NewAppUsecase(appRepo, clusterRepo, projectRepo, sailorRepo, appRuntime, appConstruct, logger, bootstrap)
-	clusterInterface := interfaces.NewClusterInterface(clusterUsecase, projectUsecase, appUsecase, bootstrap, logger)
+	appUsecase := biz.NewAppUsecase(appRepo, appRuntime, appConstruct, logger, bootstrap)
 	userRepo := data.NewUserRepo(dataData, bootstrap, logger)
 	thirdparty := githubapi.NewUserClient(bootstrap, logger)
 	userUseCase := biz.NewUseUser(userRepo, thirdparty, logger)
@@ -55,14 +50,16 @@ func wireApp(bootstrap *conf.Bootstrap, logger log.Logger) (*kratos.App, func(),
 	servicesRepo := data.NewServicesRepo(dataData, logger)
 	workflowRepo := argoworkflows.NewWorkflowRepo(bootstrap, logger)
 	servicesUseCase := biz.NewServicesUseCase(servicesRepo, workflowRepo, logger)
+	projectRepo := data.NewProjectRepo(dataData, bootstrap, logger)
+	clusterPorjectRepo := kubernetes.NewProjectClient(bootstrap, logger)
+	projectUsecase := biz.NewProjectUseCase(projectRepo, clusterPorjectRepo, logger)
 	servicesInterface := interfaces.NewServicesInterface(servicesUseCase, projectUsecase)
 	userInterface := interfaces.NewUserInterface(userUseCase, bootstrap)
 	projectInterface := interfaces.NewProjectInterface(projectUsecase, appUsecase, clusterUsecase, bootstrap, logger)
 	autoscaler := interfaces.NewAutoscaler(clusterUsecase, bootstrap, logger)
 	grpcServer := server.NewGRPCServer(bootstrap, clusterInterface, appInterface, servicesInterface, userInterface, projectInterface, autoscaler, logger)
 	httpServer := server.NewHTTPServer(bootstrap, clusterInterface, appInterface, servicesInterface, userInterface, projectInterface, logger)
-	internalLogic := server.NewInternalLogic(clusterInterface)
-	app := newApp(logger, grpcServer, httpServer, internalLogic)
+	app := newApp(logger, grpcServer, httpServer)
 	return app, func() {
 		cleanup()
 	}, nil

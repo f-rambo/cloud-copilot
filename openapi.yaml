@@ -907,24 +907,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/cluster.v1alpha1.Regions'
-    /api/v1alpha1/cluster/start:
-        post:
-            tags:
-                - ClusterInterface
-            operationId: ClusterInterface_StartCluster
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/cluster.v1alpha1.ClusterArgs'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/common.Msg'
     /api/v1alpha1/project:
         get:
             tags:

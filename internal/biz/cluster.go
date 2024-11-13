@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"sync"
 
 	"github.com/f-rambo/ocean/internal/conf"
 	"github.com/f-rambo/ocean/utils"
@@ -17,6 +18,8 @@ import (
 
 const (
 	ClusterPackageName = "cluster"
+
+	ClusterPoolNumber = 10
 )
 
 var ErrClusterNotFound error = errors.New("cluster not found")
@@ -582,8 +585,6 @@ type ClusterRepo interface {
 	GetByName(context.Context, string) (*Cluster, error)
 	List(context.Context, *Cluster) ([]*Cluster, error)
 	Delete(context.Context, int64) error
-	Put(ctx context.Context, cluster *Cluster) error
-	Watch(ctx context.Context) (*Cluster, error)
 }
 
 type ClusterInfrastructure interface {
@@ -599,8 +600,6 @@ type ClusterInfrastructure interface {
 
 type ClusterRuntime interface {
 	CurrentCluster(context.Context, *Cluster) error
-	InstallPlugins(context.Context, *Cluster) error
-	DeployService(context.Context, *Cluster) error
 	HandlerNodes(context.Context, *Cluster) error
 	DeleteResource(context.Context, *Cluster) error
 }
@@ -609,6 +608,9 @@ type ClusterUsecase struct {
 	clusterRepo           ClusterRepo
 	clusterInfrastructure ClusterInfrastructure
 	clusterRuntime        ClusterRuntime
+	locks                 map[int64]*sync.Mutex
+	locksMux              sync.Mutex
+	eventChan             chan *Cluster
 	conf                  *conf.Bootstrap
 	log                   *log.Helper
 }
@@ -620,7 +622,10 @@ func NewClusterUseCase(conf *conf.Bootstrap, clusterRepo ClusterRepo, clusterInf
 		clusterRuntime:        clusterRuntime,
 		conf:                  conf,
 		log:                   log.NewHelper(logger),
+		locks:                 make(map[int64]*sync.Mutex),
+		eventChan:             make(chan *Cluster, ClusterPoolNumber),
 	}
+	go c.clusterRunner()
 	return c
 }
 
@@ -673,6 +678,7 @@ func (uc *ClusterUsecase) Save(ctx context.Context, cluster *Cluster) error {
 	if err != nil {
 		return err
 	}
+	uc.apply(cluster)
 	return nil
 }
 
@@ -691,19 +697,39 @@ func (uc *ClusterUsecase) GetRegions(ctx context.Context, cluster *Cluster) ([]s
 	return regionNames, nil
 }
 
-func (uc *ClusterUsecase) Apply(ctx context.Context, cluster *Cluster) error {
-	return uc.clusterRepo.Put(ctx, cluster)
+func (uc *ClusterUsecase) getLock(clusterID int64) *sync.Mutex {
+	uc.locksMux.Lock()
+	defer uc.locksMux.Unlock()
+
+	if clusterID < 0 {
+		uc.log.Errorf("Invalid clusterID: %d", clusterID)
+		return &sync.Mutex{}
+	}
+
+	if _, exists := uc.locks[clusterID]; !exists {
+		uc.locks[clusterID] = &sync.Mutex{}
+	}
+	return uc.locks[clusterID]
 }
 
-func (uc *ClusterUsecase) Watch(ctx context.Context) (*Cluster, error) {
-	return uc.clusterRepo.Watch(ctx)
+func (uc *ClusterUsecase) apply(cluster *Cluster) {
+	uc.eventChan <- cluster
 }
 
-func (uc *ClusterUsecase) Reconcile(ctx context.Context, cluster *Cluster) (err error) {
+func (uc *ClusterUsecase) clusterRunner() {
+	for event := range uc.eventChan {
+		go uc.handleEvent(context.TODO(), event)
+	}
+}
+
+func (uc *ClusterUsecase) handleEvent(ctx context.Context, cluster *Cluster) (err error) {
+	lock := uc.getLock(cluster.ID)
+	lock.Lock()
 	defer func() {
 		if err != nil {
 			return
 		}
+		lock.Unlock()
 		err = uc.clusterRepo.Save(ctx, cluster)
 	}()
 	if cluster.IsDeleteed() {
@@ -774,14 +800,6 @@ func (uc *ClusterUsecase) handlerClusterNotInstalled(ctx context.Context, cluste
 		return err
 	}
 	err = uc.clusterInfrastructure.Install(ctx, cluster)
-	if err != nil {
-		return err
-	}
-	err = uc.clusterRuntime.InstallPlugins(ctx, cluster)
-	if err != nil {
-		return err
-	}
-	err = uc.clusterRuntime.DeployService(ctx, cluster)
 	if err != nil {
 		return err
 	}

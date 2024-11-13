@@ -9,7 +9,6 @@ import (
 
 	"github.com/f-rambo/ocean/internal/biz"
 	"github.com/f-rambo/ocean/internal/conf"
-	"github.com/f-rambo/ocean/utils"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -90,40 +89,6 @@ func (cr *ClusterRuntime) CurrentCluster(ctx context.Context, cluster *biz.Clust
 		return err
 	}
 	return nil
-}
-
-func (cr *ClusterRuntime) InstallPlugins(ctx context.Context, cluster *biz.Cluster) error {
-	kubeClient, err := GetDynamicClientByRestConfig(cluster.MasterIP, cluster.Token, cluster.CAData, cluster.KeyData, cluster.CertData)
-	if err != nil {
-		return err
-	}
-	installPath, err := utils.GetFromContextByKey(ctx, utils.InstallKey)
-	if err != nil {
-		return err
-	}
-	caclicoYamls := []string{
-		utils.MergePath(installPath, "calico-operator.yaml"),
-		utils.MergePath(installPath, "calico.yaml"),
-	}
-	for _, v := range caclicoYamls {
-		err = cr.createYAMLFile(ctx, kubeClient, "calico-system", "calico", v)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (cr *ClusterRuntime) DeployService(ctx context.Context, cluster *biz.Cluster) error {
-	kubeClient, err := GetDynamicClientByRestConfig(cluster.MasterIP, cluster.Token, cluster.CAData, cluster.KeyData, cluster.CertData)
-	if err != nil {
-		return err
-	}
-	shellPath, err := utils.GetFromContextByKey(ctx, utils.ShellKey)
-	if err != nil {
-		return err
-	}
-	return cr.createYAMLFile(ctx, kubeClient, "kube-system", "ocean", utils.MergePath(shellPath, "ocean.yaml"))
 }
 
 func (cr *ClusterRuntime) HandlerNodes(ctx context.Context, cluster *biz.Cluster) error {

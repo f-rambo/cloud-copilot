@@ -13,8 +13,6 @@ import (
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/wire"
 	"github.com/pkg/errors"
-	clientv3 "go.etcd.io/etcd/client/v3"
-	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -28,7 +26,6 @@ var ProviderSet = wire.NewSet(NewData, NewClusterRepo, NewAppRepo, NewServicesRe
 type DBDriver string
 
 const (
-	DBDriverMySQL    DBDriver = "mysql"
 	DBDriverPostgres DBDriver = "postgres"
 	DBDriverSQLite   DBDriver = "sqlite"
 )
@@ -44,10 +41,8 @@ const (
 type Data struct {
 	conf          *conf.Bootstrap
 	log           *log.Helper
-	dbLoggerLevel gormlogger.LogLevel
 	db            *gorm.DB
-	etcd          *clientv3.Client
-	kvStore       *utils.KVStore
+	dbLoggerLevel gormlogger.LogLevel
 }
 
 func NewData(c *conf.Bootstrap, logger log.Logger) (*Data, func(), error) {
@@ -57,177 +52,47 @@ func NewData(c *conf.Bootstrap, logger log.Logger) (*Data, func(), error) {
 		log:           log.NewHelper(logger),
 		dbLoggerLevel: gormlogger.Warn,
 	}
-
-	err = data.newDB(data.conf.Data)
-	if err != nil {
-		return nil, nil, err
-	}
-	err = data.newEtcd(data.conf.ETCD)
-	if err != nil {
-		data.kvStore = utils.NewKVStore()
-	}
 	cleanup := func() {
-		if data.etcd != nil {
-			err = data.etcd.Close()
-			if err != nil {
-				log.Error("closing the etcd resources", err)
-			}
-		}
-		if data.kvStore != nil {
-			data.kvStore.Close()
-		}
 		log.Info("closing the data resources")
 	}
-	return data, cleanup, nil
-}
-
-type QueueKey string
-
-func (k QueueKey) String() string {
-	return string(k)
-}
-
-func (d *Data) Put(ctx context.Context, key, val string) error {
-	if d.etcd == nil {
-		return d.kvStore.Put(ctx, key, val)
-	}
-	_, err := d.etcd.Put(ctx, key, val)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (d *Data) Get(ctx context.Context, key string) (string, error) {
-	if d.etcd == nil {
-		return d.kvStore.Get(ctx, key)
-	}
-	resp, err := d.etcd.Get(ctx, key)
-	if err != nil {
-		return "", err
-	}
-	for _, v := range resp.Kvs {
-		return string(v.Value), nil
-	}
-	return "", nil
-}
-
-func (d *Data) Watch(ctx context.Context, key string) (string, error) {
-	if d.etcd == nil {
-		watchChan, err := d.kvStore.Watch(ctx, key)
-		if err != nil {
-			return "", err
-		}
-		lenth := len(watchChan)
-		var i int = 0
-		for {
-			i++
-			select {
-			case val, exists := <-watchChan:
-				if !exists {
-					return "", nil
-				}
-				if i >= lenth {
-					return val, nil
-				}
-			case <-ctx.Done():
-				return "", ctx.Err()
-			}
-		}
-	}
-	watchChan := d.etcd.Watch(ctx, key)
-	if watchChan == nil {
-		return "", errors.New("watch chan is nil")
-	}
-	for {
-		select {
-		case wresp, ok := <-watchChan:
-			if !ok {
-				return "", nil
-			}
-			for _, ev := range wresp.Events {
-				return string(ev.Kv.Value), nil
-			}
-		case <-ctx.Done():
-			return "", ctx.Err()
-		}
-	}
-}
-
-func (d *Data) Delete(ctx context.Context, key string) error {
-	if d.etcd == nil {
-		return d.kvStore.Delete(ctx, key)
-	}
-	_, err := d.etcd.Delete(ctx, key)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (d *Data) newEtcd(c conf.ETCD) (err error) {
-	endpoints := make([]string, 0)
-	for _, endpoint := range c.GetETCDEndpoints() {
-		if endpoint == "" {
-			continue
-		}
-		endpoints = append(endpoints, endpoint)
-	}
-	if len(endpoints) == 0 {
-		return errors.New("etcd endpoints is empty")
-	}
-	d.etcd, err = clientv3.New(clientv3.Config{
-		Username:    c.GetUsername(),
-		Password:    c.GetPassword(),
-		Endpoints:   endpoints,
-		DialTimeout: 5 * time.Second,
-	})
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (d *Data) newDB(c conf.Data) (err error) {
 	var gormDialector gorm.Dialector
-	switch DBDriver(c.GetDriver()) {
-	case DBDriverMySQL:
-		dns := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8&parseTime=True&loc=Local",
-			c.GetUsername(), c.GetPassword(), c.GetHost(), c.GetPort(), c.GetDatabase())
-		gormDialector = mysql.Open(dns)
-	case DBDriverPostgres:
+	if DBDriver(c.Data.GetDriver()) == DBDriverPostgres {
 		dns := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%d sslmode=disable TimeZone=Asia/Shanghai",
-			c.GetHost(), c.GetUsername(), c.GetPassword(), c.GetDatabase(), c.GetPort())
+			c.Data.GetHost(), c.Data.GetUsername(), c.Data.GetPassword(), c.Data.GetDatabase(), c.Data.GetPort())
 		gormDialector = postgres.Open(dns)
-	default:
+	}
+	if DBDriver(c.Data.GetDriver()) == DBDriverSQLite {
 		dbFilePath, err := utils.GetPackageStorePathByNames(DBDriverSQLite.String(), DatabaseName)
 		if err != nil {
-			return err
+			return data, cleanup, err
 		}
 		if dbFilePath != "" && !utils.IsFileExist(dbFilePath) {
 			dir, _ := filepath.Split(dbFilePath)
 			os.MkdirAll(dir, 0755)
 			file, err := os.Create(dbFilePath)
 			if err != nil {
-				return err
+				return data, cleanup, err
 			}
 			file.Close()
 		}
 		gormDialector = sqlite.Open(dbFilePath)
 	}
-	tablePrefix := fmt.Sprintf("%s_", c.GetDatabase())
-	d.db, err = gorm.Open(gormDialector, &gorm.Config{
-		Logger: d,
+	if gormDialector == nil {
+		return data, cleanup, errors.New("db driver is not supported")
+	}
+	tablePrefix := fmt.Sprintf("%s_", c.Data.GetDatabase())
+	data.db, err = gorm.Open(gormDialector, &gorm.Config{
+		Logger: data,
 		NamingStrategy: schema.NamingStrategy{
 			TablePrefix:   tablePrefix,
 			SingularTable: true,
 		},
 	})
 	if err != nil {
-		return err
+		return data, cleanup, err
 	}
 	// AutoMigrate
-	err = d.db.AutoMigrate(
+	err = data.db.AutoMigrate(
 		&biz.Cluster{},
 		&biz.NodeGroup{},
 		&biz.BostionHost{},
@@ -236,16 +101,17 @@ func (d *Data) newDB(c conf.Data) (err error) {
 		&biz.App{},
 		&biz.AppType{},
 		&biz.AppVersion{},
-		&biz.DeployApp{},
+		&biz.AppRelease{},
 		&biz.Service{},
 		&biz.CI{},
 		&biz.User{},
 		&biz.AppHelmRepo{},
 	)
 	if err != nil {
-		return err
+		return data, cleanup, err
 	}
-	return nil
+
+	return data, cleanup, nil
 }
 
 func (d *Data) LogMode(level gormlogger.LogLevel) gormlogger.Interface {

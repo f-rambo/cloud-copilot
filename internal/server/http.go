@@ -19,13 +19,7 @@ import (
 )
 
 // NewHTTPServer new an HTTP server.
-func NewHTTPServer(c *conf.Bootstrap,
-	cluster *interfaces.ClusterInterface,
-	app *interfaces.AppInterface,
-	services *interfaces.ServicesInterface,
-	user *interfaces.UserInterface,
-	project *interfaces.ProjectInterface,
-	logger log.Logger) *http.Server {
+func NewHTTPServer(c *conf.Bootstrap, cluster *interfaces.ClusterInterface, app *interfaces.AppInterface, services *interfaces.ServicesInterface, user *interfaces.UserInterface, project *interfaces.ProjectInterface, logger log.Logger) *http.Server {
 	var opts = []http.ServerOption{
 		http.Middleware(
 			selector.Server(NewAuthServer(user)).Match(NewWhiteListMatcher()).Build(),

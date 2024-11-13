@@ -6,7 +6,6 @@ import (
 	"github.com/f-rambo/ocean/third_package/helm"
 	infrastructure "github.com/f-rambo/ocean/third_package/infrastructure"
 	"github.com/f-rambo/ocean/third_package/kubernetes"
-	"github.com/f-rambo/ocean/third_package/sailor"
 	"github.com/google/wire"
 )
 
@@ -16,7 +15,6 @@ var ProviderSet = wire.NewSet(
 	kubernetes.NewAppDeployedResource,
 	kubernetes.NewClusterRuntime,
 	kubernetes.NewProjectClient,
-	sailor.NewSailorClient,
 	githubapi.NewUserClient,
 	infrastructure.NewClusterInfrastructure,
 )

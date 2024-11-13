@@ -171,18 +171,18 @@ func (a *appRepo) DeleteAppType(ctx context.Context, appTypeID int64) error {
 	return a.data.db.Delete(&biz.AppType{}, appTypeID).Error
 }
 
-func (a *appRepo) SaveDeployApp(ctx context.Context, appDeployed *biz.DeployApp) error {
+func (a *appRepo) SaveDeployApp(ctx context.Context, appDeployed *biz.AppRelease) error {
 	return a.data.db.Save(appDeployed).Error
 }
 
-func (a *appRepo) DeployAppList(ctx context.Context, appDeployedReq biz.DeployApp, page, pageSize int32) ([]*biz.DeployApp, int32, error) {
+func (a *appRepo) DeployAppList(ctx context.Context, appDeployedReq biz.AppRelease, page, pageSize int32) ([]*biz.AppRelease, int32, error) {
 	appDeployedReq.Chart = ""
 	appDeployedReq.Config = ""
 	appDeployedReq.Manifest = ""
 	appDeployedReq.Notes = ""
 	appDeployedReq.Logs = ""
-	appDeployeds := make([]*biz.DeployApp, 0)
-	appDeployedOrmDb := a.data.db.Model(&biz.DeployApp{})
+	appDeployeds := make([]*biz.AppRelease, 0)
+	appDeployedOrmDb := a.data.db.Model(&biz.AppRelease{})
 	if appDeployedReq.ReleaseName != "" {
 		appDeployedOrmDb = appDeployedOrmDb.Where("release_name like ?", "%"+appDeployedReq.ReleaseName+"%")
 		appDeployedReq.ReleaseName = ""
@@ -201,8 +201,8 @@ func (a *appRepo) DeployAppList(ctx context.Context, appDeployedReq biz.DeployAp
 	return appDeployeds, int32(appDeployedCount), nil
 }
 
-func (a *appRepo) GetDeployApp(ctx context.Context, id int64) (*biz.DeployApp, error) {
-	deployApp := &biz.DeployApp{}
+func (a *appRepo) GetDeployApp(ctx context.Context, id int64) (*biz.AppRelease, error) {
+	deployApp := &biz.AppRelease{}
 	err := a.data.db.First(deployApp, id).Error
 	if err != nil && err.Error() != "record not found" {
 		return nil, err
@@ -211,7 +211,7 @@ func (a *appRepo) GetDeployApp(ctx context.Context, id int64) (*biz.DeployApp, e
 }
 
 func (a *appRepo) DeleteDeployApp(ctx context.Context, id int64) error {
-	return a.data.db.Delete(&biz.DeployApp{}, id).Error
+	return a.data.db.Delete(&biz.AppRelease{}, id).Error
 }
 
 func (a *appRepo) SaveRepo(ctx context.Context, helmRepo *biz.AppHelmRepo) error {
