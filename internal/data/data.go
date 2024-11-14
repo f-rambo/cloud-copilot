@@ -105,7 +105,7 @@ func NewData(c *conf.Bootstrap, logger log.Logger) (*Data, func(), error) {
 		&biz.Service{},
 		&biz.CI{},
 		&biz.User{},
-		&biz.AppHelmRepo{},
+		&biz.AppRepo{},
 	)
 	if err != nil {
 		return data, cleanup, err

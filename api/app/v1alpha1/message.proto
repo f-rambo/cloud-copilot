@@ -13,7 +13,6 @@ message Dependency {
       bool enabled = 6;
       repeated string import_values = 7 [json_name="import_values"];
       string alias = 8;
-
 }
 
 message Maintainer {
@@ -42,8 +41,6 @@ message Metadata {
       string type = 17;
 }
 
-
-
 message App {
       int64 id = 1;
       string name = 2;
@@ -63,7 +60,7 @@ message AppVersion {
       string config = 6;
       string description = 7;
       string readme = 8;
-      string state = 9;
+      string status = 9;
       string test_result = 10 [json_name="test_result"];
       Metadata metadata = 11;
 }
@@ -73,7 +70,7 @@ message AppReq {
       int32 page = 2;
       int32 page_size = 3 [json_name="page_size"];
       string name = 4;
-      string state = 5;
+      string status = 5;
       int64 app_type_id = 6 [json_name="app_type_id"];
       int64 version_id = 7 [json_name="version_id"];
 }
@@ -109,29 +106,50 @@ message AppTypeReq {
       int64 id = 1;
 }
 
-message DeployAppReq {
+message AppRepoReq {
+      int64 id = 1;
+      string app_name = 2 [json_name="app_name"];
+      string version = 3;
+}
+
+message AppRepoList {
+      repeated AppRepo items = 1;
+}
+
+message AppRepo {
+      int64 id = 1;
+      string name = 2;
+      string url = 3;
+      string description = 4;
+}
+
+message AppReleasepResources {
+      repeated AppReleaseResource items = 1;
+}
+
+message AppReleaseReq {
       int64 app_id = 1 [json_name="app_id"];
       int64 version_id = 2 [json_name="version_id"];
       int64 cluster_id = 3 [json_name="cluster_id"];
       int64 project_id = 4 [json_name="project_id"];
-      int64 id = 5;
+      int64 id = 5 [json_name="id"];
       string release_name = 6 [json_name="release_name"];
-      string namespace = 7;
-      int32 page = 8;
+      string namespace = 7 [json_name="namespace"];
+      int32 page = 8 [json_name="page"];
       int32 page_size = 9 [json_name="page_size"];
       string app_name = 10 [json_name="app_name"];
-      string version = 11;
+      string version = 11 [json_name="version"];
       int64 app_type_id = 12 [json_name="app_type_id"];
       int64 repo_id = 13 [json_name="repo_id"];
-      string config = 14;
+      string config = 14 [json_name="config"];
 }
 
-message DeployAppList {
-      repeated DeployApp items = 1;
+message AppReleaseList {
+      repeated AppRelease items = 1;
       int32 count = 2;
 }
 
-message DeployApp {
+message AppRelease {
       int64 id = 1;
       string release_name = 2 [json_name="release_name"];
       int64 app_id = 3 [json_name="app_id"];
@@ -143,7 +161,7 @@ message DeployApp {
       int64 user_id = 9 [json_name="user_id"];
       string namespace = 10;
       string config = 11;
-      string state = 12;
+      string status = 12;
       bool is_test = 13 [json_name="is_test"];
       string manifest = 14;
       string notes = 15;
@@ -154,28 +172,7 @@ message DeployApp {
       string update_time = 20 [json_name="update_time"];
 }
 
-message AppHelmRepoList {
-      repeated AppHelmRepo items = 1;
-}
-
-message AppHelmRepoReq {
-      int64 id = 1;
-      string app_name = 2 [json_name="app_name"];
-      string version = 3;
-}
-
-message AppHelmRepo {
-      int64 id = 1;
-      string name = 2;
-      string url = 3;
-      string description = 4;
-}
-
-message DeployAppResources {
-      repeated AppDeployedResource items = 1;
-}
-
-message AppDeployedResource {
+message AppReleaseResource {
       string name = 1 [json_name="name"];
       string kind = 2 [json_name="kind"];
       repeated string events = 3 [json_name="events"];

@@ -22,20 +22,14 @@ var _ = binding.EncodeURL
 const _ = http.SupportPackageIsVersion1
 
 const OperationProjectServiceDelete = "/project.v1alpha1.ProjectService/Delete"
-const OperationProjectServiceDisable = "/project.v1alpha1.ProjectService/Disable"
-const OperationProjectServiceEnable = "/project.v1alpha1.ProjectService/Enable"
 const OperationProjectServiceGet = "/project.v1alpha1.ProjectService/Get"
-const OperationProjectServiceGetProjectMockData = "/project.v1alpha1.ProjectService/GetProjectMockData"
 const OperationProjectServiceList = "/project.v1alpha1.ProjectService/List"
 const OperationProjectServicePing = "/project.v1alpha1.ProjectService/Ping"
 const OperationProjectServiceSave = "/project.v1alpha1.ProjectService/Save"
 
 type ProjectServiceHTTPServer interface {
 	Delete(context.Context, *ProjectReq) (*common.Msg, error)
-	Disable(context.Context, *ProjectReq) (*common.Msg, error)
-	Enable(context.Context, *ProjectReq) (*common.Msg, error)
 	Get(context.Context, *ProjectReq) (*Project, error)
-	GetProjectMockData(context.Context, *emptypb.Empty) (*Project, error)
 	List(context.Context, *ProjectReq) (*ProjectList, error)
 	Ping(context.Context, *emptypb.Empty) (*common.Msg, error)
 	Save(context.Context, *Project) (*common.Msg, error)
@@ -48,9 +42,6 @@ func RegisterProjectServiceHTTPServer(s *http.Server, srv ProjectServiceHTTPServ
 	r.GET("/api/v1alpha1/project", _ProjectService_Get2_HTTP_Handler(srv))
 	r.GET("/api/v1alpha1/project/list", _ProjectService_List2_HTTP_Handler(srv))
 	r.DELETE("/api/v1alpha1/project", _ProjectService_Delete2_HTTP_Handler(srv))
-	r.GET("/api/v1alpha1/project/mock", _ProjectService_GetProjectMockData0_HTTP_Handler(srv))
-	r.POST("/api/v1alpha1/project/enable", _ProjectService_Enable0_HTTP_Handler(srv))
-	r.POST("/api/v1alpha1/project/disable", _ProjectService_Disable0_HTTP_Handler(srv))
 }
 
 func _ProjectService_Ping2_HTTP_Handler(srv ProjectServiceHTTPServer) func(ctx http.Context) error {
@@ -151,75 +142,9 @@ func _ProjectService_Delete2_HTTP_Handler(srv ProjectServiceHTTPServer) func(ctx
 	}
 }
 
-func _ProjectService_GetProjectMockData0_HTTP_Handler(srv ProjectServiceHTTPServer) func(ctx http.Context) error {
-	return func(ctx http.Context) error {
-		var in emptypb.Empty
-		if err := ctx.BindQuery(&in); err != nil {
-			return err
-		}
-		http.SetOperation(ctx, OperationProjectServiceGetProjectMockData)
-		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.GetProjectMockData(ctx, req.(*emptypb.Empty))
-		})
-		out, err := h(ctx, &in)
-		if err != nil {
-			return err
-		}
-		reply := out.(*Project)
-		return ctx.Result(200, reply)
-	}
-}
-
-func _ProjectService_Enable0_HTTP_Handler(srv ProjectServiceHTTPServer) func(ctx http.Context) error {
-	return func(ctx http.Context) error {
-		var in ProjectReq
-		if err := ctx.Bind(&in); err != nil {
-			return err
-		}
-		if err := ctx.BindQuery(&in); err != nil {
-			return err
-		}
-		http.SetOperation(ctx, OperationProjectServiceEnable)
-		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.Enable(ctx, req.(*ProjectReq))
-		})
-		out, err := h(ctx, &in)
-		if err != nil {
-			return err
-		}
-		reply := out.(*common.Msg)
-		return ctx.Result(200, reply)
-	}
-}
-
-func _ProjectService_Disable0_HTTP_Handler(srv ProjectServiceHTTPServer) func(ctx http.Context) error {
-	return func(ctx http.Context) error {
-		var in ProjectReq
-		if err := ctx.Bind(&in); err != nil {
-			return err
-		}
-		if err := ctx.BindQuery(&in); err != nil {
-			return err
-		}
-		http.SetOperation(ctx, OperationProjectServiceDisable)
-		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.Disable(ctx, req.(*ProjectReq))
-		})
-		out, err := h(ctx, &in)
-		if err != nil {
-			return err
-		}
-		reply := out.(*common.Msg)
-		return ctx.Result(200, reply)
-	}
-}
-
 type ProjectServiceHTTPClient interface {
 	Delete(ctx context.Context, req *ProjectReq, opts ...http.CallOption) (rsp *common.Msg, err error)
-	Disable(ctx context.Context, req *ProjectReq, opts ...http.CallOption) (rsp *common.Msg, err error)
-	Enable(ctx context.Context, req *ProjectReq, opts ...http.CallOption) (rsp *common.Msg, err error)
 	Get(ctx context.Context, req *ProjectReq, opts ...http.CallOption) (rsp *Project, err error)
-	GetProjectMockData(ctx context.Context, req *emptypb.Empty, opts ...http.CallOption) (rsp *Project, err error)
 	List(ctx context.Context, req *ProjectReq, opts ...http.CallOption) (rsp *ProjectList, err error)
 	Ping(ctx context.Context, req *emptypb.Empty, opts ...http.CallOption) (rsp *common.Msg, err error)
 	Save(ctx context.Context, req *Project, opts ...http.CallOption) (rsp *common.Msg, err error)
@@ -246,50 +171,11 @@ func (c *ProjectServiceHTTPClientImpl) Delete(ctx context.Context, in *ProjectRe
 	return &out, nil
 }
 
-func (c *ProjectServiceHTTPClientImpl) Disable(ctx context.Context, in *ProjectReq, opts ...http.CallOption) (*common.Msg, error) {
-	var out common.Msg
-	pattern := "/api/v1alpha1/project/disable"
-	path := binding.EncodeURL(pattern, in, false)
-	opts = append(opts, http.Operation(OperationProjectServiceDisable))
-	opts = append(opts, http.PathTemplate(pattern))
-	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return &out, nil
-}
-
-func (c *ProjectServiceHTTPClientImpl) Enable(ctx context.Context, in *ProjectReq, opts ...http.CallOption) (*common.Msg, error) {
-	var out common.Msg
-	pattern := "/api/v1alpha1/project/enable"
-	path := binding.EncodeURL(pattern, in, false)
-	opts = append(opts, http.Operation(OperationProjectServiceEnable))
-	opts = append(opts, http.PathTemplate(pattern))
-	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return &out, nil
-}
-
 func (c *ProjectServiceHTTPClientImpl) Get(ctx context.Context, in *ProjectReq, opts ...http.CallOption) (*Project, error) {
 	var out Project
 	pattern := "/api/v1alpha1/project"
 	path := binding.EncodeURL(pattern, in, true)
 	opts = append(opts, http.Operation(OperationProjectServiceGet))
-	opts = append(opts, http.PathTemplate(pattern))
-	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return &out, nil
-}
-
-func (c *ProjectServiceHTTPClientImpl) GetProjectMockData(ctx context.Context, in *emptypb.Empty, opts ...http.CallOption) (*Project, error) {
-	var out Project
-	pattern := "/api/v1alpha1/project/mock"
-	path := binding.EncodeURL(pattern, in, true)
-	opts = append(opts, http.Operation(OperationProjectServiceGetProjectMockData))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
 	if err != nil {

@@ -14,7 +14,7 @@ import (
 	"helm.sh/helm/v3/pkg/cli"
 	"helm.sh/helm/v3/pkg/getter"
 	releasePkg "helm.sh/helm/v3/pkg/release"
-	"helm.sh/helm/v3/pkg/repo"
+	helmrepo "helm.sh/helm/v3/pkg/repo"
 )
 
 type AppConstructRepo struct {
@@ -87,12 +87,12 @@ func (r *AppConstructRepo) AppRelease(ctx context.Context, appDeployed *biz.AppR
 		appDeployed.ReleaseName = release.Name
 		appDeployed.Manifest = strings.TrimSpace(release.Manifest)
 		if release.Info != nil {
-			appDeployed.State = string(release.Info.Status)
+			appDeployed.Status = string(release.Info.Status)
 			appDeployed.Notes = release.Info.Notes
 		}
 		return nil
 	}
-	appDeployed.State = releasePkg.StatusUnknown.String()
+	appDeployed.Status = releasePkg.StatusUnknown.String()
 	return nil
 }
 
@@ -114,17 +114,17 @@ func (r *AppConstructRepo) DeleteAppRelease(ctx context.Context, appDeployed *bi
 		return errors.WithMessage(err, "uninstall fail")
 	}
 	if resp != nil && resp.Release != nil && resp.Release.Info != nil {
-		appDeployed.State = string(resp.Release.Info.Status)
+		appDeployed.Status = string(resp.Release.Info.Status)
 	}
 	appDeployed.Notes = resp.Info
 	return nil
 }
 
-func (r *AppConstructRepo) AddAppRepo(ctx context.Context, helmRepo *biz.AppHelmRepo) (err error) {
+func (r *AppConstructRepo) AddAppRepo(ctx context.Context, repo *biz.AppRepo) (err error) {
 	settings := cli.New()
-	res, err := repo.NewChartRepository(&repo.Entry{
-		Name: helmRepo.Name,
-		URL:  helmRepo.Url,
+	res, err := helmrepo.NewChartRepository(&helmrepo.Entry{
+		Name: repo.Name,
+		URL:  repo.Url,
 	}, getter.All(settings))
 	if err != nil {
 		return err
@@ -137,20 +137,20 @@ func (r *AppConstructRepo) AddAppRepo(ctx context.Context, helmRepo *biz.AppHelm
 	if err != nil {
 		return err
 	}
-	helmRepo.SetIndexPath(indexFile)
+	repo.SetIndexPath(indexFile)
 	return nil
 }
 
-func (r *AppConstructRepo) GetAppDetailByRepo(ctx context.Context, helmRepo *biz.AppHelmRepo, appName, version string) (*biz.App, error) {
-	index, err := repo.LoadIndexFile(helmRepo.IndexPath)
+func (r *AppConstructRepo) GetAppDetailByRepo(ctx context.Context, repo *biz.AppRepo, appName, version string) (*biz.App, error) {
+	index, err := helmrepo.LoadIndexFile(repo.IndexPath)
 	if err != nil {
 		return nil, err
 	}
 	app := &biz.App{
-		Name:          appName,
-		AppTypeID:     biz.AppTypeRepo,
-		AppHelmRepoID: helmRepo.ID,
-		Versions:      make([]*biz.AppVersion, 0),
+		Name:      appName,
+		AppTypeID: biz.AppTypeRepo,
+		AppRepoID: repo.ID,
+		Versions:  make([]*biz.AppVersion, 0),
 	}
 	for chartName, chartVersions := range index.Entries {
 		if chartName != appName {
@@ -182,21 +182,21 @@ func (r *AppConstructRepo) GetAppDetailByRepo(ctx context.Context, helmRepo *biz
 	return app, nil
 }
 
-func (r *AppConstructRepo) GetAppsByRepo(ctx context.Context, helmRepo *biz.AppHelmRepo) ([]*biz.App, error) {
-	index, err := repo.LoadIndexFile(helmRepo.IndexPath)
+func (r *AppConstructRepo) GetAppsByRepo(ctx context.Context, repo *biz.AppRepo) ([]*biz.App, error) {
+	index, err := helmrepo.LoadIndexFile(repo.IndexPath)
 	if err != nil {
 		return nil, err
 	}
 	apps := make([]*biz.App, 0)
 	for chartName, chartVersions := range index.Entries {
 		app := &biz.App{
-			Name:          chartName,
-			AppTypeID:     biz.AppTypeRepo,
-			AppHelmRepoID: helmRepo.ID,
-			Versions:      make([]*biz.AppVersion, 0),
+			Name:      chartName,
+			AppTypeID: biz.AppTypeRepo,
+			AppRepoID: repo.ID,
+			Versions:  make([]*biz.AppVersion, 0),
 		}
-		app.CreatedAt = helmRepo.CreatedAt
-		app.UpdatedAt = helmRepo.UpdatedAt
+		app.CreatedAt = repo.CreatedAt
+		app.UpdatedAt = repo.UpdatedAt
 		for _, chartMatedata := range chartVersions {
 			if app.Icon == "" {
 				app.Icon = chartMatedata.Icon
@@ -210,7 +210,7 @@ func (r *AppConstructRepo) GetAppsByRepo(ctx context.Context, helmRepo *biz.AppH
 				Chart:       chartMatedata.URLs[0],
 				Version:     chartMatedata.Version,
 				Description: chartMatedata.Description,
-				State:       biz.AppTested,
+				Status:      biz.AppTested,
 			}
 			app.AddVersion(appVersion)
 		}

@@ -21,14 +21,11 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	ProjectService_Ping_FullMethodName               = "/project.v1alpha1.ProjectService/Ping"
-	ProjectService_Save_FullMethodName               = "/project.v1alpha1.ProjectService/Save"
-	ProjectService_Get_FullMethodName                = "/project.v1alpha1.ProjectService/Get"
-	ProjectService_List_FullMethodName               = "/project.v1alpha1.ProjectService/List"
-	ProjectService_Delete_FullMethodName             = "/project.v1alpha1.ProjectService/Delete"
-	ProjectService_GetProjectMockData_FullMethodName = "/project.v1alpha1.ProjectService/GetProjectMockData"
-	ProjectService_Enable_FullMethodName             = "/project.v1alpha1.ProjectService/Enable"
-	ProjectService_Disable_FullMethodName            = "/project.v1alpha1.ProjectService/Disable"
+	ProjectService_Ping_FullMethodName   = "/project.v1alpha1.ProjectService/Ping"
+	ProjectService_Save_FullMethodName   = "/project.v1alpha1.ProjectService/Save"
+	ProjectService_Get_FullMethodName    = "/project.v1alpha1.ProjectService/Get"
+	ProjectService_List_FullMethodName   = "/project.v1alpha1.ProjectService/List"
+	ProjectService_Delete_FullMethodName = "/project.v1alpha1.ProjectService/Delete"
 )
 
 // ProjectServiceClient is the client API for ProjectService service.
@@ -40,9 +37,6 @@ type ProjectServiceClient interface {
 	Get(ctx context.Context, in *ProjectReq, opts ...grpc.CallOption) (*Project, error)
 	List(ctx context.Context, in *ProjectReq, opts ...grpc.CallOption) (*ProjectList, error)
 	Delete(ctx context.Context, in *ProjectReq, opts ...grpc.CallOption) (*common.Msg, error)
-	GetProjectMockData(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*Project, error)
-	Enable(ctx context.Context, in *ProjectReq, opts ...grpc.CallOption) (*common.Msg, error)
-	Disable(ctx context.Context, in *ProjectReq, opts ...grpc.CallOption) (*common.Msg, error)
 }
 
 type projectServiceClient struct {
@@ -103,36 +97,6 @@ func (c *projectServiceClient) Delete(ctx context.Context, in *ProjectReq, opts 
 	return out, nil
 }
 
-func (c *projectServiceClient) GetProjectMockData(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*Project, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Project)
-	err := c.cc.Invoke(ctx, ProjectService_GetProjectMockData_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *projectServiceClient) Enable(ctx context.Context, in *ProjectReq, opts ...grpc.CallOption) (*common.Msg, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(common.Msg)
-	err := c.cc.Invoke(ctx, ProjectService_Enable_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *projectServiceClient) Disable(ctx context.Context, in *ProjectReq, opts ...grpc.CallOption) (*common.Msg, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(common.Msg)
-	err := c.cc.Invoke(ctx, ProjectService_Disable_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // ProjectServiceServer is the server API for ProjectService service.
 // All implementations must embed UnimplementedProjectServiceServer
 // for forward compatibility.
@@ -142,9 +106,6 @@ type ProjectServiceServer interface {
 	Get(context.Context, *ProjectReq) (*Project, error)
 	List(context.Context, *ProjectReq) (*ProjectList, error)
 	Delete(context.Context, *ProjectReq) (*common.Msg, error)
-	GetProjectMockData(context.Context, *emptypb.Empty) (*Project, error)
-	Enable(context.Context, *ProjectReq) (*common.Msg, error)
-	Disable(context.Context, *ProjectReq) (*common.Msg, error)
 	mustEmbedUnimplementedProjectServiceServer()
 }
 
@@ -169,15 +130,6 @@ func (UnimplementedProjectServiceServer) List(context.Context, *ProjectReq) (*Pr
 }
 func (UnimplementedProjectServiceServer) Delete(context.Context, *ProjectReq) (*common.Msg, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Delete not implemented")
-}
-func (UnimplementedProjectServiceServer) GetProjectMockData(context.Context, *emptypb.Empty) (*Project, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetProjectMockData not implemented")
-}
-func (UnimplementedProjectServiceServer) Enable(context.Context, *ProjectReq) (*common.Msg, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Enable not implemented")
-}
-func (UnimplementedProjectServiceServer) Disable(context.Context, *ProjectReq) (*common.Msg, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Disable not implemented")
 }
 func (UnimplementedProjectServiceServer) mustEmbedUnimplementedProjectServiceServer() {}
 func (UnimplementedProjectServiceServer) testEmbeddedByValue()                        {}
@@ -290,60 +242,6 @@ func _ProjectService_Delete_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ProjectService_GetProjectMockData_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(emptypb.Empty)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ProjectServiceServer).GetProjectMockData(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ProjectService_GetProjectMockData_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProjectServiceServer).GetProjectMockData(ctx, req.(*emptypb.Empty))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _ProjectService_Enable_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ProjectReq)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ProjectServiceServer).Enable(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ProjectService_Enable_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProjectServiceServer).Enable(ctx, req.(*ProjectReq))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _ProjectService_Disable_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ProjectReq)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ProjectServiceServer).Disable(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ProjectService_Disable_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProjectServiceServer).Disable(ctx, req.(*ProjectReq))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 // ProjectService_ServiceDesc is the grpc.ServiceDesc for ProjectService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -370,18 +268,6 @@ var ProjectService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Delete",
 			Handler:    _ProjectService_Delete_Handler,
-		},
-		{
-			MethodName: "GetProjectMockData",
-			Handler:    _ProjectService_GetProjectMockData_Handler,
-		},
-		{
-			MethodName: "Enable",
-			Handler:    _ProjectService_Enable_Handler,
-		},
-		{
-			MethodName: "Disable",
-			Handler:    _ProjectService_Disable_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

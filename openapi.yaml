@@ -30,7 +30,7 @@ paths:
                   in: query
                   schema:
                     type: string
-                - name: state
+                - name: status
                   in: query
                   schema:
                     type: string
@@ -72,7 +72,7 @@ paths:
                   in: query
                   schema:
                     type: string
-                - name: state
+                - name: status
                   in: query
                   schema:
                     type: string
@@ -91,328 +91,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/common.Msg'
-    /api/v1alpha1/app/deploy:
-        get:
-            tags:
-                - AppInterface
-            operationId: AppInterface_GetAppDeployed
-            parameters:
-                - name: id
-                  in: query
-                  schema:
-                    type: string
-                - name: release_name
-                  in: query
-                  schema:
-                    type: string
-                - name: app_id
-                  in: query
-                  schema:
-                    type: string
-                - name: version_id
-                  in: query
-                  schema:
-                    type: string
-                - name: version
-                  in: query
-                  schema:
-                    type: string
-                - name: chart
-                  in: query
-                  schema:
-                    type: string
-                - name: cluster_id
-                  in: query
-                  schema:
-                    type: string
-                - name: project_id
-                  in: query
-                  schema:
-                    type: string
-                - name: user_id
-                  in: query
-                  schema:
-                    type: string
-                - name: namespace
-                  in: query
-                  schema:
-                    type: string
-                - name: config
-                  in: query
-                  schema:
-                    type: string
-                - name: state
-                  in: query
-                  schema:
-                    type: string
-                - name: is_test
-                  in: query
-                  schema:
-                    type: boolean
-                - name: manifest
-                  in: query
-                  schema:
-                    type: string
-                - name: notes
-                  in: query
-                  schema:
-                    type: string
-                - name: user_name
-                  in: query
-                  schema:
-                    type: string
-                - name: app_name
-                  in: query
-                  schema:
-                    type: string
-                - name: logs
-                  in: query
-                  schema:
-                    type: string
-                - name: create_time
-                  in: query
-                  schema:
-                    type: string
-                - name: update_time
-                  in: query
-                  schema:
-                    type: string
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/app.v1alpha1.DeployApp'
-        post:
-            tags:
-                - AppInterface
-            operationId: AppInterface_DeployApp
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/app.v1alpha1.DeployAppReq'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/app.v1alpha1.DeployApp'
-        delete:
-            tags:
-                - AppInterface
-            operationId: AppInterface_DeleteDeployedApp
-            parameters:
-                - name: app_id
-                  in: query
-                  schema:
-                    type: string
-                - name: version_id
-                  in: query
-                  schema:
-                    type: string
-                - name: cluster_id
-                  in: query
-                  schema:
-                    type: string
-                - name: project_id
-                  in: query
-                  schema:
-                    type: string
-                - name: id
-                  in: query
-                  schema:
-                    type: string
-                - name: release_name
-                  in: query
-                  schema:
-                    type: string
-                - name: namespace
-                  in: query
-                  schema:
-                    type: string
-                - name: page
-                  in: query
-                  schema:
-                    type: integer
-                    format: int32
-                - name: page_size
-                  in: query
-                  schema:
-                    type: integer
-                    format: int32
-                - name: app_name
-                  in: query
-                  schema:
-                    type: string
-                - name: version
-                  in: query
-                  schema:
-                    type: string
-                - name: app_type_id
-                  in: query
-                  schema:
-                    type: string
-                - name: repo_id
-                  in: query
-                  schema:
-                    type: string
-                - name: config
-                  in: query
-                  schema:
-                    type: string
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/common.Msg'
-    /api/v1alpha1/app/deploy/list:
-        get:
-            tags:
-                - AppInterface
-            operationId: AppInterface_ListDeployedApp
-            parameters:
-                - name: app_id
-                  in: query
-                  schema:
-                    type: string
-                - name: version_id
-                  in: query
-                  schema:
-                    type: string
-                - name: cluster_id
-                  in: query
-                  schema:
-                    type: string
-                - name: project_id
-                  in: query
-                  schema:
-                    type: string
-                - name: id
-                  in: query
-                  schema:
-                    type: string
-                - name: release_name
-                  in: query
-                  schema:
-                    type: string
-                - name: namespace
-                  in: query
-                  schema:
-                    type: string
-                - name: page
-                  in: query
-                  schema:
-                    type: integer
-                    format: int32
-                - name: page_size
-                  in: query
-                  schema:
-                    type: integer
-                    format: int32
-                - name: app_name
-                  in: query
-                  schema:
-                    type: string
-                - name: version
-                  in: query
-                  schema:
-                    type: string
-                - name: app_type_id
-                  in: query
-                  schema:
-                    type: string
-                - name: repo_id
-                  in: query
-                  schema:
-                    type: string
-                - name: config
-                  in: query
-                  schema:
-                    type: string
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/app.v1alpha1.DeployAppList'
-    /api/v1alpha1/app/deploy/resources:
-        get:
-            tags:
-                - AppInterface
-            operationId: AppInterface_GetDeployedAppResources
-            parameters:
-                - name: app_id
-                  in: query
-                  schema:
-                    type: string
-                - name: version_id
-                  in: query
-                  schema:
-                    type: string
-                - name: cluster_id
-                  in: query
-                  schema:
-                    type: string
-                - name: project_id
-                  in: query
-                  schema:
-                    type: string
-                - name: id
-                  in: query
-                  schema:
-                    type: string
-                - name: release_name
-                  in: query
-                  schema:
-                    type: string
-                - name: namespace
-                  in: query
-                  schema:
-                    type: string
-                - name: page
-                  in: query
-                  schema:
-                    type: integer
-                    format: int32
-                - name: page_size
-                  in: query
-                  schema:
-                    type: integer
-                    format: int32
-                - name: app_name
-                  in: query
-                  schema:
-                    type: string
-                - name: version
-                  in: query
-                  schema:
-                    type: string
-                - name: app_type_id
-                  in: query
-                  schema:
-                    type: string
-                - name: repo_id
-                  in: query
-                  schema:
-                    type: string
-                - name: config
-                  in: query
-                  schema:
-                    type: string
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/app.v1alpha1.DeployAppResources'
     /api/v1alpha1/app/list:
         get:
             tags:
@@ -437,7 +115,7 @@ paths:
                   in: query
                   schema:
                     type: string
-                - name: state
+                - name: status
                   in: query
                   schema:
                     type: string
@@ -468,6 +146,306 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/common.Msg'
+    /api/v1alpha1/app/release:
+        get:
+            tags:
+                - AppInterface
+            operationId: AppInterface_GetAppRelease
+            parameters:
+                - name: app_id
+                  in: query
+                  schema:
+                    type: string
+                - name: version_id
+                  in: query
+                  schema:
+                    type: string
+                - name: cluster_id
+                  in: query
+                  schema:
+                    type: string
+                - name: project_id
+                  in: query
+                  schema:
+                    type: string
+                - name: id
+                  in: query
+                  schema:
+                    type: string
+                - name: release_name
+                  in: query
+                  schema:
+                    type: string
+                - name: namespace
+                  in: query
+                  schema:
+                    type: string
+                - name: page
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: page_size
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: app_name
+                  in: query
+                  schema:
+                    type: string
+                - name: version
+                  in: query
+                  schema:
+                    type: string
+                - name: app_type_id
+                  in: query
+                  schema:
+                    type: string
+                - name: repo_id
+                  in: query
+                  schema:
+                    type: string
+                - name: config
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/app.v1alpha1.AppRelease'
+        post:
+            tags:
+                - AppInterface
+            operationId: AppInterface_SaveAppRelease
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/app.v1alpha1.AppReleaseReq'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/app.v1alpha1.AppRelease'
+        delete:
+            tags:
+                - AppInterface
+            operationId: AppInterface_DeleteAppRelease
+            parameters:
+                - name: app_id
+                  in: query
+                  schema:
+                    type: string
+                - name: version_id
+                  in: query
+                  schema:
+                    type: string
+                - name: cluster_id
+                  in: query
+                  schema:
+                    type: string
+                - name: project_id
+                  in: query
+                  schema:
+                    type: string
+                - name: id
+                  in: query
+                  schema:
+                    type: string
+                - name: release_name
+                  in: query
+                  schema:
+                    type: string
+                - name: namespace
+                  in: query
+                  schema:
+                    type: string
+                - name: page
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: page_size
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: app_name
+                  in: query
+                  schema:
+                    type: string
+                - name: version
+                  in: query
+                  schema:
+                    type: string
+                - name: app_type_id
+                  in: query
+                  schema:
+                    type: string
+                - name: repo_id
+                  in: query
+                  schema:
+                    type: string
+                - name: config
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/common.Msg'
+    /api/v1alpha1/app/release/list:
+        get:
+            tags:
+                - AppInterface
+            operationId: AppInterface_AppReleaseList
+            parameters:
+                - name: app_id
+                  in: query
+                  schema:
+                    type: string
+                - name: version_id
+                  in: query
+                  schema:
+                    type: string
+                - name: cluster_id
+                  in: query
+                  schema:
+                    type: string
+                - name: project_id
+                  in: query
+                  schema:
+                    type: string
+                - name: id
+                  in: query
+                  schema:
+                    type: string
+                - name: release_name
+                  in: query
+                  schema:
+                    type: string
+                - name: namespace
+                  in: query
+                  schema:
+                    type: string
+                - name: page
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: page_size
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: app_name
+                  in: query
+                  schema:
+                    type: string
+                - name: version
+                  in: query
+                  schema:
+                    type: string
+                - name: app_type_id
+                  in: query
+                  schema:
+                    type: string
+                - name: repo_id
+                  in: query
+                  schema:
+                    type: string
+                - name: config
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/app.v1alpha1.AppReleaseList'
+    /api/v1alpha1/app/release/resources:
+        get:
+            tags:
+                - AppInterface
+            operationId: AppInterface_GetAppReleaseResources
+            parameters:
+                - name: app_id
+                  in: query
+                  schema:
+                    type: string
+                - name: version_id
+                  in: query
+                  schema:
+                    type: string
+                - name: cluster_id
+                  in: query
+                  schema:
+                    type: string
+                - name: project_id
+                  in: query
+                  schema:
+                    type: string
+                - name: id
+                  in: query
+                  schema:
+                    type: string
+                - name: release_name
+                  in: query
+                  schema:
+                    type: string
+                - name: namespace
+                  in: query
+                  schema:
+                    type: string
+                - name: page
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: page_size
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: app_name
+                  in: query
+                  schema:
+                    type: string
+                - name: version
+                  in: query
+                  schema:
+                    type: string
+                - name: app_type_id
+                  in: query
+                  schema:
+                    type: string
+                - name: repo_id
+                  in: query
+                  schema:
+                    type: string
+                - name: config
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/app.v1alpha1.AppReleasepResources'
     /api/v1alpha1/app/repo:
         post:
             tags:
@@ -477,7 +455,7 @@ paths:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/app.v1alpha1.AppHelmRepo'
+                            $ref: '#/components/schemas/app.v1alpha1.AppRepo'
                 required: true
             responses:
                 "200":
@@ -571,7 +549,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/app.v1alpha1.AppHelmRepoList'
+                                $ref: '#/components/schemas/app.v1alpha1.AppRepoList'
     /api/v1alpha1/app/save:
         post:
             tags:
@@ -590,42 +568,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/common.Msg'
-    /api/v1alpha1/app/stop:
-        post:
-            tags:
-                - AppInterface
-            operationId: AppInterface_StopApp
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/app.v1alpha1.DeployAppReq'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/common.Msg'
-    /api/v1alpha1/app/test:
-        post:
-            tags:
-                - AppInterface
-            operationId: AppInterface_AppTest
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/app.v1alpha1.DeployAppReq'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/app.v1alpha1.DeployApp'
     /api/v1alpha1/app/type:
         post:
             tags:
@@ -973,42 +915,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/common.Msg'
-    /api/v1alpha1/project/disable:
-        post:
-            tags:
-                - ProjectService
-            operationId: ProjectService_Disable
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/project.v1alpha1.ProjectReq'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/common.Msg'
-    /api/v1alpha1/project/enable:
-        post:
-            tags:
-                - ProjectService
-            operationId: ProjectService_Enable
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/project.v1alpha1.ProjectReq'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/common.Msg'
     /api/v1alpha1/project/list:
         get:
             tags:
@@ -1034,18 +940,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/project.v1alpha1.ProjectList'
-    /api/v1alpha1/project/mock:
-        get:
-            tags:
-                - ProjectService
-            operationId: ProjectService_GetProjectMockData
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/project.v1alpha1.Project'
     /api/v1alpha1/project/ping:
         get:
             tags:
@@ -1517,7 +1411,106 @@ components:
                         $ref: '#/components/schemas/app.v1alpha1.AppVersion'
                 update_time:
                     type: string
-        app.v1alpha1.AppDeployedResource:
+        app.v1alpha1.AppList:
+            type: object
+            properties:
+                itemCount:
+                    type: integer
+                    format: int32
+                pageCount:
+                    type: integer
+                    format: int32
+                items:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/app.v1alpha1.App'
+        app.v1alpha1.AppRelease:
+            type: object
+            properties:
+                id:
+                    type: string
+                release_name:
+                    type: string
+                app_id:
+                    type: string
+                version_id:
+                    type: string
+                version:
+                    type: string
+                chart:
+                    type: string
+                cluster_id:
+                    type: string
+                project_id:
+                    type: string
+                user_id:
+                    type: string
+                namespace:
+                    type: string
+                config:
+                    type: string
+                status:
+                    type: string
+                is_test:
+                    type: boolean
+                manifest:
+                    type: string
+                notes:
+                    type: string
+                user_name:
+                    type: string
+                app_name:
+                    type: string
+                logs:
+                    type: string
+                create_time:
+                    type: string
+                update_time:
+                    type: string
+        app.v1alpha1.AppReleaseList:
+            type: object
+            properties:
+                items:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/app.v1alpha1.AppRelease'
+                count:
+                    type: integer
+                    format: int32
+        app.v1alpha1.AppReleaseReq:
+            type: object
+            properties:
+                app_id:
+                    type: string
+                version_id:
+                    type: string
+                cluster_id:
+                    type: string
+                project_id:
+                    type: string
+                id:
+                    type: string
+                release_name:
+                    type: string
+                namespace:
+                    type: string
+                page:
+                    type: integer
+                    format: int32
+                page_size:
+                    type: integer
+                    format: int32
+                app_name:
+                    type: string
+                version:
+                    type: string
+                app_type_id:
+                    type: string
+                repo_id:
+                    type: string
+                config:
+                    type: string
+        app.v1alpha1.AppReleaseResource:
             type: object
             properties:
                 name:
@@ -1534,7 +1527,14 @@ components:
                     type: array
                     items:
                         type: string
-        app.v1alpha1.AppHelmRepo:
+        app.v1alpha1.AppReleasepResources:
+            type: object
+            properties:
+                items:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/app.v1alpha1.AppReleaseResource'
+        app.v1alpha1.AppRepo:
             type: object
             properties:
                 id:
@@ -1545,26 +1545,13 @@ components:
                     type: string
                 description:
                     type: string
-        app.v1alpha1.AppHelmRepoList:
+        app.v1alpha1.AppRepoList:
             type: object
             properties:
                 items:
                     type: array
                     items:
-                        $ref: '#/components/schemas/app.v1alpha1.AppHelmRepo'
-        app.v1alpha1.AppList:
-            type: object
-            properties:
-                itemCount:
-                    type: integer
-                    format: int32
-                pageCount:
-                    type: integer
-                    format: int32
-                items:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/app.v1alpha1.App'
+                        $ref: '#/components/schemas/app.v1alpha1.AppRepo'
         app.v1alpha1.AppType:
             type: object
             properties:
@@ -1598,7 +1585,7 @@ components:
                     type: string
                 readme:
                     type: string
-                state:
+                status:
                     type: string
                 test_result:
                     type: string
@@ -1627,99 +1614,6 @@ components:
                         type: string
                 alias:
                     type: string
-        app.v1alpha1.DeployApp:
-            type: object
-            properties:
-                id:
-                    type: string
-                release_name:
-                    type: string
-                app_id:
-                    type: string
-                version_id:
-                    type: string
-                version:
-                    type: string
-                chart:
-                    type: string
-                cluster_id:
-                    type: string
-                project_id:
-                    type: string
-                user_id:
-                    type: string
-                namespace:
-                    type: string
-                config:
-                    type: string
-                state:
-                    type: string
-                is_test:
-                    type: boolean
-                manifest:
-                    type: string
-                notes:
-                    type: string
-                user_name:
-                    type: string
-                app_name:
-                    type: string
-                logs:
-                    type: string
-                create_time:
-                    type: string
-                update_time:
-                    type: string
-        app.v1alpha1.DeployAppList:
-            type: object
-            properties:
-                items:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/app.v1alpha1.DeployApp'
-                count:
-                    type: integer
-                    format: int32
-        app.v1alpha1.DeployAppReq:
-            type: object
-            properties:
-                app_id:
-                    type: string
-                version_id:
-                    type: string
-                cluster_id:
-                    type: string
-                project_id:
-                    type: string
-                id:
-                    type: string
-                release_name:
-                    type: string
-                namespace:
-                    type: string
-                page:
-                    type: integer
-                    format: int32
-                page_size:
-                    type: integer
-                    format: int32
-                app_name:
-                    type: string
-                version:
-                    type: string
-                app_type_id:
-                    type: string
-                repo_id:
-                    type: string
-                config:
-                    type: string
-        app.v1alpha1.DeployAppResources:
-            type: object
-            properties:
-                items:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/app.v1alpha1.AppDeployedResource'
         app.v1alpha1.FileUploadRequest:
             type: object
             properties:
@@ -2089,15 +1983,6 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/project.v1alpha1.Project'
-        project.v1alpha1.ProjectReq:
-            type: object
-            properties:
-                name:
-                    type: string
-                cluster_id:
-                    type: string
-                id:
-                    type: string
         project.v1alpha1.Technology:
             type: object
             properties:

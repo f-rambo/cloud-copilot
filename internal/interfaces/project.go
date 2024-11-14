@@ -16,14 +16,12 @@ import (
 type ProjectInterface struct {
 	v1alpha1.UnimplementedProjectServiceServer
 	projectUc *biz.ProjectUsecase
-	appUc     *biz.AppUsecase
-	clusterUc *biz.ClusterUsecase
 	c         *conf.Bootstrap
 	log       *log.Helper
 }
 
-func NewProjectInterface(uc *biz.ProjectUsecase, appUc *biz.AppUsecase, clusterUc *biz.ClusterUsecase, c *conf.Bootstrap, logger log.Logger) *ProjectInterface {
-	return &ProjectInterface{projectUc: uc, appUc: appUc, clusterUc: clusterUc, c: c, log: log.NewHelper(logger)}
+func NewProjectInterface(uc *biz.ProjectUsecase, c *conf.Bootstrap, logger log.Logger) *ProjectInterface {
+	return &ProjectInterface{projectUc: uc, c: c, log: log.NewHelper(logger)}
 }
 
 func (p *ProjectInterface) Ping(ctx context.Context, _ *emptypb.Empty) (*common.Msg, error) {
@@ -102,42 +100,6 @@ func (p *ProjectInterface) Delete(ctx context.Context, projectReq *v1alpha1.Proj
 	err := p.projectUc.Delete(ctx, projectReq.Id)
 	if err != nil {
 		return nil, err
-	}
-	return common.Response(), nil
-}
-
-func (p *ProjectInterface) GetProjectMockData(ctx context.Context, _ *emptypb.Empty) (*v1alpha1.Project, error) {
-	bizProject := &biz.Project{
-		Name:        "project name",
-		Namespace:   "projectNamespace",
-		Description: "project description",
-		State:       biz.ProjectStateInit,
-	}
-	return p.bizProjectToProject(bizProject)
-}
-
-func (p *ProjectInterface) Enable(ctx context.Context, projectReq *v1alpha1.ProjectReq) (*common.Msg, error) {
-	if projectReq.Id == 0 {
-		return nil, errors.New("project id is required")
-	}
-	project, err := p.projectUc.Get(ctx, projectReq.Id)
-	if err != nil {
-		return nil, err
-	}
-	cluster, err := p.clusterUc.Get(ctx, project.ClusterID)
-	if err != nil {
-		return nil, err
-	}
-	err = p.projectUc.Enable(ctx, project, cluster, p.appUc.BaseInstallation)
-	if err != nil {
-		return nil, err
-	}
-	return common.Response(), nil
-}
-
-func (p *ProjectInterface) Disable(ctx context.Context, projectReq *v1alpha1.ProjectReq) (*common.Msg, error) {
-	if projectReq.Id == 0 {
-		return nil, errors.New("project id is required")
 	}
 	return common.Response(), nil
 }

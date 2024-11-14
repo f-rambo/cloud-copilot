@@ -3,16 +3,12 @@ package biz
 import (
 	"context"
 	"fmt"
-	"reflect"
 	"strings"
 	"sync"
 
 	"github.com/f-rambo/ocean/internal/conf"
-	"github.com/f-rambo/ocean/utils"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/pkg/errors"
-	"github.com/spf13/cast"
-	"gopkg.in/yaml.v2"
 	"gorm.io/gorm"
 )
 
@@ -36,8 +32,8 @@ type AppType struct {
 
 const (
 	AppTypeAll        = 0
-	AppTypeAppPackage = -1
-	AppTypeRepo       = -2
+	AppTypeAppPackage = -1 // package
+	AppTypeRepo       = -2 // url
 )
 
 func DefaultAppType() []*AppType {
@@ -48,7 +44,7 @@ func DefaultAppType() []*AppType {
 	}
 }
 
-type AppHelmRepo struct {
+type AppRepo struct {
 	ID          int64  `json:"id" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
 	Name        string `json:"name" gorm:"column:name; default:''; NOT NULL"`
 	Url         string `json:"url" gorm:"column:url; default:''; NOT NULL"`
@@ -57,17 +53,17 @@ type AppHelmRepo struct {
 	gorm.Model
 }
 
-func (a *AppHelmRepo) SetIndexPath(path string) {
+func (a *AppRepo) SetIndexPath(path string) {
 	a.IndexPath = path
 }
 
 type App struct {
-	ID            int64         `json:"id" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
-	Name          string        `json:"name" gorm:"column:name; default:''; NOT NULL; index"`
-	Icon          string        `json:"icon,omitempty" gorm:"column:icon; default:''; NOT NULL"`
-	AppTypeID     int64         `json:"app_type_id,omitempty" gorm:"column:app_type_id; default:0; NOT NULL"`
-	AppHelmRepoID int64         `json:"app_helm_repo_id,omitempty" gorm:"column:app_helm_repo_id; default:0; NOT NULL"`
-	Versions      []*AppVersion `json:"versions,omitempty" gorm:"-"`
+	ID        int64         `json:"id" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
+	Name      string        `json:"name" gorm:"column:name; default:''; NOT NULL; index"`
+	Icon      string        `json:"icon,omitempty" gorm:"column:icon; default:''; NOT NULL"`
+	AppTypeID int64         `json:"app_type_id,omitempty" gorm:"column:app_type_id; default:0; NOT NULL"`
+	AppRepoID int64         `json:"app_repo_id,omitempty" gorm:"column:app_repo_id; default:0; NOT NULL"`
+	Versions  []*AppVersion `json:"versions,omitempty" gorm:"-"`
 	gorm.Model
 }
 
@@ -80,7 +76,7 @@ type AppVersion struct {
 	Version     string `json:"version,omitempty" gorm:"column:version; default:''; NOT NULL; index"`
 	Config      string `json:"config,omitempty" gorm:"column:config; default:''; NOT NULL"`
 	Readme      string `json:"readme,omitempty" gorm:"-"`
-	State       string `json:"state,omitempty" gorm:"column:state; default:''; NOT NULL"`
+	Status      string `json:"status,omitempty" gorm:"column:status; default:''; NOT NULL"`
 	TestResult  string `json:"test_result,omitempty" gorm:"column:test_result; default:''; NOT NULL"`
 	Description string `json:"description,omitempty" gorm:"column:description; default:''; NOT NULL"`
 	Metadata    []byte `json:"metadata,omitempty" gorm:"-"`
@@ -102,7 +98,7 @@ type AppRelease struct {
 	UserID              int64                 `json:"user_id" gorm:"column:user_id; default:0; NOT NULL; index"`
 	Namespace           string                `json:"namespace,omitempty" gorm:"column:namespace; default:''; NOT NULL"`
 	Config              string                `json:"config,omitempty" gorm:"column:config; default:''; NOT NULL"`
-	State               string                `json:"state,omitempty" gorm:"column:state; default:''; NOT NULL"`
+	Status              string                `json:"status,omitempty" gorm:"column:status; default:''; NOT NULL"`
 	IsTest              bool                  `json:"is_test,omitempty" gorm:"column:is_test; default:false; NOT NULL"`
 	Manifest            string                `json:"manifest,omitempty" gorm:"column:manifest; default:''; NOT NULL"`
 	Notes               string                `json:"notes,omitempty" gorm:"column:notes; default:''; NOT NULL"`
@@ -174,7 +170,7 @@ func (a *App) DeleteVersion(version string) {
 	}
 }
 
-func (v *AppVersion) GenerateAppRelease() *AppRelease {
+func (v *AppVersion) AppVersionToAppRelease() *AppRelease {
 	releaseName := fmt.Sprintf("%s-%s", v.AppName, strings.ReplaceAll(v.Version, ".", "-"))
 	return &AppRelease{
 		AppID:       v.AppID,
@@ -182,13 +178,12 @@ func (v *AppVersion) GenerateAppRelease() *AppRelease {
 		Version:     v.Version,
 		Chart:       v.Chart,
 		AppName:     v.AppName,
-		Namespace:   "default",
 		Config:      v.Config,
 		ReleaseName: releaseName,
 	}
 }
 
-type AppRepo interface {
+type AppRepoInterface interface {
 	Save(context.Context, *App) error
 	List(context.Context, *App, int32, int32) ([]*App, int32, error)
 	Get(ctx context.Context, appID int64) (*App, error)
@@ -201,10 +196,10 @@ type AppRepo interface {
 	DeleteAppRelease(context.Context, int64) error
 	AppReleaseList(context.Context, AppRelease, int32, int32) ([]*AppRelease, int32, error)
 	GetAppRelease(ctx context.Context, id int64) (*AppRelease, error)
-	SaveRepo(context.Context, *AppHelmRepo) error
-	ListRepo(context.Context) ([]*AppHelmRepo, error)
-	GetRepo(context.Context, int64) (*AppHelmRepo, error)
-	GetRepoByName(context.Context, string) (*AppHelmRepo, error)
+	SaveRepo(context.Context, *AppRepo) error
+	ListRepo(context.Context) ([]*AppRepo, error)
+	GetRepo(context.Context, int64) (*AppRepo, error)
+	GetRepoByName(context.Context, string) (*AppRepo, error)
 	DeleteRepo(context.Context, int64) error
 }
 
@@ -219,14 +214,14 @@ type AppConstruct interface {
 	GetAppVersionChartInfomation(context.Context, *AppVersion) error
 	AppRelease(context.Context, *AppRelease) error
 	DeleteAppRelease(context.Context, *AppRelease) error
-	AddAppRepo(context.Context, *AppHelmRepo) error
-	GetAppDetailByRepo(ctx context.Context, apprepo *AppHelmRepo, appName, version string) (*App, error)
-	GetAppsByRepo(context.Context, *AppHelmRepo) ([]*App, error)
+	AddAppRepo(context.Context, *AppRepo) error
+	GetAppDetailByRepo(ctx context.Context, apprepo *AppRepo, appName, version string) (*App, error)
+	GetAppsByRepo(context.Context, *AppRepo) ([]*App, error)
 	DeleteAppChart(ctx context.Context, app *App, versionId int64) (err error)
 }
 
 type AppUsecase struct {
-	appRepo      AppRepo
+	appRepo      AppRepoInterface
 	appRuntime   AppRuntime
 	appConstruct AppConstruct
 	locks        map[int64]*sync.Mutex
@@ -236,7 +231,7 @@ type AppUsecase struct {
 	log          *log.Helper
 }
 
-func NewAppUsecase(appRepo AppRepo, appRuntime AppRuntime, appConstruct AppConstruct, logger log.Logger, conf *conf.Bootstrap) *AppUsecase {
+func NewAppUsecase(appRepo AppRepoInterface, appRuntime AppRuntime, appConstruct AppConstruct, logger log.Logger, conf *conf.Bootstrap) *AppUsecase {
 	appuc := &AppUsecase{
 		appRepo:      appRepo,
 		appRuntime:   appRuntime,
@@ -301,47 +296,56 @@ func (uc *AppUsecase) ListAppType(ctx context.Context) ([]*AppType, error) {
 func (uc *AppUsecase) DeleteAppType(ctx context.Context, appTypeID int64) error {
 	return uc.appRepo.DeleteAppType(ctx, appTypeID)
 }
-func (uc *AppUsecase) getLock(appID int64) *sync.Mutex {
-	uc.locksMux.Lock()
-	defer uc.locksMux.Unlock()
 
-	if appID < 0 {
-		uc.log.Errorf("Invalid appID: %d", appID)
-		return &sync.Mutex{}
+func (uc *AppUsecase) SaveRepo(ctx context.Context, repo *AppRepo) error {
+	repoList, err := uc.appRepo.ListRepo(ctx)
+	if err != nil {
+		return err
 	}
-
-	if _, exists := uc.locks[appID]; !exists {
-		uc.locks[appID] = &sync.Mutex{}
-	}
-	return uc.locks[appID]
-}
-
-func (uc *AppUsecase) apply(appRelease *AppRelease) {
-	uc.eventChan <- appRelease
-}
-
-func (uc *AppUsecase) appReleaseRunner() {
-	ctx := context.Background()
-	if !uc.appRuntime.CheckCluster(ctx) {
-		return
-	}
-	// todo default app check
-	for event := range uc.eventChan {
-		go uc.handleEvent(ctx, event)
-	}
-}
-
-func (uc *AppUsecase) handleEvent(ctx context.Context, appRelease *AppRelease) (err error) {
-	lock := uc.getLock(appRelease.ID)
-	lock.Lock()
-	defer func() {
-		if err != nil {
-			uc.log.Errorf("App reconcile error: %v", err)
+	for _, v := range repoList {
+		if v.Name == repo.Name {
+			repo.ID = v.ID
 		}
-		lock.Unlock()
-	}()
-	fmt.Println("Reconcile", appRelease, ctx)
-	return nil
+	}
+	err = uc.appConstruct.AddAppRepo(ctx, repo)
+	if err != nil {
+		return err
+	}
+	return uc.appRepo.SaveRepo(ctx, repo)
+}
+
+func (uc *AppUsecase) ListRepo(ctx context.Context) ([]*AppRepo, error) {
+	return uc.appRepo.ListRepo(ctx)
+}
+
+func (uc *AppUsecase) DeleteRepo(ctx context.Context, repoID int64) error {
+	return uc.appRepo.DeleteRepo(ctx, repoID)
+}
+
+func (uc *AppUsecase) GetAppsByRepo(ctx context.Context, repoID int64) ([]*App, error) {
+	repo, err := uc.appRepo.GetRepo(ctx, repoID)
+	if err != nil {
+		return nil, err
+	}
+	return uc.appConstruct.GetAppsByRepo(ctx, repo)
+}
+
+func (uc *AppUsecase) GetAppDetailByRepo(ctx context.Context, repoID int64, appName, version string) (*App, error) {
+	repos, err := uc.appRepo.ListRepo(ctx)
+	if err != nil {
+		return nil, err
+	}
+	var repo *AppRepo
+	for _, v := range repos {
+		if v.ID == repoID {
+			repo = v
+			break
+		}
+	}
+	if repo == nil {
+		return nil, errors.New("app repo not found")
+	}
+	return uc.appConstruct.GetAppDetailByRepo(ctx, repo, appName, version)
 }
 
 func (uc *AppUsecase) GetAppRelease(ctx context.Context, id int64) (*AppRelease, error) {
@@ -356,162 +360,7 @@ func (uc *AppUsecase) GetAppVersionChartInfomation(ctx context.Context, appVersi
 	return uc.appConstruct.GetAppVersionChartInfomation(ctx, appVersion)
 }
 
-func (uc *AppUsecase) AppTest(ctx context.Context, appID, versionID int64) (*AppRelease, error) {
-	app, err := uc.Get(ctx, appID, versionID)
-	if err != nil {
-		return nil, err
-	}
-	appVersion := app.GetVersionById(versionID)
-	if appVersion == nil {
-		return nil, errors.New("app version not found")
-	}
-	appRelease := appVersion.GenerateAppRelease()
-	appRelease.IsTest = true
-	appReleaseErr := uc.appConstruct.AppRelease(ctx, appRelease)
-	if appReleaseErr != nil {
-		appVersion.State = AppTestFailed
-	}
-	if appReleaseErr == nil {
-		appVersion.State = AppTested
-		appVersion.TestResult = "success"
-	}
-	err = uc.appRepo.Save(ctx, app)
-	if err != nil {
-		return nil, err
-	}
-	return appRelease, appReleaseErr
-}
-
-func (uc *AppUsecase) AppRelease(ctx context.Context, appReleaseReq *AppRelease) (*AppRelease, error) {
-	var app *App
-	var appVersion *AppVersion
-	var err error
-	if appReleaseReq.AppTypeID == AppTypeRepo {
-		app, err = uc.GetAppDetailByRepo(ctx, appReleaseReq.RepoID, appReleaseReq.AppName, appReleaseReq.Version)
-		if err != nil {
-			return nil, err
-		}
-		appVersion = app.GetVersion(appReleaseReq.Version)
-	}
-	if appReleaseReq.AppTypeID != AppTypeRepo {
-		app, err = uc.Get(ctx, appReleaseReq.AppID, appReleaseReq.VersionID)
-		if err != nil {
-			return nil, err
-		}
-		appVersion = app.GetVersionById(appReleaseReq.VersionID)
-	}
-	appRelease := appVersion.GenerateAppRelease()
-	appRelease.ID = appReleaseReq.ID
-	appRelease.RepoID = appReleaseReq.RepoID
-	appRelease.AppTypeID = app.AppTypeID
-	appRelease.ClusterID = appReleaseReq.ClusterID
-	appRelease.ProjectID = appReleaseReq.ProjectID
-	appRelease.Namespace = appReleaseReq.Namespace
-	appRelease.Config = appReleaseReq.Config
-	appRelease.UserID = appReleaseReq.UserID
-	if appReleaseReq.ID != 0 {
-		appReleaseRes, err := uc.appRepo.GetAppRelease(ctx, appReleaseReq.ID)
-		if err != nil {
-			return nil, err
-		}
-		appRelease.ReleaseName = appReleaseRes.ReleaseName
-	}
-	appReleaseErr := uc.appConstruct.AppRelease(ctx, appRelease)
-	err = uc.appRepo.SaveAppRelease(ctx, appRelease)
-	if err != nil {
-		return nil, err
-	}
-	uc.apply(appRelease)
-	return appRelease, appReleaseErr
-}
-
-func (uc *AppUsecase) DeleteAppRelease(ctx context.Context, id int64) error {
-	appRelease, err := uc.appRepo.GetAppRelease(ctx, id)
-	if err != nil {
-		return err
-	}
-	if appRelease == nil {
-		return nil
-	}
-	err = uc.appConstruct.DeleteAppRelease(ctx, appRelease)
-	if err != nil {
-		return err
-	}
-	err = uc.appRepo.DeleteAppRelease(ctx, id)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (uc *AppUsecase) StopApp(ctx context.Context, id int64) error {
-	appRelease, err := uc.appRepo.GetAppRelease(ctx, id)
-	if err != nil {
-		return err
-	}
-	if appRelease == nil {
-		return errors.New("app appRelease not found")
-	}
-	appReleaseDelErr := uc.appConstruct.DeleteAppRelease(ctx, appRelease)
-	err = uc.appRepo.SaveAppRelease(ctx, appRelease)
-	if err != nil {
-		return err
-	}
-	return appReleaseDelErr
-}
-
-func (uc *AppUsecase) SaveRepo(ctx context.Context, helmRepo *AppHelmRepo) error {
-	repoList, err := uc.appRepo.ListRepo(ctx)
-	if err != nil {
-		return err
-	}
-	for _, v := range repoList {
-		if v.Name == helmRepo.Name {
-			helmRepo.ID = v.ID
-		}
-	}
-	err = uc.appConstruct.AddAppRepo(ctx, helmRepo)
-	if err != nil {
-		return err
-	}
-	return uc.appRepo.SaveRepo(ctx, helmRepo)
-}
-
-func (uc *AppUsecase) ListRepo(ctx context.Context) ([]*AppHelmRepo, error) {
-	return uc.appRepo.ListRepo(ctx)
-}
-
-func (uc *AppUsecase) DeleteRepo(ctx context.Context, helmRepoID int64) error {
-	return uc.appRepo.DeleteRepo(ctx, helmRepoID)
-}
-
-func (uc *AppUsecase) GetAppsByRepo(ctx context.Context, helmRepoID int64) ([]*App, error) {
-	helmRepo, err := uc.appRepo.GetRepo(ctx, helmRepoID)
-	if err != nil {
-		return nil, err
-	}
-	return uc.appConstruct.GetAppsByRepo(ctx, helmRepo)
-}
-
-func (uc *AppUsecase) GetAppDetailByRepo(ctx context.Context, helmRepoID int64, appName, version string) (*App, error) {
-	helmRepos, err := uc.appRepo.ListRepo(ctx)
-	if err != nil {
-		return nil, err
-	}
-	var helmRepo *AppHelmRepo
-	for _, v := range helmRepos {
-		if v.ID == helmRepoID {
-			helmRepo = v
-			break
-		}
-	}
-	if helmRepo == nil {
-		return nil, errors.New("helm repo not found")
-	}
-	return uc.appConstruct.GetAppDetailByRepo(ctx, helmRepo, appName, version)
-}
-
-func (uc *AppUsecase) GetReleaseResources(ctx context.Context, appReleaseID int64) ([]*AppReleaseResource, error) {
+func (uc *AppUsecase) GetAppReleaseResourcesInCluster(ctx context.Context, appReleaseID int64) ([]*AppReleaseResource, error) {
 	appRelease, err := uc.appRepo.GetAppRelease(ctx, appReleaseID)
 	if err != nil {
 		return nil, err
@@ -532,83 +381,119 @@ func (uc *AppUsecase) GetReleaseResources(ctx context.Context, appReleaseID int6
 	return resources, nil
 }
 
-func (uc *AppUsecase) BaseInstallation(ctx context.Context, cluster *Cluster, project *Project) error {
-	configMaps := make([]map[string]interface{}, 0)
-	conf := reflect.ValueOf(uc.conf)
-	for i := 0; i < conf.NumField(); i++ {
-		filed := conf.Field(i)
-		if filed.Kind() != reflect.Map {
-			continue
+func (uc *AppUsecase) SaveAppRelease(ctx context.Context, appReleaseReq *AppRelease) (appRelease *AppRelease, err error) {
+	var appVersion *AppVersion
+	if appReleaseReq.AppTypeID == AppTypeRepo {
+		app, err := uc.GetAppDetailByRepo(ctx, appReleaseReq.RepoID, appReleaseReq.AppName, appReleaseReq.Version)
+		if err != nil {
+			return nil, err
 		}
-		if configMap, ok := filed.Interface().(map[string]interface{}); ok {
-			configMaps = append(configMaps, configMap)
+		appVersion = app.GetVersion(appReleaseReq.Version)
+	}
+	if appReleaseReq.AppTypeID != AppTypeRepo {
+		app, err := uc.Get(ctx, appReleaseReq.AppID, appReleaseReq.VersionID)
+		if err != nil {
+			return nil, err
+		}
+		appVersion = app.GetVersionById(appReleaseReq.VersionID)
+	}
+	if appVersion == nil {
+		return nil, errors.New("app version not found or not support app type")
+	}
+	if appReleaseReq.ID != 0 {
+		appRelease, err = uc.appRepo.GetAppRelease(ctx, appReleaseReq.ID)
+		if err != nil {
+			return nil, err
+		}
+		appRelease.Config = appReleaseReq.Config
+		err = uc.appRepo.SaveAppRelease(ctx, appRelease)
+		if err != nil {
+			return nil, err
+		}
+		uc.apply(appRelease)
+		return appRelease, nil
+	}
+	appReleaseRes := appVersion.AppVersionToAppRelease()
+	appRelease = appReleaseReq
+	appRelease.ReleaseName = appReleaseRes.ReleaseName
+	appRelease.Chart = appReleaseRes.Chart
+	appRelease.AppID = appReleaseRes.AppID
+	appRelease.VersionID = appReleaseRes.VersionID
+	if appRelease.Config == "" {
+		appRelease.Config = appReleaseRes.Config
+	}
+	err = uc.appRepo.SaveAppRelease(ctx, appRelease)
+	if err != nil {
+		return nil, err
+	}
+	uc.apply(appRelease)
+	return appRelease, nil
+}
+
+func (uc *AppUsecase) DeleteAppRelease(ctx context.Context, id int64) error {
+	err := uc.appRepo.DeleteAppRelease(ctx, id)
+	if err != nil {
+		return err
+	}
+	appRelease, err := uc.appRepo.GetAppRelease(ctx, id)
+	if err != nil {
+		return err
+	}
+	uc.apply(appRelease)
+	return nil
+}
+
+func (uc *AppUsecase) apply(appRelease *AppRelease) {
+	uc.eventChan <- appRelease
+}
+
+func (uc *AppUsecase) appReleaseRunner() {
+	ctx := context.Background()
+	if !uc.appRuntime.CheckCluster(ctx) {
+		return
+	}
+	// todo default app check
+	for event := range uc.eventChan {
+		go func(event *AppRelease) {
+			err := uc.handleEvent(ctx, event)
+			if err != nil {
+				uc.log.Errorf("Failed to app release handle event: %v", err)
+			}
+		}(event)
+	}
+}
+
+func (uc *AppUsecase) getLock(appID int64) *sync.Mutex {
+	uc.locksMux.Lock()
+	defer uc.locksMux.Unlock()
+
+	if appID < 0 {
+		uc.log.Errorf("Invalid appID: %d", appID)
+		return &sync.Mutex{}
+	}
+
+	if _, exists := uc.locks[appID]; !exists {
+		uc.locks[appID] = &sync.Mutex{}
+	}
+	return uc.locks[appID]
+}
+
+func (uc *AppUsecase) handleEvent(ctx context.Context, appRelease *AppRelease) (err error) {
+	lock := uc.getLock(appRelease.ID)
+	lock.Lock()
+	defer func() {
+		uc.appRepo.SaveAppRelease(ctx, appRelease)
+		lock.Unlock()
+	}()
+	if appRelease.DeletedAt.Valid {
+		err = uc.appConstruct.DeleteAppRelease(ctx, appRelease)
+		if err != nil {
+			return err
 		}
 	}
-	for _, configMap := range configMaps {
-		enable, enableOk := utils.GetValueFromNestedMap(configMap, "base.enable")
-		if !enableOk || !cast.ToBool(enable) {
-			continue
-		}
-		repoUrl, repoUrlOk := utils.GetValueFromNestedMap(configMap, "base.repo_url")
-		if !repoUrlOk {
-			continue
-		}
-		repoName, repoNameOK := utils.GetValueFromNestedMap(configMap, "base.repo_name")
-		if !repoNameOK {
-			continue
-		}
-		appVersion, appVersionOK := utils.GetValueFromNestedMap(configMap, "base.version")
-		if !appVersionOK {
-			continue
-		}
-		chartName, chartNameOK := utils.GetValueFromNestedMap(configMap, "base.chart_name")
-		if !chartNameOK {
-			continue
-		}
-		namespace, namespaceOK := utils.GetValueFromNestedMap(configMap, "base.namespace")
-		if !namespaceOK {
-			namespace = "default"
-		}
-		repo, err := uc.appRepo.GetRepoByName(ctx, cast.ToString(repoName))
-		if err != nil {
-			return err
-		}
-		if repo == nil || repo.ID == 0 {
-			repo = &AppHelmRepo{Name: cast.ToString(repoName), Url: cast.ToString(repoUrl)}
-			err = uc.SaveRepo(ctx, repo)
-			if err != nil {
-				return err
-			}
-		}
-		app, err := uc.GetAppByName(ctx, cast.ToString(chartName))
-		if err != nil {
-			return err
-		}
-		if app != nil && app.ID > 0 {
-			continue
-		}
-		delete(configMap, "base")
-		appConfigYamlByte, err := yaml.Marshal(configMap)
-		if err != nil {
-			return err
-		}
-		appRelease := &AppRelease{
-			ClusterID: cluster.ID,
-			AppName:   cast.ToString(chartName),
-			AppTypeID: AppTypeRepo,
-			RepoID:    repo.ID,
-			Version:   cast.ToString(appVersion),
-			Config:    string(appConfigYamlByte),
-			Namespace: cast.ToString(namespace),
-		}
-		if project != nil {
-			appRelease.ProjectID = project.ID
-			appRelease.Namespace = project.Namespace
-		}
-		_, err = uc.AppRelease(ctx, appRelease)
-		if err != nil {
-			return err
-		}
+	err = uc.appConstruct.AppRelease(ctx, appRelease)
+	if err != nil {
+		return err
 	}
 	return nil
 }

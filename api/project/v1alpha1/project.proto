@@ -41,24 +41,4 @@ service ProjectService {
                   delete: "/api/v1alpha1/project"
             };
       }
-
-      rpc GetProjectMockData(google.protobuf.Empty) returns (project.v1alpha1.Project) {
-            option (google.api.http) = {
-                  get: "/api/v1alpha1/project/mock"
-            };
-      }
-
-      rpc Enable(project.v1alpha1.ProjectReq) returns (common.Msg) {
-            option (google.api.http) = {
-                  post: "/api/v1alpha1/project/enable"
-                  body: "*"
-            };
-      }
-
-      rpc Disable(project.v1alpha1.ProjectReq) returns (common.Msg) {
-            option (google.api.http) = {
-                  post: "/api/v1alpha1/project/disable"
-                  body: "*"
-            };
-      }
 }

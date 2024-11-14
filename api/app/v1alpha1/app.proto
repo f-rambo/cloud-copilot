@@ -67,79 +67,65 @@ service AppInterface {
             };
       }
 
-      rpc AppTest(app.v1alpha1.DeployAppReq) returns (app.v1alpha1.DeployApp) {
-            option (google.api.http) = {
-                  post: "/api/v1alpha1/app/test"
-                  body: "*"
-            };
-      }
-
-      rpc GetAppDeployed(app.v1alpha1.DeployApp) returns (app.v1alpha1.DeployApp) {
-            option (google.api.http) = {
-                  get: "/api/v1alpha1/app/deploy"
-            };
-      }
-      
-      rpc DeployApp(app.v1alpha1.DeployAppReq) returns (app.v1alpha1.DeployApp) {
-            option (google.api.http) = {
-                  post: "/api/v1alpha1/app/deploy"
-                  body: "*"
-            };
-      }
-
-      rpc ListDeployedApp(app.v1alpha1.DeployAppReq) returns (app.v1alpha1.DeployAppList) {
-            option (google.api.http) = {
-                  get: "/api/v1alpha1/app/deploy/list"
-            };
-      }
-
-      rpc StopApp(app.v1alpha1.DeployAppReq) returns (common.Msg) {
-            option (google.api.http) = {
-                  post: "/api/v1alpha1/app/stop"
-                  body: "*"
-            };
-      }
-
-      rpc DeleteDeployedApp(app.v1alpha1.DeployAppReq) returns (common.Msg) {
-            option (google.api.http) = {
-                  delete: "/api/v1alpha1/app/deploy"
-            };
-      }
-
-      rpc GetDeployedAppResources(app.v1alpha1.DeployAppReq) returns (app.v1alpha1.DeployAppResources) {
-            option (google.api.http) = {
-                  get: "/api/v1alpha1/app/deploy/resources"
-            };
-      }
-
-      rpc SaveRepo(app.v1alpha1.AppHelmRepo) returns (common.Msg) {
+      rpc SaveRepo(app.v1alpha1.AppRepo) returns (common.Msg) {
             option (google.api.http) = {
                   post: "/api/v1alpha1/app/repo"
                   body: "*"
             };
       }
 
-      rpc ListRepo(google.protobuf.Empty) returns (app.v1alpha1.AppHelmRepoList) {
+      rpc ListRepo(google.protobuf.Empty) returns (app.v1alpha1.AppRepoList) {
             option (google.api.http) = {
                   get: "/api/v1alpha1/app/repo/list"
             };
       }
 
-      rpc DeleteRepo(app.v1alpha1.AppHelmRepoReq) returns (common.Msg) {
+      rpc DeleteRepo(app.v1alpha1.AppRepoReq) returns (common.Msg) {
             option (google.api.http) = {
                   delete: "/api/v1alpha1/app/repo"
             };
       }
 
-      rpc GetAppsByRepo(app.v1alpha1.AppHelmRepoReq) returns (app.v1alpha1.AppList) {
+      rpc GetAppsByRepo(app.v1alpha1.AppRepoReq) returns (app.v1alpha1.AppList) {
             option (google.api.http) = {
                   get: "/api/v1alpha1/app/repo/apps"
             };
       }
 
-      rpc GetAppDetailByRepo(app.v1alpha1.AppHelmRepoReq) returns (app.v1alpha1.App) {
+      rpc GetAppDetailByRepo(app.v1alpha1.AppRepoReq) returns (app.v1alpha1.App) {
             option (google.api.http) = {
                   get: "/api/v1alpha1/app/repo/app/detail"
+            };
+      }
+
+      rpc GetAppRelease(app.v1alpha1.AppReleaseReq) returns (app.v1alpha1.AppRelease) {
+            option (google.api.http) = {
+                  get: "/api/v1alpha1/app/release"
+            };
+      }
+      
+      rpc AppReleaseList(app.v1alpha1.AppReleaseReq) returns (app.v1alpha1.AppReleaseList) {
+            option (google.api.http) = {
+                  get: "/api/v1alpha1/app/release/list"
+            };
+      }
+
+      rpc GetAppReleaseResources(app.v1alpha1.AppReleaseReq) returns (app.v1alpha1.AppReleasepResources) {
+            option (google.api.http) = {
+                  get: "/api/v1alpha1/app/release/resources"
+            };
+      }
+
+      rpc SaveAppRelease(app.v1alpha1.AppReleaseReq) returns (app.v1alpha1.AppRelease) {
+            option (google.api.http) = {
+                  post: "/api/v1alpha1/app/release"
+                  body: "*"
+            };
+      }
+      
+      rpc DeleteAppRelease(app.v1alpha1.AppReleaseReq) returns (common.Msg) {
+            option (google.api.http) = {
+                  delete: "/api/v1alpha1/app/release"
             };
       }
 

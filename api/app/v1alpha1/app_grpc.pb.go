@@ -21,27 +21,25 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	AppInterface_Ping_FullMethodName                    = "/app.v1alpha1.AppInterface/Ping"
-	AppInterface_UploadApp_FullMethodName               = "/app.v1alpha1.AppInterface/UploadApp"
-	AppInterface_Save_FullMethodName                    = "/app.v1alpha1.AppInterface/Save"
-	AppInterface_Get_FullMethodName                     = "/app.v1alpha1.AppInterface/Get"
-	AppInterface_List_FullMethodName                    = "/app.v1alpha1.AppInterface/List"
-	AppInterface_Delete_FullMethodName                  = "/app.v1alpha1.AppInterface/Delete"
-	AppInterface_CreateAppType_FullMethodName           = "/app.v1alpha1.AppInterface/CreateAppType"
-	AppInterface_ListAppType_FullMethodName             = "/app.v1alpha1.AppInterface/ListAppType"
-	AppInterface_DeleteAppType_FullMethodName           = "/app.v1alpha1.AppInterface/DeleteAppType"
-	AppInterface_AppTest_FullMethodName                 = "/app.v1alpha1.AppInterface/AppTest"
-	AppInterface_GetAppDeployed_FullMethodName          = "/app.v1alpha1.AppInterface/GetAppDeployed"
-	AppInterface_DeployApp_FullMethodName               = "/app.v1alpha1.AppInterface/DeployApp"
-	AppInterface_ListDeployedApp_FullMethodName         = "/app.v1alpha1.AppInterface/ListDeployedApp"
-	AppInterface_StopApp_FullMethodName                 = "/app.v1alpha1.AppInterface/StopApp"
-	AppInterface_DeleteDeployedApp_FullMethodName       = "/app.v1alpha1.AppInterface/DeleteDeployedApp"
-	AppInterface_GetDeployedAppResources_FullMethodName = "/app.v1alpha1.AppInterface/GetDeployedAppResources"
-	AppInterface_SaveRepo_FullMethodName                = "/app.v1alpha1.AppInterface/SaveRepo"
-	AppInterface_ListRepo_FullMethodName                = "/app.v1alpha1.AppInterface/ListRepo"
-	AppInterface_DeleteRepo_FullMethodName              = "/app.v1alpha1.AppInterface/DeleteRepo"
-	AppInterface_GetAppsByRepo_FullMethodName           = "/app.v1alpha1.AppInterface/GetAppsByRepo"
-	AppInterface_GetAppDetailByRepo_FullMethodName      = "/app.v1alpha1.AppInterface/GetAppDetailByRepo"
+	AppInterface_Ping_FullMethodName                   = "/app.v1alpha1.AppInterface/Ping"
+	AppInterface_UploadApp_FullMethodName              = "/app.v1alpha1.AppInterface/UploadApp"
+	AppInterface_Save_FullMethodName                   = "/app.v1alpha1.AppInterface/Save"
+	AppInterface_Get_FullMethodName                    = "/app.v1alpha1.AppInterface/Get"
+	AppInterface_List_FullMethodName                   = "/app.v1alpha1.AppInterface/List"
+	AppInterface_Delete_FullMethodName                 = "/app.v1alpha1.AppInterface/Delete"
+	AppInterface_CreateAppType_FullMethodName          = "/app.v1alpha1.AppInterface/CreateAppType"
+	AppInterface_ListAppType_FullMethodName            = "/app.v1alpha1.AppInterface/ListAppType"
+	AppInterface_DeleteAppType_FullMethodName          = "/app.v1alpha1.AppInterface/DeleteAppType"
+	AppInterface_SaveRepo_FullMethodName               = "/app.v1alpha1.AppInterface/SaveRepo"
+	AppInterface_ListRepo_FullMethodName               = "/app.v1alpha1.AppInterface/ListRepo"
+	AppInterface_DeleteRepo_FullMethodName             = "/app.v1alpha1.AppInterface/DeleteRepo"
+	AppInterface_GetAppsByRepo_FullMethodName          = "/app.v1alpha1.AppInterface/GetAppsByRepo"
+	AppInterface_GetAppDetailByRepo_FullMethodName     = "/app.v1alpha1.AppInterface/GetAppDetailByRepo"
+	AppInterface_GetAppRelease_FullMethodName          = "/app.v1alpha1.AppInterface/GetAppRelease"
+	AppInterface_AppReleaseList_FullMethodName         = "/app.v1alpha1.AppInterface/AppReleaseList"
+	AppInterface_GetAppReleaseResources_FullMethodName = "/app.v1alpha1.AppInterface/GetAppReleaseResources"
+	AppInterface_SaveAppRelease_FullMethodName         = "/app.v1alpha1.AppInterface/SaveAppRelease"
+	AppInterface_DeleteAppRelease_FullMethodName       = "/app.v1alpha1.AppInterface/DeleteAppRelease"
 )
 
 // AppInterfaceClient is the client API for AppInterface service.
@@ -57,18 +55,16 @@ type AppInterfaceClient interface {
 	CreateAppType(ctx context.Context, in *AppType, opts ...grpc.CallOption) (*common.Msg, error)
 	ListAppType(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*AppTypeList, error)
 	DeleteAppType(ctx context.Context, in *AppTypeReq, opts ...grpc.CallOption) (*common.Msg, error)
-	AppTest(ctx context.Context, in *DeployAppReq, opts ...grpc.CallOption) (*DeployApp, error)
-	GetAppDeployed(ctx context.Context, in *DeployApp, opts ...grpc.CallOption) (*DeployApp, error)
-	DeployApp(ctx context.Context, in *DeployAppReq, opts ...grpc.CallOption) (*DeployApp, error)
-	ListDeployedApp(ctx context.Context, in *DeployAppReq, opts ...grpc.CallOption) (*DeployAppList, error)
-	StopApp(ctx context.Context, in *DeployAppReq, opts ...grpc.CallOption) (*common.Msg, error)
-	DeleteDeployedApp(ctx context.Context, in *DeployAppReq, opts ...grpc.CallOption) (*common.Msg, error)
-	GetDeployedAppResources(ctx context.Context, in *DeployAppReq, opts ...grpc.CallOption) (*DeployAppResources, error)
-	SaveRepo(ctx context.Context, in *AppHelmRepo, opts ...grpc.CallOption) (*common.Msg, error)
-	ListRepo(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*AppHelmRepoList, error)
-	DeleteRepo(ctx context.Context, in *AppHelmRepoReq, opts ...grpc.CallOption) (*common.Msg, error)
-	GetAppsByRepo(ctx context.Context, in *AppHelmRepoReq, opts ...grpc.CallOption) (*AppList, error)
-	GetAppDetailByRepo(ctx context.Context, in *AppHelmRepoReq, opts ...grpc.CallOption) (*App, error)
+	SaveRepo(ctx context.Context, in *AppRepo, opts ...grpc.CallOption) (*common.Msg, error)
+	ListRepo(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*AppRepoList, error)
+	DeleteRepo(ctx context.Context, in *AppRepoReq, opts ...grpc.CallOption) (*common.Msg, error)
+	GetAppsByRepo(ctx context.Context, in *AppRepoReq, opts ...grpc.CallOption) (*AppList, error)
+	GetAppDetailByRepo(ctx context.Context, in *AppRepoReq, opts ...grpc.CallOption) (*App, error)
+	GetAppRelease(ctx context.Context, in *AppReleaseReq, opts ...grpc.CallOption) (*AppRelease, error)
+	AppReleaseList(ctx context.Context, in *AppReleaseReq, opts ...grpc.CallOption) (*AppReleaseList, error)
+	GetAppReleaseResources(ctx context.Context, in *AppReleaseReq, opts ...grpc.CallOption) (*AppReleasepResources, error)
+	SaveAppRelease(ctx context.Context, in *AppReleaseReq, opts ...grpc.CallOption) (*AppRelease, error)
+	DeleteAppRelease(ctx context.Context, in *AppReleaseReq, opts ...grpc.CallOption) (*common.Msg, error)
 }
 
 type appInterfaceClient struct {
@@ -169,77 +165,7 @@ func (c *appInterfaceClient) DeleteAppType(ctx context.Context, in *AppTypeReq, 
 	return out, nil
 }
 
-func (c *appInterfaceClient) AppTest(ctx context.Context, in *DeployAppReq, opts ...grpc.CallOption) (*DeployApp, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(DeployApp)
-	err := c.cc.Invoke(ctx, AppInterface_AppTest_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *appInterfaceClient) GetAppDeployed(ctx context.Context, in *DeployApp, opts ...grpc.CallOption) (*DeployApp, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(DeployApp)
-	err := c.cc.Invoke(ctx, AppInterface_GetAppDeployed_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *appInterfaceClient) DeployApp(ctx context.Context, in *DeployAppReq, opts ...grpc.CallOption) (*DeployApp, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(DeployApp)
-	err := c.cc.Invoke(ctx, AppInterface_DeployApp_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *appInterfaceClient) ListDeployedApp(ctx context.Context, in *DeployAppReq, opts ...grpc.CallOption) (*DeployAppList, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(DeployAppList)
-	err := c.cc.Invoke(ctx, AppInterface_ListDeployedApp_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *appInterfaceClient) StopApp(ctx context.Context, in *DeployAppReq, opts ...grpc.CallOption) (*common.Msg, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(common.Msg)
-	err := c.cc.Invoke(ctx, AppInterface_StopApp_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *appInterfaceClient) DeleteDeployedApp(ctx context.Context, in *DeployAppReq, opts ...grpc.CallOption) (*common.Msg, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(common.Msg)
-	err := c.cc.Invoke(ctx, AppInterface_DeleteDeployedApp_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *appInterfaceClient) GetDeployedAppResources(ctx context.Context, in *DeployAppReq, opts ...grpc.CallOption) (*DeployAppResources, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(DeployAppResources)
-	err := c.cc.Invoke(ctx, AppInterface_GetDeployedAppResources_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *appInterfaceClient) SaveRepo(ctx context.Context, in *AppHelmRepo, opts ...grpc.CallOption) (*common.Msg, error) {
+func (c *appInterfaceClient) SaveRepo(ctx context.Context, in *AppRepo, opts ...grpc.CallOption) (*common.Msg, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(common.Msg)
 	err := c.cc.Invoke(ctx, AppInterface_SaveRepo_FullMethodName, in, out, cOpts...)
@@ -249,9 +175,9 @@ func (c *appInterfaceClient) SaveRepo(ctx context.Context, in *AppHelmRepo, opts
 	return out, nil
 }
 
-func (c *appInterfaceClient) ListRepo(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*AppHelmRepoList, error) {
+func (c *appInterfaceClient) ListRepo(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*AppRepoList, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(AppHelmRepoList)
+	out := new(AppRepoList)
 	err := c.cc.Invoke(ctx, AppInterface_ListRepo_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -259,7 +185,7 @@ func (c *appInterfaceClient) ListRepo(ctx context.Context, in *emptypb.Empty, op
 	return out, nil
 }
 
-func (c *appInterfaceClient) DeleteRepo(ctx context.Context, in *AppHelmRepoReq, opts ...grpc.CallOption) (*common.Msg, error) {
+func (c *appInterfaceClient) DeleteRepo(ctx context.Context, in *AppRepoReq, opts ...grpc.CallOption) (*common.Msg, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(common.Msg)
 	err := c.cc.Invoke(ctx, AppInterface_DeleteRepo_FullMethodName, in, out, cOpts...)
@@ -269,7 +195,7 @@ func (c *appInterfaceClient) DeleteRepo(ctx context.Context, in *AppHelmRepoReq,
 	return out, nil
 }
 
-func (c *appInterfaceClient) GetAppsByRepo(ctx context.Context, in *AppHelmRepoReq, opts ...grpc.CallOption) (*AppList, error) {
+func (c *appInterfaceClient) GetAppsByRepo(ctx context.Context, in *AppRepoReq, opts ...grpc.CallOption) (*AppList, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(AppList)
 	err := c.cc.Invoke(ctx, AppInterface_GetAppsByRepo_FullMethodName, in, out, cOpts...)
@@ -279,10 +205,60 @@ func (c *appInterfaceClient) GetAppsByRepo(ctx context.Context, in *AppHelmRepoR
 	return out, nil
 }
 
-func (c *appInterfaceClient) GetAppDetailByRepo(ctx context.Context, in *AppHelmRepoReq, opts ...grpc.CallOption) (*App, error) {
+func (c *appInterfaceClient) GetAppDetailByRepo(ctx context.Context, in *AppRepoReq, opts ...grpc.CallOption) (*App, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(App)
 	err := c.cc.Invoke(ctx, AppInterface_GetAppDetailByRepo_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *appInterfaceClient) GetAppRelease(ctx context.Context, in *AppReleaseReq, opts ...grpc.CallOption) (*AppRelease, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AppRelease)
+	err := c.cc.Invoke(ctx, AppInterface_GetAppRelease_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *appInterfaceClient) AppReleaseList(ctx context.Context, in *AppReleaseReq, opts ...grpc.CallOption) (*AppReleaseList, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AppReleaseList)
+	err := c.cc.Invoke(ctx, AppInterface_AppReleaseList_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *appInterfaceClient) GetAppReleaseResources(ctx context.Context, in *AppReleaseReq, opts ...grpc.CallOption) (*AppReleasepResources, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AppReleasepResources)
+	err := c.cc.Invoke(ctx, AppInterface_GetAppReleaseResources_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *appInterfaceClient) SaveAppRelease(ctx context.Context, in *AppReleaseReq, opts ...grpc.CallOption) (*AppRelease, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AppRelease)
+	err := c.cc.Invoke(ctx, AppInterface_SaveAppRelease_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *appInterfaceClient) DeleteAppRelease(ctx context.Context, in *AppReleaseReq, opts ...grpc.CallOption) (*common.Msg, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(common.Msg)
+	err := c.cc.Invoke(ctx, AppInterface_DeleteAppRelease_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -302,18 +278,16 @@ type AppInterfaceServer interface {
 	CreateAppType(context.Context, *AppType) (*common.Msg, error)
 	ListAppType(context.Context, *emptypb.Empty) (*AppTypeList, error)
 	DeleteAppType(context.Context, *AppTypeReq) (*common.Msg, error)
-	AppTest(context.Context, *DeployAppReq) (*DeployApp, error)
-	GetAppDeployed(context.Context, *DeployApp) (*DeployApp, error)
-	DeployApp(context.Context, *DeployAppReq) (*DeployApp, error)
-	ListDeployedApp(context.Context, *DeployAppReq) (*DeployAppList, error)
-	StopApp(context.Context, *DeployAppReq) (*common.Msg, error)
-	DeleteDeployedApp(context.Context, *DeployAppReq) (*common.Msg, error)
-	GetDeployedAppResources(context.Context, *DeployAppReq) (*DeployAppResources, error)
-	SaveRepo(context.Context, *AppHelmRepo) (*common.Msg, error)
-	ListRepo(context.Context, *emptypb.Empty) (*AppHelmRepoList, error)
-	DeleteRepo(context.Context, *AppHelmRepoReq) (*common.Msg, error)
-	GetAppsByRepo(context.Context, *AppHelmRepoReq) (*AppList, error)
-	GetAppDetailByRepo(context.Context, *AppHelmRepoReq) (*App, error)
+	SaveRepo(context.Context, *AppRepo) (*common.Msg, error)
+	ListRepo(context.Context, *emptypb.Empty) (*AppRepoList, error)
+	DeleteRepo(context.Context, *AppRepoReq) (*common.Msg, error)
+	GetAppsByRepo(context.Context, *AppRepoReq) (*AppList, error)
+	GetAppDetailByRepo(context.Context, *AppRepoReq) (*App, error)
+	GetAppRelease(context.Context, *AppReleaseReq) (*AppRelease, error)
+	AppReleaseList(context.Context, *AppReleaseReq) (*AppReleaseList, error)
+	GetAppReleaseResources(context.Context, *AppReleaseReq) (*AppReleasepResources, error)
+	SaveAppRelease(context.Context, *AppReleaseReq) (*AppRelease, error)
+	DeleteAppRelease(context.Context, *AppReleaseReq) (*common.Msg, error)
 	mustEmbedUnimplementedAppInterfaceServer()
 }
 
@@ -351,41 +325,35 @@ func (UnimplementedAppInterfaceServer) ListAppType(context.Context, *emptypb.Emp
 func (UnimplementedAppInterfaceServer) DeleteAppType(context.Context, *AppTypeReq) (*common.Msg, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteAppType not implemented")
 }
-func (UnimplementedAppInterfaceServer) AppTest(context.Context, *DeployAppReq) (*DeployApp, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method AppTest not implemented")
-}
-func (UnimplementedAppInterfaceServer) GetAppDeployed(context.Context, *DeployApp) (*DeployApp, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetAppDeployed not implemented")
-}
-func (UnimplementedAppInterfaceServer) DeployApp(context.Context, *DeployAppReq) (*DeployApp, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method DeployApp not implemented")
-}
-func (UnimplementedAppInterfaceServer) ListDeployedApp(context.Context, *DeployAppReq) (*DeployAppList, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ListDeployedApp not implemented")
-}
-func (UnimplementedAppInterfaceServer) StopApp(context.Context, *DeployAppReq) (*common.Msg, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method StopApp not implemented")
-}
-func (UnimplementedAppInterfaceServer) DeleteDeployedApp(context.Context, *DeployAppReq) (*common.Msg, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method DeleteDeployedApp not implemented")
-}
-func (UnimplementedAppInterfaceServer) GetDeployedAppResources(context.Context, *DeployAppReq) (*DeployAppResources, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetDeployedAppResources not implemented")
-}
-func (UnimplementedAppInterfaceServer) SaveRepo(context.Context, *AppHelmRepo) (*common.Msg, error) {
+func (UnimplementedAppInterfaceServer) SaveRepo(context.Context, *AppRepo) (*common.Msg, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SaveRepo not implemented")
 }
-func (UnimplementedAppInterfaceServer) ListRepo(context.Context, *emptypb.Empty) (*AppHelmRepoList, error) {
+func (UnimplementedAppInterfaceServer) ListRepo(context.Context, *emptypb.Empty) (*AppRepoList, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListRepo not implemented")
 }
-func (UnimplementedAppInterfaceServer) DeleteRepo(context.Context, *AppHelmRepoReq) (*common.Msg, error) {
+func (UnimplementedAppInterfaceServer) DeleteRepo(context.Context, *AppRepoReq) (*common.Msg, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteRepo not implemented")
 }
-func (UnimplementedAppInterfaceServer) GetAppsByRepo(context.Context, *AppHelmRepoReq) (*AppList, error) {
+func (UnimplementedAppInterfaceServer) GetAppsByRepo(context.Context, *AppRepoReq) (*AppList, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetAppsByRepo not implemented")
 }
-func (UnimplementedAppInterfaceServer) GetAppDetailByRepo(context.Context, *AppHelmRepoReq) (*App, error) {
+func (UnimplementedAppInterfaceServer) GetAppDetailByRepo(context.Context, *AppRepoReq) (*App, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetAppDetailByRepo not implemented")
+}
+func (UnimplementedAppInterfaceServer) GetAppRelease(context.Context, *AppReleaseReq) (*AppRelease, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetAppRelease not implemented")
+}
+func (UnimplementedAppInterfaceServer) AppReleaseList(context.Context, *AppReleaseReq) (*AppReleaseList, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AppReleaseList not implemented")
+}
+func (UnimplementedAppInterfaceServer) GetAppReleaseResources(context.Context, *AppReleaseReq) (*AppReleasepResources, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetAppReleaseResources not implemented")
+}
+func (UnimplementedAppInterfaceServer) SaveAppRelease(context.Context, *AppReleaseReq) (*AppRelease, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SaveAppRelease not implemented")
+}
+func (UnimplementedAppInterfaceServer) DeleteAppRelease(context.Context, *AppReleaseReq) (*common.Msg, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteAppRelease not implemented")
 }
 func (UnimplementedAppInterfaceServer) mustEmbedUnimplementedAppInterfaceServer() {}
 func (UnimplementedAppInterfaceServer) testEmbeddedByValue()                      {}
@@ -570,134 +538,8 @@ func _AppInterface_DeleteAppType_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AppInterface_AppTest_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DeployAppReq)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AppInterfaceServer).AppTest(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: AppInterface_AppTest_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AppInterfaceServer).AppTest(ctx, req.(*DeployAppReq))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _AppInterface_GetAppDeployed_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DeployApp)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AppInterfaceServer).GetAppDeployed(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: AppInterface_GetAppDeployed_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AppInterfaceServer).GetAppDeployed(ctx, req.(*DeployApp))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _AppInterface_DeployApp_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DeployAppReq)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AppInterfaceServer).DeployApp(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: AppInterface_DeployApp_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AppInterfaceServer).DeployApp(ctx, req.(*DeployAppReq))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _AppInterface_ListDeployedApp_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DeployAppReq)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AppInterfaceServer).ListDeployedApp(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: AppInterface_ListDeployedApp_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AppInterfaceServer).ListDeployedApp(ctx, req.(*DeployAppReq))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _AppInterface_StopApp_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DeployAppReq)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AppInterfaceServer).StopApp(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: AppInterface_StopApp_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AppInterfaceServer).StopApp(ctx, req.(*DeployAppReq))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _AppInterface_DeleteDeployedApp_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DeployAppReq)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AppInterfaceServer).DeleteDeployedApp(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: AppInterface_DeleteDeployedApp_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AppInterfaceServer).DeleteDeployedApp(ctx, req.(*DeployAppReq))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _AppInterface_GetDeployedAppResources_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DeployAppReq)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AppInterfaceServer).GetDeployedAppResources(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: AppInterface_GetDeployedAppResources_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AppInterfaceServer).GetDeployedAppResources(ctx, req.(*DeployAppReq))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _AppInterface_SaveRepo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(AppHelmRepo)
+	in := new(AppRepo)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -709,7 +551,7 @@ func _AppInterface_SaveRepo_Handler(srv interface{}, ctx context.Context, dec fu
 		FullMethod: AppInterface_SaveRepo_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AppInterfaceServer).SaveRepo(ctx, req.(*AppHelmRepo))
+		return srv.(AppInterfaceServer).SaveRepo(ctx, req.(*AppRepo))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -733,7 +575,7 @@ func _AppInterface_ListRepo_Handler(srv interface{}, ctx context.Context, dec fu
 }
 
 func _AppInterface_DeleteRepo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(AppHelmRepoReq)
+	in := new(AppRepoReq)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -745,13 +587,13 @@ func _AppInterface_DeleteRepo_Handler(srv interface{}, ctx context.Context, dec 
 		FullMethod: AppInterface_DeleteRepo_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AppInterfaceServer).DeleteRepo(ctx, req.(*AppHelmRepoReq))
+		return srv.(AppInterfaceServer).DeleteRepo(ctx, req.(*AppRepoReq))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _AppInterface_GetAppsByRepo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(AppHelmRepoReq)
+	in := new(AppRepoReq)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -763,13 +605,13 @@ func _AppInterface_GetAppsByRepo_Handler(srv interface{}, ctx context.Context, d
 		FullMethod: AppInterface_GetAppsByRepo_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AppInterfaceServer).GetAppsByRepo(ctx, req.(*AppHelmRepoReq))
+		return srv.(AppInterfaceServer).GetAppsByRepo(ctx, req.(*AppRepoReq))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _AppInterface_GetAppDetailByRepo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(AppHelmRepoReq)
+	in := new(AppRepoReq)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -781,7 +623,97 @@ func _AppInterface_GetAppDetailByRepo_Handler(srv interface{}, ctx context.Conte
 		FullMethod: AppInterface_GetAppDetailByRepo_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AppInterfaceServer).GetAppDetailByRepo(ctx, req.(*AppHelmRepoReq))
+		return srv.(AppInterfaceServer).GetAppDetailByRepo(ctx, req.(*AppRepoReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AppInterface_GetAppRelease_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AppReleaseReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AppInterfaceServer).GetAppRelease(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AppInterface_GetAppRelease_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AppInterfaceServer).GetAppRelease(ctx, req.(*AppReleaseReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AppInterface_AppReleaseList_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AppReleaseReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AppInterfaceServer).AppReleaseList(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AppInterface_AppReleaseList_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AppInterfaceServer).AppReleaseList(ctx, req.(*AppReleaseReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AppInterface_GetAppReleaseResources_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AppReleaseReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AppInterfaceServer).GetAppReleaseResources(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AppInterface_GetAppReleaseResources_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AppInterfaceServer).GetAppReleaseResources(ctx, req.(*AppReleaseReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AppInterface_SaveAppRelease_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AppReleaseReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AppInterfaceServer).SaveAppRelease(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AppInterface_SaveAppRelease_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AppInterfaceServer).SaveAppRelease(ctx, req.(*AppReleaseReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AppInterface_DeleteAppRelease_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AppReleaseReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AppInterfaceServer).DeleteAppRelease(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AppInterface_DeleteAppRelease_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AppInterfaceServer).DeleteAppRelease(ctx, req.(*AppReleaseReq))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -830,34 +762,6 @@ var AppInterface_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AppInterface_DeleteAppType_Handler,
 		},
 		{
-			MethodName: "AppTest",
-			Handler:    _AppInterface_AppTest_Handler,
-		},
-		{
-			MethodName: "GetAppDeployed",
-			Handler:    _AppInterface_GetAppDeployed_Handler,
-		},
-		{
-			MethodName: "DeployApp",
-			Handler:    _AppInterface_DeployApp_Handler,
-		},
-		{
-			MethodName: "ListDeployedApp",
-			Handler:    _AppInterface_ListDeployedApp_Handler,
-		},
-		{
-			MethodName: "StopApp",
-			Handler:    _AppInterface_StopApp_Handler,
-		},
-		{
-			MethodName: "DeleteDeployedApp",
-			Handler:    _AppInterface_DeleteDeployedApp_Handler,
-		},
-		{
-			MethodName: "GetDeployedAppResources",
-			Handler:    _AppInterface_GetDeployedAppResources_Handler,
-		},
-		{
 			MethodName: "SaveRepo",
 			Handler:    _AppInterface_SaveRepo_Handler,
 		},
@@ -876,6 +780,26 @@ var AppInterface_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetAppDetailByRepo",
 			Handler:    _AppInterface_GetAppDetailByRepo_Handler,
+		},
+		{
+			MethodName: "GetAppRelease",
+			Handler:    _AppInterface_GetAppRelease_Handler,
+		},
+		{
+			MethodName: "AppReleaseList",
+			Handler:    _AppInterface_AppReleaseList_Handler,
+		},
+		{
+			MethodName: "GetAppReleaseResources",
+			Handler:    _AppInterface_GetAppReleaseResources_Handler,
+		},
+		{
+			MethodName: "SaveAppRelease",
+			Handler:    _AppInterface_SaveAppRelease_Handler,
+		},
+		{
+			MethodName: "DeleteAppRelease",
+			Handler:    _AppInterface_DeleteAppRelease_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

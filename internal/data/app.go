@@ -14,7 +14,7 @@ type appRepo struct {
 	log  *log.Helper
 }
 
-func NewAppRepo(data *Data, logger log.Logger) biz.AppRepo {
+func NewAppRepo(data *Data, logger log.Logger) biz.AppRepoInterface {
 	return &appRepo{
 		data: data,
 		log:  log.NewHelper(logger),
@@ -214,37 +214,37 @@ func (a *appRepo) DeleteAppRelease(ctx context.Context, id int64) error {
 	return a.data.db.Delete(&biz.AppRelease{}, id).Error
 }
 
-func (a *appRepo) SaveRepo(ctx context.Context, helmRepo *biz.AppHelmRepo) error {
-	return a.data.db.Save(helmRepo).Error
+func (a *appRepo) SaveRepo(ctx context.Context, repo *biz.AppRepo) error {
+	return a.data.db.Save(repo).Error
 }
 
-func (a *appRepo) ListRepo(ctx context.Context) ([]*biz.AppHelmRepo, error) {
-	helmRepos := make([]*biz.AppHelmRepo, 0)
-	err := a.data.db.Model(&biz.AppHelmRepo{}).Find(&helmRepos).Error
+func (a *appRepo) ListRepo(ctx context.Context) ([]*biz.AppRepo, error) {
+	repos := make([]*biz.AppRepo, 0)
+	err := a.data.db.Model(&biz.AppRepo{}).Find(&repos).Error
 	if err != nil {
 		return nil, err
 	}
-	return helmRepos, nil
+	return repos, nil
 }
 
-func (a *appRepo) GetRepo(ctx context.Context, helmRepoID int64) (*biz.AppHelmRepo, error) {
-	helmRepo := &biz.AppHelmRepo{}
-	err := a.data.db.First(helmRepo, helmRepoID).Error
+func (a *appRepo) GetRepo(ctx context.Context, repoID int64) (*biz.AppRepo, error) {
+	repo := &biz.AppRepo{}
+	err := a.data.db.First(repo, repoID).Error
 	if err != nil {
 		return nil, err
 	}
-	return helmRepo, nil
+	return repo, nil
 }
 
-func (a *appRepo) DeleteRepo(ctx context.Context, helmRepoID int64) error {
-	return a.data.db.Delete(&biz.AppHelmRepo{}, helmRepoID).Error
+func (a *appRepo) DeleteRepo(ctx context.Context, repoID int64) error {
+	return a.data.db.Delete(&biz.AppRepo{}, repoID).Error
 }
 
-func (a *appRepo) GetRepoByName(ctx context.Context, repoName string) (*biz.AppHelmRepo, error) {
-	helmRepo := &biz.AppHelmRepo{}
-	err := a.data.db.Where("name = ?", repoName).First(helmRepo).Error
+func (a *appRepo) GetRepoByName(ctx context.Context, repoName string) (*biz.AppRepo, error) {
+	repo := &biz.AppRepo{}
+	err := a.data.db.Where("name = ?", repoName).First(repo).Error
 	if err != nil && err != gorm.ErrRecordNotFound {
 		return nil, err
 	}
-	return helmRepo, nil
+	return repo, nil
 }

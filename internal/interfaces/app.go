@@ -137,7 +137,7 @@ func (a *AppInterface) UploadApp(ctx context.Context, req *v1alpha1.FileUploadRe
 	if err != nil {
 		return nil, err
 	}
-	appVersion := &biz.AppVersion{Chart: filePathName, State: biz.AppUntested}
+	appVersion := &biz.AppVersion{Chart: filePathName, Status: biz.AppUntested}
 	err = a.uc.GetAppVersionChartInfomation(ctx, appVersion)
 	if err != nil {
 		return nil, err
@@ -160,7 +160,6 @@ func (a *AppInterface) UploadApp(ctx context.Context, req *v1alpha1.FileUploadRe
 	return a.bizAppToApp(app)
 }
 
-// 上传文件
 func (a *AppInterface) upload(path, filename, chunk string) (string, error) {
 	// 从base64转换为文件 []byte
 	data, err := base64.StdEncoding.DecodeString(chunk[strings.IndexByte(chunk, ',')+1:])
@@ -228,175 +227,14 @@ func (a *AppInterface) DeleteAppType(ctx context.Context, appTypeReq *v1alpha1.A
 	return common.Response(), nil
 }
 
-func (a *AppInterface) AppTest(ctx context.Context, deployAppReq *v1alpha1.DeployAppReq) (*v1alpha1.DeployApp, error) {
-	if deployAppReq.AppId == 0 || deployAppReq.VersionId == 0 {
-		return nil, errors.New("app id and version id is required")
-	}
-	appDeployRes, err := a.uc.AppTest(ctx, deployAppReq.AppId, deployAppReq.VersionId)
-	if err != nil {
-		return nil, err
-	}
-	appDeploy := &v1alpha1.DeployApp{}
-	err = utils.StructTransform(appDeployRes, appDeploy)
-	if err != nil {
-		return nil, err
-	}
-	appDeploy.Id = appDeployRes.ID
-	return appDeploy, nil
-}
-
-func (a *AppInterface) GetAppDeployed(ctx context.Context, appDeployId *v1alpha1.DeployApp) (*v1alpha1.DeployApp, error) {
-	if appDeployId.Id == 0 {
-		return nil, errors.New("app deploy id is required")
-	}
-	appDeployRes, err := a.uc.GetAppRelease(ctx, appDeployId.Id)
-	if err != nil {
-		return nil, err
-	}
-	appDeploy := &v1alpha1.DeployApp{}
-	err = utils.StructTransform(appDeployRes, appDeploy)
-	if err != nil {
-		return nil, err
-	}
-	appDeploy.Id = appDeployRes.ID
-	user, err := a.user.GetUserByID(ctx, appDeploy.UserId)
-	if err != nil {
-		return nil, err
-	}
-	appDeploy.UserName = user.Name
-	appDeploy.CreateTime = appDeployRes.CreatedAt.Format("2006-01-02 15:04:05")
-	appDeploy.UpdateTime = appDeployRes.UpdatedAt.Format("2006-01-02 15:04:05")
-	return appDeploy, nil
-}
-
-func (a *AppInterface) ListDeployedApp(ctx context.Context, deployAppReq *v1alpha1.DeployAppReq) (*v1alpha1.DeployAppList, error) {
-	bizDeployApp := biz.AppRelease{}
-	err := utils.StructTransform(deployAppReq, &bizDeployApp)
-	if err != nil {
-		return nil, err
-	}
-	bizDeployApp.ID = deployAppReq.Id
-	if deployAppReq.Page == 0 {
-		deployAppReq.Page = 1
-	}
-	if deployAppReq.PageSize == 0 {
-		deployAppReq.PageSize = 10
-	}
-	if deployAppReq.PageSize > 30 {
-		deployAppReq.PageSize = 30
-	}
-	deployApps, count, err := a.uc.AppReleaseList(ctx, bizDeployApp, deployAppReq.Page, deployAppReq.PageSize)
-	if err != nil {
-		return nil, err
-	}
-	deployAppList := make([]*v1alpha1.DeployApp, len(deployApps))
-	for index, deployApp := range deployApps {
-		deployAppList[index] = &v1alpha1.DeployApp{}
-		err = utils.StructTransform(deployApp, deployAppList[index])
-		if err != nil {
-			return nil, err
-		}
-		deployAppList[index].Id = deployApp.ID
-	}
-	return &v1alpha1.DeployAppList{
-		Items: deployAppList,
-		Count: count,
-	}, nil
-}
-
-func (a *AppInterface) StopApp(ctx context.Context, deployAppReq *v1alpha1.DeployAppReq) (*common.Msg, error) {
-	if deployAppReq.Id == 0 {
-		return nil, errors.New("app deploy id is required")
-	}
-	err := a.uc.StopApp(ctx, deployAppReq.Id)
-	if err != nil {
-		return nil, err
-	}
-	return common.Response(), nil
-}
-
-func (a *AppInterface) DeployApp(ctx context.Context, deployAppReq *v1alpha1.DeployAppReq) (*v1alpha1.DeployApp, error) {
-	if deployAppReq.ClusterId == 0 {
-		return nil, errors.New("cluster id is required")
-	}
-	if deployAppReq.ProjectId == 0 {
-		return nil, errors.New("project id is required")
-	}
-	if deployAppReq.AppTypeId == biz.AppTypeRepo {
-		if deployAppReq.AppName == "" || deployAppReq.RepoId == 0 || deployAppReq.Version == "" {
-			return nil, errors.New("app name / repo id / version is required")
-		}
-	} else {
-		if deployAppReq.AppId == 0 || deployAppReq.VersionId == 0 {
-			return nil, errors.New("app id / version id is required")
-		}
-	}
-	user, err := a.user.GetUserInfo(ctx)
-	if err != nil {
-		return nil, err
-	}
-	appDeployRes, err := a.uc.AppRelease(ctx, &biz.AppRelease{
-		ID:        deployAppReq.Id,
-		ClusterID: deployAppReq.ClusterId,
-		ProjectID: deployAppReq.ProjectId,
-		AppID:     deployAppReq.AppId,
-		VersionID: deployAppReq.VersionId,
-		AppName:   deployAppReq.AppName,
-		AppTypeID: deployAppReq.AppTypeId,
-		RepoID:    deployAppReq.RepoId,
-		Version:   deployAppReq.Version,
-		UserID:    user.ID,
-		Config:    deployAppReq.Config,
-	})
-	if err != nil {
-		return nil, err
-	}
-	appDeploy := &v1alpha1.DeployApp{}
-	err = utils.StructTransform(appDeployRes, appDeploy)
-	if err != nil {
-		return nil, err
-	}
-	appDeploy.Id = appDeployRes.ID
-	return appDeploy, nil
-}
-
-func (a *AppInterface) GetDeployedAppResources(ctx context.Context, deployAppReq *v1alpha1.DeployAppReq) (*v1alpha1.DeployAppResources, error) {
-	if deployAppReq.Id == 0 {
-		return nil, errors.New("app deploy id is required")
-	}
-	resources, err := a.uc.GetReleaseResources(ctx, deployAppReq.Id)
-	if err != nil {
-		return nil, err
-	}
-	data := &v1alpha1.DeployAppResources{}
-	items := make([]*v1alpha1.AppDeployedResource, 0)
-	err = utils.StructTransform(resources, &items)
-	if err != nil {
-		return nil, err
-	}
-	data.Items = items
-	return data, nil
-}
-
-func (a *AppInterface) DeleteDeployedApp(ctx context.Context, deployAppReq *v1alpha1.DeployAppReq) (*common.Msg, error) {
-	if deployAppReq.Id == 0 {
-		return nil, errors.New("app deploy id is required")
-	}
-	err := a.uc.DeleteAppRelease(ctx, deployAppReq.Id)
-	if err != nil {
-		return nil, err
-	}
-	return common.Response(), nil
-}
-
-func (a *AppInterface) SaveRepo(ctx context.Context, repo *v1alpha1.AppHelmRepo) (*common.Msg, error) {
+func (a *AppInterface) SaveRepo(ctx context.Context, repo *v1alpha1.AppRepo) (*common.Msg, error) {
 	if repo.Name == "" {
 		return nil, errors.New("repo name is required")
 	}
 	if repo.Url == "" {
 		return nil, errors.New("repo url is required")
 	}
-	err := a.uc.SaveRepo(ctx, &biz.AppHelmRepo{
+	err := a.uc.SaveRepo(ctx, &biz.AppRepo{
 		ID:          repo.Id,
 		Name:        repo.Name,
 		Url:         repo.Url,
@@ -408,16 +246,16 @@ func (a *AppInterface) SaveRepo(ctx context.Context, repo *v1alpha1.AppHelmRepo)
 	return common.Response(), nil
 }
 
-func (a *AppInterface) ListRepo(ctx context.Context, _ *emptypb.Empty) (*v1alpha1.AppHelmRepoList, error) {
+func (a *AppInterface) ListRepo(ctx context.Context, _ *emptypb.Empty) (*v1alpha1.AppRepoList, error) {
 	repos, err := a.uc.ListRepo(ctx)
 	if err != nil {
 		return nil, err
 	}
-	repoList := &v1alpha1.AppHelmRepoList{
-		Items: make([]*v1alpha1.AppHelmRepo, len(repos)),
+	repoList := &v1alpha1.AppRepoList{
+		Items: make([]*v1alpha1.AppRepo, len(repos)),
 	}
 	for index, repo := range repos {
-		repoList.Items[index] = &v1alpha1.AppHelmRepo{
+		repoList.Items[index] = &v1alpha1.AppRepo{
 			Id:          repo.ID,
 			Name:        repo.Name,
 			Url:         repo.Url,
@@ -427,7 +265,7 @@ func (a *AppInterface) ListRepo(ctx context.Context, _ *emptypb.Empty) (*v1alpha
 	return repoList, nil
 }
 
-func (a *AppInterface) DeleteRepo(ctx context.Context, repoReq *v1alpha1.AppHelmRepoReq) (*common.Msg, error) {
+func (a *AppInterface) DeleteRepo(ctx context.Context, repoReq *v1alpha1.AppRepoReq) (*common.Msg, error) {
 	if repoReq.Id == 0 {
 		return nil, errors.New("repo id is required")
 	}
@@ -438,7 +276,7 @@ func (a *AppInterface) DeleteRepo(ctx context.Context, repoReq *v1alpha1.AppHelm
 	return common.Response(), nil
 }
 
-func (a *AppInterface) GetAppsByRepo(ctx context.Context, repoReq *v1alpha1.AppHelmRepoReq) (*v1alpha1.AppList, error) {
+func (a *AppInterface) GetAppsByRepo(ctx context.Context, repoReq *v1alpha1.AppRepoReq) (*v1alpha1.AppList, error) {
 	if repoReq.Id == 0 {
 		return nil, errors.New("repo id is required")
 	}
@@ -463,7 +301,7 @@ func (a *AppInterface) GetAppsByRepo(ctx context.Context, repoReq *v1alpha1.AppH
 	return appList, nil
 }
 
-func (a *AppInterface) GetAppDetailByRepo(ctx context.Context, repoReq *v1alpha1.AppHelmRepoReq) (*v1alpha1.App, error) {
+func (a *AppInterface) GetAppDetailByRepo(ctx context.Context, repoReq *v1alpha1.AppRepoReq) (*v1alpha1.App, error) {
 	if repoReq.Id == 0 {
 		return nil, errors.New("repo id is required")
 	}
@@ -480,6 +318,110 @@ func (a *AppInterface) GetAppDetailByRepo(ctx context.Context, repoReq *v1alpha1
 	}
 	appRes.Id = repoReq.Id
 	return appRes, nil
+}
+
+func (a *AppInterface) GetAppRelease(ctx context.Context, AppReleaseReq *v1alpha1.AppReleaseReq) (*v1alpha1.AppRelease, error) {
+	if AppReleaseReq.Id == 0 {
+		return nil, errors.New("app release id is required")
+	}
+	appReleaseRes, err := a.uc.GetAppRelease(ctx, AppReleaseReq.Id)
+	if err != nil {
+		return nil, err
+	}
+	appRelease := &v1alpha1.AppRelease{}
+	err = utils.StructTransform(appReleaseRes, appRelease)
+	if err != nil {
+		return nil, err
+	}
+	appRelease.Id = appReleaseRes.ID
+	user, err := a.user.GetUserByID(ctx, appRelease.UserId)
+	if err != nil {
+		return nil, err
+	}
+	appRelease.UserName = user.Name
+	appRelease.CreateTime = appReleaseRes.CreatedAt.Format("2006-01-02 15:04:05")
+	appRelease.UpdateTime = appReleaseRes.UpdatedAt.Format("2006-01-02 15:04:05")
+	return appRelease, nil
+}
+
+func (a *AppInterface) AppReleaseList(ctx context.Context, appReleaseReq *v1alpha1.AppReleaseReq) (*v1alpha1.AppReleaseList, error) {
+	bizAppRelease := biz.AppRelease{}
+	err := utils.StructTransform(appReleaseReq, &bizAppRelease)
+	if err != nil {
+		return nil, err
+	}
+	bizAppRelease.ID = appReleaseReq.Id
+	if appReleaseReq.Page == 0 {
+		appReleaseReq.Page = 1
+	}
+	if appReleaseReq.PageSize == 0 {
+		appReleaseReq.PageSize = 10
+	}
+	if appReleaseReq.PageSize > 30 {
+		appReleaseReq.PageSize = 30
+	}
+	appReleases, count, err := a.uc.AppReleaseList(ctx, bizAppRelease, appReleaseReq.Page, appReleaseReq.PageSize)
+	if err != nil {
+		return nil, err
+	}
+	appReleaseList := make([]*v1alpha1.AppRelease, len(appReleases))
+	for index, appRelease := range appReleases {
+		appReleaseList[index] = &v1alpha1.AppRelease{}
+		err = utils.StructTransform(appRelease, appReleaseList[index])
+		if err != nil {
+			return nil, err
+		}
+		appReleaseList[index].Id = appRelease.ID
+	}
+	return &v1alpha1.AppReleaseList{
+		Items: appReleaseList,
+		Count: count,
+	}, nil
+}
+
+func (a *AppInterface) GetAppReleaseResources(ctx context.Context, appReleaseReq *v1alpha1.AppReleaseReq) (*v1alpha1.AppReleasepResources, error) {
+	if appReleaseReq.Id == 0 {
+		return nil, errors.New("app release id is required")
+	}
+	resources, err := a.uc.GetAppReleaseResourcesInCluster(ctx, appReleaseReq.Id)
+	if err != nil {
+		return nil, err
+	}
+	data := &v1alpha1.AppReleasepResources{}
+	items := make([]*v1alpha1.AppReleaseResource, 0)
+	err = utils.StructTransform(resources, &items)
+	if err != nil {
+		return nil, err
+	}
+	data.Items = items
+	return data, nil
+}
+
+func (a *AppInterface) SaveAppRelease(ctx context.Context, appReleaseReq *v1alpha1.AppReleaseReq) (*v1alpha1.AppRelease, error) {
+	if appReleaseReq.AppId == 0 || appReleaseReq.RepoId == 0 {
+		return nil, errors.New("app id is required or repo id is required")
+	}
+	if appReleaseReq.Version == "" || appReleaseReq.VersionId == 0 {
+		return nil, errors.New("app version is required")
+	}
+	_, err := a.uc.SaveAppRelease(ctx, &biz.AppRelease{
+		AppID: appReleaseReq.AppId,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return nil, nil
+}
+
+func (a *AppInterface) DeleteAppRelease(ctx context.Context, appReleaseReq *v1alpha1.AppReleaseReq) (*common.Msg, error) {
+	if appReleaseReq.Id == 0 {
+		return nil, errors.New("app release id is required")
+	}
+	err := a.uc.DeleteAppRelease(ctx, appReleaseReq.Id)
+	if err != nil {
+		return nil, err
+	}
+	return common.Response(), nil
 }
 
 func (a *AppInterface) bizAppToApp(bizApp *biz.App) (*v1alpha1.App, error) {
