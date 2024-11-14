@@ -11,10 +11,14 @@ import (
 	"github.com/f-rambo/ocean/internal/conf"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/pkg/errors"
+	appv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	policyv1 "k8s.io/api/policy/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/client-go/dynamic"
@@ -45,7 +49,7 @@ func NewClusterRuntime(c *conf.Bootstrap, logger log.Logger) biz.ClusterRuntime 
 	}
 }
 
-func (cr *ClusterRuntime) createYAMLFile(ctx context.Context, dynamicClient *dynamic.DynamicClient, namespace, resource, filePath string) error {
+func (cr *ClusterRuntime) CreateYAMLFile(ctx context.Context, dynamicClient *dynamic.DynamicClient, namespace, resource, filePath string) error {
 	file, err := os.Open(filePath)
 	if err != nil {
 		return errors.Wrap(err, "open file failed")
@@ -122,7 +126,137 @@ func (cr *ClusterRuntime) HandlerNodes(ctx context.Context, cluster *biz.Cluster
 	return nil
 }
 
-func (cr *ClusterRuntime) DeleteResource(ctx context.Context, cluster *biz.Cluster) error {
+func (cr *ClusterRuntime) MigrateToCluster(ctx context.Context, cluster *biz.Cluster) error {
+	clientset, err := GetKubeClientByRestConfig(cluster.MasterIP, cluster.Token, cluster.CAData, cluster.KeyData, cluster.CertData)
+	if err != nil {
+		return err
+	}
+	serverName := cr.c.Server.Name
+	labels := map[string]string{"app.kubernetes.io/cluster.name": cluster.Name, "app.kubernetes.io/name": serverName}
+	namspaceObj, err := clientset.CoreV1().Namespaces().Create(ctx, &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:   serverName,
+			Labels: labels,
+		},
+	}, metav1.CreateOptions{})
+	if err != nil {
+		return err
+	}
+	serviceAccountObj, err := clientset.CoreV1().ServiceAccounts(namspaceObj.Namespace).Create(ctx, &corev1.ServiceAccount{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "v1",
+			Kind:       "ServiceAccount",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      fmt.Sprintf("%s-app-service-account", serverName),
+			Namespace: namspaceObj.Namespace,
+			Labels:    labels,
+		},
+	}, metav1.CreateOptions{})
+	if err != nil {
+		return err
+	}
+	_, err = clientset.RbacV1().ClusterRoleBindings().Create(ctx, &rbacv1.ClusterRoleBinding{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "rbac.authorization.k8s.io/v1",
+			Kind:       "ClusterRoleBinding",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:   fmt.Sprintf("%s-app-cluster-admin-binding", serverName),
+			Labels: labels,
+		},
+		Subjects: []rbacv1.Subject{
+			{
+				Kind:      "ServiceAccount",
+				Name:      serviceAccountObj.Name,
+				Namespace: serviceAccountObj.Namespace,
+			},
+		},
+	}, metav1.CreateOptions{})
+	if err != nil {
+		return err
+	}
+	var replicas int32 = 1
+	oceanPodSpec := corev1.PodSpec{
+		ServiceAccountName: serviceAccountObj.Name,
+		HostNetwork:        true,
+		Containers: []corev1.Container{
+			{
+				Name:  fmt.Sprintf("%s-app-container", serverName),
+				Image: "frambo/ocean:v0.0.1",
+				Env:   []corev1.EnvVar{},
+				Ports: []corev1.ContainerPort{
+					{ContainerPort: 8000},
+					{ContainerPort: 9000},
+				},
+				Resources: corev1.ResourceRequirements{
+					Requests: corev1.ResourceList{
+						corev1.ResourceCPU:    resource.MustParse("100m"),
+						corev1.ResourceMemory: resource.MustParse("128Mi"),
+					},
+					Limits: corev1.ResourceList{
+						corev1.ResourceCPU:    resource.MustParse("500m"),
+						corev1.ResourceMemory: resource.MustParse("256Mi"),
+					},
+				},
+			},
+		},
+	}
+	deploymentObj, err := clientset.AppsV1().Deployments(namspaceObj.Namespace).Create(ctx, &appv1.Deployment{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "apps/v1",
+			Kind:       "Deployment",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      fmt.Sprintf("%s-app-deployment", serverName),
+			Namespace: namspaceObj.Namespace,
+		},
+		Spec: appv1.DeploymentSpec{
+			Replicas: &replicas,
+			Selector: &metav1.LabelSelector{
+				MatchLabels: labels,
+			},
+			Template: corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: labels,
+				},
+				Spec: oceanPodSpec,
+			},
+		},
+	}, metav1.CreateOptions{})
+	if err != nil {
+		return err
+	}
+	cr.log.Info(deploymentObj.Name)
+	_, err = clientset.CoreV1().Services(namspaceObj.Namespace).Create(ctx, &corev1.Service{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "v1",
+			Kind:       "Service",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      fmt.Sprintf("%s-app-service", serverName),
+			Namespace: namspaceObj.Namespace,
+		},
+		Spec: corev1.ServiceSpec{
+			Type:         corev1.ServiceTypeExternalName,
+			ExternalName: fmt.Sprintf("%s.%s.com", serverName, cluster.Name),
+			Ports: []corev1.ServicePort{
+				{
+					Port:       8000,
+					TargetPort: intstr.FromInt(8000),
+				},
+				{
+					Port:       9000,
+					TargetPort: intstr.FromInt(9000),
+				},
+			},
+			Selector: labels,
+		},
+		Status: corev1.ServiceStatus{},
+	}, metav1.CreateOptions{})
+	if err != nil {
+		return err
+	}
 	return nil
 }
 

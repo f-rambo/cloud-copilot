@@ -249,7 +249,7 @@ func (a *AppInterface) GetAppDeployed(ctx context.Context, appDeployId *v1alpha1
 	if appDeployId.Id == 0 {
 		return nil, errors.New("app deploy id is required")
 	}
-	appDeployRes, err := a.uc.GetAppDeployed(ctx, appDeployId.Id)
+	appDeployRes, err := a.uc.GetAppRelease(ctx, appDeployId.Id)
 	if err != nil {
 		return nil, err
 	}
@@ -285,7 +285,7 @@ func (a *AppInterface) ListDeployedApp(ctx context.Context, deployAppReq *v1alph
 	if deployAppReq.PageSize > 30 {
 		deployAppReq.PageSize = 30
 	}
-	deployApps, count, err := a.uc.DeployAppList(ctx, bizDeployApp, deployAppReq.Page, deployAppReq.PageSize)
+	deployApps, count, err := a.uc.AppReleaseList(ctx, bizDeployApp, deployAppReq.Page, deployAppReq.PageSize)
 	if err != nil {
 		return nil, err
 	}
@@ -335,7 +335,7 @@ func (a *AppInterface) DeployApp(ctx context.Context, deployAppReq *v1alpha1.Dep
 	if err != nil {
 		return nil, err
 	}
-	appDeployRes, err := a.uc.DeployApp(ctx, &biz.AppRelease{
+	appDeployRes, err := a.uc.AppRelease(ctx, &biz.AppRelease{
 		ID:        deployAppReq.Id,
 		ClusterID: deployAppReq.ClusterId,
 		ProjectID: deployAppReq.ProjectId,
@@ -382,7 +382,7 @@ func (a *AppInterface) DeleteDeployedApp(ctx context.Context, deployAppReq *v1al
 	if deployAppReq.Id == 0 {
 		return nil, errors.New("app deploy id is required")
 	}
-	err := a.uc.DeleteDeployedApp(ctx, deployAppReq.Id)
+	err := a.uc.DeleteAppRelease(ctx, deployAppReq.Id)
 	if err != nil {
 		return nil, err
 	}

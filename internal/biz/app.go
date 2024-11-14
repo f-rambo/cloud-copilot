@@ -174,7 +174,7 @@ func (a *App) DeleteVersion(version string) {
 	}
 }
 
-func (v *AppVersion) GetAppDeployed() *AppRelease {
+func (v *AppVersion) GenerateAppRelease() *AppRelease {
 	releaseName := fmt.Sprintf("%s-%s", v.AppName, strings.ReplaceAll(v.Version, ".", "-"))
 	return &AppRelease{
 		AppID:       v.AppID,
@@ -197,10 +197,10 @@ type AppRepo interface {
 	CreateAppType(context.Context, *AppType) error
 	ListAppType(ctx context.Context) ([]*AppType, error)
 	DeleteAppType(context.Context, int64) error
-	SaveDeployApp(context.Context, *AppRelease) error
-	DeleteDeployApp(context.Context, int64) error
-	DeployAppList(context.Context, AppRelease, int32, int32) ([]*AppRelease, int32, error)
-	GetDeployApp(ctx context.Context, id int64) (*AppRelease, error)
+	SaveAppRelease(context.Context, *AppRelease) error
+	DeleteAppRelease(context.Context, int64) error
+	AppReleaseList(context.Context, AppRelease, int32, int32) ([]*AppRelease, int32, error)
+	GetAppRelease(ctx context.Context, id int64) (*AppRelease, error)
 	SaveRepo(context.Context, *AppHelmRepo) error
 	ListRepo(context.Context) ([]*AppHelmRepo, error)
 	GetRepo(context.Context, int64) (*AppHelmRepo, error)
@@ -209,6 +209,7 @@ type AppRepo interface {
 }
 
 type AppRuntime interface {
+	CheckCluster(context.Context) bool
 	GetPodResources(context.Context, *AppRelease) ([]*AppReleaseResource, error)
 	GetNetResouces(context.Context, *AppRelease) ([]*AppReleaseResource, error)
 	GetAppsReouces(context.Context, *AppRelease) ([]*AppReleaseResource, error)
@@ -216,8 +217,8 @@ type AppRuntime interface {
 
 type AppConstruct interface {
 	GetAppVersionChartInfomation(context.Context, *AppVersion) error
-	DeployingApp(context.Context, *AppRelease) error
-	UnDeployingApp(context.Context, *AppRelease) error
+	AppRelease(context.Context, *AppRelease) error
+	DeleteAppRelease(context.Context, *AppRelease) error
 	AddAppRepo(context.Context, *AppHelmRepo) error
 	GetAppDetailByRepo(ctx context.Context, apprepo *AppHelmRepo, appName, version string) (*App, error)
 	GetAppsByRepo(context.Context, *AppHelmRepo) ([]*App, error)
@@ -247,44 +248,6 @@ func NewAppUsecase(appRepo AppRepo, appRuntime AppRuntime, appConstruct AppConst
 	}
 	go appuc.appReleaseRunner()
 	return appuc
-}
-
-func (uc *AppUsecase) getLock(appID int64) *sync.Mutex {
-	uc.locksMux.Lock()
-	defer uc.locksMux.Unlock()
-
-	if appID < 0 {
-		uc.log.Errorf("Invalid appID: %d", appID)
-		return &sync.Mutex{}
-	}
-
-	if _, exists := uc.locks[appID]; !exists {
-		uc.locks[appID] = &sync.Mutex{}
-	}
-	return uc.locks[appID]
-}
-
-func (uc *AppUsecase) apply(appRelease *AppRelease) {
-	uc.eventChan <- appRelease
-}
-
-func (uc *AppUsecase) appReleaseRunner() {
-	for event := range uc.eventChan {
-		go uc.handleEvent(event)
-	}
-}
-
-func (uc *AppUsecase) handleEvent(appRelease *AppRelease) (err error) {
-	lock := uc.getLock(appRelease.ID)
-	lock.Lock()
-	defer func() {
-		if err != nil {
-			uc.log.Errorf("Reconcile error: %v", err)
-		}
-		lock.Unlock()
-	}()
-	fmt.Println("Reconcile", appRelease)
-	return nil
 }
 
 func (uc *AppUsecase) GetAppByName(ctx context.Context, name string) (app *App, err error) {
@@ -338,13 +301,55 @@ func (uc *AppUsecase) ListAppType(ctx context.Context) ([]*AppType, error) {
 func (uc *AppUsecase) DeleteAppType(ctx context.Context, appTypeID int64) error {
 	return uc.appRepo.DeleteAppType(ctx, appTypeID)
 }
+func (uc *AppUsecase) getLock(appID int64) *sync.Mutex {
+	uc.locksMux.Lock()
+	defer uc.locksMux.Unlock()
 
-func (uc *AppUsecase) GetAppDeployed(ctx context.Context, id int64) (*AppRelease, error) {
-	return uc.appRepo.GetDeployApp(ctx, id)
+	if appID < 0 {
+		uc.log.Errorf("Invalid appID: %d", appID)
+		return &sync.Mutex{}
+	}
+
+	if _, exists := uc.locks[appID]; !exists {
+		uc.locks[appID] = &sync.Mutex{}
+	}
+	return uc.locks[appID]
 }
 
-func (uc *AppUsecase) DeployAppList(ctx context.Context, appDeployedReq AppRelease, page, pageSize int32) ([]*AppRelease, int32, error) {
-	return uc.appRepo.DeployAppList(ctx, appDeployedReq, page, pageSize)
+func (uc *AppUsecase) apply(appRelease *AppRelease) {
+	uc.eventChan <- appRelease
+}
+
+func (uc *AppUsecase) appReleaseRunner() {
+	ctx := context.Background()
+	if !uc.appRuntime.CheckCluster(ctx) {
+		return
+	}
+	// todo default app check
+	for event := range uc.eventChan {
+		go uc.handleEvent(ctx, event)
+	}
+}
+
+func (uc *AppUsecase) handleEvent(ctx context.Context, appRelease *AppRelease) (err error) {
+	lock := uc.getLock(appRelease.ID)
+	lock.Lock()
+	defer func() {
+		if err != nil {
+			uc.log.Errorf("App reconcile error: %v", err)
+		}
+		lock.Unlock()
+	}()
+	fmt.Println("Reconcile", appRelease, ctx)
+	return nil
+}
+
+func (uc *AppUsecase) GetAppRelease(ctx context.Context, id int64) (*AppRelease, error) {
+	return uc.appRepo.GetAppRelease(ctx, id)
+}
+
+func (uc *AppUsecase) AppReleaseList(ctx context.Context, appReleaseReq AppRelease, page, pageSize int32) ([]*AppRelease, int32, error) {
+	return uc.appRepo.AppReleaseList(ctx, appReleaseReq, page, pageSize)
 }
 
 func (uc *AppUsecase) GetAppVersionChartInfomation(ctx context.Context, appVersion *AppVersion) error {
@@ -360,13 +365,13 @@ func (uc *AppUsecase) AppTest(ctx context.Context, appID, versionID int64) (*App
 	if appVersion == nil {
 		return nil, errors.New("app version not found")
 	}
-	appDeployed := appVersion.GetAppDeployed()
-	appDeployed.IsTest = true
-	deployAppErr := uc.appConstruct.DeployingApp(ctx, appDeployed)
-	if deployAppErr != nil {
+	appRelease := appVersion.GenerateAppRelease()
+	appRelease.IsTest = true
+	appReleaseErr := uc.appConstruct.AppRelease(ctx, appRelease)
+	if appReleaseErr != nil {
 		appVersion.State = AppTestFailed
 	}
-	if deployAppErr == nil {
+	if appReleaseErr == nil {
 		appVersion.State = AppTested
 		appVersion.TestResult = "success"
 	}
@@ -374,65 +379,65 @@ func (uc *AppUsecase) AppTest(ctx context.Context, appID, versionID int64) (*App
 	if err != nil {
 		return nil, err
 	}
-	return appDeployed, deployAppErr
+	return appRelease, appReleaseErr
 }
 
-func (uc *AppUsecase) DeployApp(ctx context.Context, deployAppReq *AppRelease) (*AppRelease, error) {
+func (uc *AppUsecase) AppRelease(ctx context.Context, appReleaseReq *AppRelease) (*AppRelease, error) {
 	var app *App
 	var appVersion *AppVersion
 	var err error
-	if deployAppReq.AppTypeID == AppTypeRepo {
-		app, err = uc.GetAppDetailByRepo(ctx, deployAppReq.RepoID, deployAppReq.AppName, deployAppReq.Version)
+	if appReleaseReq.AppTypeID == AppTypeRepo {
+		app, err = uc.GetAppDetailByRepo(ctx, appReleaseReq.RepoID, appReleaseReq.AppName, appReleaseReq.Version)
 		if err != nil {
 			return nil, err
 		}
-		appVersion = app.GetVersion(deployAppReq.Version)
+		appVersion = app.GetVersion(appReleaseReq.Version)
 	}
-	if deployAppReq.AppTypeID != AppTypeRepo {
-		app, err = uc.Get(ctx, deployAppReq.AppID, deployAppReq.VersionID)
+	if appReleaseReq.AppTypeID != AppTypeRepo {
+		app, err = uc.Get(ctx, appReleaseReq.AppID, appReleaseReq.VersionID)
 		if err != nil {
 			return nil, err
 		}
-		appVersion = app.GetVersionById(deployAppReq.VersionID)
+		appVersion = app.GetVersionById(appReleaseReq.VersionID)
 	}
-	appDeployed := appVersion.GetAppDeployed()
-	appDeployed.ID = deployAppReq.ID
-	appDeployed.RepoID = deployAppReq.RepoID
-	appDeployed.AppTypeID = app.AppTypeID
-	appDeployed.ClusterID = deployAppReq.ClusterID
-	appDeployed.ProjectID = deployAppReq.ProjectID
-	appDeployed.Namespace = deployAppReq.Namespace
-	appDeployed.Config = deployAppReq.Config
-	appDeployed.UserID = deployAppReq.UserID
-	if deployAppReq.ID != 0 {
-		appDeployedRes, err := uc.appRepo.GetDeployApp(ctx, deployAppReq.ID)
+	appRelease := appVersion.GenerateAppRelease()
+	appRelease.ID = appReleaseReq.ID
+	appRelease.RepoID = appReleaseReq.RepoID
+	appRelease.AppTypeID = app.AppTypeID
+	appRelease.ClusterID = appReleaseReq.ClusterID
+	appRelease.ProjectID = appReleaseReq.ProjectID
+	appRelease.Namespace = appReleaseReq.Namespace
+	appRelease.Config = appReleaseReq.Config
+	appRelease.UserID = appReleaseReq.UserID
+	if appReleaseReq.ID != 0 {
+		appReleaseRes, err := uc.appRepo.GetAppRelease(ctx, appReleaseReq.ID)
 		if err != nil {
 			return nil, err
 		}
-		appDeployed.ReleaseName = appDeployedRes.ReleaseName
+		appRelease.ReleaseName = appReleaseRes.ReleaseName
 	}
-	deployAppErr := uc.appConstruct.DeployingApp(ctx, appDeployed)
-	err = uc.appRepo.SaveDeployApp(ctx, appDeployed)
+	appReleaseErr := uc.appConstruct.AppRelease(ctx, appRelease)
+	err = uc.appRepo.SaveAppRelease(ctx, appRelease)
 	if err != nil {
 		return nil, err
 	}
-	uc.apply(appDeployed)
-	return appDeployed, deployAppErr
+	uc.apply(appRelease)
+	return appRelease, appReleaseErr
 }
 
-func (uc *AppUsecase) DeleteDeployedApp(ctx context.Context, id int64) error {
-	appDeployed, err := uc.appRepo.GetDeployApp(ctx, id)
+func (uc *AppUsecase) DeleteAppRelease(ctx context.Context, id int64) error {
+	appRelease, err := uc.appRepo.GetAppRelease(ctx, id)
 	if err != nil {
 		return err
 	}
-	if appDeployed == nil {
+	if appRelease == nil {
 		return nil
 	}
-	err = uc.appConstruct.UnDeployingApp(ctx, appDeployed)
+	err = uc.appConstruct.DeleteAppRelease(ctx, appRelease)
 	if err != nil {
 		return err
 	}
-	err = uc.appRepo.DeleteDeployApp(ctx, id)
+	err = uc.appRepo.DeleteAppRelease(ctx, id)
 	if err != nil {
 		return err
 	}
@@ -440,22 +445,21 @@ func (uc *AppUsecase) DeleteDeployedApp(ctx context.Context, id int64) error {
 }
 
 func (uc *AppUsecase) StopApp(ctx context.Context, id int64) error {
-	appDeployed, err := uc.appRepo.GetDeployApp(ctx, id)
+	appRelease, err := uc.appRepo.GetAppRelease(ctx, id)
 	if err != nil {
 		return err
 	}
-	if appDeployed == nil {
-		return errors.New("app deployed not found")
+	if appRelease == nil {
+		return errors.New("app appRelease not found")
 	}
-	unDeployAppErr := uc.appConstruct.UnDeployingApp(ctx, appDeployed)
-	err = uc.appRepo.SaveDeployApp(ctx, appDeployed)
+	appReleaseDelErr := uc.appConstruct.DeleteAppRelease(ctx, appRelease)
+	err = uc.appRepo.SaveAppRelease(ctx, appRelease)
 	if err != nil {
 		return err
 	}
-	return unDeployAppErr
+	return appReleaseDelErr
 }
 
-// 保存repo
 func (uc *AppUsecase) SaveRepo(ctx context.Context, helmRepo *AppHelmRepo) error {
 	repoList, err := uc.appRepo.ListRepo(ctx)
 	if err != nil {
@@ -507,19 +511,19 @@ func (uc *AppUsecase) GetAppDetailByRepo(ctx context.Context, helmRepoID int64, 
 	return uc.appConstruct.GetAppDetailByRepo(ctx, helmRepo, appName, version)
 }
 
-func (uc *AppUsecase) GetReleaseResources(ctx context.Context, appDeployID int64) ([]*AppReleaseResource, error) {
-	appDeployed, err := uc.appRepo.GetDeployApp(ctx, appDeployID)
+func (uc *AppUsecase) GetReleaseResources(ctx context.Context, appReleaseID int64) ([]*AppReleaseResource, error) {
+	appRelease, err := uc.appRepo.GetAppRelease(ctx, appReleaseID)
 	if err != nil {
 		return nil, err
 	}
 	resources := make([]*AppReleaseResource, 0)
-	resourcesFunc := []func(ctx context.Context, appDeployed *AppRelease) ([]*AppReleaseResource, error){
+	resourcesFunc := []func(ctx context.Context, appRelease *AppRelease) ([]*AppReleaseResource, error){
 		uc.appRuntime.GetPodResources,
 		uc.appRuntime.GetNetResouces,
 		uc.appRuntime.GetAppsReouces,
 	}
 	for _, f := range resourcesFunc {
-		res, err := f(ctx, appDeployed)
+		res, err := f(ctx, appRelease)
 		if err != nil {
 			return nil, err
 		}
@@ -588,7 +592,7 @@ func (uc *AppUsecase) BaseInstallation(ctx context.Context, cluster *Cluster, pr
 		if err != nil {
 			return err
 		}
-		deployApp := &AppRelease{
+		appRelease := &AppRelease{
 			ClusterID: cluster.ID,
 			AppName:   cast.ToString(chartName),
 			AppTypeID: AppTypeRepo,
@@ -598,10 +602,10 @@ func (uc *AppUsecase) BaseInstallation(ctx context.Context, cluster *Cluster, pr
 			Namespace: cast.ToString(namespace),
 		}
 		if project != nil {
-			deployApp.ProjectID = project.ID
-			deployApp.Namespace = project.Namespace
+			appRelease.ProjectID = project.ID
+			appRelease.Namespace = project.Namespace
 		}
-		_, err = uc.DeployApp(ctx, deployApp)
+		_, err = uc.AppRelease(ctx, appRelease)
 		if err != nil {
 			return err
 		}

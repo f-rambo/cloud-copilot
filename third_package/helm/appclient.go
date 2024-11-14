@@ -53,7 +53,7 @@ func (r *AppConstructRepo) GetAppVersionChartInfomation(ctx context.Context, app
 	return nil
 }
 
-func (r *AppConstructRepo) DeployingApp(ctx context.Context, appDeployed *biz.AppRelease) error {
+func (r *AppConstructRepo) AppRelease(ctx context.Context, appDeployed *biz.AppRelease) error {
 	helmPkg, err := NewHelmPkg(r.log, appDeployed.Namespace)
 	if err != nil {
 		return err
@@ -96,7 +96,7 @@ func (r *AppConstructRepo) DeployingApp(ctx context.Context, appDeployed *biz.Ap
 	return nil
 }
 
-func (r *AppConstructRepo) UnDeployingApp(ctx context.Context, appDeployed *biz.AppRelease) error {
+func (r *AppConstructRepo) DeleteAppRelease(ctx context.Context, appDeployed *biz.AppRelease) error {
 	helmPkg, err := NewHelmPkg(r.log, appDeployed.Namespace)
 	if err != nil {
 		return err

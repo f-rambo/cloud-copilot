@@ -601,7 +601,7 @@ type ClusterInfrastructure interface {
 type ClusterRuntime interface {
 	CurrentCluster(context.Context, *Cluster) error
 	HandlerNodes(context.Context, *Cluster) error
-	DeleteResource(context.Context, *Cluster) error
+	MigrateToCluster(context.Context, *Cluster) error
 }
 
 type ClusterUsecase struct {
@@ -733,10 +733,6 @@ func (uc *ClusterUsecase) handleEvent(ctx context.Context, cluster *Cluster) (er
 		err = uc.clusterRepo.Save(ctx, cluster)
 	}()
 	if cluster.IsDeleteed() {
-		err = uc.clusterRuntime.DeleteResource(ctx, cluster)
-		if err != nil {
-			return err
-		}
 		err = uc.clusterInfrastructure.UnInstall(ctx, cluster)
 		if err != nil {
 			return err
@@ -762,7 +758,7 @@ func (uc *ClusterUsecase) handleEvent(ctx context.Context, cluster *Cluster) (er
 	if err != nil {
 		return err
 	}
-	err = uc.clusterRuntime.HandlerNodes(ctx, cluster)
+	err = uc.clusterInfrastructure.HandlerNodes(ctx, cluster)
 	if err != nil {
 		return err
 	}
@@ -800,6 +796,10 @@ func (uc *ClusterUsecase) handlerClusterNotInstalled(ctx context.Context, cluste
 		return err
 	}
 	err = uc.clusterInfrastructure.Install(ctx, cluster)
+	if err != nil {
+		return err
+	}
+	err = uc.clusterRuntime.MigrateToCluster(ctx, cluster)
 	if err != nil {
 		return err
 	}

@@ -23,6 +23,11 @@ func NewAppDeployedResource(c *conf.Bootstrap, logger log.Logger) biz.AppRuntime
 	}
 }
 
+func (a *AppDeployedRuntime) CheckCluster(context.Context) bool {
+	_, err := GetKubeClientByInCluster()
+	return err == nil
+}
+
 func (a *AppDeployedRuntime) GetPodResources(ctx context.Context, appDeployed *biz.AppRelease) ([]*biz.AppReleaseResource, error) {
 	resources := make([]*biz.AppReleaseResource, 0)
 	clusterClient, err := GetKubeClientByInCluster()

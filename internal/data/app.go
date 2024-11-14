@@ -171,11 +171,11 @@ func (a *appRepo) DeleteAppType(ctx context.Context, appTypeID int64) error {
 	return a.data.db.Delete(&biz.AppType{}, appTypeID).Error
 }
 
-func (a *appRepo) SaveDeployApp(ctx context.Context, appDeployed *biz.AppRelease) error {
+func (a *appRepo) SaveAppRelease(ctx context.Context, appDeployed *biz.AppRelease) error {
 	return a.data.db.Save(appDeployed).Error
 }
 
-func (a *appRepo) DeployAppList(ctx context.Context, appDeployedReq biz.AppRelease, page, pageSize int32) ([]*biz.AppRelease, int32, error) {
+func (a *appRepo) AppReleaseList(ctx context.Context, appDeployedReq biz.AppRelease, page, pageSize int32) ([]*biz.AppRelease, int32, error) {
 	appDeployedReq.Chart = ""
 	appDeployedReq.Config = ""
 	appDeployedReq.Manifest = ""
@@ -201,7 +201,7 @@ func (a *appRepo) DeployAppList(ctx context.Context, appDeployedReq biz.AppRelea
 	return appDeployeds, int32(appDeployedCount), nil
 }
 
-func (a *appRepo) GetDeployApp(ctx context.Context, id int64) (*biz.AppRelease, error) {
+func (a *appRepo) GetAppRelease(ctx context.Context, id int64) (*biz.AppRelease, error) {
 	deployApp := &biz.AppRelease{}
 	err := a.data.db.First(deployApp, id).Error
 	if err != nil && err.Error() != "record not found" {
@@ -210,7 +210,7 @@ func (a *appRepo) GetDeployApp(ctx context.Context, id int64) (*biz.AppRelease, 
 	return deployApp, nil
 }
 
-func (a *appRepo) DeleteDeployApp(ctx context.Context, id int64) error {
+func (a *appRepo) DeleteAppRelease(ctx context.Context, id int64) error {
 	return a.data.db.Delete(&biz.AppRelease{}, id).Error
 }
 
