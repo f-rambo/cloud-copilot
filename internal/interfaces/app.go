@@ -129,7 +129,7 @@ func (a *AppInterface) UploadApp(ctx context.Context, req *v1alpha1.FileUploadRe
 	if filepath.Ext(req.GetFileName()) != ".tgz" {
 		return nil, errors.New("file type is not supported")
 	}
-	appPath, err := utils.GetPackageStorePathByNames(biz.AppPackageName)
+	appPath, err := utils.GetServerStorePathByNames(utils.AppPackage)
 	if err != nil {
 		return nil, err
 	}

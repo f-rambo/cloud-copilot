@@ -17,7 +17,9 @@ import (
 )
 
 const (
-	ClusterPackageName = "cluster"
+	ClusterPackageName         = "cluster"
+	ClusterShellPackageName    = "shell"
+	ClusterResroucePackageName = "resource"
 
 	ClusterPoolNumber = 10
 )

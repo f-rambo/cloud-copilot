@@ -2,15 +2,12 @@ package utils
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 
 	"github.com/f-rambo/ocean/internal/conf"
 	"github.com/go-kratos/kratos/v2/log"
 	"gopkg.in/natefinch/lumberjack.v2"
 )
-
-const logPackageName = "log"
 
 var _ log.Logger = (*logtool)(nil)
 
@@ -59,9 +56,6 @@ func (l *logtool) Close() error {
 }
 
 func (l *logtool) GetLogContenteKeyvals() []interface{} {
-	if !l.conf.Server.Debug {
-		return []interface{}{}
-	}
 	return []interface{}{
 		"ts", log.DefaultTimestamp,
 		"caller", log.DefaultCaller,
@@ -69,13 +63,9 @@ func (l *logtool) GetLogContenteKeyvals() []interface{} {
 }
 
 func GetLogFilePath(filename string) (string, error) {
-	logPath, err := GetPackageStorePathByNames(logPackageName)
+	logPath, err := GetServerStorePathByNames(LogPackage)
 	if err != nil {
 		return "", err
 	}
-	err = os.MkdirAll(logPath, 0755)
-	if err != nil {
-		return "", err
-	}
-	return filepath.Join(logPath, fmt.Sprintf("%s.%s", filename, logPackageName)), nil
+	return filepath.Join(logPath, fmt.Sprintf("%s.%s", filename, LogPackage)), nil
 }

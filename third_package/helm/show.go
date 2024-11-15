@@ -28,7 +28,7 @@ func GetLocalChartInfo(appName, path, chart string) (*ChartInfo, error) {
 	}
 	if utils.IsValidURL(chart) {
 		path = fmt.Sprintf("%s%s/", path, appName)
-		fileName := utils.GetFileNameByUrl(chart)
+		fileName := utils.GetFileNameByDownloadUrl(chart)
 		if !utils.IsFileExist(path + fileName) {
 			err := utils.DownloadFile(chart, filepath.Join(path, fileName))
 			if err != nil {

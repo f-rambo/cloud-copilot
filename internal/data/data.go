@@ -3,8 +3,6 @@ package data
 import (
 	"context"
 	"fmt"
-	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/f-rambo/ocean/internal/biz"
@@ -62,18 +60,13 @@ func NewData(c *conf.Bootstrap, logger log.Logger) (*Data, func(), error) {
 		gormDialector = postgres.Open(dns)
 	}
 	if DBDriver(c.Data.GetDriver()) == DBDriverSQLite {
-		dbFilePath, err := utils.GetPackageStorePathByNames(DBDriverSQLite.String(), DatabaseName)
+		dbFilePath, err := utils.GetServerStorePathByNames(utils.SqlitePackage, DatabaseName)
 		if err != nil {
 			return data, cleanup, err
 		}
-		if dbFilePath != "" && !utils.IsFileExist(dbFilePath) {
-			dir, _ := filepath.Split(dbFilePath)
-			os.MkdirAll(dir, 0755)
-			file, err := os.Create(dbFilePath)
-			if err != nil {
-				return data, cleanup, err
-			}
-			file.Close()
+		err = utils.CreateStoreFile(dbFilePath)
+		if err != nil {
+			return data, cleanup, err
 		}
 		gormDialector = sqlite.Open(dbFilePath)
 	}

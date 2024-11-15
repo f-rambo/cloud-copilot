@@ -19,8 +19,6 @@ const (
 	OSKey             MatedataKey = "os"
 	ArchKey           MatedataKey = "arch"
 	ConfKey           MatedataKey = "conf"
-	ShellKey          MatedataKey = "shell"
-	ResourceKey       MatedataKey = "resource"
 )
 
 func GetFromContextByKey(ctx context.Context, key MatedataKey) (string, error) {

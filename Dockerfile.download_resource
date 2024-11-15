@@ -1,9 +1,7 @@
 FROM docker:dind
 
-COPY ./shell /shell
-
 RUN apk add --no-cache bash curl coreutils
 
-VOLUME ["/resource"]
+VOLUME ["/shell", "/resource"]
 
 CMD ["dockerd"]

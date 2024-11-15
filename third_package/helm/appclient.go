@@ -3,6 +3,7 @@ package helm
 import (
 	"context"
 	"encoding/json"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -30,7 +31,7 @@ func NewAppConstructRepo(c *conf.Bootstrap, logger log.Logger) biz.AppConstruct 
 }
 
 func (r *AppConstructRepo) GetAppVersionChartInfomation(ctx context.Context, appVersion *biz.AppVersion) error {
-	appPath, err := utils.GetPackageStorePathByNames(biz.AppPackageName)
+	appPath, err := utils.GetServerStorePathByNames(utils.AppPackage)
 	if err != nil {
 		return err
 	}
@@ -62,13 +63,13 @@ func (r *AppConstructRepo) AppRelease(ctx context.Context, appDeployed *biz.AppR
 	if err != nil {
 		return err
 	}
-	appPath, err := utils.GetPackageStorePathByNames(biz.AppPackageName)
+	appPath, err := utils.GetServerStorePathByNames(utils.AppPackage)
 	if err != nil {
 		return err
 	}
 	chartPath := filepath.Join(appPath, appDeployed.Chart)
 	if appDeployed.AppTypeID == biz.AppTypeRepo {
-		chartPath = filepath.Join(chartPath, biz.AppPackageRepoName, appDeployed.AppName, appDeployed.Chart)
+		chartPath = filepath.Join(chartPath, utils.AppRepoPackage, appDeployed.AppName, appDeployed.Chart)
 	}
 	install.ReleaseName = appDeployed.ReleaseName
 	install.Namespace = appDeployed.Namespace
@@ -129,7 +130,7 @@ func (r *AppConstructRepo) AddAppRepo(ctx context.Context, repo *biz.AppRepo) (e
 	if err != nil {
 		return err
 	}
-	res.CachePath, err = utils.GetPackageStorePathByNames(biz.AppPackageName, biz.AppPackageRepoName)
+	res.CachePath, err = utils.GetServerStorePathByNames(utils.AppPackage, utils.AppRepoPackage)
 	if err != nil {
 		return err
 	}
@@ -220,13 +221,13 @@ func (r *AppConstructRepo) GetAppsByRepo(ctx context.Context, repo *biz.AppRepo)
 }
 
 func (r *AppConstructRepo) DeleteAppChart(ctx context.Context, app *biz.App, versionId int64) (err error) {
-	appPath, err := utils.GetPackageStorePathByNames(biz.AppPackageName)
+	appPath, err := utils.GetServerStorePathByNames(utils.AppPackage)
 	if err != nil {
 		return err
 	}
-	appIconPath := filepath.Join(appPath, biz.AppPathckageIcon, app.Icon)
+	appIconPath := filepath.Join(appPath, utils.AppIconPackage, app.Icon)
 	if app.Icon != "" && utils.IsFileExist(appIconPath) && versionId == 0 {
-		err = utils.DeleteFile(appIconPath)
+		err = os.Remove(appIconPath)
 		if err != nil {
 			return err
 		}
@@ -235,13 +236,13 @@ func (r *AppConstructRepo) DeleteAppChart(ctx context.Context, app *biz.App, ver
 	for _, v := range app.Versions {
 		chartPath := filepath.Join(appPath, v.Chart)
 		if v.Chart != "" && utils.IsFileExist(chartPath) && versionId == 0 {
-			err = utils.DeleteFile(chartPath)
+			err = os.Remove(chartPath)
 			if err != nil {
 				return err
 			}
 		}
 		if v.Chart != "" && utils.IsFileExist(chartPath) && versionId == v.ID {
-			err = utils.DeleteFile(chartPath)
+			err = os.Remove(chartPath)
 			if err != nil {
 				return err
 			}

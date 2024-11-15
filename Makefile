@@ -101,7 +101,7 @@ download-resources:
 		container_name=$$platform_formated-dind-container; \
 		arch=$$(echo $$platform | cut -d '/' -f2); \
 		mkdir -p ./resource/$$arch; \
-		docker run --privileged --platform=$$platform --name $$container_name -d --rm -v ./resource/$$arch:/resource $$image_name; \
+		docker run --privileged --platform=$$platform --name $$container_name -d --rm -v ./resource/$$arch:/resource -v ./shell/:/shell $$image_name; \
 		sleep 5; \
 		docker exec -it $$container_name /bin/bash /shell/download.sh /resource; \
 		docker stop $$container_name; \

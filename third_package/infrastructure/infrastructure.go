@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"os/exec"
 	"strings"
 	"time"
@@ -156,16 +157,16 @@ func (cc *ClusterInfrastructure) MigrateToBostionHost(ctx context.Context, clust
 		return errors.New("bostion host arch is not supported")
 	}
 	cluster.BostionHost.ARCH = ARCH_MAP[arch]
-	shellPath, err := utils.GetFromContextByKey(ctx, utils.ShellKey)
+	shellPath, err := utils.GetServerStorePathByNames(biz.ClusterShellPackageName)
 	if err != nil {
 		return err
 	}
-	resourcePath, err := utils.GetFromContextByKey(ctx, utils.ResourceKey)
+	resourcePath, err := utils.GetServerStorePathByNames(biz.ClusterResroucePackageName)
 	if err != nil {
 		return err
 	}
 	syncShellPath := utils.MergePath(shellPath, SyncShell)
-	oceanHomePath, err := utils.GetPackageStorePathByNames()
+	oceanHomePath, err := utils.GetServerStorePathByNames()
 	if err != nil {
 		return err
 	}
@@ -211,7 +212,7 @@ func (cc *ClusterInfrastructure) MigrateToBostionHost(ctx context.Context, clust
 
 func (cc *ClusterInfrastructure) Install(ctx context.Context, cluster *biz.Cluster) error {
 	remoteBash := NewBash(Server{Name: cluster.Name, Host: cluster.MasterIP, User: cluster.MasterUser, Port: 22, PrivateKey: cluster.PrivateKey}, cc.log)
-	shellPath, err := utils.GetFromContextByKey(ctx, utils.ShellKey)
+	shellPath, err := utils.GetServerStorePathByNames(biz.ClusterShellPackageName)
 	if err != nil {
 		return err
 	}
@@ -223,7 +224,7 @@ func (cc *ClusterInfrastructure) Install(ctx context.Context, cluster *biz.Clust
 	if err != nil {
 		return err
 	}
-	clusterConfigData, err := utils.ReadFile(utils.MergePath(configPath, ClusterConfiguration))
+	clusterConfigData, err := os.ReadFile(utils.MergePath(configPath, ClusterConfiguration))
 	if err != nil {
 		return err
 	}
@@ -390,7 +391,7 @@ func (cc *ClusterInfrastructure) restartKubelet(remoteBash *Bash) error {
 
 func (cc *ClusterInfrastructure) GetNodesSystemInfo(ctx context.Context, cluster *biz.Cluster) error {
 	errGroup, _ := errgroup.WithContext(ctx)
-	shellPath, err := utils.GetFromContextByKey(ctx, utils.ShellKey)
+	shellPath, err := utils.GetServerStorePathByNames(biz.ClusterShellPackageName)
 	if err != nil {
 		return err
 	}

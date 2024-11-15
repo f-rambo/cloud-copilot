@@ -15,13 +15,13 @@ import (
 const (
 	AppPoolNumber = 100
 
-	AppPackageName     = "app"
-	AppPackageRepoName = "repo"
-	AppPathckageIcon   = "icon"
-
 	AppUntested   = "untested"
 	AppTested     = "tested"
 	AppTestFailed = "test_failed"
+
+	AppTypeAll        = 0
+	AppTypeAppPackage = -1 // package
+	AppTypeRepo       = -2 // url
 )
 
 type AppType struct {
@@ -29,12 +29,6 @@ type AppType struct {
 	Name string `json:"name" gorm:"column:name; default:''; NOT NULL"`
 	gorm.Model
 }
-
-const (
-	AppTypeAll        = 0
-	AppTypeAppPackage = -1 // package
-	AppTypeRepo       = -2 // url
-)
 
 func DefaultAppType() []*AppType {
 	return []*AppType{
@@ -466,12 +460,10 @@ func (uc *AppUsecase) appReleaseRunner() {
 func (uc *AppUsecase) getLock(appID int64) *sync.Mutex {
 	uc.locksMux.Lock()
 	defer uc.locksMux.Unlock()
-
 	if appID < 0 {
 		uc.log.Errorf("Invalid appID: %d", appID)
 		return &sync.Mutex{}
 	}
-
 	if _, exists := uc.locks[appID]; !exists {
 		uc.locks[appID] = &sync.Mutex{}
 	}

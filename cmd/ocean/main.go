@@ -26,18 +26,12 @@ var (
 	Version string
 	// flagconf is the config flag.
 	flagconf string
-	// shell file dir
-	flagShell string
-	// resource file dir
-	flagResource string
 
 	id, _ = os.Hostname()
 )
 
 func init() {
 	flag.StringVar(&flagconf, "conf", "configs", "config path, eg: -conf config.yaml")
-	flag.StringVar(&flagShell, "shell", "shell", "shell file dir, eg: -shell shell")
-	flag.StringVar(&flagResource, "resource", "resource", "resource file dir, eg: -resource resource")
 }
 
 func newApp(logger log.Logger, gs *grpc.Server, hs *http.Server) *kratos.App {
@@ -52,8 +46,6 @@ func newApp(logger log.Logger, gs *grpc.Server, hs *http.Server) *kratos.App {
 			utils.OSKey.String():             runtime.GOOS,
 			utils.ArchKey.String():           runtime.GOARCH,
 			utils.ConfKey.String():           flagconf,
-			utils.ShellKey.String():          flagShell,
-			utils.ResourceKey.String():       flagResource,
 		}),
 		kratos.Logger(logger),
 		kratos.Server(gs, hs),
@@ -81,6 +73,18 @@ func main() {
 
 	var bc conf.Bootstrap
 	if err := c.Scan(&bc); err != nil {
+		logFatalWithStack(err)
+	}
+
+	Name = bc.Server.Name
+	Version = bc.Server.Version
+
+	utils.ServerNameAsStoreDirName = Name
+	if err := utils.InitServerStore(); err != nil {
+		logFatalWithStack(err)
+	}
+
+	if err := utils.ShellToolsInit(); err != nil {
 		logFatalWithStack(err)
 	}
 
