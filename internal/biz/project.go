@@ -55,7 +55,7 @@ func (p *Project) initPorject() {
 	p.Namespace = p.Name
 }
 
-type ProjectRepo interface {
+type ProjectData interface {
 	Save(context.Context, *Project) error
 	Get(context.Context, int64) (*Project, error)
 	List(context.Context, int64) ([]*Project, error)
@@ -63,19 +63,19 @@ type ProjectRepo interface {
 	Delete(context.Context, int64) error
 }
 
-type ClusterPorjectRepo interface {
+type PorjectRuntime interface {
 	CreateNamespace(context.Context, string) error
 	GetNamespaces(context.Context) (namespaces []string, err error)
 }
 
 type ProjectUsecase struct {
-	repo        ProjectRepo
-	clusterRepo ClusterPorjectRepo
-	log         *log.Helper
+	projectData    ProjectData
+	ProjectRuntime PorjectRuntime
+	log            *log.Helper
 }
 
-func NewProjectUseCase(repo ProjectRepo, clusterRepo ClusterPorjectRepo, logger log.Logger) *ProjectUsecase {
-	return &ProjectUsecase{repo: repo, clusterRepo: clusterRepo, log: log.NewHelper(logger)}
+func NewProjectUseCase(projectData ProjectData, ProjectTime PorjectRuntime, logger log.Logger) *ProjectUsecase {
+	return &ProjectUsecase{projectData: projectData, ProjectRuntime: ProjectTime, log: log.NewHelper(logger)}
 }
 
 func (uc *ProjectUsecase) Save(ctx context.Context, projectParam *Project) error {
@@ -91,14 +91,14 @@ func (uc *ProjectUsecase) Save(ctx context.Context, projectParam *Project) error
 			}
 		}
 		projectParam.initPorject()
-		namespaces, err := uc.clusterRepo.GetNamespaces(ctx)
+		namespaces, err := uc.ProjectRuntime.GetNamespaces(ctx)
 		if err != nil {
 			return err
 		}
 		if utils.Contains(namespaces, projectParam.Namespace) {
 			return errors.New("namespace exists")
 		}
-		return uc.repo.Save(ctx, projectParam)
+		return uc.projectData.Save(ctx, projectParam)
 	}
 	project, err := uc.Get(ctx, projectParam.ID)
 	if err != nil {
@@ -107,27 +107,27 @@ func (uc *ProjectUsecase) Save(ctx context.Context, projectParam *Project) error
 	projectParam.Namespace = project.Namespace
 	projectParam.State = project.State
 	projectParam.ClusterID = project.ClusterID
-	return uc.repo.Save(ctx, projectParam)
+	return uc.projectData.Save(ctx, projectParam)
 }
 
 func (uc *ProjectUsecase) Get(ctx context.Context, id int64) (*Project, error) {
-	return uc.repo.Get(ctx, id)
+	return uc.projectData.Get(ctx, id)
 }
 
 func (uc *ProjectUsecase) List(ctx context.Context, clusterID int64) ([]*Project, error) {
-	return uc.repo.List(ctx, clusterID)
+	return uc.projectData.List(ctx, clusterID)
 }
 
 func (uc *ProjectUsecase) ListByIds(ctx context.Context, ids []int64) ([]*Project, error) {
-	return uc.repo.ListByIds(ctx, ids)
+	return uc.projectData.ListByIds(ctx, ids)
 }
 
 func (uc *ProjectUsecase) Delete(ctx context.Context, id int64) error {
-	return uc.repo.Delete(ctx, id)
+	return uc.projectData.Delete(ctx, id)
 }
 
 func (uc *ProjectUsecase) Enable(ctx context.Context, project *Project, cluster *Cluster, baseAppInstallation func(context.Context, *Cluster, *Project) error) error {
-	err := uc.clusterRepo.CreateNamespace(ctx, project.Namespace)
+	err := uc.ProjectRuntime.CreateNamespace(ctx, project.Namespace)
 	if err != nil {
 		return err
 	}

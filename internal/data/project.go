@@ -15,7 +15,7 @@ type projectRepo struct {
 	confServer *conf.Server
 }
 
-func NewProjectRepo(data *Data, c *conf.Bootstrap, logger log.Logger) biz.ProjectRepo {
+func NewProjectRepo(data *Data, c *conf.Bootstrap, logger log.Logger) biz.ProjectData {
 	cserver := c.Server
 	return &projectRepo{
 		data:       data,

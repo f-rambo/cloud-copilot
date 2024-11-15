@@ -13,7 +13,7 @@ type servicesRepo struct {
 	log  *log.Helper
 }
 
-func NewServicesRepo(data *Data, logger log.Logger) biz.ServicesRepo {
+func NewServicesRepo(data *Data, logger log.Logger) biz.ServicesData {
 	return &servicesRepo{
 		data: data,
 		log:  log.NewHelper(logger),

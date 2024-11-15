@@ -16,7 +16,7 @@ type clusterRepo struct {
 	c    *conf.Bootstrap
 }
 
-func NewClusterRepo(data *Data, c *conf.Bootstrap, logger log.Logger) biz.ClusterRepo {
+func NewClusterRepo(data *Data, c *conf.Bootstrap, logger log.Logger) biz.ClusterData {
 	return &clusterRepo{
 		data: data,
 		log:  log.NewHelper(logger),

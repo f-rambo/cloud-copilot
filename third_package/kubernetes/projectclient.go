@@ -15,7 +15,7 @@ type ProjectClient struct {
 	log *log.Helper
 }
 
-func NewProjectClient(c *conf.Bootstrap, logger log.Logger) biz.ClusterPorjectRepo {
+func NewProjectClient(c *conf.Bootstrap, logger log.Logger) biz.PorjectRuntime {
 	return &ProjectClient{
 		c:   c,
 		log: log.NewHelper(logger),

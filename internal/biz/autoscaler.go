@@ -84,7 +84,7 @@ func (uc *ClusterUsecase) Refresh(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	cluster, err = uc.clusterRepo.GetByName(ctx, cluster.Name)
+	cluster, err = uc.clusterData.GetByName(ctx, cluster.Name)
 	if err != nil {
 		return err
 	}

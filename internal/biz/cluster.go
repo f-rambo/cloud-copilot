@@ -581,7 +581,7 @@ type BostionHost struct {
 	gorm.Model
 }
 
-type ClusterRepo interface {
+type ClusterData interface {
 	Save(context.Context, *Cluster) error
 	Get(context.Context, int64) (*Cluster, error)
 	GetByName(context.Context, string) (*Cluster, error)
@@ -607,7 +607,7 @@ type ClusterRuntime interface {
 }
 
 type ClusterUsecase struct {
-	clusterRepo           ClusterRepo
+	clusterData           ClusterData
 	clusterInfrastructure ClusterInfrastructure
 	clusterRuntime        ClusterRuntime
 	locks                 map[int64]*sync.Mutex
@@ -617,9 +617,9 @@ type ClusterUsecase struct {
 	log                   *log.Helper
 }
 
-func NewClusterUseCase(conf *conf.Bootstrap, clusterRepo ClusterRepo, clusterInfrastructure ClusterInfrastructure, clusterRuntime ClusterRuntime, logger log.Logger) *ClusterUsecase {
+func NewClusterUseCase(conf *conf.Bootstrap, clusterData ClusterData, clusterInfrastructure ClusterInfrastructure, clusterRuntime ClusterRuntime, logger log.Logger) *ClusterUsecase {
 	c := &ClusterUsecase{
-		clusterRepo:           clusterRepo,
+		clusterData:           clusterData,
 		clusterInfrastructure: clusterInfrastructure,
 		clusterRuntime:        clusterRuntime,
 		conf:                  conf,
@@ -632,7 +632,7 @@ func NewClusterUseCase(conf *conf.Bootstrap, clusterRepo ClusterRepo, clusterInf
 }
 
 func (uc *ClusterUsecase) Get(ctx context.Context, id int64) (*Cluster, error) {
-	cluster, err := uc.clusterRepo.Get(ctx, id)
+	cluster, err := uc.clusterData.Get(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -640,11 +640,11 @@ func (uc *ClusterUsecase) Get(ctx context.Context, id int64) (*Cluster, error) {
 }
 
 func (uc *ClusterUsecase) List(ctx context.Context) ([]*Cluster, error) {
-	return uc.clusterRepo.List(ctx, nil)
+	return uc.clusterData.List(ctx, nil)
 }
 
 func (uc *ClusterUsecase) Delete(ctx context.Context, clusterID int64) error {
-	cluster, err := uc.clusterRepo.Get(ctx, clusterID)
+	cluster, err := uc.clusterData.Get(ctx, clusterID)
 	if err != nil {
 		return err
 	}
@@ -654,11 +654,11 @@ func (uc *ClusterUsecase) Delete(ctx context.Context, clusterID int64) error {
 	for _, node := range cluster.Nodes {
 		node.Status = NodeStatusDeleting
 	}
-	err = uc.clusterRepo.Save(ctx, cluster)
+	err = uc.clusterData.Save(ctx, cluster)
 	if err != nil {
 		return err
 	}
-	err = uc.clusterRepo.Delete(ctx, clusterID)
+	err = uc.clusterData.Delete(ctx, clusterID)
 	if err != nil {
 		return err
 	}
@@ -666,7 +666,7 @@ func (uc *ClusterUsecase) Delete(ctx context.Context, clusterID int64) error {
 }
 
 func (uc *ClusterUsecase) Save(ctx context.Context, cluster *Cluster) error {
-	data, err := uc.clusterRepo.GetByName(ctx, cluster.Name)
+	data, err := uc.clusterData.GetByName(ctx, cluster.Name)
 	if err != nil {
 		return err
 	}
@@ -676,7 +676,7 @@ func (uc *ClusterUsecase) Save(ctx context.Context, cluster *Cluster) error {
 	if cluster.Level == "" {
 		cluster.Level = ClusterLevelBasic
 	}
-	err = uc.clusterRepo.Save(ctx, cluster)
+	err = uc.clusterData.Save(ctx, cluster)
 	if err != nil {
 		return err
 	}
@@ -732,7 +732,7 @@ func (uc *ClusterUsecase) handleEvent(ctx context.Context, cluster *Cluster) (er
 			return
 		}
 		lock.Unlock()
-		err = uc.clusterRepo.Save(ctx, cluster)
+		err = uc.clusterData.Save(ctx, cluster)
 	}()
 	if cluster.IsDeleteed() {
 		err = uc.clusterInfrastructure.UnInstall(ctx, cluster)
@@ -783,7 +783,7 @@ func (uc *ClusterUsecase) handlerClusterNotInstalled(ctx context.Context, cluste
 		return err
 	}
 	if uc.conf.Server.GetEnv() == conf.EnvLocal {
-		err = uc.clusterRepo.Save(ctx, cluster)
+		err = uc.clusterData.Save(ctx, cluster)
 		if err != nil {
 			return err
 		}

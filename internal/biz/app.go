@@ -177,7 +177,7 @@ func (v *AppVersion) AppVersionToAppRelease() *AppRelease {
 	}
 }
 
-type AppRepoInterface interface {
+type AppData interface {
 	Save(context.Context, *App) error
 	List(context.Context, *App, int32, int32) ([]*App, int32, error)
 	Get(ctx context.Context, appID int64) (*App, error)
@@ -215,7 +215,7 @@ type AppConstruct interface {
 }
 
 type AppUsecase struct {
-	appRepo      AppRepoInterface
+	appData      AppData
 	appRuntime   AppRuntime
 	appConstruct AppConstruct
 	locks        map[int64]*sync.Mutex
@@ -225,9 +225,9 @@ type AppUsecase struct {
 	log          *log.Helper
 }
 
-func NewAppUsecase(appRepo AppRepoInterface, appRuntime AppRuntime, appConstruct AppConstruct, logger log.Logger, conf *conf.Bootstrap) *AppUsecase {
+func NewAppUsecase(appData AppData, appRuntime AppRuntime, appConstruct AppConstruct, logger log.Logger, conf *conf.Bootstrap) *AppUsecase {
 	appuc := &AppUsecase{
-		appRepo:      appRepo,
+		appData:      appData,
 		appRuntime:   appRuntime,
 		appConstruct: appConstruct,
 		conf:         conf,
@@ -240,15 +240,15 @@ func NewAppUsecase(appRepo AppRepoInterface, appRuntime AppRuntime, appConstruct
 }
 
 func (uc *AppUsecase) GetAppByName(ctx context.Context, name string) (app *App, err error) {
-	return uc.appRepo.GetByName(ctx, name)
+	return uc.appData.GetByName(ctx, name)
 }
 
 func (uc *AppUsecase) List(ctx context.Context, appReq *App, page, pageSize int32) ([]*App, int32, error) {
-	return uc.appRepo.List(ctx, appReq, page, pageSize)
+	return uc.appData.List(ctx, appReq, page, pageSize)
 }
 
 func (uc *AppUsecase) Get(ctx context.Context, id, versionId int64) (*App, error) {
-	app, err := uc.appRepo.Get(ctx, id)
+	app, err := uc.appData.Get(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -264,7 +264,7 @@ func (uc *AppUsecase) Get(ctx context.Context, id, versionId int64) (*App, error
 }
 
 func (uc *AppUsecase) Save(ctx context.Context, app *App) error {
-	return uc.appRepo.Save(ctx, app)
+	return uc.appData.Save(ctx, app)
 }
 
 func (uc *AppUsecase) Delete(ctx context.Context, id, versionId int64) error {
@@ -272,7 +272,7 @@ func (uc *AppUsecase) Delete(ctx context.Context, id, versionId int64) error {
 	if err != nil {
 		return err
 	}
-	err = uc.appRepo.Delete(ctx, id, versionId)
+	err = uc.appData.Delete(ctx, id, versionId)
 	if err != nil {
 		return err
 	}
@@ -280,19 +280,19 @@ func (uc *AppUsecase) Delete(ctx context.Context, id, versionId int64) error {
 }
 
 func (uc *AppUsecase) CreateAppType(ctx context.Context, appType *AppType) error {
-	return uc.appRepo.CreateAppType(ctx, appType)
+	return uc.appData.CreateAppType(ctx, appType)
 }
 
 func (uc *AppUsecase) ListAppType(ctx context.Context) ([]*AppType, error) {
-	return uc.appRepo.ListAppType(ctx)
+	return uc.appData.ListAppType(ctx)
 }
 
 func (uc *AppUsecase) DeleteAppType(ctx context.Context, appTypeID int64) error {
-	return uc.appRepo.DeleteAppType(ctx, appTypeID)
+	return uc.appData.DeleteAppType(ctx, appTypeID)
 }
 
 func (uc *AppUsecase) SaveRepo(ctx context.Context, repo *AppRepo) error {
-	repoList, err := uc.appRepo.ListRepo(ctx)
+	repoList, err := uc.appData.ListRepo(ctx)
 	if err != nil {
 		return err
 	}
@@ -305,19 +305,19 @@ func (uc *AppUsecase) SaveRepo(ctx context.Context, repo *AppRepo) error {
 	if err != nil {
 		return err
 	}
-	return uc.appRepo.SaveRepo(ctx, repo)
+	return uc.appData.SaveRepo(ctx, repo)
 }
 
 func (uc *AppUsecase) ListRepo(ctx context.Context) ([]*AppRepo, error) {
-	return uc.appRepo.ListRepo(ctx)
+	return uc.appData.ListRepo(ctx)
 }
 
 func (uc *AppUsecase) DeleteRepo(ctx context.Context, repoID int64) error {
-	return uc.appRepo.DeleteRepo(ctx, repoID)
+	return uc.appData.DeleteRepo(ctx, repoID)
 }
 
 func (uc *AppUsecase) GetAppsByRepo(ctx context.Context, repoID int64) ([]*App, error) {
-	repo, err := uc.appRepo.GetRepo(ctx, repoID)
+	repo, err := uc.appData.GetRepo(ctx, repoID)
 	if err != nil {
 		return nil, err
 	}
@@ -325,7 +325,7 @@ func (uc *AppUsecase) GetAppsByRepo(ctx context.Context, repoID int64) ([]*App, 
 }
 
 func (uc *AppUsecase) GetAppDetailByRepo(ctx context.Context, repoID int64, appName, version string) (*App, error) {
-	repos, err := uc.appRepo.ListRepo(ctx)
+	repos, err := uc.appData.ListRepo(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -343,11 +343,11 @@ func (uc *AppUsecase) GetAppDetailByRepo(ctx context.Context, repoID int64, appN
 }
 
 func (uc *AppUsecase) GetAppRelease(ctx context.Context, id int64) (*AppRelease, error) {
-	return uc.appRepo.GetAppRelease(ctx, id)
+	return uc.appData.GetAppRelease(ctx, id)
 }
 
 func (uc *AppUsecase) AppReleaseList(ctx context.Context, appReleaseReq AppRelease, page, pageSize int32) ([]*AppRelease, int32, error) {
-	return uc.appRepo.AppReleaseList(ctx, appReleaseReq, page, pageSize)
+	return uc.appData.AppReleaseList(ctx, appReleaseReq, page, pageSize)
 }
 
 func (uc *AppUsecase) GetAppVersionChartInfomation(ctx context.Context, appVersion *AppVersion) error {
@@ -355,7 +355,7 @@ func (uc *AppUsecase) GetAppVersionChartInfomation(ctx context.Context, appVersi
 }
 
 func (uc *AppUsecase) GetAppReleaseResourcesInCluster(ctx context.Context, appReleaseID int64) ([]*AppReleaseResource, error) {
-	appRelease, err := uc.appRepo.GetAppRelease(ctx, appReleaseID)
+	appRelease, err := uc.appData.GetAppRelease(ctx, appReleaseID)
 	if err != nil {
 		return nil, err
 	}
@@ -395,12 +395,12 @@ func (uc *AppUsecase) SaveAppRelease(ctx context.Context, appReleaseReq *AppRele
 		return nil, errors.New("app version not found or not support app type")
 	}
 	if appReleaseReq.ID != 0 {
-		appRelease, err = uc.appRepo.GetAppRelease(ctx, appReleaseReq.ID)
+		appRelease, err = uc.appData.GetAppRelease(ctx, appReleaseReq.ID)
 		if err != nil {
 			return nil, err
 		}
 		appRelease.Config = appReleaseReq.Config
-		err = uc.appRepo.SaveAppRelease(ctx, appRelease)
+		err = uc.appData.SaveAppRelease(ctx, appRelease)
 		if err != nil {
 			return nil, err
 		}
@@ -416,7 +416,7 @@ func (uc *AppUsecase) SaveAppRelease(ctx context.Context, appReleaseReq *AppRele
 	if appRelease.Config == "" {
 		appRelease.Config = appReleaseRes.Config
 	}
-	err = uc.appRepo.SaveAppRelease(ctx, appRelease)
+	err = uc.appData.SaveAppRelease(ctx, appRelease)
 	if err != nil {
 		return nil, err
 	}
@@ -425,11 +425,11 @@ func (uc *AppUsecase) SaveAppRelease(ctx context.Context, appReleaseReq *AppRele
 }
 
 func (uc *AppUsecase) DeleteAppRelease(ctx context.Context, id int64) error {
-	err := uc.appRepo.DeleteAppRelease(ctx, id)
+	err := uc.appData.DeleteAppRelease(ctx, id)
 	if err != nil {
 		return err
 	}
-	appRelease, err := uc.appRepo.GetAppRelease(ctx, id)
+	appRelease, err := uc.appData.GetAppRelease(ctx, id)
 	if err != nil {
 		return err
 	}
@@ -474,7 +474,7 @@ func (uc *AppUsecase) handleEvent(ctx context.Context, appRelease *AppRelease) (
 	lock := uc.getLock(appRelease.ID)
 	lock.Lock()
 	defer func() {
-		uc.appRepo.SaveAppRelease(ctx, appRelease)
+		uc.appData.SaveAppRelease(ctx, appRelease)
 		lock.Unlock()
 	}()
 	if appRelease.DeletedAt.Valid {

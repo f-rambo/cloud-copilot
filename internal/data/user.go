@@ -21,7 +21,7 @@ type UserRepo struct {
 	c    *conf.Bootstrap
 }
 
-func NewUserRepo(data *Data, c *conf.Bootstrap, logger log.Logger) biz.UserRepo {
+func NewUserRepo(data *Data, c *conf.Bootstrap, logger log.Logger) biz.UserData {
 	return &UserRepo{
 		data: data,
 		c:    c,

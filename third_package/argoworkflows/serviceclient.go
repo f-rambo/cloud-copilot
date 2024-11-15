@@ -17,7 +17,7 @@ type WorkflowRepo struct {
 	log *log.Helper
 }
 
-func NewWorkflowRepo(c *conf.Bootstrap, logger log.Logger) biz.WorkflowRepo {
+func NewWorkflowRepo(c *conf.Bootstrap, logger log.Logger) biz.WorkflowRuntime {
 	return &WorkflowRepo{
 		c:   c,
 		log: log.NewHelper(logger),

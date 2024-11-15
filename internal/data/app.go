@@ -14,7 +14,7 @@ type appRepo struct {
 	log  *log.Helper
 }
 
-func NewAppRepo(data *Data, logger log.Logger) biz.AppRepoInterface {
+func NewAppRepo(data *Data, logger log.Logger) biz.AppData {
 	return &appRepo{
 		data: data,
 		log:  log.NewHelper(logger),

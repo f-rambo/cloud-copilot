@@ -77,7 +77,7 @@ type Workflow struct {
 	Workflow []byte `json:"workflow" gorm:"column:workflow; type:json"`
 }
 
-type ServicesRepo interface {
+type ServicesData interface {
 	List(ctx context.Context, serviceParam *Service, page, pageSize int) ([]*Service, int64, error)
 	Save(ctx context.Context, service *Service) error
 	Get(ctx context.Context, id int64) (*Service, error)
@@ -88,51 +88,51 @@ type ServicesRepo interface {
 	GetServiceCis(ctx context.Context, serviceId int64, page, pageSize int32) ([]*CI, int64, error)
 }
 
-type WorkflowRepo interface {
+type WorkflowRuntime interface {
 	GenerateCIWorkflow(context.Context, *Service) (ciWf *Workflow, cdwf *Workflow, err error)
 	Create(ctx context.Context, namespace string, workflow *Workflow) error
 }
 
 type ServicesUseCase struct {
-	repo   ServicesRepo
-	wfrepo WorkflowRepo
-	log    *log.Helper
+	serviceData     ServicesData
+	workflowRuntime WorkflowRuntime
+	log             *log.Helper
 }
 
-func NewServicesUseCase(repo ServicesRepo, wfrepo WorkflowRepo, logger log.Logger) *ServicesUseCase {
-	return &ServicesUseCase{repo: repo, wfrepo: wfrepo, log: log.NewHelper(logger)}
+func NewServicesUseCase(serviceData ServicesData, wfRuntime WorkflowRuntime, logger log.Logger) *ServicesUseCase {
+	return &ServicesUseCase{serviceData: serviceData, workflowRuntime: wfRuntime, log: log.NewHelper(logger)}
 }
 
 func (uc *ServicesUseCase) List(ctx context.Context, serviceParam *Service, page, pageSize int) ([]*Service, int64, error) {
-	return uc.repo.List(ctx, serviceParam, page, pageSize)
+	return uc.serviceData.List(ctx, serviceParam, page, pageSize)
 }
 
 func (uc *ServicesUseCase) Save(ctx context.Context, service *Service) error {
 	if service.ID == 0 {
-		ciWf, cdWf, err := uc.wfrepo.GenerateCIWorkflow(ctx, service)
+		ciWf, cdWf, err := uc.workflowRuntime.GenerateCIWorkflow(ctx, service)
 		if err != nil {
 			return err
 		}
-		err = uc.repo.SaveWrkflow(ctx, ciWf)
+		err = uc.serviceData.SaveWrkflow(ctx, ciWf)
 		if err != nil {
 			return err
 		}
 		service.CIWorklfowID = ciWf.ID
-		err = uc.repo.SaveWrkflow(ctx, cdWf)
+		err = uc.serviceData.SaveWrkflow(ctx, cdWf)
 		if err != nil {
 			return err
 		}
 		service.CDWorklfowID = cdWf.ID
 	}
-	return uc.repo.Save(ctx, service)
+	return uc.serviceData.Save(ctx, service)
 }
 
 func (uc *ServicesUseCase) Get(ctx context.Context, id int64) (*Service, error) {
-	return uc.repo.Get(ctx, id)
+	return uc.serviceData.Get(ctx, id)
 }
 
 func (uc *ServicesUseCase) Delete(ctx context.Context, id int64) error {
-	return uc.repo.Delete(ctx, id)
+	return uc.serviceData.Delete(ctx, id)
 }
 
 func (uc *ServicesUseCase) GetWorkflow(ctx context.Context, id int64, wfType WorkflowType) (*Workflow, error) {
@@ -140,12 +140,12 @@ func (uc *ServicesUseCase) GetWorkflow(ctx context.Context, id int64, wfType Wor
 	if err != nil {
 		return nil, err
 	}
-	wf, err := uc.repo.GetWorkflow(ctx, service.CIWorklfowID)
+	wf, err := uc.serviceData.GetWorkflow(ctx, service.CIWorklfowID)
 	if err != nil {
 		return nil, err
 	}
 	if wfType == WorkflowTypeCD {
-		wf, err = uc.repo.GetWorkflow(ctx, service.CDWorklfowID)
+		wf, err = uc.serviceData.GetWorkflow(ctx, service.CDWorklfowID)
 		if err != nil {
 			return nil, err
 		}
@@ -164,7 +164,7 @@ func (uc *ServicesUseCase) SaveWorkflow(ctx context.Context, serviceId int64, wf
 	if wfType == WorkflowTypeCD && service.CDWorklfowID != 0 {
 		wf.ID = service.CDWorklfowID
 	}
-	err = uc.repo.SaveWrkflow(ctx, wf)
+	err = uc.serviceData.SaveWrkflow(ctx, wf)
 	if err != nil {
 		return err
 	}
@@ -174,7 +174,7 @@ func (uc *ServicesUseCase) SaveWorkflow(ctx context.Context, serviceId int64, wf
 	if wfType == WorkflowTypeCD {
 		service.CDWorklfowID = wf.ID
 	}
-	return uc.repo.Save(ctx, service)
+	return uc.serviceData.Save(ctx, service)
 }
 
 func (uc *ServicesUseCase) CommitWorklfow(ctx context.Context, project *Project, service *Service, wfType WorkflowType, workflowsId int64) error {
@@ -184,13 +184,13 @@ func (uc *ServicesUseCase) CommitWorklfow(ctx context.Context, project *Project,
 	if wfType == WorkflowTypeCD && service.CDWorklfowID != workflowsId {
 		return fmt.Errorf("cd workflow not match")
 	}
-	wf, err := uc.repo.GetWorkflow(ctx, workflowsId)
+	wf, err := uc.serviceData.GetWorkflow(ctx, workflowsId)
 	if err != nil {
 		return err
 	}
-	return uc.wfrepo.Create(ctx, project.Namespace, wf)
+	return uc.workflowRuntime.Create(ctx, project.Namespace, wf)
 }
 
 func (uc *ServicesUseCase) GetServiceCis(ctx context.Context, serviceId int64, page, pageSize int32) ([]*CI, int64, error) {
-	return uc.repo.GetServiceCis(ctx, serviceId, page, pageSize)
+	return uc.serviceData.GetServiceCis(ctx, serviceId, page, pageSize)
 }

@@ -45,7 +45,7 @@ const (
 	UserEmailKey UserKey = "user_email"
 )
 
-type UserRepo interface {
+type UserData interface {
 	GetUserInfoByEmail(ctx context.Context, email string) (*User, error)
 	GetUserByID(ctx context.Context, id int64) (*User, error)
 	Save(ctx context.Context, user *User) error
@@ -61,21 +61,21 @@ type Thirdparty interface {
 }
 
 type UserUseCase struct {
-	repo       UserRepo
+	userData   UserData
 	thirdparty Thirdparty
 	log        *log.Helper
 }
 
-func NewUseUser(repo UserRepo, thirdparty Thirdparty, logger log.Logger) *UserUseCase {
-	return &UserUseCase{repo: repo, thirdparty: thirdparty, log: log.NewHelper(logger)}
+func NewUseUser(userData UserData, thirdparty Thirdparty, logger log.Logger) *UserUseCase {
+	return &UserUseCase{userData: userData, thirdparty: thirdparty, log: log.NewHelper(logger)}
 }
 
 func (u *UserUseCase) Save(ctx context.Context, user *User) error {
-	return u.repo.Save(ctx, user)
+	return u.userData.Save(ctx, user)
 }
 
 func (u *UserUseCase) GetUsers(ctx context.Context, name, email string, pageNum, pageSize int) (users []*User, total int64, err error) {
-	return u.repo.GetUsers(ctx, name, email, pageNum, pageSize)
+	return u.userData.GetUsers(ctx, name, email, pageNum, pageSize)
 }
 
 func (u *UserUseCase) SignIn(ctx context.Context, user *User) error {
@@ -88,7 +88,7 @@ func (u *UserUseCase) SignIn(ctx context.Context, user *User) error {
 		user.Email = email
 		user.SignType = SignTypeGithub
 	} else {
-		err := u.repo.SignIn(ctx, user)
+		err := u.userData.SignIn(ctx, user)
 		if err != nil {
 			return err
 		}
@@ -107,18 +107,18 @@ func (u *UserUseCase) SignIn(ctx context.Context, user *User) error {
 
 func (u *UserUseCase) GetUserInfo(ctx context.Context) (*User, error) {
 	userEmail := ctx.Value(UserEmailKey)
-	return u.repo.GetUserInfoByEmail(ctx, cast.ToString(userEmail))
+	return u.userData.GetUserInfoByEmail(ctx, cast.ToString(userEmail))
 }
 
 func (u *UserUseCase) GetUserByID(ctx context.Context, id int64) (*User, error) {
-	return u.repo.GetUserByID(ctx, id)
+	return u.userData.GetUserByID(ctx, id)
 }
 
 func (u *UserUseCase) GetUserByBatchID(ctx context.Context, ids []int64) ([]*User, error) {
 	if len(ids) == 0 {
 		return nil, nil
 	}
-	users, err := u.repo.GetUserByBatchID(ctx, ids)
+	users, err := u.userData.GetUserByBatchID(ctx, ids)
 	if err != nil {
 		return nil, err
 	}
@@ -126,5 +126,5 @@ func (u *UserUseCase) GetUserByBatchID(ctx context.Context, ids []int64) ([]*Use
 }
 
 func (u *UserUseCase) DeleteUser(ctx context.Context, id int64) error {
-	return u.repo.DeleteUser(ctx, id)
+	return u.userData.DeleteUser(ctx, id)
 }
