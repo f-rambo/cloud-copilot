@@ -2,8 +2,6 @@ package biz
 
 import (
 	"context"
-	"fmt"
-	"strings"
 	"sync"
 
 	"github.com/f-rambo/ocean/internal/conf"
@@ -12,30 +10,20 @@ import (
 	"gorm.io/gorm"
 )
 
+type AppReleaseSatus string
+
 const (
 	AppPoolNumber = 100
 
-	AppUntested   = "untested"
-	AppTested     = "tested"
-	AppTestFailed = "test_failed"
-
-	AppTypeAll        = 0
-	AppTypeAppPackage = -1 // package
-	AppTypeRepo       = -2 // url
+	AppReleaseSatusPending AppReleaseSatus = "pending"
+	AppReleaseSatusRunning AppReleaseSatus = "running"
+	AppReleaseSatusFailed  AppReleaseSatus = "failed"
 )
 
 type AppType struct {
 	ID   int64  `json:"id" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
 	Name string `json:"name" gorm:"column:name; default:''; NOT NULL"`
 	gorm.Model
-}
-
-func DefaultAppType() []*AppType {
-	return []*AppType{
-		{Name: "All", ID: AppTypeAll},
-		{Name: "App Package", ID: AppTypeAppPackage},
-		{Name: "Repo", ID: AppTypeRepo},
-	}
 }
 
 type AppRepo struct {
@@ -47,33 +35,26 @@ type AppRepo struct {
 	gorm.Model
 }
 
-func (a *AppRepo) SetIndexPath(path string) {
-	a.IndexPath = path
-}
-
 type App struct {
-	ID        int64         `json:"id" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
-	Name      string        `json:"name" gorm:"column:name; default:''; NOT NULL; index"`
-	Icon      string        `json:"icon,omitempty" gorm:"column:icon; default:''; NOT NULL"`
-	AppTypeID int64         `json:"app_type_id,omitempty" gorm:"column:app_type_id; default:0; NOT NULL"`
-	AppRepoID int64         `json:"app_repo_id,omitempty" gorm:"column:app_repo_id; default:0; NOT NULL"`
-	Versions  []*AppVersion `json:"versions,omitempty" gorm:"-"`
+	ID          int64         `json:"id" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
+	Name        string        `json:"name" gorm:"column:name; default:''; NOT NULL; index"`
+	Icon        string        `json:"icon,omitempty" gorm:"column:icon; default:''; NOT NULL"`
+	AppTypeID   int64         `json:"app_type_id,omitempty" gorm:"column:app_type_id; default:0; NOT NULL"`
+	AppRepoID   int64         `json:"app_repo_id,omitempty" gorm:"column:app_repo_id; default:0; NOT NULL"`
+	Description string        `json:"description,omitempty" gorm:"column:description; default:''; NOT NULL"`
+	Versions    []*AppVersion `json:"versions,omitempty" gorm:"-"`
+	Readme      string        `json:"readme,omitempty" gorm:"-"`
+	Metadata    []byte        `json:"metadata,omitempty" gorm:"-"`
 	gorm.Model
 }
 
 type AppVersion struct {
-	ID          int64  `json:"id" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
-	AppID       int64  `json:"app_id" gorm:"column:app_id; default:0; NOT NULL; index"`
-	AppName     string `json:"app_name,omitempty" gorm:"column:app_name; default:''; NOT NULL"`
-	Name        string `json:"name,omitempty" gorm:"column:name; default:''; NOT NULL"`
-	Chart       string `json:"chart,omitempty" gorm:"column:chart; default:''; NOT NULL"`
-	Version     string `json:"version,omitempty" gorm:"column:version; default:''; NOT NULL; index"`
-	Config      string `json:"config,omitempty" gorm:"column:config; default:''; NOT NULL"`
-	Readme      string `json:"readme,omitempty" gorm:"-"`
-	Status      string `json:"status,omitempty" gorm:"column:status; default:''; NOT NULL"`
-	TestResult  string `json:"test_result,omitempty" gorm:"column:test_result; default:''; NOT NULL"`
-	Description string `json:"description,omitempty" gorm:"column:description; default:''; NOT NULL"`
-	Metadata    []byte `json:"metadata,omitempty" gorm:"-"`
+	ID            int64  `json:"id" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
+	AppID         int64  `json:"app_id" gorm:"column:app_id; default:0; NOT NULL; index"`
+	Name          string `json:"name,omitempty" gorm:"column:name; default:''; NOT NULL"`
+	Chart         string `json:"chart,omitempty" gorm:"column:chart; default:''; NOT NULL"`
+	Version       string `json:"version,omitempty" gorm:"column:version; default:''; NOT NULL; index"`
+	DefaultConfig string `json:"default_config,omitempty" gorm:"column:default_config; default:''; NOT NULL"`
 	gorm.Model
 }
 
@@ -82,31 +63,36 @@ type AppRelease struct {
 	ReleaseName         string                `json:"release_name,omitempty" gorm:"column:release_name; default:''; NOT NULL"`
 	AppID               int64                 `json:"app_id" gorm:"column:app_id; default:0; NOT NULL; index"`
 	VersionID           int64                 `json:"version_id" gorm:"column:version_id; default:0; NOT NULL; index"`
-	Version             string                `json:"version,omitempty" gorm:"column:version; default:''; NOT NULL"`
-	RepoID              int64                 `json:"repo_id,omitempty" gorm:"column:repo_id; default:0; NOT NULL"`
-	AppName             string                `json:"app_name,omitempty" gorm:"column:app_name; default:''; NOT NULL"`
-	AppTypeID           int64                 `json:"app_type_id,omitempty" gorm:"column:app_type_id; default:0; NOT NULL"`
-	Chart               string                `json:"chart,omitempty" gorm:"column:chart; default:''; NOT NULL"`
 	ClusterID           int64                 `json:"cluster_id" gorm:"column:cluster_id; default:0; NOT NULL; index"`
 	ProjectID           int64                 `json:"project_id" gorm:"column:project_id; default:0; NOT NULL; index"`
 	UserID              int64                 `json:"user_id" gorm:"column:user_id; default:0; NOT NULL; index"`
 	Namespace           string                `json:"namespace,omitempty" gorm:"column:namespace; default:''; NOT NULL"`
 	Config              string                `json:"config,omitempty" gorm:"column:config; default:''; NOT NULL"`
-	Status              string                `json:"status,omitempty" gorm:"column:status; default:''; NOT NULL"`
-	IsTest              bool                  `json:"is_test,omitempty" gorm:"column:is_test; default:false; NOT NULL"`
+	Status              AppReleaseSatus       `json:"status,omitempty" gorm:"column:status; default:''; NOT NULL"`
 	Manifest            string                `json:"manifest,omitempty" gorm:"column:manifest; default:''; NOT NULL"`
 	Notes               string                `json:"notes,omitempty" gorm:"column:notes; default:''; NOT NULL"`
 	Logs                string                `json:"logs,omitempty" gorm:"column:logs; default:''; NOT NULL"`
+	Dryrun              bool                  `json:"dryrun,omitempty" gorm:"column:dryrun; default:false; NOT NULL"`
+	Atomic              bool                  `json:"atomic,omitempty" gorm:"column:atomic; default:false; NOT NULL"`
+	Wait                bool                  `json:"wait,omitempty" gorm:"column:wait; default:false; NOT NULL"`
 	AppReleaseResources []*AppReleaseResource `json:"resources,omitempty" gorm:"-"`
 	gorm.Model
 }
 
 type AppReleaseResource struct {
-	Name      string   `json:"name"`
-	Kind      string   `json:"kind"`
-	Events    []string `json:"events"`
-	StartedAt string   `json:"started_at"`
-	Status    []string `json:"status"`
+	ID        int64    `json:"id" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
+	ReleaseID int64    `json:"release_id" gorm:"column:release_id; default:0; NOT NULL; index"`
+	Name      string   `json:"name,omitempty" gorm:"column:name; default:''; NOT NULL"`
+	Kind      string   `json:"kind,omitempty" gorm:"column:kind; default:''; NOT NULL"`
+	Manifest  string   `json:"manifest,omitempty" gorm:"column:manifest; default:''; NOT NULL"`
+	StartedAt string   `json:"started_at,omitempty" gorm:"column:started_at; default:''; NOT NULL"`
+	Events    []string `json:"events,omitempty" gorm:"column:events; default:''; NOT NULL"`
+	Status    []string `json:"status,omitempty" gorm:"column:status; default:''; NOT NULL"`
+	gorm.Model
+}
+
+func (a *AppRepo) SetIndexPath(path string) {
+	a.IndexPath = path
 }
 
 func (a *App) AddVersion(version *AppVersion) {
@@ -114,33 +100,6 @@ func (a *App) AddVersion(version *AppVersion) {
 		a.Versions = make([]*AppVersion, 0)
 	}
 	a.Versions = append(a.Versions, version)
-}
-
-func (a *App) UpdateVersion(version *AppVersion) {
-	for index, v := range a.Versions {
-		if v.Version == version.Version {
-			versionID := v.ID
-			appID := v.AppID
-			appName := v.AppName
-			a.Versions[index] = version
-			a.Versions[index].ID = versionID
-			a.Versions[index].AppID = appID
-			a.Versions[index].AppName = appName
-			return
-		}
-	}
-}
-
-func (a *App) GetVersion(version string) *AppVersion {
-	for _, v := range a.Versions {
-		if version == "" {
-			return v
-		}
-		if v.Version == version {
-			return v
-		}
-	}
-	return nil
 }
 
 func (a *App) GetVersionById(id int64) *AppVersion {
@@ -164,24 +123,11 @@ func (a *App) DeleteVersion(version string) {
 	}
 }
 
-func (v *AppVersion) AppVersionToAppRelease() *AppRelease {
-	releaseName := fmt.Sprintf("%s-%s", v.AppName, strings.ReplaceAll(v.Version, ".", "-"))
-	return &AppRelease{
-		AppID:       v.AppID,
-		VersionID:   v.ID,
-		Version:     v.Version,
-		Chart:       v.Chart,
-		AppName:     v.AppName,
-		Config:      v.Config,
-		ReleaseName: releaseName,
-	}
-}
-
 type AppData interface {
 	Save(context.Context, *App) error
 	List(context.Context, *App, int32, int32) ([]*App, int32, error)
 	Get(ctx context.Context, appID int64) (*App, error)
-	Delete(ctx context.Context, appID, versionID int64) error
+	Delete(ctx context.Context, appID int64) error
 	GetByName(context.Context, string) (*App, error)
 	CreateAppType(context.Context, *AppType) error
 	ListAppType(ctx context.Context) ([]*AppType, error)
@@ -205,13 +151,14 @@ type AppRuntime interface {
 }
 
 type AppConstruct interface {
-	GetAppVersionChartInfomation(context.Context, *AppVersion) error
-	AppRelease(context.Context, *AppRelease) error
+	GetAppAndVersionInfo(context.Context, *App, *AppVersion) error
+	AppRelease(context.Context, *App, *AppVersion, *AppRelease) error
 	DeleteAppRelease(context.Context, *AppRelease) error
 	AddAppRepo(context.Context, *AppRepo) error
 	GetAppDetailByRepo(ctx context.Context, apprepo *AppRepo, appName, version string) (*App, error)
 	GetAppsByRepo(context.Context, *AppRepo) ([]*App, error)
-	DeleteAppChart(ctx context.Context, app *App, versionId int64) (err error)
+	DeleteApp(ctx context.Context, app *App) error
+	DeleteAppVersion(ctx context.Context, app *App, appVersion *AppVersion) error
 }
 
 type AppUsecase struct {
@@ -247,36 +194,46 @@ func (uc *AppUsecase) List(ctx context.Context, appReq *App, page, pageSize int3
 	return uc.appData.List(ctx, appReq, page, pageSize)
 }
 
-func (uc *AppUsecase) Get(ctx context.Context, id, versionId int64) (*App, error) {
-	app, err := uc.appData.Get(ctx, id)
+func (uc *AppUsecase) Get(ctx context.Context, id int64) (*App, error) {
+	return uc.appData.Get(ctx, id)
+}
+
+// get app version
+func (uc *AppUsecase) GetAppVersion(ctx context.Context, appID, versionID int64) (*AppVersion, error) {
+	app, err := uc.appData.Get(ctx, appID)
 	if err != nil {
 		return nil, err
 	}
-	appVersion := app.GetVersionById(versionId)
-	if appVersion == nil {
-		return app, nil
-	}
-	err = uc.appConstruct.GetAppVersionChartInfomation(ctx, appVersion)
-	if err != nil {
-		return nil, err
-	}
-	return app, nil
+	return app.GetVersionById(versionID), nil
 }
 
 func (uc *AppUsecase) Save(ctx context.Context, app *App) error {
 	return uc.appData.Save(ctx, app)
 }
 
-func (uc *AppUsecase) Delete(ctx context.Context, id, versionId int64) error {
-	app, err := uc.Get(ctx, id, versionId)
+func (uc *AppUsecase) Delete(ctx context.Context, id int64) error {
+	app, err := uc.appData.Get(ctx, id)
 	if err != nil {
 		return err
 	}
-	err = uc.appData.Delete(ctx, id, versionId)
+	err = uc.appData.Delete(ctx, id)
 	if err != nil {
 		return err
 	}
-	return uc.appConstruct.DeleteAppChart(ctx, app, versionId)
+	return uc.appConstruct.DeleteApp(ctx, app)
+}
+
+func (uc *AppUsecase) DeleteAppVersion(ctx context.Context, app *App, appVersion *AppVersion) error {
+	app, err := uc.appData.Get(ctx, app.ID)
+	if err != nil {
+		return err
+	}
+	app.DeleteVersion(appVersion.Version)
+	err = uc.appData.Save(ctx, app)
+	if err != nil {
+		return err
+	}
+	return uc.appConstruct.DeleteAppVersion(ctx, app, appVersion)
 }
 
 func (uc *AppUsecase) CreateAppType(ctx context.Context, appType *AppType) error {
@@ -350,10 +307,6 @@ func (uc *AppUsecase) AppReleaseList(ctx context.Context, appReleaseReq AppRelea
 	return uc.appData.AppReleaseList(ctx, appReleaseReq, page, pageSize)
 }
 
-func (uc *AppUsecase) GetAppVersionChartInfomation(ctx context.Context, appVersion *AppVersion) error {
-	return uc.appConstruct.GetAppVersionChartInfomation(ctx, appVersion)
-}
-
 func (uc *AppUsecase) GetAppReleaseResourcesInCluster(ctx context.Context, appReleaseID int64) ([]*AppReleaseResource, error) {
 	appRelease, err := uc.appData.GetAppRelease(ctx, appReleaseID)
 	if err != nil {
@@ -375,53 +328,14 @@ func (uc *AppUsecase) GetAppReleaseResourcesInCluster(ctx context.Context, appRe
 	return resources, nil
 }
 
-func (uc *AppUsecase) SaveAppRelease(ctx context.Context, appReleaseReq *AppRelease) (appRelease *AppRelease, err error) {
-	var appVersion *AppVersion
-	if appReleaseReq.AppTypeID == AppTypeRepo {
-		app, err := uc.GetAppDetailByRepo(ctx, appReleaseReq.RepoID, appReleaseReq.AppName, appReleaseReq.Version)
-		if err != nil {
-			return nil, err
-		}
-		appVersion = app.GetVersion(appReleaseReq.Version)
-	}
-	if appReleaseReq.AppTypeID != AppTypeRepo {
-		app, err := uc.Get(ctx, appReleaseReq.AppID, appReleaseReq.VersionID)
-		if err != nil {
-			return nil, err
-		}
-		appVersion = app.GetVersionById(appReleaseReq.VersionID)
-	}
-	if appVersion == nil {
-		return nil, errors.New("app version not found or not support app type")
-	}
-	if appReleaseReq.ID != 0 {
-		appRelease, err = uc.appData.GetAppRelease(ctx, appReleaseReq.ID)
-		if err != nil {
-			return nil, err
-		}
-		appRelease.Config = appReleaseReq.Config
-		err = uc.appData.SaveAppRelease(ctx, appRelease)
-		if err != nil {
-			return nil, err
-		}
-		uc.apply(appRelease)
-		return appRelease, nil
-	}
-	appReleaseRes := appVersion.AppVersionToAppRelease()
-	appRelease = appReleaseReq
-	appRelease.ReleaseName = appReleaseRes.ReleaseName
-	appRelease.Chart = appReleaseRes.Chart
-	appRelease.AppID = appReleaseRes.AppID
-	appRelease.VersionID = appReleaseRes.VersionID
-	if appRelease.Config == "" {
-		appRelease.Config = appReleaseRes.Config
-	}
-	err = uc.appData.SaveAppRelease(ctx, appRelease)
+func (uc *AppUsecase) CreateAppRelease(ctx context.Context, appRelease *AppRelease) error {
+	err := uc.appData.SaveAppRelease(ctx, appRelease)
 	if err != nil {
-		return nil, err
+		return err
 	}
+	appRelease.Status = AppReleaseSatusPending
 	uc.apply(appRelease)
-	return appRelease, nil
+	return nil
 }
 
 func (uc *AppUsecase) DeleteAppRelease(ctx context.Context, id int64) error {
@@ -483,7 +397,19 @@ func (uc *AppUsecase) handleEvent(ctx context.Context, appRelease *AppRelease) (
 			return err
 		}
 	}
-	err = uc.appConstruct.AppRelease(ctx, appRelease)
+	app, err := uc.appData.Get(ctx, appRelease.AppID)
+	if err != nil {
+		return err
+	}
+	appVersion := app.GetVersionById(appRelease.VersionID)
+	if appVersion == nil {
+		return errors.New("app version not found")
+	}
+	err = uc.appConstruct.GetAppAndVersionInfo(ctx, app, appVersion)
+	if err != nil {
+		return err
+	}
+	err = uc.appConstruct.AppRelease(ctx, app, appVersion, appRelease)
 	if err != nil {
 		return err
 	}

@@ -2,7 +2,6 @@ package data
 
 import (
 	"context"
-	"sort"
 
 	"github.com/f-rambo/ocean/internal/biz"
 	"github.com/go-kratos/kratos/v2/log"
@@ -131,15 +130,12 @@ func (a *appRepo) GetByName(ctx context.Context, appName string) (*biz.App, erro
 	return app, nil
 }
 
-func (a *appRepo) Delete(ctx context.Context, appID, versionID int64) error {
-	if versionID == 0 {
-		err := a.data.db.Delete(&biz.App{}, appID).Error
-		if err != nil {
-			return err
-		}
-		return a.data.db.Delete(&biz.AppVersion{}, "app_id = ?", appID).Error
+func (a *appRepo) Delete(ctx context.Context, appID int64) error {
+	err := a.data.db.Delete(&biz.App{}, appID).Error
+	if err != nil {
+		return err
 	}
-	return a.data.db.Delete(&biz.AppVersion{}, "id = ?", versionID).Error
+	return a.data.db.Delete(&biz.AppVersion{}, "app_id = ?", appID).Error
 }
 
 func (a *appRepo) CreateAppType(ctx context.Context, appType *biz.AppType) error {
@@ -147,22 +143,10 @@ func (a *appRepo) CreateAppType(ctx context.Context, appType *biz.AppType) error
 }
 
 func (a *appRepo) ListAppType(ctx context.Context) ([]*biz.AppType, error) {
-	defaultAppTypes := biz.DefaultAppType()
 	appTypes := make([]*biz.AppType, 0)
 	err := a.data.db.Find(&appTypes).Error
 	if err != nil {
 		return nil, err
-	}
-	appTypes = append(appTypes, defaultAppTypes...)
-	// 按照ID排序
-	sort.Slice(appTypes, func(i, j int) bool {
-		return appTypes[i].ID < appTypes[j].ID
-	})
-	// 把ID为0的放到最前面
-	for i, v := range appTypes {
-		if v.ID == 0 {
-			appTypes[0], appTypes[i] = appTypes[i], appTypes[0]
-		}
 	}
 	return appTypes, nil
 }
@@ -175,29 +159,25 @@ func (a *appRepo) SaveAppRelease(ctx context.Context, appDeployed *biz.AppReleas
 	return a.data.db.Save(appDeployed).Error
 }
 
-func (a *appRepo) AppReleaseList(ctx context.Context, appDeployedReq biz.AppRelease, page, pageSize int32) ([]*biz.AppRelease, int32, error) {
-	appDeployedReq.Chart = ""
-	appDeployedReq.Config = ""
-	appDeployedReq.Manifest = ""
-	appDeployedReq.Notes = ""
-	appDeployedReq.Logs = ""
+func (a *appRepo) AppReleaseList(ctx context.Context, appReleaseReq biz.AppRelease, page, pageSize int32) ([]*biz.AppRelease, int32, error) {
+	appReleaseReq.Config = ""
+	appReleaseReq.Notes = ""
+	appReleaseReq.Logs = ""
 	appDeployeds := make([]*biz.AppRelease, 0)
 	appDeployedOrmDb := a.data.db.Model(&biz.AppRelease{})
-	if appDeployedReq.ReleaseName != "" {
-		appDeployedOrmDb = appDeployedOrmDb.Where("release_name like ?", "%"+appDeployedReq.ReleaseName+"%")
-		appDeployedReq.ReleaseName = ""
+	if appReleaseReq.ReleaseName != "" {
+		appDeployedOrmDb = appDeployedOrmDb.Where("release_name like ?", "%"+appReleaseReq.ReleaseName+"%")
+		appReleaseReq.ReleaseName = ""
 	}
-	err := appDeployedOrmDb.Where(appDeployedReq).Offset(int((page - 1) * pageSize)).Limit(int(pageSize)).Find(&appDeployeds).Error
+	err := appDeployedOrmDb.Where(appReleaseReq).Offset(int((page - 1) * pageSize)).Limit(int(pageSize)).Find(&appDeployeds).Error
 	if err != nil {
 		return nil, 0, err
 	}
-
 	var appDeployedCount int64 = 0
-	err = appDeployedOrmDb.Where(appDeployedReq).Count(&appDeployedCount).Error
+	err = appDeployedOrmDb.Where(appReleaseReq).Count(&appDeployedCount).Error
 	if err != nil {
 		return nil, 0, err
 	}
-
 	return appDeployeds, int32(appDeployedCount), nil
 }
 

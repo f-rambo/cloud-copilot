@@ -30,12 +30,8 @@ func NewAppConstructRepo(c *conf.Bootstrap, logger log.Logger) biz.AppConstruct 
 	}
 }
 
-func (r *AppConstructRepo) GetAppVersionChartInfomation(ctx context.Context, appVersion *biz.AppVersion) error {
-	appPath, err := utils.GetServerStorePathByNames(utils.AppPackage)
-	if err != nil {
-		return err
-	}
-	charInfo, err := GetLocalChartInfo(appVersion.AppName, appPath, appVersion.Chart)
+func (r *AppConstructRepo) GetAppAndVersionInfo(ctx context.Context, app *biz.App, appVersion *biz.AppVersion) error {
+	charInfo, err := GetLocalChartInfo(appVersion.Chart)
 	if err != nil {
 		return err
 	}
@@ -43,19 +39,20 @@ func (r *AppConstructRepo) GetAppVersionChartInfomation(ctx context.Context, app
 	if err != nil {
 		return err
 	}
+	app.Name = charInfo.Name
+	app.Readme = charInfo.Readme
+	app.Description = charInfo.Description
+	app.Metadata = charInfoMetadata
+
 	appVersion.Name = charInfo.Name
-	appVersion.Config = charInfo.Config
-	appVersion.Readme = charInfo.Readme
-	appVersion.Description = charInfo.Description
-	appVersion.Metadata = charInfoMetadata
+	appVersion.DefaultConfig = charInfo.Config
 	appVersion.Version = charInfo.Version
-	appVersion.AppName = charInfo.Name
 	appVersion.Chart = charInfo.Chart
 	return nil
 }
 
-func (r *AppConstructRepo) AppRelease(ctx context.Context, appDeployed *biz.AppRelease) error {
-	helmPkg, err := NewHelmPkg(r.log, appDeployed.Namespace)
+func (r *AppConstructRepo) AppRelease(ctx context.Context, app *biz.App, appVersion *biz.AppVersion, appRelease *biz.AppRelease) error {
+	helmPkg, err := NewHelmPkg(r.log, appRelease.Namespace)
 	if err != nil {
 		return err
 	}
@@ -67,38 +64,38 @@ func (r *AppConstructRepo) AppRelease(ctx context.Context, appDeployed *biz.AppR
 	if err != nil {
 		return err
 	}
-	chartPath := filepath.Join(appPath, appDeployed.Chart)
-	if appDeployed.AppTypeID == biz.AppTypeRepo {
-		chartPath = filepath.Join(chartPath, utils.AppRepoPackage, appDeployed.AppName, appDeployed.Chart)
+	chartPath := filepath.Join(appPath, appVersion.Chart)
+	if app.AppRepoID != 0 {
+		chartPath = filepath.Join(chartPath, utils.AppRepoPackage, app.Name, appVersion.Chart)
 	}
-	install.ReleaseName = appDeployed.ReleaseName
-	install.Namespace = appDeployed.Namespace
+	install.ReleaseName = appRelease.ReleaseName
+	install.Namespace = appRelease.Namespace
 	install.CreateNamespace = true
 	install.GenerateName = true
-	install.Version = appDeployed.Version
-	install.DryRun = appDeployed.IsTest
-	install.Atomic = true
-	install.Wait = true
-	release, err := helmPkg.RunInstall(ctx, install, chartPath, appDeployed.Config)
-	appDeployed.Logs = helmPkg.GetLogs()
+	install.Version = appVersion.Version
+	install.DryRun = appRelease.Dryrun
+	install.Atomic = appRelease.Atomic
+	install.Wait = appRelease.Wait
+	release, err := helmPkg.RunInstall(ctx, install, chartPath, appRelease.Config)
+	appRelease.Logs = helmPkg.GetLogs()
 	if err != nil {
 		return err
 	}
 	if release != nil {
-		appDeployed.ReleaseName = release.Name
-		appDeployed.Manifest = strings.TrimSpace(release.Manifest)
+		appRelease.ReleaseName = release.Name
+		appRelease.Manifest = strings.TrimSpace(release.Manifest)
 		if release.Info != nil {
-			appDeployed.Status = string(release.Info.Status)
-			appDeployed.Notes = release.Info.Notes
+			appRelease.Status = biz.AppReleaseSatus(release.Info.Status)
+			appRelease.Notes = release.Info.Notes
 		}
 		return nil
 	}
-	appDeployed.Status = releasePkg.StatusUnknown.String()
+	appRelease.Status = biz.AppReleaseSatus(releasePkg.StatusUnknown)
 	return nil
 }
 
-func (r *AppConstructRepo) DeleteAppRelease(ctx context.Context, appDeployed *biz.AppRelease) error {
-	helmPkg, err := NewHelmPkg(r.log, appDeployed.Namespace)
+func (r *AppConstructRepo) DeleteAppRelease(ctx context.Context, appRelease *biz.AppRelease) error {
+	helmPkg, err := NewHelmPkg(r.log, appRelease.Namespace)
 	if err != nil {
 		return err
 	}
@@ -107,17 +104,17 @@ func (r *AppConstructRepo) DeleteAppRelease(ctx context.Context, appDeployed *bi
 		return err
 	}
 	uninstall.KeepHistory = false
-	uninstall.DryRun = appDeployed.IsTest
-	uninstall.Wait = true
-	resp, err := helmPkg.RunUninstall(uninstall, appDeployed.ReleaseName)
-	appDeployed.Logs = helmPkg.GetLogs()
+	uninstall.DryRun = appRelease.Dryrun
+	uninstall.Wait = appRelease.Wait
+	resp, err := helmPkg.RunUninstall(uninstall, appRelease.ReleaseName)
+	appRelease.Logs = helmPkg.GetLogs()
 	if err != nil {
 		return errors.WithMessage(err, "uninstall fail")
 	}
 	if resp != nil && resp.Release != nil && resp.Release.Info != nil {
-		appDeployed.Status = string(resp.Release.Info.Status)
+		appRelease.Status = biz.AppReleaseSatus(resp.Release.Info.Status)
 	}
-	appDeployed.Notes = resp.Info
+	appRelease.Notes = resp.Info
 	return nil
 }
 
@@ -147,12 +144,7 @@ func (r *AppConstructRepo) GetAppDetailByRepo(ctx context.Context, repo *biz.App
 	if err != nil {
 		return nil, err
 	}
-	app := &biz.App{
-		Name:      appName,
-		AppTypeID: biz.AppTypeRepo,
-		AppRepoID: repo.ID,
-		Versions:  make([]*biz.AppVersion, 0),
-	}
+	app := &biz.App{Name: appName, AppRepoID: repo.ID, Versions: make([]*biz.AppVersion, 0)}
 	for chartName, chartVersions := range index.Entries {
 		if chartName != appName {
 			continue
@@ -161,18 +153,12 @@ func (r *AppConstructRepo) GetAppDetailByRepo(ctx context.Context, repo *biz.App
 			if len(chartMatedata.URLs) == 0 {
 				return nil, errors.New("chart urls is empty")
 			}
-			if app.Icon == "" {
-				app.Icon = chartMatedata.Icon
-			}
-			appVersion := &biz.AppVersion{
-				AppName:     chartName,
-				Name:        chartMatedata.Name,
-				Chart:       chartMatedata.URLs[0],
-				Version:     chartMatedata.Version,
-				Description: chartMatedata.Description,
-			}
+			app.Icon = chartMatedata.Icon
+			app.Name = chartName
+			app.Description = chartMatedata.Description
+			appVersion := &biz.AppVersion{Name: chartMatedata.Name, Chart: chartMatedata.URLs[0], Version: chartMatedata.Version}
 			if (version == "" && i == 0) || (version != "" && version == chartMatedata.Version) {
-				err = r.GetAppVersionChartInfomation(ctx, appVersion)
+				err = r.GetAppAndVersionInfo(ctx, app, appVersion)
 				if err != nil {
 					return nil, err
 				}
@@ -190,29 +176,16 @@ func (r *AppConstructRepo) GetAppsByRepo(ctx context.Context, repo *biz.AppRepo)
 	}
 	apps := make([]*biz.App, 0)
 	for chartName, chartVersions := range index.Entries {
-		app := &biz.App{
-			Name:      chartName,
-			AppTypeID: biz.AppTypeRepo,
-			AppRepoID: repo.ID,
-			Versions:  make([]*biz.AppVersion, 0),
-		}
+		app := &biz.App{Name: chartName, AppRepoID: repo.ID, Versions: make([]*biz.AppVersion, 0)}
 		app.CreatedAt = repo.CreatedAt
 		app.UpdatedAt = repo.UpdatedAt
 		for _, chartMatedata := range chartVersions {
-			if app.Icon == "" {
-				app.Icon = chartMatedata.Icon
-			}
 			if len(chartMatedata.URLs) == 0 {
 				return nil, errors.New("chart urls is empty")
 			}
-			appVersion := &biz.AppVersion{
-				AppName:     chartName,
-				Name:        chartMatedata.Name,
-				Chart:       chartMatedata.URLs[0],
-				Version:     chartMatedata.Version,
-				Description: chartMatedata.Description,
-				Status:      biz.AppTested,
-			}
+			app.Icon = chartMatedata.Icon
+			app.Description = chartMatedata.Description
+			appVersion := &biz.AppVersion{Name: chartMatedata.Name, Chart: chartMatedata.URLs[0], Version: chartMatedata.Version}
 			app.AddVersion(appVersion)
 		}
 		apps = append(apps, app)
@@ -220,28 +193,29 @@ func (r *AppConstructRepo) GetAppsByRepo(ctx context.Context, repo *biz.AppRepo)
 	return apps, nil
 }
 
-func (r *AppConstructRepo) DeleteAppChart(ctx context.Context, app *biz.App, versionId int64) (err error) {
+func (r *AppConstructRepo) DeleteApp(ctx context.Context, app *biz.App) error {
 	appPath, err := utils.GetServerStorePathByNames(utils.AppPackage)
 	if err != nil {
 		return err
 	}
-	appIconPath := filepath.Join(appPath, utils.AppIconPackage, app.Icon)
-	if app.Icon != "" && utils.IsFileExist(appIconPath) && versionId == 0 {
-		err = os.Remove(appIconPath)
-		if err != nil {
-			return err
-		}
+	err = os.Remove(appPath)
+	if err != nil {
+		return err
 	}
+	return nil
+}
 
+func (r *AppConstructRepo) DeleteAppVersion(ctx context.Context, app *biz.App, appVersion *biz.AppVersion) (err error) {
+	appPath, err := utils.GetServerStorePathByNames(utils.AppPackage)
+	if err != nil {
+		return err
+	}
 	for _, v := range app.Versions {
-		chartPath := filepath.Join(appPath, v.Chart)
-		if v.Chart != "" && utils.IsFileExist(chartPath) && versionId == 0 {
-			err = os.Remove(chartPath)
-			if err != nil {
-				return err
-			}
+		if v.Chart == "" || appVersion.ID != v.ID {
+			continue
 		}
-		if v.Chart != "" && utils.IsFileExist(chartPath) && versionId == v.ID {
+		chartPath := filepath.Join(appPath, v.Chart)
+		if utils.IsFileExist(chartPath) {
 			err = os.Remove(chartPath)
 			if err != nil {
 				return err

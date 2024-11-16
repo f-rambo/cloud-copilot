@@ -1,10 +1,6 @@
 package helm
 
 import (
-	"fmt"
-	"path/filepath"
-
-	"github.com/f-rambo/ocean/utils"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
 	"helm.sh/helm/v3/pkg/action"
@@ -22,31 +18,16 @@ type ChartInfo struct {
 	Chart       string
 }
 
-func GetLocalChartInfo(appName, path, chart string) (*ChartInfo, error) {
-	if chart == "" {
-		return nil, errors.New("chart is empty")
-	}
-	if utils.IsValidURL(chart) {
-		path = fmt.Sprintf("%s%s/", path, appName)
-		fileName := utils.GetFileNameByDownloadUrl(chart)
-		if !utils.IsFileExist(path + fileName) {
-			err := utils.DownloadFile(chart, filepath.Join(path, fileName))
-			if err != nil {
-				return nil, errors.WithMessage(err, "download chart fail")
-			}
-		}
-		chart = fileName
-	}
-	chartPath := path + chart
-	readme, err := action.NewShow(action.ShowReadme).Run(chartPath)
+func GetLocalChartInfo(chart string) (*ChartInfo, error) {
+	readme, err := action.NewShow(action.ShowReadme).Run(chart)
 	if err != nil {
 		return nil, errors.WithMessage(err, "show readme fail")
 	}
-	chartYaml, err := action.NewShow(action.ShowChart).Run(chartPath)
+	chartYaml, err := action.NewShow(action.ShowChart).Run(chart)
 	if err != nil {
 		return nil, errors.WithMessage(err, "show chart fail")
 	}
-	valuesYaml, err := action.NewShow(action.ShowValues).Run(chartPath)
+	valuesYaml, err := action.NewShow(action.ShowValues).Run(chart)
 	if err != nil {
 		return nil, errors.WithMessage(err, "show values fail")
 	}

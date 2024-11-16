@@ -52,7 +52,7 @@ func (a *AppInterface) Get(ctx context.Context, appReq *v1alpha1.AppReq) (*v1alp
 	if appReq.Id == 0 {
 		return nil, errors.New("app id is required")
 	}
-	bizApp, err := a.uc.Get(ctx, appReq.Id, appReq.VersionId)
+	bizApp, err := a.uc.Get(ctx, appReq.Id)
 	if err != nil {
 		return nil, err
 	}
@@ -111,14 +111,36 @@ func (a *AppInterface) Delete(ctx context.Context, appReq *v1alpha1.AppReq) (*co
 	if appReq.Id == 0 {
 		return common.Response("app id is required"), nil
 	}
-	app, err := a.uc.Get(ctx, appReq.Id, appReq.VersionId)
+	app, err := a.uc.Get(ctx, appReq.Id)
 	if err != nil {
 		return nil, err
 	}
 	if app == nil || app.ID == 0 {
 		return common.Response("app not found"), nil
 	}
-	err = a.uc.Delete(ctx, appReq.Id, appReq.VersionId)
+	err = a.uc.Delete(ctx, appReq.Id)
+	if err != nil {
+		return nil, err
+	}
+	return common.Response(), nil
+}
+
+func (a *AppInterface) DeleteAppVersion(ctx context.Context, appReq *v1alpha1.AppReq) (*common.Msg, error) {
+	if appReq.Id == 0 || appReq.VersionId == 0 {
+		return common.Response("app id and version id is required"), nil
+	}
+	app, err := a.uc.Get(ctx, appReq.Id)
+	if err != nil {
+		return nil, err
+	}
+	if app == nil || app.ID == 0 {
+		return common.Response("app not found"), nil
+	}
+	appVersion, err := a.uc.GetAppVersion(ctx, app.ID, appReq.VersionId)
+	if err != nil {
+		return nil, err
+	}
+	err = a.uc.DeleteAppVersion(ctx, app, appVersion)
 	if err != nil {
 		return nil, err
 	}
@@ -133,35 +155,14 @@ func (a *AppInterface) UploadApp(ctx context.Context, req *v1alpha1.FileUploadRe
 	if err != nil {
 		return nil, err
 	}
-	filePathName, err := a.upload(appPath, req.GetFileName(), req.GetChunk())
+	_, err = a.upload(appPath, req.GetFileName(), req.GetChunk())
 	if err != nil {
 		return nil, err
 	}
-	appVersion := &biz.AppVersion{Chart: filePathName, Status: biz.AppUntested}
-	err = a.uc.GetAppVersionChartInfomation(ctx, appVersion)
-	if err != nil {
-		return nil, err
-	}
-	app, err := a.uc.GetAppByName(ctx, appVersion.AppName)
-	if err != nil {
-		return nil, err
-	}
-	if app == nil {
-		app = &biz.App{Name: appVersion.AppName}
-	}
-	if req.Icon != "" {
-		app.Icon = req.Icon
-	}
-	if app.GetVersion(appVersion.Version) != nil {
-		app.UpdateVersion(appVersion)
-	} else {
-		app.AddVersion(appVersion)
-	}
-	return a.bizAppToApp(app)
+	return &v1alpha1.App{}, nil
 }
 
 func (a *AppInterface) upload(path, filename, chunk string) (string, error) {
-	// 从base64转换为文件 []byte
 	data, err := base64.StdEncoding.DecodeString(chunk[strings.IndexByte(chunk, ',')+1:])
 	if err != nil {
 		return "", err
@@ -398,14 +399,36 @@ func (a *AppInterface) GetAppReleaseResources(ctx context.Context, appReleaseReq
 }
 
 func (a *AppInterface) SaveAppRelease(ctx context.Context, appReleaseReq *v1alpha1.AppReleaseReq) (*v1alpha1.AppRelease, error) {
-	if appReleaseReq.AppId == 0 || appReleaseReq.RepoId == 0 {
-		return nil, errors.New("app id is required or repo id is required")
+	if appReleaseReq.AppId == 0 {
+		return nil, errors.New("app id is required")
 	}
-	if appReleaseReq.Version == "" || appReleaseReq.VersionId == 0 {
+	if appReleaseReq.VersionId == 0 {
 		return nil, errors.New("app version is required")
 	}
-	_, err := a.uc.SaveAppRelease(ctx, &biz.AppRelease{
-		AppID: appReleaseReq.AppId,
+	app, err := a.uc.Get(ctx, appReleaseReq.AppId)
+	if err != nil {
+		return nil, err
+	}
+	if app == nil {
+		return nil, errors.New("app not found")
+	}
+	appVersion := app.GetVersionById(appReleaseReq.VersionId)
+	if appVersion == nil {
+		return nil, errors.New("app version not found")
+	}
+	user, err := a.user.GetUserInfo(ctx)
+	if err != nil {
+		return nil, err
+	}
+	err = a.uc.CreateAppRelease(ctx, &biz.AppRelease{
+		ReleaseName: appReleaseReq.ReleaseName,
+		AppID:       app.ID,
+		VersionID:   appVersion.ID,
+		UserID:      user.ID,
+		ProjectID:   appReleaseReq.ProjectId,
+		ClusterID:   appReleaseReq.ClusterId,
+		Namespace:   appReleaseReq.Namespace,
+		Config:      appReleaseReq.Config,
 	})
 	if err != nil {
 		return nil, err
