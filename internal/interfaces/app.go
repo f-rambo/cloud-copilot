@@ -3,7 +3,9 @@ package interfaces
 import (
 	"context"
 	"encoding/base64"
+	"fmt"
 	"math"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -148,14 +150,38 @@ func (a *AppInterface) DeleteAppVersion(ctx context.Context, appReq *v1alpha1.Ap
 }
 
 func (a *AppInterface) UploadApp(ctx context.Context, req *v1alpha1.FileUploadRequest) (*v1alpha1.App, error) {
-	if filepath.Ext(req.GetFileName()) != ".tgz" {
+	var fileExt string = ".tgz"
+	if filepath.Ext(req.GetFileName()) != fileExt {
 		return nil, errors.New("file type is not supported")
 	}
 	appPath, err := utils.GetServerStorePathByNames(utils.AppPackage)
 	if err != nil {
 		return nil, err
 	}
-	_, err = a.upload(appPath, req.GetFileName(), req.GetChunk())
+	fileName, err := a.upload(appPath, req.GetFileName(), req.GetChunk())
+	if err != nil {
+		return nil, err
+	}
+	appTmpChartPath := fmt.Sprintf("%s/%s", appPath, fileName)
+	app := &biz.App{}
+	appVersion := &biz.AppVersion{Chart: appTmpChartPath}
+	err = a.uc.GetAppVersionInfoByLocalFile(ctx, app, appVersion)
+	if err != nil {
+		return nil, err
+	}
+	app.AddVersion(appVersion)
+	appChartPath := fmt.Sprintf("%s/%s-%s%s", appPath, app.Name, appVersion.Version, fileExt)
+	if utils.IsFileExist(appChartPath) {
+		err = os.Remove(appChartPath)
+		if err != nil {
+			return nil, err
+		}
+	}
+	err = os.Rename(appTmpChartPath, appChartPath)
+	if err != nil {
+		return nil, err
+	}
+	err = a.uc.Save(ctx, app)
 	if err != nil {
 		return nil, err
 	}

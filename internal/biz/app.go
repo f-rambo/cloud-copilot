@@ -52,7 +52,7 @@ type AppVersion struct {
 	ID            int64  `json:"id" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
 	AppID         int64  `json:"app_id" gorm:"column:app_id; default:0; NOT NULL; index"`
 	Name          string `json:"name,omitempty" gorm:"column:name; default:''; NOT NULL"`
-	Chart         string `json:"chart,omitempty" gorm:"column:chart; default:''; NOT NULL"`
+	Chart         string `json:"chart,omitempty" gorm:"column:chart; default:''; NOT NULL"` // as file path
 	Version       string `json:"version,omitempty" gorm:"column:version; default:''; NOT NULL; index"`
 	DefaultConfig string `json:"default_config,omitempty" gorm:"column:default_config; default:''; NOT NULL"`
 	gorm.Model
@@ -151,14 +151,14 @@ type AppRuntime interface {
 }
 
 type AppConstruct interface {
-	GetAppAndVersionInfo(context.Context, *App, *AppVersion) error
-	AppRelease(context.Context, *App, *AppVersion, *AppRelease) error
-	DeleteAppRelease(context.Context, *AppRelease) error
-	AddAppRepo(context.Context, *AppRepo) error
-	GetAppDetailByRepo(ctx context.Context, apprepo *AppRepo, appName, version string) (*App, error)
-	GetAppsByRepo(context.Context, *AppRepo) ([]*App, error)
 	DeleteApp(ctx context.Context, app *App) error
 	DeleteAppVersion(ctx context.Context, app *App, appVersion *AppVersion) error
+	GetAppAndVersionInfo(context.Context, *App, *AppVersion) error
+	AppRelease(context.Context, *App, *AppVersion, *AppRelease, *AppRepo) error
+	DeleteAppRelease(context.Context, *AppRelease) error
+	AddAppRepo(context.Context, *AppRepo) error
+	GetAppsByRepo(context.Context, *AppRepo) ([]*App, error)
+	GetAppDetailByRepo(ctx context.Context, apprepo *AppRepo, appName, version string) (*App, error)
 }
 
 type AppUsecase struct {
@@ -186,6 +186,10 @@ func NewAppUsecase(appData AppData, appRuntime AppRuntime, appConstruct AppConst
 	return appuc
 }
 
+func (uc *AppUsecase) GetAppVersionInfoByLocalFile(ctx context.Context, app *App, appVersion *AppVersion) error {
+	return uc.appConstruct.GetAppAndVersionInfo(ctx, app, appVersion)
+}
+
 func (uc *AppUsecase) GetAppByName(ctx context.Context, name string) (app *App, err error) {
 	return uc.appData.GetByName(ctx, name)
 }
@@ -198,7 +202,6 @@ func (uc *AppUsecase) Get(ctx context.Context, id int64) (*App, error) {
 	return uc.appData.Get(ctx, id)
 }
 
-// get app version
 func (uc *AppUsecase) GetAppVersion(ctx context.Context, appID, versionID int64) (*AppVersion, error) {
 	app, err := uc.appData.Get(ctx, appID)
 	if err != nil {
@@ -262,7 +265,29 @@ func (uc *AppUsecase) SaveRepo(ctx context.Context, repo *AppRepo) error {
 	if err != nil {
 		return err
 	}
-	return uc.appData.SaveRepo(ctx, repo)
+	err = uc.appData.SaveRepo(ctx, repo)
+	if err != nil {
+		return err
+	}
+	apps, err := uc.GetAppsByRepo(ctx, repo.ID)
+	if err != nil {
+		return err
+	}
+	for _, app := range apps {
+		appInfo, err := uc.appData.GetByName(ctx, app.Name)
+		if err != nil {
+			return err
+		}
+		if appInfo != nil {
+			app.ID = appInfo.ID
+		}
+		app.AppRepoID = repo.ID
+		err = uc.appData.Save(ctx, app)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (uc *AppUsecase) ListRepo(ctx context.Context) ([]*AppRepo, error) {
@@ -409,7 +434,14 @@ func (uc *AppUsecase) handleEvent(ctx context.Context, appRelease *AppRelease) (
 	if err != nil {
 		return err
 	}
-	err = uc.appConstruct.AppRelease(ctx, app, appVersion, appRelease)
+	var appRepo *AppRepo
+	if app.AppRepoID > 0 {
+		appRepo, err = uc.appData.GetRepo(ctx, app.AppRepoID)
+		if err != nil {
+			return err
+		}
+	}
+	err = uc.appConstruct.AppRelease(ctx, app, appVersion, appRelease, appRepo)
 	if err != nil {
 		return err
 	}

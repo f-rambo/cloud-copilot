@@ -3,6 +3,7 @@ package helm
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -51,7 +52,7 @@ func (r *AppConstructRepo) GetAppAndVersionInfo(ctx context.Context, app *biz.Ap
 	return nil
 }
 
-func (r *AppConstructRepo) AppRelease(ctx context.Context, app *biz.App, appVersion *biz.AppVersion, appRelease *biz.AppRelease) error {
+func (r *AppConstructRepo) AppRelease(ctx context.Context, app *biz.App, appVersion *biz.AppVersion, appRelease *biz.AppRelease, appRepo *biz.AppRepo) error {
 	helmPkg, err := NewHelmPkg(r.log, appRelease.Namespace)
 	if err != nil {
 		return err
@@ -60,13 +61,20 @@ func (r *AppConstructRepo) AppRelease(ctx context.Context, app *biz.App, appVers
 	if err != nil {
 		return err
 	}
-	appPath, err := utils.GetServerStorePathByNames(utils.AppPackage)
-	if err != nil {
-		return err
-	}
-	chartPath := filepath.Join(appPath, appVersion.Chart)
-	if app.AppRepoID != 0 {
-		chartPath = filepath.Join(chartPath, utils.AppRepoPackage, app.Name, appVersion.Chart)
+	if appRepo != nil && appVersion.Chart == "" {
+		appPath, err := utils.GetServerStorePathByNames(utils.AppPackage)
+		if err != nil {
+			return err
+		}
+		pullClient, err := helmPkg.NewPull()
+		if err != nil {
+			return err
+		}
+		err = helmPkg.RunPull(pullClient, appPath, fmt.Sprintf("%s/%s", appRepo.Name, app.Name))
+		if err != nil {
+			return err
+		}
+		appVersion.Chart = filepath.Join(appPath, fmt.Sprintf("%s-%s.tgz", app.Name, appVersion.Version))
 	}
 	install.ReleaseName = appRelease.ReleaseName
 	install.Namespace = appRelease.Namespace
@@ -76,7 +84,7 @@ func (r *AppConstructRepo) AppRelease(ctx context.Context, app *biz.App, appVers
 	install.DryRun = appRelease.Dryrun
 	install.Atomic = appRelease.Atomic
 	install.Wait = appRelease.Wait
-	release, err := helmPkg.RunInstall(ctx, install, chartPath, appRelease.Config)
+	release, err := helmPkg.RunInstall(ctx, install, appVersion.Chart, appRelease.Config)
 	appRelease.Logs = helmPkg.GetLogs()
 	if err != nil {
 		return err
@@ -127,7 +135,7 @@ func (r *AppConstructRepo) AddAppRepo(ctx context.Context, repo *biz.AppRepo) (e
 	if err != nil {
 		return err
 	}
-	res.CachePath, err = utils.GetServerStorePathByNames(utils.AppPackage, utils.AppRepoPackage)
+	res.CachePath, err = utils.GetServerStorePathByNames(utils.AppPackage)
 	if err != nil {
 		return err
 	}
@@ -137,6 +145,30 @@ func (r *AppConstructRepo) AddAppRepo(ctx context.Context, repo *biz.AppRepo) (e
 	}
 	repo.SetIndexPath(indexFile)
 	return nil
+}
+
+func (r *AppConstructRepo) GetAppsByRepo(ctx context.Context, repo *biz.AppRepo) ([]*biz.App, error) {
+	index, err := helmrepo.LoadIndexFile(repo.IndexPath)
+	if err != nil {
+		return nil, err
+	}
+	apps := make([]*biz.App, 0)
+	for chartName, chartVersions := range index.Entries {
+		app := &biz.App{Name: chartName, AppRepoID: repo.ID, Versions: make([]*biz.AppVersion, 0)}
+		app.CreatedAt = repo.CreatedAt
+		app.UpdatedAt = repo.UpdatedAt
+		for _, chartMatedata := range chartVersions {
+			if len(chartMatedata.URLs) == 0 {
+				return nil, errors.New("chart urls is empty")
+			}
+			app.Icon = chartMatedata.Icon
+			app.Description = chartMatedata.Description
+			appVersion := &biz.AppVersion{Name: chartMatedata.Name, Chart: chartMatedata.URLs[0], Version: chartMatedata.Version}
+			app.AddVersion(appVersion)
+		}
+		apps = append(apps, app)
+	}
+	return apps, nil
 }
 
 func (r *AppConstructRepo) GetAppDetailByRepo(ctx context.Context, repo *biz.AppRepo, appName, version string) (*biz.App, error) {
@@ -167,30 +199,6 @@ func (r *AppConstructRepo) GetAppDetailByRepo(ctx context.Context, repo *biz.App
 		}
 	}
 	return app, nil
-}
-
-func (r *AppConstructRepo) GetAppsByRepo(ctx context.Context, repo *biz.AppRepo) ([]*biz.App, error) {
-	index, err := helmrepo.LoadIndexFile(repo.IndexPath)
-	if err != nil {
-		return nil, err
-	}
-	apps := make([]*biz.App, 0)
-	for chartName, chartVersions := range index.Entries {
-		app := &biz.App{Name: chartName, AppRepoID: repo.ID, Versions: make([]*biz.AppVersion, 0)}
-		app.CreatedAt = repo.CreatedAt
-		app.UpdatedAt = repo.UpdatedAt
-		for _, chartMatedata := range chartVersions {
-			if len(chartMatedata.URLs) == 0 {
-				return nil, errors.New("chart urls is empty")
-			}
-			app.Icon = chartMatedata.Icon
-			app.Description = chartMatedata.Description
-			appVersion := &biz.AppVersion{Name: chartMatedata.Name, Chart: chartMatedata.URLs[0], Version: chartMatedata.Version}
-			app.AddVersion(appVersion)
-		}
-		apps = append(apps, app)
-	}
-	return apps, nil
 }
 
 func (r *AppConstructRepo) DeleteApp(ctx context.Context, app *biz.App) error {

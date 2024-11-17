@@ -233,7 +233,7 @@ func getCloudResourceByID(cloudResources []*CloudResource, id string) *CloudReso
 		if resource.ID == id {
 			return resource
 		}
-		if resource.SubResources != nil && len(resource.SubResources) > 0 {
+		if len(resource.SubResources) > 0 {
 			subResource := getCloudResourceByID(resource.SubResources, id)
 			if subResource != nil {
 				return subResource

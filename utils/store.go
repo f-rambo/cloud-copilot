@@ -16,8 +16,6 @@ const (
 	LogPackage      = "log"
 	ResourcePackage = "resource"
 	AppPackage      = "app"
-	AppRepoPackage  = "repo"
-	AppIconPackage  = "icon"
 )
 
 func InitServerStore() error {

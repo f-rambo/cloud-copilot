@@ -232,7 +232,7 @@ fi`,
 			Container: &apiv1.Container{
 				VolumeMounts: volumeMounts,
 				Name:         "deps",
-				Image:        "golang:1.19",
+				Image:        "golang:1.23.3",
 				Command: []string{
 					"sh",
 					"-c",
@@ -247,7 +247,7 @@ fi`,
 			Container: &apiv1.Container{
 				VolumeMounts: volumeMounts,
 				Name:         "build",
-				Image:        "golang:1.19",
+				Image:        "golang:1.23.3",
 				Command: []string{
 					"sh",
 					"-c",
