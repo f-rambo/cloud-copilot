@@ -200,7 +200,9 @@ func (uc *AppUsecase) Init(ctx context.Context) error {
 		return err
 	}
 	for _, v := range uc.conf.App {
-		uc.log.Info(v.Name, v.Version)
+		if uc.conf.Server.ClusterType != string(ClusterTypeLocal) && (v.Name == "rook-ceph" || v.Name == "rook-ceph-cluster") {
+			continue
+		}
 		appchart := fmt.Sprintf("%s/%s-%s.tgz", appPath, v.Name, v.Version)
 		if !utils.IsFileExist(appchart) {
 			return fmt.Errorf("appchart not found: %s", appchart)
@@ -231,6 +233,7 @@ func (uc *AppUsecase) Init(ctx context.Context) error {
 			Namespace:   v.Namespace,
 			Config:      appVersion.DefaultConfig,
 			Status:      AppReleaseSatusPending,
+			Wait:        true,
 		})
 	}
 	return nil

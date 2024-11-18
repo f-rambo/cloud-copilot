@@ -66,7 +66,7 @@ func (u *UserUseCase) InitAdminUser(ctx context.Context) error {
 	user := &User{
 		Name:     "admin",
 		Email:    "admin@eamil.com",
-		PassWord: u.conf.Auth.Adminpassword,
+		PassWord: u.conf.Auth.AdminPassword,
 	}
 	userData, err := u.userData.GetUserInfoByEmail(ctx, user.Email)
 	if err != nil {

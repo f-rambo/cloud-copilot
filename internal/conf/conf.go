@@ -6,20 +6,26 @@ import (
 )
 
 type Bootstrap struct {
-	Server Server `json:"server,omitempty"`
-	Data   Data   `json:"data,omitempty"`
-	Log    Log    `json:"log,omitempty"`
-	Auth   Auth   `json:"auth,omitempty"`
-	App    []App  `json:"app,omitempty"`
+	Cluster Cluster `json:"cluster,omitempty"`
+	Server  Server  `json:"server,omitempty"`
+	Data    Data    `json:"data,omitempty"`
+	Log     Log     `json:"log,omitempty"`
+	Auth    Auth    `json:"auth,omitempty"`
+	App     []App   `json:"app,omitempty"`
+}
+
+type Cluster struct {
+	Name string `json:"name,omitempty"`
+	Env  string `json:"env,omitempty"`
+	Type string `json:"type,omitempty"`
 }
 
 type Server struct {
-	Debug   bool   `json:"debug,omitempty"`
-	Name    string `json:"name,omitempty"`
-	Version string `json:"version,omitempty"`
-	HTTP    HTTP   `json:"http,omitempty"`
-	GRPC    GRPC   `json:"grpc,omitempty"`
-	Env     string `json:"env,omitempty"`
+	Name        string `json:"name,omitempty"`
+	Version     string `json:"version,omitempty"`
+	HTTP        HTTP   `json:"http,omitempty"`
+	GRPC        GRPC   `json:"grpc,omitempty"`
+	ClusterType string `json:"cluster_type,omitempty"`
 }
 
 type App struct {
@@ -54,7 +60,7 @@ type Log struct {
 }
 
 type Auth struct {
-	Adminpassword string `json:"adminpassword,omitempty"`
+	AdminPassword string `json:"admin_password,omitempty"`
 	Exp           int32  `json:"exp,omitempty"` // hours
 	Key           string `json:"key,omitempty"` // secret key
 }
@@ -103,12 +109,12 @@ func (e Env) String() string {
 	return string(e)
 }
 
-func (s Server) GetEnv() Env {
+func (c Cluster) GetEnv() Env {
 	env := os.Getenv("ENV")
 	if env != "" {
 		return Env(env)
 	}
-	return Env(s.Env)
+	return Env(c.Env)
 }
 
 func (d Data) GetDriver() string {

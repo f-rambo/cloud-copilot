@@ -1,8 +1,10 @@
-server:
-  debug: false
+cluster:
   env: local
+  name: ""
+  type: local
+server:
   name: ocean
-  version: 0.0.1
+  version: "0.0.1"
   http:
     network: tcp
     addr: 0.0.0.0:8000
@@ -23,20 +25,41 @@ log:
 auth:
   exp: 24
   key: "S89XMkyGIpI0tgJkf7b8undK"
-  adminpassword: "123456"
+  admin_password: "123456"
 app:
   - name: base
-    version: 1.24.0
-    namespace: istio-system
+    version: "1.24.0"
+    namespace: networking
   - name: istiod
-    version: 1.24.0
-    namespace: istio-system
+    version: "1.24.0"
+    namespace: networking
   - name: cni
-    version: 1.24.0
-    namespace: istio-system
+    version: "1.24.0"
+    namespace: networking
   - name: ztunnel
-    version: 1.24.0
-    namespace: istio-system
+    version: "1.24.0"
+    namespace: networking
   - name: gateway
-    version: 1.24.0
-    namespace: istio-ingress
+    version: "1.24.0"
+    namespace: networking
+  - name: rook-ceph
+    version: "v1.15.5"
+    namespace: storage
+  - name: rook-ceph-cluster
+    version: "v1.15.5"
+    namespace: storage
+  - name: postgresql
+    version: "15.1"
+    namespace: storage
+  - name: prometheus
+    version: "25.30.1"
+    namespace: monitoring
+  - name: grafana
+    version: "8.6.0"
+    namespace: monitoring
+  - name: argo-workflows
+    version: "0.42.7"
+    namespace: toolkit
+  - name: cluster-autoscaler
+    version: "9.43.2"
+    namespace: toolkit

@@ -19,13 +19,6 @@ type logtool struct {
 
 func NewLog(conf *conf.Bootstrap) (*logtool, error) {
 	logConf := conf.Log
-
-	if conf.Server.Debug {
-		return &logtool{
-			logger: log.DefaultLogger,
-			conf:   conf,
-		}, nil
-	}
 	logFilePath, err := GetLogFilePath(conf.Server.Name)
 	if err != nil {
 		return nil, err

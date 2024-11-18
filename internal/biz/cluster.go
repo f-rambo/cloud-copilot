@@ -798,7 +798,7 @@ func (uc *ClusterUsecase) handlerClusterNotInstalled(ctx context.Context, cluste
 	if err != nil {
 		return err
 	}
-	if uc.conf.Server.GetEnv() == conf.EnvLocal {
+	if uc.conf.Cluster.GetEnv() == conf.EnvLocal {
 		err = uc.clusterData.Save(ctx, cluster)
 		if err != nil {
 			return err
