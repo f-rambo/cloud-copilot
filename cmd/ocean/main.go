@@ -1,17 +1,20 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"os"
 	"runtime"
 
+	"github.com/f-rambo/ocean/internal/biz"
 	"github.com/f-rambo/ocean/internal/conf"
 	"github.com/f-rambo/ocean/utils"
 	"github.com/go-kratos/kratos/v2"
 	"github.com/go-kratos/kratos/v2/config"
 	"github.com/go-kratos/kratos/v2/config/file"
 	"github.com/go-kratos/kratos/v2/log"
+	"github.com/go-kratos/kratos/v2/transport"
 	"github.com/go-kratos/kratos/v2/transport/grpc"
 	"github.com/go-kratos/kratos/v2/transport/http"
 	_ "github.com/joho/godotenv/autoload"
@@ -34,9 +37,12 @@ func init() {
 	flag.StringVar(&flagconf, "conf", "configs", "config path, eg: -conf config.yaml")
 }
 
-func newApp(logger log.Logger, gs *grpc.Server, hs *http.Server) *kratos.App {
+func newApp(logger log.Logger, gs *grpc.Server, hs *http.Server, b *biz.Biz) *kratos.App {
+	servers := []transport.Server{gs, hs}
+	servers = append(servers, b.BizRunners()...)
 	return kratos.New(
 		kratos.ID(id),
+		kratos.Context(context.Background()),
 		kratos.Name(Name),
 		kratos.Version(Version),
 		kratos.Metadata(map[string]string{
@@ -48,7 +54,8 @@ func newApp(logger log.Logger, gs *grpc.Server, hs *http.Server) *kratos.App {
 			utils.ConfKey.String():           flagconf,
 		}),
 		kratos.Logger(logger),
-		kratos.Server(gs, hs),
+		kratos.Server(servers...),
+		kratos.BeforeStart(b.Initialize),
 	)
 }
 

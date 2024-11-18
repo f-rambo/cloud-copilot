@@ -45,7 +45,6 @@ func (r *AppConstructRepo) GetAppAndVersionInfo(ctx context.Context, app *biz.Ap
 	app.Description = charInfo.Description
 	app.Metadata = charInfoMetadata
 
-	appVersion.Name = charInfo.Name
 	appVersion.DefaultConfig = charInfo.Config
 	appVersion.Version = charInfo.Version
 	appVersion.Chart = charInfo.Chart

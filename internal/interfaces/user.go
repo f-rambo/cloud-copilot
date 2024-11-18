@@ -38,7 +38,7 @@ func (u *UserInterface) SignIn(ctx context.Context, request *v1alpha1.SignIn) (*
 		Email:       user.Email,
 		Username:    user.Name,
 		AccessToken: user.AccessToken,
-		State:       user.State,
+		State:       string(user.State),
 		UpdatedAt:   user.UpdatedAt.Format("2006-01-02 15:04:05"),
 		SignType:    user.SignType,
 	}, nil
@@ -54,7 +54,7 @@ func (u *UserInterface) GetUserInfo(ctx context.Context, _ *emptypb.Empty) (*v1a
 		Email:       user.Email,
 		Username:    user.Name,
 		AccessToken: user.AccessToken,
-		State:       user.State,
+		State:       string(user.State),
 		UpdatedAt:   user.UpdatedAt.Format("2006-01-02 15:04:05"),
 	}, nil
 }
@@ -71,7 +71,7 @@ func (u *UserInterface) GetUsers(ctx context.Context, request *v1alpha1.UsersReq
 			Email:       user.Email,
 			Username:    user.Name,
 			AccessToken: user.AccessToken,
-			State:       strings.ToUpper(user.State),
+			State:       strings.ToUpper(string(user.State)),
 			SignType:    strings.ToUpper(user.SignType),
 			UpdatedAt:   user.UpdatedAt.Format("2006-01-02 15:04:05"),
 		})
@@ -87,7 +87,7 @@ func (u *UserInterface) SaveUser(ctx context.Context, request *v1alpha1.User) (*
 		ID:       request.Id,
 		Email:    request.Email,
 		Name:     request.Username,
-		State:    request.State,
+		State:    biz.UserState(request.State),
 		SignType: request.SignType,
 	}
 	err := u.uc.Save(ctx, user)
@@ -99,7 +99,7 @@ func (u *UserInterface) SaveUser(ctx context.Context, request *v1alpha1.User) (*
 		Email:       user.Email,
 		Username:    user.Name,
 		AccessToken: user.AccessToken,
-		State:       user.State,
+		State:       string(user.State),
 		UpdatedAt:   user.UpdatedAt.Format("2006-01-02 15:04:05"),
 	}, nil
 }

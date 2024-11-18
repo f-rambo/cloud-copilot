@@ -149,7 +149,7 @@ func (s *ServicesInterface) GetWorkflow(ctx context.Context, serviceParam *v1alp
 	}
 	parallelSteps := make([]wfv1.ParallelSteps, 0)
 	for _, template := range argoWf.Spec.Templates {
-		if template.Steps != nil && len(template.Steps) > 0 {
+		if len(template.Steps) > 0 {
 			parallelSteps = append(parallelSteps, template.Steps...)
 		}
 	}

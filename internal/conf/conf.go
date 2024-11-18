@@ -10,6 +10,7 @@ type Bootstrap struct {
 	Data   Data   `json:"data,omitempty"`
 	Log    Log    `json:"log,omitempty"`
 	Auth   Auth   `json:"auth,omitempty"`
+	App    []App  `json:"app,omitempty"`
 }
 
 type Server struct {
@@ -19,6 +20,12 @@ type Server struct {
 	HTTP    HTTP   `json:"http,omitempty"`
 	GRPC    GRPC   `json:"grpc,omitempty"`
 	Env     string `json:"env,omitempty"`
+}
+
+type App struct {
+	Name      string `json:"name,omitempty"`
+	Version   string `json:"version,omitempty"`
+	Namespace string `json:"namespace,omitempty"`
 }
 
 type HTTP struct {
@@ -47,8 +54,9 @@ type Log struct {
 }
 
 type Auth struct {
-	Exp int32  `json:"exp,omitempty"` // hours
-	Key string `json:"key,omitempty"` // secret key
+	Adminpassword string `json:"adminpassword,omitempty"`
+	Exp           int32  `json:"exp,omitempty"` // hours
+	Key           string `json:"key,omitempty"` // secret key
 }
 
 type Env string

@@ -3,9 +3,8 @@ package biz
 import (
 	"context"
 
-	"github.com/f-rambo/ocean/utils"
+	"github.com/f-rambo/ocean/internal/conf"
 	"github.com/go-kratos/kratos/v2/log"
-	"github.com/pkg/errors"
 	"gorm.io/gorm"
 )
 
@@ -50,14 +49,10 @@ type Technology struct {
 	Name string `json:"name" gorm:"column:name; default:''; NOT NULL"`
 }
 
-func (p *Project) initPorject() {
-	p.State = ProjectStateInit
-	p.Namespace = p.Name
-}
-
 type ProjectData interface {
 	Save(context.Context, *Project) error
 	Get(context.Context, int64) (*Project, error)
+	GetByName(context.Context, string) (*Project, error)
 	List(context.Context, int64) ([]*Project, error)
 	ListByIds(context.Context, []int64) ([]*Project, error)
 	Delete(context.Context, int64) error
@@ -72,42 +67,31 @@ type ProjectUsecase struct {
 	projectData    ProjectData
 	ProjectRuntime PorjectRuntime
 	log            *log.Helper
+	conf           *conf.Bootstrap
 }
 
-func NewProjectUseCase(projectData ProjectData, ProjectTime PorjectRuntime, logger log.Logger) *ProjectUsecase {
-	return &ProjectUsecase{projectData: projectData, ProjectRuntime: ProjectTime, log: log.NewHelper(logger)}
+func NewProjectUseCase(projectData ProjectData, ProjectTime PorjectRuntime, logger log.Logger, conf *conf.Bootstrap) *ProjectUsecase {
+	return &ProjectUsecase{projectData: projectData, ProjectRuntime: ProjectTime, log: log.NewHelper(logger), conf: conf}
 }
 
-func (uc *ProjectUsecase) Save(ctx context.Context, projectParam *Project) error {
-	if projectParam.ID == 0 {
-		// check name exists
-		projects, err := uc.List(ctx, projectParam.ClusterID)
-		if err != nil {
-			return err
-		}
-		for _, v := range projects {
-			if v.Name == projectParam.Name {
-				return errors.New("name exists")
-			}
-		}
-		projectParam.initPorject()
-		namespaces, err := uc.ProjectRuntime.GetNamespaces(ctx)
-		if err != nil {
-			return err
-		}
-		if utils.Contains(namespaces, projectParam.Namespace) {
-			return errors.New("namespace exists")
-		}
-		return uc.projectData.Save(ctx, projectParam)
-	}
-	project, err := uc.Get(ctx, projectParam.ID)
+// project init
+func (uc *ProjectUsecase) Init(ctx context.Context) error {
+	project, err := uc.projectData.GetByName(ctx, uc.conf.Server.Name)
 	if err != nil {
 		return err
 	}
-	projectParam.Namespace = project.Namespace
-	projectParam.State = project.State
-	projectParam.ClusterID = project.ClusterID
-	return uc.projectData.Save(ctx, projectParam)
+	if project == nil {
+		project := &Project{Name: uc.conf.Server.Name, State: ProjectStateInit}
+		err = uc.Save(ctx, project)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (uc *ProjectUsecase) Save(ctx context.Context, project *Project) error {
+	return uc.projectData.Save(ctx, project)
 }
 
 func (uc *ProjectUsecase) Get(ctx context.Context, id int64) (*Project, error) {
@@ -124,20 +108,4 @@ func (uc *ProjectUsecase) ListByIds(ctx context.Context, ids []int64) ([]*Projec
 
 func (uc *ProjectUsecase) Delete(ctx context.Context, id int64) error {
 	return uc.projectData.Delete(ctx, id)
-}
-
-func (uc *ProjectUsecase) Enable(ctx context.Context, project *Project, cluster *Cluster, baseAppInstallation func(context.Context, *Cluster, *Project) error) error {
-	err := uc.ProjectRuntime.CreateNamespace(ctx, project.Namespace)
-	if err != nil {
-		return err
-	}
-	// todo create service account
-	// todo create role
-	// todo create rolebinding
-	err = baseAppInstallation(ctx, cluster, project)
-	if err != nil {
-		return err
-	}
-	project.State = ProjectStateRunning
-	return uc.Save(ctx, project)
 }

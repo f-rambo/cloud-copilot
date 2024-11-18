@@ -22,13 +22,15 @@ import (
 type ClusterInterface struct {
 	v1alpha1.UnimplementedClusterInterfaceServer
 	clusterUc *biz.ClusterUsecase
+	userUc    *biz.UserUseCase
 	c         *conf.Bootstrap
 	log       *log.Helper
 }
 
-func NewClusterInterface(clusterUc *biz.ClusterUsecase, c *conf.Bootstrap, logger log.Logger) *ClusterInterface {
+func NewClusterInterface(clusterUc *biz.ClusterUsecase, userUc *biz.UserUseCase, c *conf.Bootstrap, logger log.Logger) *ClusterInterface {
 	return &ClusterInterface{
 		clusterUc: clusterUc,
+		userUc:    userUc,
 		c:         c,
 		log:       log.NewHelper(logger),
 	}
@@ -60,7 +62,10 @@ func (c *ClusterInterface) Save(ctx context.Context, clusterArgs *v1alpha1.Clust
 	}
 
 	c.updateClusterFromArgs(cluster, clusterArgs)
-
+	user, _ := c.userUc.GetUserInfo(ctx)
+	if user != nil {
+		cluster.UserID = user.ID
+	}
 	err = c.clusterUc.Save(ctx, cluster)
 	if err != nil {
 		return nil, err

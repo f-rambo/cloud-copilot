@@ -16,6 +16,7 @@ const (
 	LogPackage      = "log"
 	ResourcePackage = "resource"
 	AppPackage      = "app"
+	ConfigPackage   = "configs"
 )
 
 func InitServerStore() error {
@@ -29,6 +30,7 @@ func InitServerStore() error {
 		LogPackage,
 		ResourcePackage,
 		AppPackage,
+		ConfigPackage,
 	}
 	for _, pkg := range storePackages {
 		dirPath, err := GetServerStorePathByNames(pkg)

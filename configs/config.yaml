@@ -23,3 +23,20 @@ log:
 auth:
   exp: 24
   key: "S89XMkyGIpI0tgJkf7b8undK"
+  adminpassword: "123456"
+app:
+  - name: base
+    version: 1.24.0
+    namespace: istio-system
+  - name: istiod
+    version: 1.24.0
+    namespace: istio-system
+  - name: cni
+    version: 1.24.0
+    namespace: istio-system
+  - name: ztunnel
+    version: 1.24.0
+    namespace: istio-system
+  - name: gateway
+    version: 1.24.0
+    namespace: istio-ingress

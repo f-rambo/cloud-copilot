@@ -2,48 +2,38 @@ package biz
 
 import (
 	"context"
-	"fmt"
 
+	"github.com/f-rambo/ocean/internal/conf"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/spf13/cast"
 	"gorm.io/gorm"
 )
 
-type User struct {
-	ID          int64  `json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
-	Name        string `json:"name,omitempty" gorm:"column:name; default:''; NOT NULL"`
-	Email       string `json:"email,omitempty" gorm:"column:email; default:''; NOT NULL"`
-	PassWord    string `json:"password,omitempty" gorm:"column:password; default:''; NOT NULL"`
-	State       string `json:"state,omitempty" gorm:"column:state; default:''; NOT NULL"`
-	AccessToken string `json:"access_token,omitempty" gorm:"-"`
-	SignType    string `json:"sign_type,omitempty" gorm:"column:sign_type; default:''; NOT NULL"`
-	gorm.Model
-}
+type UserKey string
+type UserState string
 
 const (
-	AdminID       = -1
-	AdminName     = "admin"
-	AdminEmail    = "admin@admin.com"
-	AdminPassword = "admin"
-)
+	UserStateEnable  UserState = "enable"
+	UserStateDisable UserState = "disable"
 
-const (
-	UserStateEnable  = "enable"
-	UserStateDisable = "disable"
-)
-
-const (
 	SignTypeGithub = "GITHUB"
 	SignTypeBasic  = "CREDENTIALS"
-)
 
-type UserKey string
-
-const (
 	TokenKey     UserKey = "token"
 	SignType     UserKey = "sign_type"
 	UserEmailKey UserKey = "user_email"
 )
+
+type User struct {
+	ID          int64     `json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
+	Name        string    `json:"name,omitempty" gorm:"column:name; default:''; NOT NULL"`
+	Email       string    `json:"email,omitempty" gorm:"column:email; default:''; NOT NULL"`
+	PassWord    string    `json:"password,omitempty" gorm:"column:password; default:''; NOT NULL"`
+	State       UserState `json:"state,omitempty" gorm:"column:state; default:''; NOT NULL"`
+	AccessToken string    `json:"access_token,omitempty" gorm:"-"`
+	SignType    string    `json:"sign_type,omitempty" gorm:"column:sign_type; default:''; NOT NULL"`
+	gorm.Model
+}
 
 type UserData interface {
 	GetUserInfoByEmail(ctx context.Context, email string) (*User, error)
@@ -64,10 +54,32 @@ type UserUseCase struct {
 	userData   UserData
 	thirdparty Thirdparty
 	log        *log.Helper
+	conf       *conf.Bootstrap
 }
 
-func NewUseUser(userData UserData, thirdparty Thirdparty, logger log.Logger) *UserUseCase {
-	return &UserUseCase{userData: userData, thirdparty: thirdparty, log: log.NewHelper(logger)}
+func NewUseUser(userData UserData, thirdparty Thirdparty, logger log.Logger, conf *conf.Bootstrap) *UserUseCase {
+	return &UserUseCase{userData: userData, thirdparty: thirdparty, log: log.NewHelper(logger), conf: conf}
+}
+
+// init admin user
+func (u *UserUseCase) InitAdminUser(ctx context.Context) error {
+	user := &User{
+		Name:     "admin",
+		Email:    "admin@eamil.com",
+		PassWord: u.conf.Auth.Adminpassword,
+	}
+	userData, err := u.userData.GetUserInfoByEmail(ctx, user.Email)
+	if err != nil {
+		return err
+	}
+	if userData != nil {
+		return nil
+	}
+	err = u.userData.Save(ctx, user)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (u *UserUseCase) Save(ctx context.Context, user *User) error {
@@ -80,7 +92,6 @@ func (u *UserUseCase) GetUsers(ctx context.Context, name, email string, pageNum,
 
 func (u *UserUseCase) SignIn(ctx context.Context, user *User) error {
 	if user.AccessToken != "" {
-		fmt.Println(user.AccessToken)
 		email, err := u.thirdparty.GetUserEmail(ctx, user.AccessToken)
 		if err != nil {
 			return err
@@ -95,9 +106,6 @@ func (u *UserUseCase) SignIn(ctx context.Context, user *User) error {
 		user.SignType = SignTypeBasic
 	}
 	user.State = UserStateEnable
-	if user.ID == AdminID {
-		return nil
-	}
 	err := u.Save(ctx, user)
 	if err != nil {
 		return err

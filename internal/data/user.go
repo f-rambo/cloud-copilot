@@ -7,7 +7,6 @@ import (
 
 	"github.com/f-rambo/ocean/internal/biz"
 	"github.com/f-rambo/ocean/internal/conf"
-	"github.com/f-rambo/ocean/utils"
 	"github.com/go-kratos/kratos/v2/log"
 	jwtv5 "github.com/golang-jwt/jwt/v5"
 	"github.com/pkg/errors"
@@ -85,10 +84,6 @@ func (u *UserRepo) DeleteUser(ctx context.Context, id int64) error {
 }
 
 func (u *UserRepo) SignIn(ctx context.Context, userParam *biz.User) error {
-	ok, err := u.adminSignIn(userParam)
-	if err != nil || ok {
-		return err
-	}
 	user, err := u.GetUserInfoByEmail(ctx, userParam.Email)
 	if err != nil {
 		return err
@@ -104,32 +99,6 @@ func (u *UserRepo) SignIn(ctx context.Context, userParam *biz.User) error {
 		return err
 	}
 	return nil
-}
-
-func (u *UserRepo) adminSignIn(user *biz.User) (bool, error) {
-	if user.Email == biz.AdminEmail {
-		password := utils.Md5(biz.AdminPassword)
-		if user.PassWord != password {
-			return false, errors.New("password error")
-		}
-		accessToken, err := u.encodeToken(u.getAdmin())
-		if err != nil {
-			return true, err
-		}
-		user.ID = biz.AdminID
-		user.Email = biz.AdminEmail
-		user.AccessToken = accessToken
-		return true, nil
-	}
-	return false, nil
-}
-
-func (u *UserRepo) getAdmin() *biz.User {
-	return &biz.User{
-		ID:    biz.AdminID,
-		Name:  biz.AdminName,
-		Email: biz.AdminEmail,
-	}
 }
 
 func (u *UserRepo) encodeToken(user *biz.User) (token string, err error) {

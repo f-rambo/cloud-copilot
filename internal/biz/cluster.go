@@ -42,6 +42,7 @@ type Cluster struct {
 	Connections          string                            `json:"connections" gorm:"column:connections; default:''; NOT NULL"`
 	CertificateAuthority string                            `json:"certificate_authority" gorm:"column:certificate_authority; default:''; NOT NULL"`
 	Region               string                            `json:"region" gorm:"column:region; default:''; NOT NULL;"`
+	UserID               int64                             `json:"user_id" gorm:"column:user_id; default:0; NOT NULL;"`
 	IpCidr               string                            `json:"ip_cidr" gorm:"column:ip_cidr; default:''; NOT NULL;"`
 	AccessID             string                            `json:"access_id" gorm:"column:access_id; default:''; NOT NULL;"`
 	AccessKey            string                            `json:"access_key" gorm:"column:access_key; default:''; NOT NULL;"`
@@ -618,7 +619,7 @@ type ClusterUsecase struct {
 }
 
 func NewClusterUseCase(conf *conf.Bootstrap, clusterData ClusterData, clusterInfrastructure ClusterInfrastructure, clusterRuntime ClusterRuntime, logger log.Logger) *ClusterUsecase {
-	c := &ClusterUsecase{
+	return &ClusterUsecase{
 		clusterData:           clusterData,
 		clusterInfrastructure: clusterInfrastructure,
 		clusterRuntime:        clusterRuntime,
@@ -627,8 +628,6 @@ func NewClusterUseCase(conf *conf.Bootstrap, clusterData ClusterData, clusterInf
 		locks:                 make(map[int64]*sync.Mutex),
 		eventChan:             make(chan *Cluster, ClusterPoolNumber),
 	}
-	go c.clusterRunner()
-	return c
 }
 
 func (uc *ClusterUsecase) Get(ctx context.Context, id int64) (*Cluster, error) {
@@ -718,10 +717,27 @@ func (uc *ClusterUsecase) apply(cluster *Cluster) {
 	uc.eventChan <- cluster
 }
 
-func (uc *ClusterUsecase) clusterRunner() {
-	for event := range uc.eventChan {
-		go uc.handleEvent(context.TODO(), event)
+func (uc *ClusterUsecase) Start(ctx context.Context) error {
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
+		case data, ok := <-uc.eventChan:
+			if !ok {
+				return nil
+			}
+			err := uc.handleEvent(ctx, data)
+			if err != nil {
+				return err
+			}
+			return nil
+		}
 	}
+}
+
+func (uc *ClusterUsecase) Stop(ctx context.Context) error {
+	close(uc.eventChan)
+	return nil
 }
 
 func (uc *ClusterUsecase) handleEvent(ctx context.Context, cluster *Cluster) (err error) {

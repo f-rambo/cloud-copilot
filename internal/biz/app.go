@@ -2,9 +2,12 @@ package biz
 
 import (
 	"context"
+	"fmt"
+	"os"
 	"sync"
 
 	"github.com/f-rambo/ocean/internal/conf"
+	"github.com/f-rambo/ocean/utils"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/pkg/errors"
 	"gorm.io/gorm"
@@ -173,7 +176,7 @@ type AppUsecase struct {
 }
 
 func NewAppUsecase(appData AppData, appRuntime AppRuntime, appConstruct AppConstruct, logger log.Logger, conf *conf.Bootstrap) *AppUsecase {
-	appuc := &AppUsecase{
+	return &AppUsecase{
 		appData:      appData,
 		appRuntime:   appRuntime,
 		appConstruct: appConstruct,
@@ -182,8 +185,55 @@ func NewAppUsecase(appData AppData, appRuntime AppRuntime, appConstruct AppConst
 		locks:        make(map[int64]*sync.Mutex),
 		eventChan:    make(chan *AppRelease, AppPoolNumber),
 	}
-	go appuc.appReleaseRunner()
-	return appuc
+}
+
+func (uc *AppUsecase) Init(ctx context.Context) error {
+	if !uc.appRuntime.CheckCluster(ctx) {
+		return nil
+	}
+	appPath, err := utils.GetServerStorePathByNames(utils.AppPackage)
+	if err != nil {
+		return err
+	}
+	configPath, err := utils.GetServerStorePathByNames(utils.ConfigPackage)
+	if err != nil {
+		return err
+	}
+	for _, v := range uc.conf.App {
+		uc.log.Info(v.Name, v.Version)
+		appchart := fmt.Sprintf("%s/%s-%s.tgz", appPath, v.Name, v.Version)
+		if !utils.IsFileExist(appchart) {
+			return fmt.Errorf("appchart not found: %s", appchart)
+		}
+		app := &App{Name: v.Name}
+		appVersion := &AppVersion{Chart: appchart, Version: v.Version}
+		err = uc.GetAppVersionInfoByLocalFile(ctx, app, appVersion)
+		if err != nil {
+			return err
+		}
+		app.AddVersion(appVersion)
+		err = uc.appData.Save(ctx, app)
+		if err != nil {
+			return err
+		}
+		appConfigPath := fmt.Sprintf("%s/%s-%s.yaml", configPath, v.Name, v.Version)
+		if utils.IsFileExist(appConfigPath) {
+			appConfig, err := os.ReadFile(appConfigPath)
+			if err != nil {
+				return err
+			}
+			appVersion.DefaultConfig = string(appConfig)
+		}
+		uc.apply(&AppRelease{
+			ReleaseName: fmt.Sprintf("%s-%s", v.Name, v.Version),
+			AppID:       app.ID,
+			VersionID:   appVersion.ID,
+			Namespace:   v.Namespace,
+			Config:      appVersion.DefaultConfig,
+			Status:      AppReleaseSatusPending,
+		})
+	}
+	return nil
 }
 
 func (uc *AppUsecase) GetAppVersionInfoByLocalFile(ctx context.Context, app *App, appVersion *AppVersion) error {
@@ -380,20 +430,27 @@ func (uc *AppUsecase) apply(appRelease *AppRelease) {
 	uc.eventChan <- appRelease
 }
 
-func (uc *AppUsecase) appReleaseRunner() {
-	ctx := context.Background()
-	if !uc.appRuntime.CheckCluster(ctx) {
-		return
-	}
-	// todo default app check
-	for event := range uc.eventChan {
-		go func(event *AppRelease) {
-			err := uc.handleEvent(ctx, event)
-			if err != nil {
-				uc.log.Errorf("Failed to app release handle event: %v", err)
+func (uc *AppUsecase) Start(ctx context.Context) error {
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
+		case data, ok := <-uc.eventChan:
+			if !ok {
+				return nil
 			}
-		}(event)
+			err := uc.handleEvent(ctx, data)
+			if err != nil {
+				return err
+			}
+			return nil
+		}
 	}
+}
+
+func (uc *AppUsecase) Stop(ctx context.Context) error {
+	close(uc.eventChan)
+	return nil
 }
 
 func (uc *AppUsecase) getLock(appID int64) *sync.Mutex {

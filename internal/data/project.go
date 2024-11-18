@@ -7,6 +7,7 @@ import (
 	"github.com/f-rambo/ocean/internal/biz"
 	"github.com/f-rambo/ocean/internal/conf"
 	"github.com/go-kratos/kratos/v2/log"
+	"gorm.io/gorm"
 )
 
 type projectRepo struct {
@@ -38,6 +39,22 @@ func (p *projectRepo) Get(ctx context.Context, id int64) (*biz.Project, error) {
 	project := &biz.Project{}
 	err := p.data.db.Where("id = ?", id).First(project).Error
 	if err != nil {
+		return nil, err
+	}
+	if len(project.BusinessJson) > 0 {
+		err = json.Unmarshal(project.BusinessJson, &project.Business)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return project, nil
+}
+
+// GetByName get project by name
+func (p *projectRepo) GetByName(ctx context.Context, name string) (*biz.Project, error) {
+	project := &biz.Project{}
+	err := p.data.db.Where("name = ?", name).First(project).Error
+	if err != nil && err != gorm.ErrRecordNotFound {
 		return nil, err
 	}
 	if len(project.BusinessJson) > 0 {
