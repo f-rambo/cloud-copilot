@@ -66,7 +66,7 @@ func (c *ClusterInfrastructure) GetRegions(ctx context.Context, cluster *biz.Clu
 		return awsCloud.GetAvailabilityZones(ctx)
 	}
 	if cluster.Type == biz.ClusterTypeAliCloudEcs || cluster.Type == biz.ClusterTypeAliCloudAks {
-		alicloud, err := NewAlicloud(cluster, c.log)
+		alicloud, err := NewAlicloud(cluster, c.log, c.conf)
 		if err != nil {
 			return err
 		}
@@ -105,6 +105,33 @@ func (c *ClusterInfrastructure) Start(ctx context.Context, cluster *biz.Cluster)
 		}
 		return awsCloud.ManageBostionHost(ctx)
 	}
+	if cluster.Type == biz.ClusterTypeAliCloudEcs {
+		alicloud, err := NewAlicloud(cluster, c.log, c.conf)
+		if err != nil {
+			return err
+		}
+		err = alicloud.GetAvailabilityZones()
+		if err != nil {
+			return err
+		}
+		err = alicloud.CreateNetwork(ctx)
+		if err != nil {
+			return err
+		}
+		err = alicloud.SetByNodeGroups(ctx)
+		if err != nil {
+			return err
+		}
+		err = alicloud.ImportKeyPair(ctx)
+		if err != nil {
+			return err
+		}
+		err = alicloud.ManageInstance(ctx)
+		if err != nil {
+			return err
+		}
+		return alicloud.ManageBostionHost(ctx)
+	}
 	return errors.New("cluster type is not supported")
 }
 
@@ -130,6 +157,25 @@ func (c *ClusterInfrastructure) Stop(ctx context.Context, cluster *biz.Cluster) 
 			return err
 		}
 		return awsCloud.DeleteNetwork(ctx)
+	}
+	if cluster.Type == biz.ClusterTypeAliCloudEcs {
+		alicloud, err := NewAlicloud(cluster, c.log, c.conf)
+		if err != nil {
+			return err
+		}
+		err = alicloud.ManageInstance(ctx)
+		if err != nil {
+			return err
+		}
+		err = alicloud.ManageBostionHost(ctx)
+		if err != nil {
+			return err
+		}
+		err = alicloud.DeleteKeyPair(ctx)
+		if err != nil {
+			return err
+		}
+		return alicloud.DeleteNetwork(ctx)
 	}
 	return errors.New("cluster type is not supported")
 }

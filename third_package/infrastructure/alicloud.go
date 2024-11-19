@@ -1,6 +1,7 @@
 package infrastructure
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -9,6 +10,7 @@ import (
 	ecs "github.com/alibabacloud-go/ecs-20140526/v4/client"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/f-rambo/ocean/internal/biz"
+	"github.com/f-rambo/ocean/internal/conf"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/pkg/errors"
 )
@@ -17,13 +19,14 @@ type Alicloud struct {
 	cluster   *biz.Cluster
 	ecsClient *ecs.Client
 	log       *log.Helper
+	conf      *conf.Bootstrap
 }
 
 const (
 	alicloudDefaultRegion = "cn-hangzhou"
 )
 
-func NewAlicloud(cluster *biz.Cluster, log *log.Helper) (*Alicloud, error) {
+func NewAlicloud(cluster *biz.Cluster, log *log.Helper, conf *conf.Bootstrap) (*Alicloud, error) {
 	if cluster.Region == "" {
 		cluster.Region = alicloudDefaultRegion
 	}
@@ -44,6 +47,7 @@ func NewAlicloud(cluster *biz.Cluster, log *log.Helper) (*Alicloud, error) {
 		cluster:   cluster,
 		ecsClient: client,
 		log:       log,
+		conf:      conf,
 	}, nil
 }
 
@@ -92,4 +96,74 @@ func (a *Alicloud) GetZones() (zones []string, err error) {
 		zones = append(zones, *zone.ZoneId)
 	}
 	return zones, nil
+}
+
+func (a *Alicloud) CreateNetwork(ctx context.Context) error {
+	fs := []func(context.Context) error{
+		a.createVPC,
+		a.createSubnets,
+		a.createInternetGateway,
+		a.createNatGateway,
+		a.createRouteTables,
+		a.createSecurityGroup,
+		a.createSLB,
+	}
+	for _, f := range fs {
+		if err := f(ctx); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (a *Alicloud) SetByNodeGroups(ctx context.Context) error {
+	return nil
+}
+
+func (a *Alicloud) ImportKeyPair(ctx context.Context) error {
+	return nil
+}
+
+func (a *Alicloud) DeleteKeyPair(ctx context.Context) error {
+	return nil
+}
+
+func (a *Alicloud) ManageInstance(ctx context.Context) error {
+	return nil
+}
+
+func (a *Alicloud) ManageBostionHost(ctx context.Context) error {
+	return nil
+}
+
+func (a *Alicloud) DeleteNetwork(ctx context.Context) error {
+	return nil
+}
+
+func (a *Alicloud) createVPC(ctx context.Context) error {
+	return nil
+}
+
+func (a *Alicloud) createSubnets(ctx context.Context) error {
+	return nil
+}
+
+func (a *Alicloud) createInternetGateway(ctx context.Context) error {
+	return nil
+}
+
+func (a *Alicloud) createNatGateway(ctx context.Context) error {
+	return nil
+}
+
+func (a *Alicloud) createRouteTables(ctx context.Context) error {
+	return nil
+}
+
+func (a *Alicloud) createSecurityGroup(ctx context.Context) error {
+	return nil
+}
+
+func (a *Alicloud) createSLB(ctx context.Context) error {
+	return nil
 }

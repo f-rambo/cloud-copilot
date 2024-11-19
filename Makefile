@@ -45,6 +45,16 @@ api:
 	       --openapi_out=fq_schema_naming=true,default_response=false:. \
 	       $(API_PROTO_FILES)
 
+.PHONY: repo
+repo:
+	protoc --proto_path=. \
+	       --proto_path=./third_party \
+ 	       --go_out=paths=source_relative:. \
+ 	       --go-http_out=paths=source_relative:. \
+ 	       --go-grpc_out=paths=source_relative:. \
+	       --openapi_out=fq_schema_naming=true,default_response=false:. \
+	       $(INTERNAL_PROTO_FILES)
+
 .PHONY: build
 build:
 	mkdir -p bin/ && go build -ldflags "-X main.Version=$(VERSION)" -o ./bin/ ./cmd/ocean

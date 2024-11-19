@@ -8,9 +8,9 @@ import (
 
 	"github.com/f-rambo/ocean/api/cluster/v1alpha1"
 	"github.com/f-rambo/ocean/api/common"
-	systemv1alpha1 "github.com/f-rambo/ocean/api/system/v1alpha1"
 	"github.com/f-rambo/ocean/internal/biz"
 	"github.com/f-rambo/ocean/internal/conf"
+	sidecarCluster "github.com/f-rambo/ocean/internal/repository/sidecar/api/cluster"
 	"github.com/f-rambo/ocean/utils"
 	"github.com/fsnotify/fsnotify"
 	"github.com/go-kratos/kratos/v2/log"
@@ -367,14 +367,11 @@ func (c *ClusterInterface) GetLogs(stream v1alpha1.ClusterInterface_GetLogsServe
 }
 
 func (c *ClusterInterface) getShipLogContent(ctx context.Context, contentChan chan string, nodeIp string, nodePort int32) error {
-	conn, err := grpc.DialInsecure(
-		ctx, // with cancel
-		grpc.WithEndpoint(fmt.Sprintf("%s:%d", nodeIp, nodePort)),
-	)
+	conn, err := grpc.DialInsecure(ctx, grpc.WithEndpoint(fmt.Sprintf("%s:%d", nodeIp, nodePort)))
 	if err != nil {
 		return err
 	}
-	client := systemv1alpha1.NewSystemInterfaceClient(conn)
+	client := sidecarCluster.NewClusterInterfaceClient(conn)
 	stream, err := client.GetLogs(ctx)
 	if err != nil {
 		return err
@@ -394,7 +391,7 @@ func (c *ClusterInterface) getShipLogContent(ctx context.Context, contentChan ch
 		}
 	}()
 
-	err = stream.Send(&systemv1alpha1.LogRequest{
+	err = stream.Send(&sidecarCluster.LogRequest{
 		TailLines: 30,
 	})
 	if err != nil {

@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package cluster;
+
+import "google/protobuf/empty.proto";
+import "internal/repository/sidecar/api/cluster/error_reason.proto";
+import "internal/repository/sidecar/api/cluster/message.proto";
+
+option go_package = "github.com/f-rambo/ocean/internal/repository/sidecar/api/cluster;";
+
+
+service ClusterInterface {
+      rpc Ping(google.protobuf.Empty) returns (cluster.Msg);
+
+      rpc GetLogs(stream cluster.LogRequest) returns (stream cluster.LogResponse);
+
+      rpc Info(google.protobuf.Empty) returns (cluster.Cluster);
+}

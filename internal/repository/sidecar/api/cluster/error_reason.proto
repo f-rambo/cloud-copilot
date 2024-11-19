@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package cluster;
+
+option go_package = "github.com/f-rambo/ocean/internal/repository/sidecar/api/cluster;";
+
+enum ErrorReason {
+  SUCCEED = 0;
+  FAILED = 1;
+}
+
+message Msg {
+  ErrorReason Reason = 1;
+  string Message = 2;
+}
