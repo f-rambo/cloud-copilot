@@ -5,6 +5,2192 @@ openapi: 3.0.3
 info:
     title: ""
     version: 0.0.1
-paths: {}
+paths:
+    /api/v1alpha1/app:
+        get:
+            tags:
+                - AppInterface
+            operationId: AppInterface_Get
+            parameters:
+                - name: id
+                  in: query
+                  schema:
+                    type: string
+                - name: page
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: page_size
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: name
+                  in: query
+                  schema:
+                    type: string
+                - name: status
+                  in: query
+                  schema:
+                    type: string
+                - name: app_type_id
+                  in: query
+                  schema:
+                    type: string
+                - name: version_id
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/app.v1alpha1.App'
+        delete:
+            tags:
+                - AppInterface
+            operationId: AppInterface_Delete
+            parameters:
+                - name: id
+                  in: query
+                  schema:
+                    type: string
+                - name: page
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: page_size
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: name
+                  in: query
+                  schema:
+                    type: string
+                - name: status
+                  in: query
+                  schema:
+                    type: string
+                - name: app_type_id
+                  in: query
+                  schema:
+                    type: string
+                - name: version_id
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/common.Msg'
+    /api/v1alpha1/app/list:
+        get:
+            tags:
+                - AppInterface
+            operationId: AppInterface_List
+            parameters:
+                - name: id
+                  in: query
+                  schema:
+                    type: string
+                - name: page
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: page_size
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: name
+                  in: query
+                  schema:
+                    type: string
+                - name: status
+                  in: query
+                  schema:
+                    type: string
+                - name: app_type_id
+                  in: query
+                  schema:
+                    type: string
+                - name: version_id
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/app.v1alpha1.AppList'
+    /api/v1alpha1/app/ping:
+        get:
+            tags:
+                - AppInterface
+            operationId: AppInterface_Ping
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/common.Msg'
+    /api/v1alpha1/app/release:
+        get:
+            tags:
+                - AppInterface
+            operationId: AppInterface_GetAppRelease
+            parameters:
+                - name: app_id
+                  in: query
+                  schema:
+                    type: string
+                - name: version_id
+                  in: query
+                  schema:
+                    type: string
+                - name: cluster_id
+                  in: query
+                  schema:
+                    type: string
+                - name: project_id
+                  in: query
+                  schema:
+                    type: string
+                - name: id
+                  in: query
+                  schema:
+                    type: string
+                - name: release_name
+                  in: query
+                  schema:
+                    type: string
+                - name: namespace
+                  in: query
+                  schema:
+                    type: string
+                - name: page
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: page_size
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: app_name
+                  in: query
+                  schema:
+                    type: string
+                - name: version
+                  in: query
+                  schema:
+                    type: string
+                - name: app_type_id
+                  in: query
+                  schema:
+                    type: string
+                - name: repo_id
+                  in: query
+                  schema:
+                    type: string
+                - name: config
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/app.v1alpha1.AppRelease'
+        post:
+            tags:
+                - AppInterface
+            operationId: AppInterface_SaveAppRelease
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/app.v1alpha1.AppReleaseReq'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/app.v1alpha1.AppRelease'
+        delete:
+            tags:
+                - AppInterface
+            operationId: AppInterface_DeleteAppRelease
+            parameters:
+                - name: app_id
+                  in: query
+                  schema:
+                    type: string
+                - name: version_id
+                  in: query
+                  schema:
+                    type: string
+                - name: cluster_id
+                  in: query
+                  schema:
+                    type: string
+                - name: project_id
+                  in: query
+                  schema:
+                    type: string
+                - name: id
+                  in: query
+                  schema:
+                    type: string
+                - name: release_name
+                  in: query
+                  schema:
+                    type: string
+                - name: namespace
+                  in: query
+                  schema:
+                    type: string
+                - name: page
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: page_size
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: app_name
+                  in: query
+                  schema:
+                    type: string
+                - name: version
+                  in: query
+                  schema:
+                    type: string
+                - name: app_type_id
+                  in: query
+                  schema:
+                    type: string
+                - name: repo_id
+                  in: query
+                  schema:
+                    type: string
+                - name: config
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/common.Msg'
+    /api/v1alpha1/app/release/list:
+        get:
+            tags:
+                - AppInterface
+            operationId: AppInterface_AppReleaseList
+            parameters:
+                - name: app_id
+                  in: query
+                  schema:
+                    type: string
+                - name: version_id
+                  in: query
+                  schema:
+                    type: string
+                - name: cluster_id
+                  in: query
+                  schema:
+                    type: string
+                - name: project_id
+                  in: query
+                  schema:
+                    type: string
+                - name: id
+                  in: query
+                  schema:
+                    type: string
+                - name: release_name
+                  in: query
+                  schema:
+                    type: string
+                - name: namespace
+                  in: query
+                  schema:
+                    type: string
+                - name: page
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: page_size
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: app_name
+                  in: query
+                  schema:
+                    type: string
+                - name: version
+                  in: query
+                  schema:
+                    type: string
+                - name: app_type_id
+                  in: query
+                  schema:
+                    type: string
+                - name: repo_id
+                  in: query
+                  schema:
+                    type: string
+                - name: config
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/app.v1alpha1.AppReleaseList'
+    /api/v1alpha1/app/release/resources:
+        get:
+            tags:
+                - AppInterface
+            operationId: AppInterface_GetAppReleaseResources
+            parameters:
+                - name: app_id
+                  in: query
+                  schema:
+                    type: string
+                - name: version_id
+                  in: query
+                  schema:
+                    type: string
+                - name: cluster_id
+                  in: query
+                  schema:
+                    type: string
+                - name: project_id
+                  in: query
+                  schema:
+                    type: string
+                - name: id
+                  in: query
+                  schema:
+                    type: string
+                - name: release_name
+                  in: query
+                  schema:
+                    type: string
+                - name: namespace
+                  in: query
+                  schema:
+                    type: string
+                - name: page
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: page_size
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: app_name
+                  in: query
+                  schema:
+                    type: string
+                - name: version
+                  in: query
+                  schema:
+                    type: string
+                - name: app_type_id
+                  in: query
+                  schema:
+                    type: string
+                - name: repo_id
+                  in: query
+                  schema:
+                    type: string
+                - name: config
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/app.v1alpha1.AppReleasepResources'
+    /api/v1alpha1/app/repo:
+        post:
+            tags:
+                - AppInterface
+            operationId: AppInterface_SaveRepo
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/app.v1alpha1.AppRepo'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/common.Msg'
+        delete:
+            tags:
+                - AppInterface
+            operationId: AppInterface_DeleteRepo
+            parameters:
+                - name: id
+                  in: query
+                  schema:
+                    type: string
+                - name: app_name
+                  in: query
+                  schema:
+                    type: string
+                - name: version
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/common.Msg'
+    /api/v1alpha1/app/repo/app/detail:
+        get:
+            tags:
+                - AppInterface
+            operationId: AppInterface_GetAppDetailByRepo
+            parameters:
+                - name: id
+                  in: query
+                  schema:
+                    type: string
+                - name: app_name
+                  in: query
+                  schema:
+                    type: string
+                - name: version
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/app.v1alpha1.App'
+    /api/v1alpha1/app/repo/apps:
+        get:
+            tags:
+                - AppInterface
+            operationId: AppInterface_GetAppsByRepo
+            parameters:
+                - name: id
+                  in: query
+                  schema:
+                    type: string
+                - name: app_name
+                  in: query
+                  schema:
+                    type: string
+                - name: version
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/app.v1alpha1.AppList'
+    /api/v1alpha1/app/repo/list:
+        get:
+            tags:
+                - AppInterface
+            operationId: AppInterface_ListRepo
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/app.v1alpha1.AppRepoList'
+    /api/v1alpha1/app/save:
+        post:
+            tags:
+                - AppInterface
+            operationId: AppInterface_Save
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/app.v1alpha1.App'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/common.Msg'
+    /api/v1alpha1/app/type:
+        post:
+            tags:
+                - AppInterface
+            operationId: AppInterface_CreateAppType
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/app.v1alpha1.AppType'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/common.Msg'
+        delete:
+            tags:
+                - AppInterface
+            operationId: AppInterface_DeleteAppType
+            parameters:
+                - name: id
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/common.Msg'
+    /api/v1alpha1/app/type/list:
+        get:
+            tags:
+                - AppInterface
+            operationId: AppInterface_ListAppType
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/app.v1alpha1.AppTypeList'
+    /api/v1alpha1/app/upload:
+        post:
+            tags:
+                - AppInterface
+            operationId: AppInterface_UploadApp
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/app.v1alpha1.FileUploadRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/app.v1alpha1.App'
+    /api/v1alpha1/cluster:
+        get:
+            tags:
+                - ClusterInterface
+            operationId: ClusterInterface_Get
+            parameters:
+                - name: id
+                  in: query
+                  schema:
+                    type: string
+                - name: name
+                  in: query
+                  schema:
+                    type: string
+                - name: type
+                  in: query
+                  schema:
+                    type: string
+                - name: public_key
+                  in: query
+                  schema:
+                    type: string
+                - name: region
+                  in: query
+                  schema:
+                    type: string
+                - name: access_id
+                  in: query
+                  schema:
+                    type: string
+                - name: access_key
+                  in: query
+                  schema:
+                    type: string
+                - name: node_id
+                  in: query
+                  schema:
+                    type: string
+                - name: private_key
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/cluster.v1alpha1.Cluster'
+        post:
+            tags:
+                - ClusterInterface
+            operationId: ClusterInterface_Save
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/cluster.v1alpha1.ClusterArgs'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/cluster.v1alpha1.Cluster'
+        delete:
+            tags:
+                - ClusterInterface
+            operationId: ClusterInterface_Delete
+            parameters:
+                - name: id
+                  in: query
+                  schema:
+                    type: string
+                - name: name
+                  in: query
+                  schema:
+                    type: string
+                - name: type
+                  in: query
+                  schema:
+                    type: string
+                - name: public_key
+                  in: query
+                  schema:
+                    type: string
+                - name: region
+                  in: query
+                  schema:
+                    type: string
+                - name: access_id
+                  in: query
+                  schema:
+                    type: string
+                - name: access_key
+                  in: query
+                  schema:
+                    type: string
+                - name: node_id
+                  in: query
+                  schema:
+                    type: string
+                - name: private_key
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/common.Msg'
+    /api/v1alpha1/cluster/list:
+        get:
+            tags:
+                - ClusterInterface
+            operationId: ClusterInterface_List
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/cluster.v1alpha1.ClusterList'
+    /api/v1alpha1/cluster/logs:
+        post:
+            tags:
+                - ClusterInterface
+            operationId: ClusterInterface_PollingLogs
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/cluster.v1alpha1.ClusterLogsRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/cluster.v1alpha1.ClusterLogsResponse'
+    /api/v1alpha1/cluster/ping:
+        get:
+            tags:
+                - ClusterInterface
+            operationId: ClusterInterface_Ping
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/common.Msg'
+    /api/v1alpha1/cluster/regions:
+        get:
+            tags:
+                - ClusterInterface
+            operationId: ClusterInterface_GetRegions
+            parameters:
+                - name: id
+                  in: query
+                  schema:
+                    type: string
+                - name: name
+                  in: query
+                  schema:
+                    type: string
+                - name: type
+                  in: query
+                  schema:
+                    type: string
+                - name: public_key
+                  in: query
+                  schema:
+                    type: string
+                - name: region
+                  in: query
+                  schema:
+                    type: string
+                - name: access_id
+                  in: query
+                  schema:
+                    type: string
+                - name: access_key
+                  in: query
+                  schema:
+                    type: string
+                - name: node_id
+                  in: query
+                  schema:
+                    type: string
+                - name: private_key
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/cluster.v1alpha1.Regions'
+    /api/v1alpha1/project:
+        get:
+            tags:
+                - ProjectService
+            operationId: ProjectService_Get
+            parameters:
+                - name: name
+                  in: query
+                  schema:
+                    type: string
+                - name: cluster_id
+                  in: query
+                  schema:
+                    type: string
+                - name: id
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/project.v1alpha1.Project'
+        post:
+            tags:
+                - ProjectService
+            operationId: ProjectService_Save
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/project.v1alpha1.Project'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/common.Msg'
+        delete:
+            tags:
+                - ProjectService
+            operationId: ProjectService_Delete
+            parameters:
+                - name: name
+                  in: query
+                  schema:
+                    type: string
+                - name: cluster_id
+                  in: query
+                  schema:
+                    type: string
+                - name: id
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/common.Msg'
+    /api/v1alpha1/project/list:
+        get:
+            tags:
+                - ProjectService
+            operationId: ProjectService_List
+            parameters:
+                - name: name
+                  in: query
+                  schema:
+                    type: string
+                - name: cluster_id
+                  in: query
+                  schema:
+                    type: string
+                - name: id
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/project.v1alpha1.ProjectList'
+    /api/v1alpha1/project/ping:
+        get:
+            tags:
+                - ProjectService
+            operationId: ProjectService_Ping
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/common.Msg'
+    /api/v1alpha1/service/cis:
+        get:
+            tags:
+                - ServiceInterface
+            operationId: ServiceInterface_GetServiceCis
+            parameters:
+                - name: service_id
+                  in: query
+                  schema:
+                    type: string
+                - name: version
+                  in: query
+                  schema:
+                    type: string
+                - name: page
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: page_size
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/service.v1alpha1.CIsResult'
+    /api/v1alpha1/service/commit:
+        post:
+            tags:
+                - ServiceInterface
+            operationId: ServiceInterface_CommitWorklfow
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/service.v1alpha1.ServiceRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/common.Msg'
+    /api/v1alpha1/service/delete:
+        delete:
+            tags:
+                - ServiceInterface
+            operationId: ServiceInterface_Delete
+            parameters:
+                - name: name
+                  in: query
+                  schema:
+                    type: string
+                - name: page
+                  in: query
+                  schema:
+                    type: string
+                - name: page_size
+                  in: query
+                  schema:
+                    type: string
+                - name: project_id
+                  in: query
+                  schema:
+                    type: string
+                - name: id
+                  in: query
+                  schema:
+                    type: string
+                - name: workflow.id
+                  in: query
+                  schema:
+                    type: string
+                - name: workflow.name
+                  in: query
+                  schema:
+                    type: string
+                - name: workflow.description
+                  in: query
+                  schema:
+                    type: string
+                - name: wf_type
+                  in: query
+                  schema:
+                    type: string
+                - name: workflow_id
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/common.Msg'
+    /api/v1alpha1/service/get:
+        get:
+            tags:
+                - ServiceInterface
+            operationId: ServiceInterface_Get
+            parameters:
+                - name: name
+                  in: query
+                  schema:
+                    type: string
+                - name: page
+                  in: query
+                  schema:
+                    type: string
+                - name: page_size
+                  in: query
+                  schema:
+                    type: string
+                - name: project_id
+                  in: query
+                  schema:
+                    type: string
+                - name: id
+                  in: query
+                  schema:
+                    type: string
+                - name: workflow.id
+                  in: query
+                  schema:
+                    type: string
+                - name: workflow.name
+                  in: query
+                  schema:
+                    type: string
+                - name: workflow.description
+                  in: query
+                  schema:
+                    type: string
+                - name: wf_type
+                  in: query
+                  schema:
+                    type: string
+                - name: workflow_id
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/service.v1alpha1.Service'
+    /api/v1alpha1/service/list:
+        get:
+            tags:
+                - ServiceInterface
+            operationId: ServiceInterface_List
+            parameters:
+                - name: name
+                  in: query
+                  schema:
+                    type: string
+                - name: page
+                  in: query
+                  schema:
+                    type: string
+                - name: page_size
+                  in: query
+                  schema:
+                    type: string
+                - name: project_id
+                  in: query
+                  schema:
+                    type: string
+                - name: id
+                  in: query
+                  schema:
+                    type: string
+                - name: workflow.id
+                  in: query
+                  schema:
+                    type: string
+                - name: workflow.name
+                  in: query
+                  schema:
+                    type: string
+                - name: workflow.description
+                  in: query
+                  schema:
+                    type: string
+                - name: wf_type
+                  in: query
+                  schema:
+                    type: string
+                - name: workflow_id
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/service.v1alpha1.Services'
+    /api/v1alpha1/service/ping:
+        get:
+            tags:
+                - ServiceInterface
+            operationId: ServiceInterface_Ping
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/common.Msg'
+    /api/v1alpha1/service/save:
+        post:
+            tags:
+                - ServiceInterface
+            operationId: ServiceInterface_Save
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/service.v1alpha1.Service'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/common.Msg'
+    /api/v1alpha1/service/workflow:
+        get:
+            tags:
+                - ServiceInterface
+            operationId: ServiceInterface_GetWorkflow
+            parameters:
+                - name: name
+                  in: query
+                  schema:
+                    type: string
+                - name: page
+                  in: query
+                  schema:
+                    type: string
+                - name: page_size
+                  in: query
+                  schema:
+                    type: string
+                - name: project_id
+                  in: query
+                  schema:
+                    type: string
+                - name: id
+                  in: query
+                  schema:
+                    type: string
+                - name: workflow.id
+                  in: query
+                  schema:
+                    type: string
+                - name: workflow.name
+                  in: query
+                  schema:
+                    type: string
+                - name: workflow.description
+                  in: query
+                  schema:
+                    type: string
+                - name: wf_type
+                  in: query
+                  schema:
+                    type: string
+                - name: workflow_id
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/service.v1alpha1.Worklfow'
+        post:
+            tags:
+                - ServiceInterface
+            operationId: ServiceInterface_SaveWorkflow
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/service.v1alpha1.ServiceRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/common.Msg'
+    /api/v1alpha1/user:
+        get:
+            tags:
+                - UserInterface
+            operationId: UserInterface_GetUserInfo
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/user.v1alpha1.User'
+        post:
+            tags:
+                - UserInterface
+            operationId: UserInterface_SaveUser
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/user.v1alpha1.User'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/user.v1alpha1.User'
+        delete:
+            tags:
+                - UserInterface
+            operationId: UserInterface_DeleteUser
+            parameters:
+                - name: id
+                  in: query
+                  schema:
+                    type: string
+                - name: username
+                  in: query
+                  schema:
+                    type: string
+                - name: email
+                  in: query
+                  schema:
+                    type: string
+                - name: access_token
+                  in: query
+                  schema:
+                    type: string
+                - name: state
+                  in: query
+                  schema:
+                    type: string
+                - name: updated_at
+                  in: query
+                  schema:
+                    type: string
+                - name: sign_type
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/common.Msg'
+    /api/v1alpha1/user/signin:
+        post:
+            tags:
+                - UserInterface
+            operationId: UserInterface_SignIn
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/user.v1alpha1.SignIn'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/user.v1alpha1.User'
+    /api/v1alpha1/users:
+        get:
+            tags:
+                - UserInterface
+            operationId: UserInterface_GetUsers
+            parameters:
+                - name: page_size
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: page_number
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: username
+                  in: query
+                  schema:
+                    type: string
+                - name: email
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/user.v1alpha1.Users'
 components:
-    schemas: {}
+    schemas:
+        app.v1alpha1.App:
+            type: object
+            properties:
+                id:
+                    type: string
+                name:
+                    type: string
+                icon:
+                    type: string
+                app_type_id:
+                    type: string
+                app_type_name:
+                    type: string
+                versions:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/app.v1alpha1.AppVersion'
+                update_time:
+                    type: string
+        app.v1alpha1.AppList:
+            type: object
+            properties:
+                itemCount:
+                    type: integer
+                    format: int32
+                pageCount:
+                    type: integer
+                    format: int32
+                items:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/app.v1alpha1.App'
+        app.v1alpha1.AppRelease:
+            type: object
+            properties:
+                id:
+                    type: string
+                release_name:
+                    type: string
+                app_id:
+                    type: string
+                version_id:
+                    type: string
+                version:
+                    type: string
+                chart:
+                    type: string
+                cluster_id:
+                    type: string
+                project_id:
+                    type: string
+                user_id:
+                    type: string
+                namespace:
+                    type: string
+                config:
+                    type: string
+                status:
+                    type: string
+                is_test:
+                    type: boolean
+                manifest:
+                    type: string
+                notes:
+                    type: string
+                user_name:
+                    type: string
+                app_name:
+                    type: string
+                logs:
+                    type: string
+                create_time:
+                    type: string
+                update_time:
+                    type: string
+        app.v1alpha1.AppReleaseList:
+            type: object
+            properties:
+                items:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/app.v1alpha1.AppRelease'
+                count:
+                    type: integer
+                    format: int32
+        app.v1alpha1.AppReleaseReq:
+            type: object
+            properties:
+                app_id:
+                    type: string
+                version_id:
+                    type: string
+                cluster_id:
+                    type: string
+                project_id:
+                    type: string
+                id:
+                    type: string
+                release_name:
+                    type: string
+                namespace:
+                    type: string
+                page:
+                    type: integer
+                    format: int32
+                page_size:
+                    type: integer
+                    format: int32
+                app_name:
+                    type: string
+                version:
+                    type: string
+                app_type_id:
+                    type: string
+                repo_id:
+                    type: string
+                config:
+                    type: string
+        app.v1alpha1.AppReleaseResource:
+            type: object
+            properties:
+                name:
+                    type: string
+                kind:
+                    type: string
+                events:
+                    type: array
+                    items:
+                        type: string
+                started_at:
+                    type: string
+                status:
+                    type: array
+                    items:
+                        type: string
+        app.v1alpha1.AppReleasepResources:
+            type: object
+            properties:
+                items:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/app.v1alpha1.AppReleaseResource'
+        app.v1alpha1.AppRepo:
+            type: object
+            properties:
+                id:
+                    type: string
+                name:
+                    type: string
+                url:
+                    type: string
+                description:
+                    type: string
+        app.v1alpha1.AppRepoList:
+            type: object
+            properties:
+                items:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/app.v1alpha1.AppRepo'
+        app.v1alpha1.AppType:
+            type: object
+            properties:
+                id:
+                    type: string
+                name:
+                    type: string
+        app.v1alpha1.AppTypeList:
+            type: object
+            properties:
+                items:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/app.v1alpha1.AppType'
+        app.v1alpha1.AppVersion:
+            type: object
+            properties:
+                id:
+                    type: string
+                appId:
+                    type: string
+                app_name:
+                    type: string
+                chart:
+                    type: string
+                version:
+                    type: string
+                config:
+                    type: string
+                description:
+                    type: string
+                readme:
+                    type: string
+                status:
+                    type: string
+                test_result:
+                    type: string
+                metadata:
+                    $ref: '#/components/schemas/app.v1alpha1.Metadata'
+        app.v1alpha1.Dependency:
+            type: object
+            properties:
+                name:
+                    type: string
+                version:
+                    type: string
+                repository:
+                    type: string
+                condition:
+                    type: string
+                tags:
+                    type: array
+                    items:
+                        type: string
+                enabled:
+                    type: boolean
+                import_values:
+                    type: array
+                    items:
+                        type: string
+                alias:
+                    type: string
+        app.v1alpha1.FileUploadRequest:
+            type: object
+            properties:
+                icon:
+                    type: string
+                fileName:
+                    type: string
+                chunk:
+                    type: string
+                resume:
+                    type: boolean
+                finish:
+                    type: boolean
+        app.v1alpha1.Maintainer:
+            type: object
+            properties:
+                name:
+                    type: string
+                email:
+                    type: string
+                url:
+                    type: string
+        app.v1alpha1.Metadata:
+            type: object
+            properties:
+                name:
+                    type: string
+                home:
+                    type: string
+                sources:
+                    type: array
+                    items:
+                        type: string
+                version:
+                    type: string
+                description:
+                    type: string
+                keywords:
+                    type: array
+                    items:
+                        type: string
+                maintainers:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/app.v1alpha1.Maintainer'
+                icon:
+                    type: string
+                api_version:
+                    type: string
+                condition:
+                    type: string
+                tags:
+                    type: string
+                app_version:
+                    type: string
+                deprecated:
+                    type: boolean
+                annotations:
+                    type: object
+                    additionalProperties:
+                        type: string
+                kube_version:
+                    type: string
+                dependencies:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/app.v1alpha1.Dependency'
+                type:
+                    type: string
+        cluster.v1alpha1.BostionHost:
+            type: object
+            properties:
+                id:
+                    type: string
+                user:
+                    type: string
+                image_id:
+                    type: string
+                image:
+                    type: string
+                os:
+                    type: string
+                arch:
+                    type: string
+                hostname:
+                    type: string
+                external_ip:
+                    type: string
+                internal_ip:
+                    type: string
+                ssh_port:
+                    type: integer
+                    format: int32
+                cluster_id:
+                    type: string
+        cluster.v1alpha1.Cluster:
+            type: object
+            properties:
+                id:
+                    type: string
+                name:
+                    type: string
+                version:
+                    type: string
+                api_server_address:
+                    type: string
+                config:
+                    type: string
+                addons:
+                    type: string
+                addons_config:
+                    type: string
+                status:
+                    type: integer
+                    format: uint32
+                type:
+                    type: string
+                kube_config:
+                    type: string
+                public_key:
+                    type: string
+                private_key:
+                    type: string
+                connections:
+                    type: string
+                certificate_authority:
+                    type: string
+                region:
+                    type: string
+                ip_cidr:
+                    type: string
+                access_id:
+                    type: string
+                access_key:
+                    type: string
+                bostion_host:
+                    $ref: '#/components/schemas/cluster.v1alpha1.BostionHost'
+                nodes:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/cluster.v1alpha1.Node'
+                node_groups:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/cluster.v1alpha1.NodeGroup'
+                status_string:
+                    type: string
+        cluster.v1alpha1.ClusterArgs:
+            type: object
+            properties:
+                id:
+                    type: string
+                name:
+                    type: string
+                type:
+                    type: string
+                public_key:
+                    type: string
+                region:
+                    type: string
+                access_id:
+                    type: string
+                access_key:
+                    type: string
+                nodes:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/cluster.v1alpha1.NodeArgs'
+                node_id:
+                    type: string
+                private_key:
+                    type: string
+        cluster.v1alpha1.ClusterList:
+            type: object
+            properties:
+                clusters:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/cluster.v1alpha1.Cluster'
+        cluster.v1alpha1.ClusterLogsRequest:
+            type: object
+            properties:
+                cluster_id:
+                    type: string
+                tail_lines:
+                    type: integer
+                    format: int32
+                cluster_name:
+                    type: string
+                current_line:
+                    type: integer
+                    format: int32
+        cluster.v1alpha1.ClusterLogsResponse:
+            type: object
+            properties:
+                logs:
+                    type: string
+                last_line:
+                    type: integer
+                    format: int32
+        cluster.v1alpha1.Node:
+            type: object
+            properties:
+                id:
+                    type: string
+                name:
+                    type: string
+                labels:
+                    type: string
+                kernel:
+                    type: string
+                container_runtime:
+                    type: string
+                kubelet:
+                    type: string
+                kube_proxy:
+                    type: string
+                ssh_port:
+                    type: integer
+                    format: int32
+                grpc_port:
+                    type: integer
+                    format: int32
+                internal_ip:
+                    type: string
+                external_ip:
+                    type: string
+                user:
+                    type: string
+                role:
+                    type: string
+                status:
+                    type: integer
+                    format: uint32
+                error_info:
+                    type: string
+                zone:
+                    type: string
+                ip_cidr:
+                    type: string
+                gpu_spec:
+                    type: string
+                system_disk:
+                    type: integer
+                    format: int32
+                data_disk:
+                    type: integer
+                    format: int32
+                node_price:
+                    type: number
+                    format: double
+                pod_price:
+                    type: number
+                    format: double
+                internet_max_bandwidth_out:
+                    type: integer
+                    format: int32
+                cluster_id:
+                    type: string
+                node_group_id:
+                    type: string
+                status_string:
+                    type: string
+        cluster.v1alpha1.NodeArgs:
+            type: object
+            properties:
+                ip:
+                    type: string
+                user:
+                    type: string
+                role:
+                    type: string
+                id:
+                    type: string
+        cluster.v1alpha1.NodeGroup:
+            type: object
+            properties:
+                id:
+                    type: string
+                name:
+                    type: string
+                type:
+                    type: string
+                image:
+                    type: string
+                os:
+                    type: string
+                arch:
+                    type: string
+                cpu:
+                    type: integer
+                    format: int32
+                memory:
+                    type: number
+                    format: double
+                gpu:
+                    type: integer
+                    format: int32
+                node_init_script:
+                    type: string
+                min_size:
+                    type: integer
+                    format: int32
+                max_size:
+                    type: integer
+                    format: int32
+                target_size:
+                    type: integer
+                    format: int32
+                system_disk:
+                    type: integer
+                    format: int32
+                data_disk:
+                    type: integer
+                    format: int32
+                cluster_id:
+                    type: string
+        cluster.v1alpha1.Regions:
+            type: object
+            properties:
+                regions:
+                    type: array
+                    items:
+                        type: string
+        common.Msg:
+            type: object
+            properties:
+                Reason:
+                    type: integer
+                    format: enum
+                Message:
+                    type: string
+        project.v1alpha1.Business:
+            type: object
+            properties:
+                name:
+                    type: string
+                technologys:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/project.v1alpha1.Technology'
+        project.v1alpha1.Project:
+            type: object
+            properties:
+                id:
+                    type: string
+                name:
+                    type: string
+                description:
+                    type: string
+                cluster_id:
+                    type: string
+                namespace:
+                    type: string
+                state:
+                    type: string
+                business:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/project.v1alpha1.Business'
+                business_technology:
+                    type: string
+        project.v1alpha1.ProjectList:
+            type: object
+            properties:
+                projects:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/project.v1alpha1.Project'
+        project.v1alpha1.Technology:
+            type: object
+            properties:
+                name:
+                    type: string
+        service.v1alpha1.CI:
+            type: object
+            properties:
+                id:
+                    type: string
+                version:
+                    type: string
+                branch:
+                    type: string
+                tag:
+                    type: string
+                args:
+                    type: string
+                description:
+                    type: string
+                workflow_name:
+                    type: string
+                service_id:
+                    type: string
+                state:
+                    type: string
+                created_at:
+                    type: string
+                username:
+                    type: string
+                user_id:
+                    type: string
+                logs:
+                    type: string
+        service.v1alpha1.CIsResult:
+            type: object
+            properties:
+                cis:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/service.v1alpha1.CI'
+                total:
+                    type: string
+        service.v1alpha1.Port:
+            type: object
+            properties:
+                id:
+                    type: string
+                ingress_path:
+                    type: string
+                container_port:
+                    type: integer
+                    format: int32
+                protocol:
+                    type: string
+        service.v1alpha1.Service:
+            type: object
+            properties:
+                id:
+                    type: string
+                name:
+                    type: string
+                code_repo:
+                    type: string
+                replicas:
+                    type: integer
+                    format: int32
+                cpu:
+                    type: number
+                    format: float
+                limit_cpu:
+                    type: number
+                    format: float
+                gpu:
+                    type: number
+                    format: float
+                limit_gpu:
+                    type: number
+                    format: float
+                memory:
+                    type: number
+                    format: float
+                limit_memory:
+                    type: number
+                    format: float
+                disk:
+                    type: number
+                    format: float
+                limit_disk:
+                    type: number
+                    format: float
+                workflow_id:
+                    type: string
+                ports:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/service.v1alpha1.Port'
+                project_id:
+                    type: string
+                business:
+                    type: string
+                technology:
+                    type: string
+                project_name:
+                    type: string
+        service.v1alpha1.ServiceRequest:
+            type: object
+            properties:
+                name:
+                    type: string
+                page:
+                    type: string
+                page_size:
+                    type: string
+                project_id:
+                    type: string
+                id:
+                    type: string
+                workflow:
+                    $ref: '#/components/schemas/service.v1alpha1.Worklfow'
+                wf_type:
+                    type: string
+                workflow_id:
+                    type: string
+        service.v1alpha1.Services:
+            type: object
+            properties:
+                services:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/service.v1alpha1.Service'
+                total:
+                    type: string
+        service.v1alpha1.WfStep:
+            type: object
+            properties:
+                name:
+                    type: string
+                tasks:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/service.v1alpha1.WfTask'
+                default:
+                    type: boolean
+        service.v1alpha1.WfTask:
+            type: object
+            properties:
+                name:
+                    type: string
+                template_name:
+                    type: string
+                default:
+                    type: boolean
+        service.v1alpha1.WfTemplate:
+            type: object
+            properties:
+                name:
+                    type: string
+                image:
+                    type: string
+                command:
+                    type: array
+                    items:
+                        type: string
+                args:
+                    type: array
+                    items:
+                        type: string
+                source:
+                    type: string
+                is_script:
+                    type: boolean
+        service.v1alpha1.Worklfow:
+            type: object
+            properties:
+                id:
+                    type: string
+                name:
+                    type: string
+                description:
+                    type: string
+                steps:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/service.v1alpha1.WfStep'
+                templates:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/service.v1alpha1.WfTemplate'
+        user.v1alpha1.SignIn:
+            type: object
+            properties:
+                email:
+                    type: string
+                password:
+                    type: string
+                access_token:
+                    type: string
+                sign_type:
+                    type: string
+                username:
+                    type: string
+        user.v1alpha1.User:
+            type: object
+            properties:
+                id:
+                    type: string
+                username:
+                    type: string
+                email:
+                    type: string
+                access_token:
+                    type: string
+                state:
+                    type: string
+                updated_at:
+                    type: string
+                sign_type:
+                    type: string
+        user.v1alpha1.Users:
+            type: object
+            properties:
+                users:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/user.v1alpha1.User'
+                total_count:
+                    type: integer
+                    format: int32
+tags:
+    - name: AppInterface
+    - name: ClusterInterface
+    - name: ProjectService
+    - name: ServiceInterface
+    - name: UserInterface

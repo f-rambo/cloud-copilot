@@ -8,7 +8,7 @@ package v1alpha1
 
 import (
 	context "context"
-	common "github.com/f-rambo/ocean/api/common"
+	common "github.com/f-rambo/cloud-copilot/api/common"
 	http "github.com/go-kratos/kratos/v2/transport/http"
 	binding "github.com/go-kratos/kratos/v2/transport/http/binding"
 	emptypb "google.golang.org/protobuf/types/known/emptypb"

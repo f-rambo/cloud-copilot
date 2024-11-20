@@ -118,22 +118,22 @@ extract_tar() {
     }
 }
 
-function download_ocean() {
-    log "download ocean ${SERVICE_VERSION} ${ARCH}"
-    ocean_path="${RESOURCE}/ocean/${SERVICE_VERSION}"
-    create_directory "$ocean_path"
-    ocean_tarfile="linux-${ARCH}-ocean-${SERVICE_VERSION}.tar.gz"
-    if ! download_file "https://github.com/f-rambo/ocean/releases/download/${SERVICE_VERSION}/${ocean_tarfile}" "$ocean_tarfile" "${ocean_tarfile}.sha256sum"; then
+function download_cloud_copilot() {
+    log "download cloud_copilot ${SERVICE_VERSION} ${ARCH}"
+    cloud_copilot_path="${RESOURCE}/cloud_copilot/${SERVICE_VERSION}"
+    create_directory "$cloud_copilot_path"
+    cloud_copilot_tarfile="linux-${ARCH}-cloud_copilot-${SERVICE_VERSION}.tar.gz"
+    if ! download_file "https://github.com/f-rambo/cloud-copilot/releases/download/${SERVICE_VERSION}/${cloud_copilot_tarfile}" "$cloud_copilot_tarfile" "${cloud_copilot_tarfile}.sha256sum"; then
         log "Failed to download file"
         return 1
     fi
-    if ! verify_checksum "$ocean_tarfile" "${ocean_tarfile}.sha256sum"; then
+    if ! verify_checksum "$cloud_copilot_tarfile" "${cloud_copilot_tarfile}.sha256sum"; then
         log "Checksum verification failed"
-        rm -f "$ocean_tarfile" "${ocean_tarfile}.sha256sum"
+        rm -f "$cloud_copilot_tarfile" "${cloud_copilot_tarfile}.sha256sum"
         return 1
     fi
-    extract_tar "$ocean_tarfile" "$ocean_path"
-    rm -f "$ocean_tarfile" "${ocean_tarfile}.sha256sum"
+    extract_tar "$cloud_copilot_tarfile" "$cloud_copilot_path"
+    rm -f "$cloud_copilot_tarfile" "${cloud_copilot_tarfile}.sha256sum"
 }
 
 function download_ship() {
@@ -246,7 +246,7 @@ function pull_images() {
 }
 
 create_directory "$RESOURCE"
-download_ocean
+download_cloud_copilot
 download_ship
 download_containerd
 download_kubeadm_kubelet
@@ -538,7 +538,7 @@ log "Setup completed successfully"
 	ServiceShell = `#!/bin/bash
 set -e
 
-log_file="/var/log/ocean_ship_start.log"
+log_file="/var/log/cloud_copilot_ship_start.log"
 
 log() {
     echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a $log_file
@@ -550,7 +550,7 @@ VERSION=${3:-"0.0.1"}
 RESOURCE=${5:-"$HOME/resource"}
 SHELL_PATH=${6:-"$HOME/shell"}
 
-OCEAN_PATH="$HOME/app/ocean"
+OCEAN_PATH="$HOME/app/cloud_copilot"
 SHIP_PATH="$HOME/app/ship"
 
 ARCH=$(uname -m)
@@ -567,7 +567,7 @@ x86_64)
     ;;
 esac
 
-function start_ocean() {
+function start_cloud_copilot() {
     if [ ! -d "$OCEAN_PATH" ]; then
         mkdir -p "$OCEAN_PATH"
     fi
@@ -575,7 +575,7 @@ function start_ocean() {
         echo "Error: No write permission for $OCEAN_PATH"
         exit 1
     fi
-    mv $RESOURCE/ocean/${VERSION}/${ARCH}/* $OCEAN_PATH/
+    mv $RESOURCE/cloud_copilot/${VERSION}/${ARCH}/* $OCEAN_PATH/
     if [ ! -f "$OCEAN_PATH/configs/config.yaml" ]; then
         echo "Error: Config file $OCEAN_PATH/configs/config.yaml not found"
         exit 1
@@ -583,7 +583,7 @@ function start_ocean() {
     sed -i 's/^  env: .*/  env: $ENV/' $OCEAN_PATH/configs/config.yaml
     sed -i 's/^  shell: .*/  shell: $SHELL_PATH/' $OCEAN_PATH/configs/config.yaml
     sed -i 's/^  resource: .*/  resource: $RESOURCE/' $OCEAN_PATH/configs/config.yaml
-    OCEAN_SYSTEMED_CONF="/etc/systemd/system/ocean.service"
+    OCEAN_SYSTEMED_CONF="/etc/systemd/system/cloud_copilot.service"
     if [ ! -w "/etc/systemd/system" ]; then
         echo "Error: No write permission for /etc/systemd/system"
         exit 1
@@ -595,7 +595,7 @@ After=network.target
 
 [Service]
 User=$USER
-ExecStart=$OCEAN_PATH/bin/ocean -conf $OCEAN_PATH/configs/config.yaml
+ExecStart=$OCEAN_PATH/bin/cloud_copilot -conf $OCEAN_PATH/configs/config.yaml
 Restart=on-failure
 WorkingDirectory=$OCEAN_PATH
 
@@ -603,7 +603,7 @@ WorkingDirectory=$OCEAN_PATH
 WantedBy=multi-user.target
 EOF
     systemctl daemon-reload
-    systemctl start ocean
+    systemctl start cloud_copilot
 }
 
 function start_ship() {
@@ -646,8 +646,8 @@ EOF
 }
 
 case $SERVICE in
-"ocean")
-    start_ocean
+"cloud_copilot")
+    start_cloud_copilot
     ;;
 "ship")
     start_ship
@@ -662,7 +662,7 @@ SERVER_IP=$1
 SERVER_PORT=$2
 SERVER_USER=$3
 PRIVATE_KEY=$4
-OCEAN_DATA=${5:-"$HOME/.ocean"}
+OCEAN_DATA=${5:-"$HOME/.cloud_copilot"}
 RESOURCE=${6:-"$HOME/resource"}
 SHELL_PATH=${7:-"$HOME/shell"}
 PRIVATE_KEY_PATH="/tmp/private_key"
@@ -760,7 +760,7 @@ function move_files() {
 function mvfile() {
     log "Moving files..."
     move_files $RESOURCE /home/$SERVER_USER/resource $SERVER_USER
-    move_files $OCEAN_DATA /home/$SERVER_USER/.ocean $SERVER_USER
+    move_files $OCEAN_DATA /home/$SERVER_USER/.cloud_copilot $SERVER_USER
     move_files $SHELL_PATH /home/$SERVER_USER/shell $SERVER_USER
 }
 

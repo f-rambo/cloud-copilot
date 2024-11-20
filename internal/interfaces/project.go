@@ -4,11 +4,11 @@ import (
 	"context"
 	"errors"
 
-	"github.com/f-rambo/ocean/api/common"
-	"github.com/f-rambo/ocean/api/project/v1alpha1"
-	"github.com/f-rambo/ocean/internal/biz"
-	"github.com/f-rambo/ocean/internal/conf"
-	"github.com/f-rambo/ocean/utils"
+	"github.com/f-rambo/cloud-copilot/api/common"
+	"github.com/f-rambo/cloud-copilot/api/project/v1alpha1"
+	"github.com/f-rambo/cloud-copilot/internal/biz"
+	"github.com/f-rambo/cloud-copilot/internal/conf"
+	"github.com/f-rambo/cloud-copilot/utils"
 	"github.com/go-kratos/kratos/v2/log"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
@@ -40,7 +40,7 @@ func (p *ProjectInterface) Save(ctx context.Context, project *v1alpha1.Project) 
 			return nil, errors.New("technology type is required")
 		}
 	}
-	notProjectNames := []string{"admin", "system", "public", "default", "kube", "kubernetes", "kube-public", "kube-system", "ocean"}
+	notProjectNames := []string{"admin", "system", "public", "default", "kube", "kubernetes", "kube-public", "kube-system", "cloud-copilot"}
 	if utils.Contains(notProjectNames, project.Name) {
 		return nil, errors.New("project name is not allowed")
 	}

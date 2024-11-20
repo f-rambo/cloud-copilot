@@ -19,4 +19,4 @@ EXPOSE 8000
 EXPOSE 9000
 VOLUME /data/conf
 
-CMD ["./bin/ocean", "-conf", "./configs/config.yaml"]
+CMD ["./bin/cloud-copilot", "-conf", "./configs/config.yaml"]

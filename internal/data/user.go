@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/f-rambo/ocean/internal/biz"
-	"github.com/f-rambo/ocean/internal/conf"
+	"github.com/f-rambo/cloud-copilot/internal/biz"
+	"github.com/f-rambo/cloud-copilot/internal/conf"
 	"github.com/go-kratos/kratos/v2/log"
 	jwtv5 "github.com/golang-jwt/jwt/v5"
 	"github.com/pkg/errors"

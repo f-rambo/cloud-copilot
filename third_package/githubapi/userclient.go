@@ -3,8 +3,8 @@ package githubapi
 import (
 	"context"
 
-	"github.com/f-rambo/ocean/internal/biz"
-	"github.com/f-rambo/ocean/internal/conf"
+	"github.com/f-rambo/cloud-copilot/internal/biz"
+	"github.com/f-rambo/cloud-copilot/internal/conf"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/pkg/errors"
 )

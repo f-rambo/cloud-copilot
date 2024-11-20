@@ -3,7 +3,7 @@ package biz
 import (
 	"context"
 
-	"github.com/f-rambo/ocean/internal/conf"
+	"github.com/f-rambo/cloud-copilot/internal/conf"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-kratos/kratos/v2/transport"
 	"github.com/google/wire"

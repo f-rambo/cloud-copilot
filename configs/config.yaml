@@ -3,7 +3,7 @@ cluster:
   name: ""
   type: local
 server:
-  name: ocean
+  name: cloud-copilot
   version: "0.0.1"
   http:
     network: tcp
@@ -13,7 +13,7 @@ server:
     addr: 0.0.0.0:9000
 data:
   driver: sqlite
-  database: ocean
+  database: cloud-copilot
   host: ""
   port: 3306
   username: ""

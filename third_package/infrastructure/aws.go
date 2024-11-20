@@ -15,9 +15,9 @@ import (
 	ec2Types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2"
 	elasticloadbalancingv2Types "github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2/types"
-	"github.com/f-rambo/ocean/internal/biz"
-	"github.com/f-rambo/ocean/internal/conf"
-	"github.com/f-rambo/ocean/utils"
+	"github.com/f-rambo/cloud-copilot/internal/biz"
+	"github.com/f-rambo/cloud-copilot/internal/conf"
+	"github.com/f-rambo/cloud-copilot/utils"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/pkg/errors"
 )

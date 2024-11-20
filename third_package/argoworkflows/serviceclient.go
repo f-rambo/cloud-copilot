@@ -7,8 +7,8 @@ import (
 	"strings"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/f-rambo/ocean/internal/biz"
-	"github.com/f-rambo/ocean/internal/conf"
+	"github.com/f-rambo/cloud-copilot/internal/biz"
+	"github.com/f-rambo/cloud-copilot/internal/conf"
 	"github.com/go-kratos/kratos/v2/log"
 )
 

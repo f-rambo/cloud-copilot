@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package common;
 
-option go_package = "github.com/f-rambo/ocean/api/common;";
+option go_package = "github.com/f-rambo/cloud-copilot/api/common;";
 
 enum ErrorReason {
   SUCCEED = 0;

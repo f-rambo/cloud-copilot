@@ -7,7 +7,7 @@
 package v1alpha1
 
 import (
-	common "github.com/f-rambo/ocean/api/common"
+	common "github.com/f-rambo/cloud-copilot/api/common"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"

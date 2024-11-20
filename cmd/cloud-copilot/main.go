@@ -7,9 +7,9 @@ import (
 	"os"
 	"runtime"
 
-	"github.com/f-rambo/ocean/internal/biz"
-	"github.com/f-rambo/ocean/internal/conf"
-	"github.com/f-rambo/ocean/utils"
+	"github.com/f-rambo/cloud-copilot/internal/biz"
+	"github.com/f-rambo/cloud-copilot/internal/conf"
+	"github.com/f-rambo/cloud-copilot/utils"
 	"github.com/go-kratos/kratos/v2"
 	"github.com/go-kratos/kratos/v2/config"
 	"github.com/go-kratos/kratos/v2/config/file"

@@ -7,8 +7,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/f-rambo/ocean/internal/conf"
-	"github.com/f-rambo/ocean/utils"
+	"github.com/f-rambo/cloud-copilot/internal/conf"
+	"github.com/f-rambo/cloud-copilot/utils"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"

@@ -75,7 +75,7 @@ func golangCiDefaultWorklfows() *wfv1.Workflow {
 		Kind:       GetKind(),
 	}
 	objMeta := metav1.ObjectMeta{
-		GenerateName: "golang-ci-default-ocean-",
+		GenerateName: "golang-ci-default-cloud-copilot-",
 	}
 	argu := wfv1.Arguments{
 		Parameters: []wfv1.Parameter{

@@ -6,9 +6,9 @@ import (
 	"strings"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/f-rambo/ocean/api/common"
-	v1alpha1 "github.com/f-rambo/ocean/api/service/v1alpha1"
-	"github.com/f-rambo/ocean/internal/biz"
+	"github.com/f-rambo/cloud-copilot/api/common"
+	v1alpha1 "github.com/f-rambo/cloud-copilot/api/service/v1alpha1"
+	"github.com/f-rambo/cloud-copilot/internal/biz"
 	"github.com/pkg/errors"
 )
 

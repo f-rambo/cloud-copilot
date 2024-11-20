@@ -1,4 +1,4 @@
-module github.com/f-rambo/ocean
+module github.com/f-rambo/cloud-copilot
 
 go 1.22.3
 

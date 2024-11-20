@@ -10,11 +10,11 @@ import (
 	"strings"
 	"time"
 
-	clusterv1alpha1 "github.com/f-rambo/ocean/api/cluster/v1alpha1"
-	"github.com/f-rambo/ocean/api/common"
-	"github.com/f-rambo/ocean/internal/biz"
-	"github.com/f-rambo/ocean/internal/conf"
-	"github.com/f-rambo/ocean/utils"
+	clusterv1alpha1 "github.com/f-rambo/cloud-copilot/api/cluster/v1alpha1"
+	"github.com/f-rambo/cloud-copilot/api/common"
+	"github.com/f-rambo/cloud-copilot/internal/biz"
+	"github.com/f-rambo/cloud-copilot/internal/conf"
+	"github.com/f-rambo/cloud-copilot/utils"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-kratos/kratos/v2/metadata"
 	mmd "github.com/go-kratos/kratos/v2/middleware/metadata"
@@ -212,7 +212,7 @@ func (cc *ClusterInfrastructure) MigrateToBostionHost(ctx context.Context, clust
 		return err
 	}
 	syncShellPath := utils.MergePath(shellPath, SyncShell)
-	oceanHomePath, err := utils.GetServerStorePathByNames()
+	cloudCopilotHomePath, err := utils.GetServerStorePathByNames()
 	if err != nil {
 		return err
 	}
@@ -221,7 +221,7 @@ func (cc *ClusterInfrastructure) MigrateToBostionHost(ctx context.Context, clust
 		cast.ToString(cluster.BostionHost.SshPort),
 		cluster.BostionHost.User,
 		cluster.PrivateKey,
-		oceanHomePath,
+		cloudCopilotHomePath,
 		shellPath,
 		resourcePath,
 	)

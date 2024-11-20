@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/f-rambo/ocean/internal/biz"
-	"github.com/f-rambo/ocean/internal/conf"
-	"github.com/f-rambo/ocean/utils"
+	"github.com/f-rambo/cloud-copilot/internal/biz"
+	"github.com/f-rambo/cloud-copilot/internal/conf"
+	"github.com/f-rambo/cloud-copilot/utils"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/wire"
 	"github.com/pkg/errors"
@@ -33,7 +33,7 @@ func (d DBDriver) String() string {
 }
 
 const (
-	DatabaseName = "ocean.db"
+	DatabaseName = "cloud-copilot.db"
 )
 
 type Data struct {

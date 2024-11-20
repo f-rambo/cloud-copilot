@@ -7,8 +7,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/f-rambo/ocean/internal/biz"
-	"github.com/f-rambo/ocean/internal/conf"
+	"github.com/f-rambo/cloud-copilot/internal/biz"
+	"github.com/f-rambo/cloud-copilot/internal/conf"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/pkg/errors"
 	appv1 "k8s.io/api/apps/v1"
@@ -177,13 +177,13 @@ func (cr *ClusterRuntime) MigrateToCluster(ctx context.Context, cluster *biz.Clu
 		return err
 	}
 	var replicas int32 = 1
-	oceanPodSpec := corev1.PodSpec{
+	cloudCopilotPodSpec := corev1.PodSpec{
 		ServiceAccountName: serviceAccountObj.Name,
 		HostNetwork:        true,
 		Containers: []corev1.Container{
 			{
 				Name:  fmt.Sprintf("%s-app-container", serverName),
-				Image: "frambo/ocean:v0.0.1",
+				Image: "frambo/cloud-copilot:v0.0.1",
 				Env:   []corev1.EnvVar{},
 				Ports: []corev1.ContainerPort{
 					{ContainerPort: 8000},
@@ -220,7 +220,7 @@ func (cr *ClusterRuntime) MigrateToCluster(ctx context.Context, cluster *biz.Clu
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: labels,
 				},
-				Spec: oceanPodSpec,
+				Spec: cloudCopilotPodSpec,
 			},
 		},
 	}, metav1.CreateOptions{})

@@ -6,12 +6,12 @@ import (
 	"io"
 	"os"
 
-	"github.com/f-rambo/ocean/api/cluster/v1alpha1"
-	"github.com/f-rambo/ocean/api/common"
-	"github.com/f-rambo/ocean/internal/biz"
-	"github.com/f-rambo/ocean/internal/conf"
-	sidecarCluster "github.com/f-rambo/ocean/internal/repository/sidecar/api/cluster"
-	"github.com/f-rambo/ocean/utils"
+	"github.com/f-rambo/cloud-copilot/api/cluster/v1alpha1"
+	"github.com/f-rambo/cloud-copilot/api/common"
+	"github.com/f-rambo/cloud-copilot/internal/biz"
+	"github.com/f-rambo/cloud-copilot/internal/conf"
+	sidecarCluster "github.com/f-rambo/cloud-copilot/internal/repository/sidecar/api/cluster"
+	"github.com/f-rambo/cloud-copilot/utils"
 	"github.com/fsnotify/fsnotify"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-kratos/kratos/v2/transport/grpc"
@@ -307,16 +307,15 @@ func (c *ClusterInterface) GetLogs(stream v1alpha1.ClusterInterface_GetLogsServe
 			return err
 		}
 
-		// get ship logs
-		shipLogContentChan := make(chan string)
-		defer close(shipLogContentChan)
+		sidecarLogContentChan := make(chan string)
+		defer close(sidecarLogContentChan)
 		cluster, err := c.clusterUc.Get(ctx, req.ClusterId)
 		if err != nil {
 			return err
 		}
 		if cluster != nil {
 			for _, node := range cluster.Nodes {
-				err = c.getShipLogContent(ctx, shipLogContentChan, node.InternalIP, 22)
+				err = c.getSidecarLogContent(ctx, sidecarLogContentChan, node.InternalIP, 22)
 				if err != nil {
 					return err
 				}
@@ -342,14 +341,14 @@ func (c *ClusterInterface) GetLogs(stream v1alpha1.ClusterInterface_GetLogsServe
 							}
 						}
 					}
-				case shipLogContent, ok := <-shipLogContentChan:
+				case sidecarLogContent, ok := <-sidecarLogContentChan:
 					if !ok {
-						c.log.Info("Ship GetLogs stream closed by ship content")
+						c.log.Info("Sidecar GetLogs stream closed by sidecar content")
 						return
 					}
-					err = stream.Send(&v1alpha1.ClusterLogsResponse{Logs: shipLogContent})
+					err = stream.Send(&v1alpha1.ClusterLogsResponse{Logs: sidecarLogContent})
 					if err != nil {
-						c.log.Errorf("Error sending ship log message: %v", err)
+						c.log.Errorf("Error sending sidecar log message: %v", err)
 						return
 					}
 				case err, ok := <-watcher.Errors:
@@ -366,7 +365,7 @@ func (c *ClusterInterface) GetLogs(stream v1alpha1.ClusterInterface_GetLogsServe
 	}
 }
 
-func (c *ClusterInterface) getShipLogContent(ctx context.Context, contentChan chan string, nodeIp string, nodePort int32) error {
+func (c *ClusterInterface) getSidecarLogContent(ctx context.Context, contentChan chan string, nodeIp string, nodePort int32) error {
 	conn, err := grpc.DialInsecure(ctx, grpc.WithEndpoint(fmt.Sprintf("%s:%d", nodeIp, nodePort)))
 	if err != nil {
 		return err
@@ -384,7 +383,7 @@ func (c *ClusterInterface) getShipLogContent(ctx context.Context, contentChan ch
 				return
 			}
 			if err != nil {
-				c.log.Errorf("Error receiving ship log message: %v", err)
+				c.log.Errorf("Error receiving sidecar log message: %v", err)
 				return
 			}
 			contentChan <- msg.Log

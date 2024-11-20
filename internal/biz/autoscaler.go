@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/f-rambo/ocean/utils"
+	"github.com/f-rambo/cloud-copilot/utils"
 	"github.com/spf13/cast"
 )
 

@@ -4,9 +4,9 @@ import (
 	"context"
 	"encoding/json"
 
-	autoscaler "github.com/f-rambo/ocean/api/autoscaler"
-	"github.com/f-rambo/ocean/internal/biz"
-	"github.com/f-rambo/ocean/internal/conf"
+	autoscaler "github.com/f-rambo/cloud-copilot/api/autoscaler"
+	"github.com/f-rambo/cloud-copilot/internal/biz"
+	"github.com/f-rambo/cloud-copilot/internal/conf"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/pkg/errors"
 	"github.com/spf13/cast"

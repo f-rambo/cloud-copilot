@@ -8,7 +8,7 @@ GO_FILES := $(filter-out $(wildcard $(PACKAGE_PATH)/*biz*.go), $(GO_FILES))
 GOHOSTOS:=$(shell go env GOHOSTOS)
 GOPATH:=$(shell go env GOPATH)
 VERSION=v0.0.1
-SERVER_NAME=ocean
+SERVER_NAME=cloud-copilot
 AUTHOR=frambos
 IMG=$(AUTHOR)/$(SERVER_NAME):$(VERSION)
 PLATFORMS = linux/arm64 linux/amd64
@@ -57,12 +57,12 @@ repo:
 
 .PHONY: build
 build:
-	mkdir -p bin/ && go build -ldflags "-X main.Version=$(VERSION)" -o ./bin/ ./cmd/ocean
+	mkdir -p bin/ && go build -ldflags "-X main.Version=$(VERSION)" -o ./bin/ ./cmd/cloud-copilot
 
 .PHONY: generate
 generate:
 	go mod tidy
-	@cd cmd/ocean && wire && cd -
+	@cd cmd/cloud-copilot && wire && cd -
 
 
 .PHONY: docker-build
@@ -83,7 +83,7 @@ docker-push:
 
 .PHONY: run
 run:
-	go run ./cmd/ocean -conf ./configs/config.yaml
+	go run ./cmd/cloud-copilot -conf ./configs/config.yaml
 
 .PHONY: multi-platform-build
 multi-platform-build:

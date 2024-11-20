@@ -9,8 +9,8 @@ import (
 	openapi "github.com/alibabacloud-go/darabonba-openapi/v2/client"
 	ecs "github.com/alibabacloud-go/ecs-20140526/v4/client"
 	"github.com/alibabacloud-go/tea/tea"
-	"github.com/f-rambo/ocean/internal/biz"
-	"github.com/f-rambo/ocean/internal/conf"
+	"github.com/f-rambo/cloud-copilot/internal/biz"
+	"github.com/f-rambo/cloud-copilot/internal/conf"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/pkg/errors"
 )

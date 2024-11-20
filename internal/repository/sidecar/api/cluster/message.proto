@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package cluster;
 
-option go_package = "github.com/f-rambo/ocean/internal/repository/sidecar/api/cluster;";
+option go_package = "github.com/f-rambo/cloud-copilot/internal/repository/sidecar/api/cluster;";
 
 
 message LogRequest {

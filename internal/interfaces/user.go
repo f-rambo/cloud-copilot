@@ -4,10 +4,10 @@ import (
 	"context"
 	"strings"
 
-	"github.com/f-rambo/ocean/api/common"
-	"github.com/f-rambo/ocean/api/user/v1alpha1"
-	"github.com/f-rambo/ocean/internal/biz"
-	"github.com/f-rambo/ocean/internal/conf"
+	"github.com/f-rambo/cloud-copilot/api/common"
+	"github.com/f-rambo/cloud-copilot/api/user/v1alpha1"
+	"github.com/f-rambo/cloud-copilot/internal/biz"
+	"github.com/f-rambo/cloud-copilot/internal/conf"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/emptypb"
 )

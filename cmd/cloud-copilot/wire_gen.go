@@ -7,16 +7,16 @@
 package main
 
 import (
-	"github.com/f-rambo/ocean/internal/biz"
-	"github.com/f-rambo/ocean/internal/conf"
-	"github.com/f-rambo/ocean/internal/data"
-	"github.com/f-rambo/ocean/internal/interfaces"
-	"github.com/f-rambo/ocean/internal/server"
-	"github.com/f-rambo/ocean/third_package/argoworkflows"
-	"github.com/f-rambo/ocean/third_package/githubapi"
-	"github.com/f-rambo/ocean/third_package/helm"
-	"github.com/f-rambo/ocean/third_package/infrastructure"
-	"github.com/f-rambo/ocean/third_package/kubernetes"
+	"github.com/f-rambo/cloud-copilot/internal/biz"
+	"github.com/f-rambo/cloud-copilot/internal/conf"
+	"github.com/f-rambo/cloud-copilot/internal/data"
+	"github.com/f-rambo/cloud-copilot/internal/interfaces"
+	"github.com/f-rambo/cloud-copilot/internal/server"
+	"github.com/f-rambo/cloud-copilot/third_package/argoworkflows"
+	"github.com/f-rambo/cloud-copilot/third_package/githubapi"
+	"github.com/f-rambo/cloud-copilot/third_package/helm"
+	"github.com/f-rambo/cloud-copilot/third_package/infrastructure"
+	"github.com/f-rambo/cloud-copilot/third_package/kubernetes"
 	"github.com/go-kratos/kratos/v2"
 	"github.com/go-kratos/kratos/v2/log"
 )
