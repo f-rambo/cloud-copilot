@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package user;
+
+import "internal/repository/clusterruntime/api/user/message.proto";
+
+option go_package = "github.com/f-rambo/cloud-copilot/internal/repository/clusterruntime/api/user;";
+
+service UserInterface {
+      rpc GetUserEmail(user.UserEmaileReq) returns (user.UserEmaileResponse);
+}

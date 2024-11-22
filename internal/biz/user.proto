@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package biz.user;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/f-rambo/cloud-copilot/internal/biz;";
+
+enum UserStatus {
+      USER_INIT = 0;
+      USER_ENABLE = 1;
+      USER_DISABLE = 2;
+      USER_DELETED = 3;
+}
+
+enum UserSignType {
+      CREDENTIALS = 0;
+      GITHUB = 1;
+}
+
+message User {
+      int64 id = 1; // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
+      string name = 2; // @gotags: gorm:"column:name; default:''; NOT NULL"
+      string email = 3; // @gotags: gorm:"column:email; default:''; NOT NULL"
+      string password = 4; // @gotags: gorm:"column:password; default:''; NOT NULL"
+      UserStatus status = 5; // @gotags: gorm:"column:status; default:''; NOT NULL"
+      string access_token = 6; // @gotags: gorm:"-"`
+      UserSignType sign_type = 7; // @gotags: gorm:"column:sign_type; default:''; NOT NULL"
+      google.protobuf.Timestamp created_at = 8; // @gotags: gorm:"column:created_at; default:CURRENT_TIMESTAMP"
+      google.protobuf.Timestamp updated_at = 9; // @gotags: gorm:"column:updated_at; default:CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
+      google.protobuf.Timestamp deleted_at = 10; // @gotags: gorm:"column:deleted_at; default:NULL"
+} 

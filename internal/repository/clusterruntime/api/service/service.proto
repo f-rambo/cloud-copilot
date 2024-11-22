@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package service;
+
+import "api/common/error_reason.proto";
+import "internal/repository/clusterruntime/api/service/message.proto";
+import "internal/biz/service.proto";
+
+option go_package = "github.com/f-rambo/cloud-copilot/internal/repository/clusterruntime/api/service;";
+
+service ServiceInterface {
+      rpc Create(service.CreateReq) returns (common.Msg);
+      rpc GenerateCIWorkflow(biz.service.Service) returns (service.GenerateCIWorkflowResponse);
+}

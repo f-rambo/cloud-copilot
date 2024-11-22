@@ -88,10 +88,10 @@ func (u *UserRepo) SignIn(ctx context.Context, userParam *biz.User) error {
 	if err != nil {
 		return err
 	}
-	if user == nil || user.ID == 0 {
+	if user == nil || user.Id == 0 {
 		return errors.New("user not exist")
 	}
-	if userParam.PassWord != user.PassWord {
+	if userParam.Password != user.Password {
 		return errors.New("password error")
 	}
 	user.AccessToken, err = u.encodeToken(user)
@@ -103,11 +103,11 @@ func (u *UserRepo) SignIn(ctx context.Context, userParam *biz.User) error {
 
 func (u *UserRepo) encodeToken(user *biz.User) (token string, err error) {
 	claims := jwtv5.MapClaims{
-		"id":    user.ID,
-		"email": user.Email,
-		"name":  user.Name,
-		"state": user.State,
-		"exp":   time.Now().Add(time.Hour * time.Duration(u.c.Auth.Exp)).Unix(),
+		"id":     user.Id,
+		"email":  user.Email,
+		"name":   user.Name,
+		"status": user.Status,
+		"exp":    time.Now().Add(time.Hour * time.Duration(u.c.Auth.Exp)).Unix(),
 	}
 	return jwtv5.NewWithClaims(jwtv5.SigningMethodHS256, claims).SignedString([]byte(u.c.Auth.Key))
 }
@@ -135,7 +135,7 @@ func (u *UserRepo) decodeToken(_ context.Context, t string) (*biz.User, error) {
 		return nil, errors.New("invalid token")
 	}
 	return &biz.User{
-		ID:    cast.ToInt64(claims["id"]),
+		Id:    cast.ToInt64(claims["id"]),
 		Email: cast.ToString(claims["email"]),
 		Name:  cast.ToString(claims["name"]),
 	}, nil

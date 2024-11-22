@@ -29,11 +29,11 @@ func NewHTTPServer(c *conf.Bootstrap, cluster *interfaces.ClusterInterface, app 
 		http.Timeout(10 * time.Minute),
 	}
 	cserver := c.Server
-	netWork := cserver.HTTP.GetNetwork()
+	netWork := cserver.GetHttp().GetNetwork()
 	if netWork != "" {
 		opts = append(opts, http.Network(netWork))
 	}
-	addr := cserver.HTTP.GetAddr()
+	addr := cserver.GetHttp().GetAddr()
 	if addr != "" {
 		opts = append(opts, http.Address(addr))
 	}

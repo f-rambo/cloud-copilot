@@ -1,0 +1,78 @@
+syntax = "proto3";
+
+import "google/protobuf/descriptor.proto";
+
+option go_package = "github.com/f-rambo/cloud-copilot/internal/conf;conf";
+
+enum Env {
+      EnvLocal = 0;
+      EnvBostionHost = 1;
+      EnvCluster = 2;
+}
+
+message ClusterConfig {
+  Env env = 1;
+  string name = 2;
+  string type = 3;
+}
+
+message HTTPServer {
+  string network = 1;
+  string addr = 2;
+}
+
+message GRPCServer {
+  string network = 1;
+  string addr = 2;
+}
+
+message Server {
+  string name = 1;
+  string version = 2;
+  HTTPServer http = 3;
+  GRPCServer grpc = 4;
+}
+
+message Service {
+  string name = 1;
+  string version = 2;
+  int32 port = 3;
+  string addr = 4;
+}
+
+message Database {
+  string driver = 1;
+  string database = 2;
+  string host = 3;
+  int32 port = 4;
+  string username = 5;
+  string password = 6;
+}
+
+message Log {
+  int32 max_size = 1;
+  int32 max_backups = 2;
+  int32 max_age = 3;
+}
+
+message Auth {
+  int32 exp = 1;
+  string key = 2;
+  string admin_password = 3;
+}
+
+message AppConfig {
+  string name = 1;
+  string version = 2;
+  string namespace = 3;
+}
+
+message Bootstrap {
+  ClusterConfig cluster = 1;
+  Server server = 2;
+  repeated Service services = 3;
+  Database data = 4;
+  Log log = 5;
+  Auth auth = 6;
+  repeated AppConfig app = 7;
+}

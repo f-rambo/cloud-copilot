@@ -1,18 +1,18 @@
 syntax = "proto3";
 
-package cluster;
+package sidecar.api.cluster;
 
 import "google/protobuf/empty.proto";
-import "internal/repository/sidecar/api/cluster/error_reason.proto";
 import "internal/repository/sidecar/api/cluster/message.proto";
+import "api/common/error_reason.proto";
 
 option go_package = "github.com/f-rambo/cloud-copilot/internal/repository/sidecar/api/cluster;";
 
 
 service ClusterInterface {
-      rpc Ping(google.protobuf.Empty) returns (cluster.Msg);
+      rpc Ping(google.protobuf.Empty) returns (common.Msg);
 
-      rpc GetLogs(stream cluster.LogRequest) returns (stream cluster.LogResponse);
+      rpc GetLogs(stream sidecar.api.cluster.LogRequest) returns (stream sidecar.api.cluster.LogResponse);
 
-      rpc Info(google.protobuf.Empty) returns (cluster.Cluster);
+      rpc Info(google.protobuf.Empty) returns (sidecar.api.cluster.Cluster);
 }

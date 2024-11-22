@@ -2,7 +2,6 @@ package data
 
 import (
 	"context"
-	"encoding/json"
 
 	"github.com/f-rambo/cloud-copilot/internal/biz"
 	"github.com/f-rambo/cloud-copilot/internal/conf"
@@ -31,14 +30,7 @@ func (c *clusterRepo) Save(ctx context.Context, cluster *biz.Cluster) error {
 			tx.Rollback()
 		}
 	}()
-	if len(cluster.CloudResources) != 0 {
-		cloudResourceJsonByte, err := json.Marshal(cluster.CloudResources)
-		if err != nil {
-			return err
-		}
-		cluster.CloudResourcesJson = string(cloudResourceJsonByte)
-	}
-	err := tx.Model(&biz.Cluster{}).Where("id = ?", cluster.ID).Save(cluster).Error
+	err := tx.Model(&biz.Cluster{}).Where("id = ?", cluster.Id).Save(cluster).Error
 	if err != nil {
 		return err
 	}
@@ -67,22 +59,22 @@ func (c *clusterRepo) Save(ctx context.Context, cluster *biz.Cluster) error {
 
 func (c *clusterRepo) saveBostionHost(_ context.Context, cluster *biz.Cluster, tx *gorm.DB) error {
 	bostionHost := &biz.BostionHost{}
-	err := tx.Model(&biz.BostionHost{}).Where("cluster_id = ?", cluster.ID).First(bostionHost).Error
+	err := tx.Model(&biz.BostionHost{}).Where("cluster_id = ?", cluster.Id).First(bostionHost).Error
 	if err != nil && err != gorm.ErrRecordNotFound {
 		return err
 	}
-	if bostionHost.ID != 0 && cluster.BostionHost != nil {
-		cluster.BostionHost.ID = bostionHost.ID
+	if bostionHost.Id != "" && cluster.BostionHost != nil {
+		cluster.BostionHost.Id = bostionHost.Id
 	}
-	if bostionHost.ID != 0 && cluster.BostionHost == nil {
-		err = tx.Model(&biz.BostionHost{}).Where("cluster_id = ?", cluster.ID).Delete(&biz.BostionHost{}).Error
+	if bostionHost.Id != "" && cluster.BostionHost == nil {
+		err = tx.Model(&biz.BostionHost{}).Where("cluster_id = ?", cluster.Id).Delete(&biz.BostionHost{}).Error
 		if err != nil {
 			return err
 		}
 	}
 	if cluster.BostionHost != nil {
-		cluster.BostionHost.ClusterID = cluster.ID
-		err = tx.Model(&biz.BostionHost{}).Where("id = ?", cluster.BostionHost.ID).Save(cluster.BostionHost).Error
+		cluster.BostionHost.ClusterId = cluster.Id
+		err = tx.Model(&biz.BostionHost{}).Where("id = ?", cluster.BostionHost.Id).Save(cluster.BostionHost).Error
 		if err != nil {
 			return err
 		}
@@ -92,27 +84,27 @@ func (c *clusterRepo) saveBostionHost(_ context.Context, cluster *biz.Cluster, t
 
 func (c *clusterRepo) saveNodeGroup(_ context.Context, cluster *biz.Cluster, tx *gorm.DB) error {
 	for _, nodeGroup := range cluster.NodeGroups {
-		nodeGroup.ClusterID = cluster.ID
-		err := tx.Model(&biz.NodeGroup{}).Where("id = ?", nodeGroup.ID).Save(nodeGroup).Error
+		nodeGroup.ClusterId = cluster.Id
+		err := tx.Model(&biz.NodeGroup{}).Where("id = ?", nodeGroup.Id).Save(nodeGroup).Error
 		if err != nil {
 			return err
 		}
 	}
 	nodeGroups := make([]*biz.NodeGroup, 0)
-	err := tx.Model(&biz.NodeGroup{}).Where("cluster_id = ?", cluster.ID).Find(&nodeGroups).Error
+	err := tx.Model(&biz.NodeGroup{}).Where("cluster_id = ?", cluster.Id).Find(&nodeGroups).Error
 	if err != nil {
 		return err
 	}
 	for _, nodeGroup := range nodeGroups {
 		ok := false
 		for _, nodeGroup2 := range cluster.NodeGroups {
-			if nodeGroup.ID == nodeGroup2.ID {
+			if nodeGroup.Id == nodeGroup2.Id {
 				ok = true
 				break
 			}
 		}
 		if !ok {
-			err = tx.Model(&biz.NodeGroup{}).Where("id = ?", nodeGroup.ID).Delete(nodeGroup).Error
+			err = tx.Model(&biz.NodeGroup{}).Where("id = ?", nodeGroup.Id).Delete(nodeGroup).Error
 			if err != nil {
 				return err
 			}
@@ -123,27 +115,27 @@ func (c *clusterRepo) saveNodeGroup(_ context.Context, cluster *biz.Cluster, tx 
 
 func (c *clusterRepo) saveNode(_ context.Context, cluster *biz.Cluster, tx *gorm.DB) error {
 	for _, node := range cluster.Nodes {
-		node.ClusterID = cluster.ID
-		err := tx.Model(&biz.Node{}).Where("id = ?", node.ID).Save(node).Error
+		node.ClusterId = cluster.Id
+		err := tx.Model(&biz.Node{}).Where("id = ?", node.Id).Save(node).Error
 		if err != nil {
 			return err
 		}
 	}
 	nodes := make([]*biz.Node, 0)
-	err := tx.Model(&biz.Node{}).Where("cluster_id = ?", cluster.ID).Find(&nodes).Error
+	err := tx.Model(&biz.Node{}).Where("cluster_id = ?", cluster.Id).Find(&nodes).Error
 	if err != nil {
 		return err
 	}
 	for _, node := range nodes {
 		ok := false
 		for _, node2 := range cluster.Nodes {
-			if node.ID == node2.ID {
+			if node.Id == node2.Id {
 				ok = true
 				break
 			}
 		}
 		if !ok {
-			err = tx.Model(&biz.Node{}).Where("id = ?", node.ID).Delete(node).Error
+			err = tx.Model(&biz.Node{}).Where("id = ?", node.Id).Delete(node).Error
 			if err != nil {
 				return err
 			}
@@ -161,26 +153,19 @@ func (c *clusterRepo) Get(ctx context.Context, id int64) (*biz.Cluster, error) {
 	if err == gorm.ErrRecordNotFound {
 		return nil, nil
 	}
-	if cluster.CloudResourcesJson != "" {
-		cluster.CloudResources = make(map[biz.ResourceType][]*biz.CloudResource)
-		err = json.Unmarshal([]byte(cluster.CloudResourcesJson), &cluster.CloudResources)
-		if err != nil {
-			return nil, err
-		}
-	}
 	bostionHost := &biz.BostionHost{}
-	err = c.data.db.Model(&biz.BostionHost{}).Where("cluster_id = ?", cluster.ID).First(bostionHost).Error
+	err = c.data.db.Model(&biz.BostionHost{}).Where("cluster_id = ?", cluster.Id).First(bostionHost).Error
 	if err != nil && err != gorm.ErrRecordNotFound {
 		return nil, err
 	}
 	cluster.BostionHost = bostionHost
 	nodeGroups := make([]*biz.NodeGroup, 0)
-	err = c.data.db.Model(&biz.NodeGroup{}).Where("cluster_id = ?", cluster.ID).Find(&nodeGroups).Error
+	err = c.data.db.Model(&biz.NodeGroup{}).Where("cluster_id = ?", cluster.Id).Find(&nodeGroups).Error
 	if err != nil {
 		return nil, err
 	}
 	nodes := make([]*biz.Node, 0)
-	err = c.data.db.Model(&biz.Node{}).Where("cluster_id = ?", cluster.ID).Find(&nodes).Error
+	err = c.data.db.Model(&biz.Node{}).Where("cluster_id = ?", cluster.Id).Find(&nodes).Error
 	if err != nil {
 		return nil, err
 	}
@@ -205,8 +190,8 @@ func (c *clusterRepo) List(ctx context.Context, cluster *biz.Cluster) ([]*biz.Cl
 		err := clusterModelObj.Find(&clusters).Error
 		return clusters, err
 	}
-	if cluster.ID != 0 {
-		clusterModelObj = clusterModelObj.Where("id = ?", cluster.ID)
+	if cluster.Id != 0 {
+		clusterModelObj = clusterModelObj.Where("id = ?", cluster.Id)
 	}
 	if cluster.Name != "" {
 		clusterModelObj = clusterModelObj.Where("name = ?", cluster.Name)

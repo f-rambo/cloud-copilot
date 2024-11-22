@@ -12,7 +12,7 @@ import (
 func (c *Cluster) generateNodeLables(nodeGroup *NodeGroup) string {
 	lableMap := make(map[string]string)
 	lableMap["cluster"] = c.Name
-	lableMap["cluster_id"] = cast.ToString(c.ID)
+	lableMap["cluster_id"] = cast.ToString(c.Id)
 	lableMap["cluster_type"] = c.Type.String()
 	lableMap["region"] = c.Region
 	lableMap["nodegroup"] = nodeGroup.Name
@@ -34,10 +34,10 @@ func (uc *ClusterUsecase) NodeGroupIncreaseSize(ctx context.Context, cluster *Cl
 	for i := 0; i < int(size); i++ {
 		node := &Node{
 			Name:        fmt.Sprintf("%s-%s", cluster.Name, utils.GetRandomString()),
-			Role:        NodeRoleWorker,
-			Status:      NodeStatusCreating,
-			ClusterID:   cluster.ID,
-			NodeGroupID: nodeGroup.ID,
+			Role:        NodeRole_WORKER,
+			Status:      NodeStatus_NODE_CREATING,
+			ClusterId:   cluster.Id,
+			NodeGroupId: nodeGroup.Id,
 		}
 		cluster.Nodes = append(cluster.Nodes, node)
 	}
@@ -47,7 +47,7 @@ func (uc *ClusterUsecase) NodeGroupIncreaseSize(ctx context.Context, cluster *Cl
 func (uc *ClusterUsecase) DeleteNodes(ctx context.Context, cluster *Cluster, nodes []*Node) error {
 	for _, node := range nodes {
 		for i, n := range cluster.Nodes {
-			if n.ID == node.ID {
+			if n.Id == node.Id {
 				cluster.Nodes = append(cluster.Nodes[:i], cluster.Nodes[i+1:]...)
 				break
 			}
@@ -59,10 +59,10 @@ func (uc *ClusterUsecase) DeleteNodes(ctx context.Context, cluster *Cluster, nod
 func (uc *ClusterUsecase) NodeGroupTemplateNodeInfo(ctx context.Context, cluster *Cluster, nodeGroup *NodeGroup) (*Node, error) {
 	return &Node{
 		Name:        fmt.Sprintf("%s-%s", cluster.Name, utils.GetRandomString()),
-		Role:        NodeRoleWorker,
-		Status:      NodeStatusCreating,
-		ClusterID:   cluster.ID,
-		NodeGroupID: nodeGroup.ID,
+		Role:        NodeRole_WORKER,
+		Status:      NodeStatus_NODE_CREATING,
+		ClusterId:   cluster.Id,
+		NodeGroupId: nodeGroup.Id,
 		Labels:      cluster.generateNodeLables(nodeGroup),
 	}, nil
 }

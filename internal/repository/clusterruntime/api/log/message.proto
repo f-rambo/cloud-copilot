@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package log;
+
+option go_package = "github.com/f-rambo/cloud-copilot/internal/repository/clusterruntime/api/log;";
+
+message LogRequest {
+      int32 tail_lines = 1 [json_name = "tail_lines"];
+}
+
+message LogResponse {
+      string log = 1 [json_name = "log"];
+}

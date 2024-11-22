@@ -29,11 +29,11 @@ func NewGRPCServer(c *conf.Bootstrap, cluster *interfaces.ClusterInterface, app 
 		grpc.Timeout(10 * time.Minute),
 	}
 	cserver := c.Server
-	netWork := cserver.GRPC.GetNetwork()
+	netWork := cserver.GetGrpc().GetNetwork()
 	if netWork != "" {
 		opts = append(opts, grpc.Network(netWork))
 	}
-	addr := cserver.GRPC.GetAddr()
+	addr := cserver.GetGrpc().GetAddr()
 	if addr != "" {
 		opts = append(opts, grpc.Address(addr))
 	}

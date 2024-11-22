@@ -35,7 +35,7 @@ func NewAutoscaler(clusterUc *biz.ClusterUsecase, c *conf.Bootstrap, logger log.
 
 func pdNodeGroup(nodeGroup *biz.NodeGroup) *autoscaler.NodeGroup {
 	return &autoscaler.NodeGroup{
-		Id:      cast.ToString(nodeGroup.ID),
+		Id:      cast.ToString(nodeGroup.Id),
 		MinSize: nodeGroup.MinSize,
 		MaxSize: nodeGroup.MaxSize,
 		Debug:   nodeGroup.Type.String(),
@@ -53,7 +53,7 @@ func getNodeByName(nodeName string, cluster *biz.Cluster) *biz.Node {
 
 func getNodeGroupByID(nodeGroupID string, cluster *biz.Cluster) *biz.NodeGroup {
 	for _, nodeGroup := range cluster.NodeGroups {
-		if cast.ToString(nodeGroup.ID) == nodeGroupID {
+		if cast.ToString(nodeGroup.Id) == nodeGroupID {
 			return nodeGroup
 		}
 	}
@@ -66,11 +66,11 @@ func getNodesByNGIDAndName(nodeGroupID string, nodeName string, cluster *biz.Clu
 		return nil
 	}
 	for _, node := range cluster.Nodes {
-		nodeGroup := cluster.GetNodeGroup(node.NodeGroupID)
+		nodeGroup := cluster.GetNodeGroup(node.NodeGroupId)
 		if nodeGroup == nil {
 			continue
 		}
-		if node.Name == nodeName && cast.ToString(nodeGroup.ID) == nodeGroupID {
+		if node.Name == nodeName && cast.ToString(nodeGroup.Id) == nodeGroupID {
 			return node
 		}
 	}
@@ -123,7 +123,7 @@ func (a *Autoscaler) NodeGroupForNode(ctx context.Context, in *autoscaler.NodeGr
 	if resNode == nil {
 		return nil, errors.New("node not found")
 	}
-	nodeGroup := cluster.GetNodeGroup(resNode.NodeGroupID)
+	nodeGroup := cluster.GetNodeGroup(resNode.NodeGroupId)
 	if nodeGroup == nil {
 		return nil, errors.New("node group not found")
 	}
@@ -147,8 +147,8 @@ func (a *Autoscaler) PricingNodePrice(ctx context.Context, in *autoscaler.Pricin
 	if resNode == nil {
 		return nil, errors.New("node not found")
 	}
-	nodeGroup := cluster.GetNodeGroup(resNode.NodeGroupID)
-	return &autoscaler.PricingNodePriceResponse{Price: nodeGroup.NodePrice}, nil
+	nodeGroup := cluster.GetNodeGroup(resNode.NodeGroupId)
+	return &autoscaler.PricingNodePriceResponse{Price: float64(nodeGroup.NodePrice)}, nil
 }
 
 // PricingPodPrice：返回在指定时间段内运行一个 Pod 的理论最低价格。
@@ -166,8 +166,8 @@ func (a *Autoscaler) PricingPodPrice(ctx context.Context, in *autoscaler.Pricing
 	if resNode == nil {
 		return nil, errors.New("node not found")
 	}
-	nodeGroup := cluster.GetNodeGroup(resNode.NodeGroupID)
-	return &autoscaler.PricingPodPriceResponse{Price: nodeGroup.NodePrice}, nil
+	nodeGroup := cluster.GetNodeGroup(resNode.NodeGroupId)
+	return &autoscaler.PricingPodPriceResponse{Price: float64(nodeGroup.NodePrice)}, nil
 }
 
 // GPULabel：返回添加到具有 GPU 资源的节点的标签。
@@ -180,7 +180,7 @@ func (a *Autoscaler) GPULabel(ctx context.Context, in *autoscaler.GPULabelReques
 	}
 	gpuLable := ""
 	for _, node := range cluster.Nodes {
-		nodeGroup := cluster.GetNodeGroup(node.NodeGroupID)
+		nodeGroup := cluster.GetNodeGroup(node.NodeGroupId)
 		if nodeGroup == nil {
 			continue
 		}
@@ -202,7 +202,7 @@ func (a *Autoscaler) GetAvailableGPUTypes(ctx context.Context, in *autoscaler.Ge
 	}
 	pbGpuTypes := make(map[string]*anypb.Any)
 	for _, node := range cluster.Nodes {
-		nodeGroup := cluster.GetNodeGroup(node.NodeGroupID)
+		nodeGroup := cluster.GetNodeGroup(node.NodeGroupId)
 		if nodeGroup == nil {
 			continue
 		}
@@ -358,15 +358,15 @@ func (a *Autoscaler) NodeGroupNodes(ctx context.Context, in *autoscaler.NodeGrou
 	}
 	nodes := make([]*biz.Node, 0)
 	for _, node := range cluster.Nodes {
-		if cast.ToString(node.NodeGroupID) == nodeGroupId {
+		if cast.ToString(node.NodeGroupId) == nodeGroupId {
 			nodes = append(nodes, node)
 		}
 	}
 	instances := make([]*autoscaler.Instance, 0)
 	for _, node := range nodes {
 		instance := new(autoscaler.Instance)
-		instance.Id = cast.ToString(node.ID)
-		if node.Status == biz.NodeStatusUnspecified {
+		instance.Id = cast.ToString(node.Id)
+		if node.Status == biz.NodeStatus_NODE_UNSPECIFIED {
 			instance.Status = &autoscaler.InstanceStatus{
 				InstanceState: autoscaler.InstanceStatus_unspecified,
 				ErrorInfo:     &autoscaler.InstanceErrorInfo{},

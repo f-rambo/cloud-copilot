@@ -2,7 +2,6 @@ package data
 
 import (
 	"context"
-	"encoding/json"
 
 	"github.com/f-rambo/cloud-copilot/internal/biz"
 	"github.com/f-rambo/cloud-copilot/internal/conf"
@@ -17,21 +16,14 @@ type projectRepo struct {
 }
 
 func NewProjectRepo(data *Data, c *conf.Bootstrap, logger log.Logger) biz.ProjectData {
-	cserver := c.Server
 	return &projectRepo{
 		data:       data,
 		log:        log.NewHelper(logger),
-		confServer: &cserver,
+		confServer: c.Server,
 	}
 }
 
 func (p *projectRepo) Save(ctx context.Context, project *biz.Project) (err error) {
-	if len(project.Business) > 0 {
-		project.BusinessJson, err = json.Marshal(project.Business)
-		if err != nil {
-			return err
-		}
-	}
 	return p.data.db.Save(project).Error
 }
 
@@ -40,12 +32,6 @@ func (p *projectRepo) Get(ctx context.Context, id int64) (*biz.Project, error) {
 	err := p.data.db.Where("id = ?", id).First(project).Error
 	if err != nil {
 		return nil, err
-	}
-	if len(project.BusinessJson) > 0 {
-		err = json.Unmarshal(project.BusinessJson, &project.Business)
-		if err != nil {
-			return nil, err
-		}
 	}
 	return project, nil
 }
@@ -57,12 +43,6 @@ func (p *projectRepo) GetByName(ctx context.Context, name string) (*biz.Project,
 	if err != nil && err != gorm.ErrRecordNotFound {
 		return nil, err
 	}
-	if len(project.BusinessJson) > 0 {
-		err = json.Unmarshal(project.BusinessJson, &project.Business)
-		if err != nil {
-			return nil, err
-		}
-	}
 	return project, nil
 }
 
@@ -72,14 +52,6 @@ func (p *projectRepo) List(ctx context.Context, clusterID int64) ([]*biz.Project
 	if err != nil {
 		return nil, err
 	}
-	for _, project := range projects {
-		if len(project.BusinessJson) > 0 {
-			err = json.Unmarshal(project.BusinessJson, &project.Business)
-			if err != nil {
-				return nil, err
-			}
-		}
-	}
 	return projects, nil
 }
 
@@ -88,14 +60,6 @@ func (p *projectRepo) ListByIds(ctx context.Context, ids []int64) ([]*biz.Projec
 	err := p.data.db.Where("id in (?)", ids).Find(&projects).Error
 	if err != nil {
 		return nil, err
-	}
-	for _, project := range projects {
-		if len(project.BusinessJson) > 0 {
-			err = json.Unmarshal(project.BusinessJson, &project.Business)
-			if err != nil {
-				return nil, err
-			}
-		}
 	}
 	return projects, nil
 }

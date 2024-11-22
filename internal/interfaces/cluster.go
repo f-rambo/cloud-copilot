@@ -64,7 +64,7 @@ func (c *ClusterInterface) Save(ctx context.Context, clusterArgs *v1alpha1.Clust
 	c.updateClusterFromArgs(cluster, clusterArgs)
 	user, _ := c.userUc.GetUserInfo(ctx)
 	if user != nil {
-		cluster.UserID = user.ID
+		cluster.UserId = user.Id
 	}
 	err = c.clusterUc.Save(ctx, cluster)
 	if err != nil {
@@ -81,10 +81,10 @@ func (c *ClusterInterface) validateClusterArgs(args *v1alpha1.ClusterArgs) error
 	if args.PrivateKey == "" {
 		return errors.New("private key is required")
 	}
-	if args.Type == "" {
+	if args.Type == 0 {
 		return errors.New("server type is required")
 	}
-	if biz.ClusterType(args.Type) != biz.ClusterTypeLocal {
+	if biz.ClusterType(args.Type) != biz.ClusterType_LOCAL {
 		if args.AccessId == "" {
 			return errors.New("access key id is required")
 		}
@@ -114,13 +114,13 @@ func (c *ClusterInterface) getOrCreateCluster(ctx context.Context, args *v1alpha
 	}
 
 	return &biz.Cluster{
-		ID:         args.Id,
+		Id:         args.Id,
 		Name:       args.Name,
 		Type:       biz.ClusterType(args.Type),
 		PublicKey:  args.PublicKey,
 		PrivateKey: args.PrivateKey,
 		Region:     args.Region,
-		AccessID:   args.AccessId,
+		AccessId:   args.AccessId,
 		AccessKey:  args.AccessKey,
 		Nodes:      make([]*biz.Node, 0),
 	}, nil
@@ -132,7 +132,7 @@ func (c *ClusterInterface) updateClusterFromArgs(cluster *biz.Cluster, args *v1a
 	cluster.PublicKey = args.PublicKey
 	cluster.PrivateKey = args.PrivateKey
 	cluster.Region = args.Region
-	cluster.AccessID = args.AccessId
+	cluster.AccessId = args.AccessId
 	cluster.AccessKey = args.AccessKey
 
 	c.updateExistingNodes(cluster, args.Nodes)
@@ -141,12 +141,12 @@ func (c *ClusterInterface) updateClusterFromArgs(cluster *biz.Cluster, args *v1a
 
 func (c *ClusterInterface) updateExistingNodes(cluster *biz.Cluster, nodeArgs []*v1alpha1.NodeArgs) {
 	for _, node := range cluster.Nodes {
-		if node.ID == 0 {
+		if node.Id == 0 {
 			continue
 		}
 		for _, nodeArg := range nodeArgs {
-			if node.ID == nodeArg.Id {
-				node.InternalIP = nodeArg.Ip
+			if node.Id == nodeArg.Id {
+				node.InternalIp = nodeArg.Ip
 				node.User = nodeArg.User
 				node.Role = biz.NodeRole(nodeArg.Role)
 			}
@@ -158,8 +158,8 @@ func (c *ClusterInterface) addNewNodes(cluster *biz.Cluster, nodeArgs []*v1alpha
 	for _, nodeArg := range nodeArgs {
 		if nodeArg.Id == 0 {
 			cluster.Nodes = append(cluster.Nodes, &biz.Node{
-				ID:         nodeArg.Id,
-				InternalIP: nodeArg.Ip,
+				Id:         nodeArg.Id,
+				InternalIp: nodeArg.Ip,
 				User:       nodeArg.User,
 				Role:       biz.NodeRole(nodeArg.Role),
 			})
@@ -315,7 +315,7 @@ func (c *ClusterInterface) GetLogs(stream v1alpha1.ClusterInterface_GetLogsServe
 		}
 		if cluster != nil {
 			for _, node := range cluster.Nodes {
-				err = c.getSidecarLogContent(ctx, sidecarLogContentChan, node.InternalIP, 22)
+				err = c.getSidecarLogContent(ctx, sidecarLogContentChan, node.InternalIp, 22)
 				if err != nil {
 					return err
 				}
@@ -441,7 +441,7 @@ func (c *ClusterInterface) bizCLusterToCluster(bizCluster *biz.Cluster) *v1alpha
 		bostionHost = c.bizBostionHostToBostionHost(bizCluster.BostionHost)
 	}
 	return &v1alpha1.Cluster{
-		Id:                   bizCluster.ID,
+		Id:                   bizCluster.Id,
 		Name:                 bizCluster.Name,
 		Connections:          bizCluster.Connections,
 		CertificateAuthority: bizCluster.CertificateAuthority,
@@ -455,7 +455,7 @@ func (c *ClusterInterface) bizCLusterToCluster(bizCluster *biz.Cluster) *v1alpha
 		PublicKey:            bizCluster.PublicKey,
 		PrivateKey:           bizCluster.PrivateKey,
 		Region:               bizCluster.Region,
-		AccessId:             bizCluster.AccessID,
+		AccessId:             bizCluster.AccessId,
 		AccessKey:            bizCluster.AccessKey,
 		Nodes:                nodes,
 		NodeGroups:           nodeGroups,
@@ -464,53 +464,14 @@ func (c *ClusterInterface) bizCLusterToCluster(bizCluster *biz.Cluster) *v1alpha
 	}
 }
 
-func (c *ClusterInterface) bizNodeToNode(bizNode *biz.Node) *v1alpha1.Node {
-	return &v1alpha1.Node{
-		Id:           bizNode.ID,
-		Name:         bizNode.Name,
-		Labels:       bizNode.Labels,
-		InternalIp:   bizNode.InternalIP,
-		ExternalIp:   bizNode.ExternalIP,
-		User:         bizNode.User,
-		Role:         string(bizNode.Role),
-		Status:       uint32(bizNode.Status),
-		ErrorInfo:    bizNode.ErrorInfo,
-		ClusterId:    bizNode.ClusterID,
-		NodeGroupId:  bizNode.NodeGroupID,
-		StatusString: bizNode.Status.String(),
-	}
+func (c *ClusterInterface) bizNodeToNode(_ *biz.Node) *v1alpha1.Node {
+	return &v1alpha1.Node{}
 }
 
-func (c *ClusterInterface) bizNodeGroupToNodeGroup(bizNodeGroup *biz.NodeGroup) *v1alpha1.NodeGroup {
-	return &v1alpha1.NodeGroup{
-		Id:             bizNodeGroup.ID,
-		Name:           bizNodeGroup.Name,
-		Type:           string(bizNodeGroup.Type),
-		Image:          bizNodeGroup.Image,
-		Os:             bizNodeGroup.OS,
-		Arch:           bizNodeGroup.ARCH,
-		Cpu:            int32(bizNodeGroup.CPU),
-		Memory:         float64(bizNodeGroup.Memory),
-		Gpu:            int32(bizNodeGroup.GPU),
-		NodeInitScript: bizNodeGroup.NodeInitScript,
-		MinSize:        int32(bizNodeGroup.MinSize),
-		MaxSize:        int32(bizNodeGroup.MaxSize),
-		TargetSize:     int32(bizNodeGroup.TargetSize),
-		ClusterId:      int64(bizNodeGroup.ClusterID),
-	}
+func (c *ClusterInterface) bizNodeGroupToNodeGroup(_ *biz.NodeGroup) *v1alpha1.NodeGroup {
+	return &v1alpha1.NodeGroup{}
 }
 
-func (c *ClusterInterface) bizBostionHostToBostionHost(bizBostionHost *biz.BostionHost) *v1alpha1.BostionHost {
-	return &v1alpha1.BostionHost{
-		Id:         bizBostionHost.ID,
-		User:       bizBostionHost.User,
-		Image:      bizBostionHost.Image,
-		Os:         bizBostionHost.OS,
-		Arch:       bizBostionHost.ARCH,
-		Hostname:   bizBostionHost.Hostname,
-		ExternalIp: bizBostionHost.ExternalIP,
-		InternalIp: bizBostionHost.InternalIP,
-		SshPort:    int32(bizBostionHost.SshPort),
-		ClusterId:  int64(bizBostionHost.ClusterID),
-	}
+func (c *ClusterInterface) bizBostionHostToBostionHost(_ *biz.BostionHost) *v1alpha1.BostionHost {
+	return &v1alpha1.BostionHost{}
 }

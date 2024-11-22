@@ -26,14 +26,14 @@ func NewServicesInterface(serviceUc *biz.ServicesUseCase, projectUc *biz.Project
 func (s *ServicesInterface) List(ctx context.Context, serviceParam *v1alpha1.ServiceRequest) (*v1alpha1.Services, error) {
 	services, itemCount, err := s.serviceUc.List(ctx, &biz.Service{
 		Name:      serviceParam.Name,
-		ProjectID: serviceParam.ProjectId,
+		ProjectId: serviceParam.ProjectId,
 	}, int(serviceParam.Page), int(serviceParam.PageSize))
 	if err != nil {
 		return nil, err
 	}
 	projectIds := make([]int64, 0)
 	for _, v := range services {
-		projectIds = append(projectIds, v.ProjectID)
+		projectIds = append(projectIds, v.ProjectId)
 	}
 	projects, err := s.projectUc.ListByIds(ctx, projectIds)
 	if err != nil {
@@ -41,7 +41,7 @@ func (s *ServicesInterface) List(ctx context.Context, serviceParam *v1alpha1.Ser
 	}
 	projectMap := make(map[int64]string)
 	for _, v := range projects {
-		projectMap[v.ID] = v.Name
+		projectMap[v.Id] = v.Name
 	}
 	interfaceServices := make([]*v1alpha1.Service, 0)
 	for _, service := range services {
@@ -97,7 +97,7 @@ func (s *ServicesInterface) GetWorkflow(ctx context.Context, serviceParam *v1alp
 		return nil, err
 	}
 	wfData := &v1alpha1.Worklfow{
-		ID:          workflow.ID,
+		ID:          workflow.Id,
 		Name:        workflow.Name,
 		Steps:       make([]*v1alpha1.WfStep, 0),
 		Templates:   make([]*v1alpha1.WfTemplate, 0),
@@ -200,14 +200,14 @@ func (s *ServicesInterface) CommitWorklfow(ctx context.Context, request *v1alpha
 	if request.WorkflowId == 0 {
 		return nil, errors.New("workflow id is required")
 	}
-	if request.WfType == "" {
+	if request.WfType == 0 {
 		return nil, errors.New("workflow type is required")
 	}
 	service, err := s.serviceUc.Get(ctx, request.Id)
 	if err != nil {
 		return nil, err
 	}
-	project, err := s.projectUc.Get(ctx, service.ProjectID)
+	project, err := s.projectUc.Get(ctx, service.ProjectId)
 	if err != nil {
 		return nil, err
 	}
@@ -229,7 +229,7 @@ func (s *ServicesInterface) GetServiceCis(ctx context.Context, request *v1alpha1
 	}
 	userIds := make([]int64, 0)
 	for _, v := range cis {
-		userIds = append(userIds, v.UserID)
+		userIds = append(userIds, v.UserId)
 	}
 	users, err := s.userUc.GetUserByBatchID(ctx, userIds)
 	if err != nil {
@@ -237,7 +237,7 @@ func (s *ServicesInterface) GetServiceCis(ctx context.Context, request *v1alpha1
 	}
 	userMap := make(map[int64]string)
 	for _, v := range users {
-		userMap[v.ID] = v.Name
+		userMap[v.Id] = v.Name
 	}
 	for _, ci := range cis {
 		data := s.bizCiTointerface(ci)
@@ -252,26 +252,26 @@ func (s *ServicesInterface) GetServiceCis(ctx context.Context, request *v1alpha1
 
 func (s *ServicesInterface) bizToInterface(service *biz.Service) *v1alpha1.Service {
 	servicesInterface := &v1alpha1.Service{
-		ID:          service.ID,
+		ID:          service.Id,
 		Name:        service.Name,
 		CodeRepo:    service.CodeRepo,
 		Replicas:    service.Replicas,
-		CPU:         service.CPU,
+		CPU:         service.Cpu,
 		LimitCpu:    service.LimitCpu,
-		GPU:         service.GPU,
-		LimitGPU:    service.LimitGPU,
+		GPU:         service.Gpu,
+		LimitGPU:    service.LimitGpu,
 		Memory:      service.Memory,
 		LimitMemory: service.LimitMemory,
 		Disk:        service.Disk,
 		LimitDisk:   service.LimitDisk,
-		ProjectID:   service.ProjectID,
+		ProjectID:   service.ProjectId,
 		Business:    service.Business,
 		Technology:  service.Technology,
 		Ports:       make([]*v1alpha1.Port, 0),
 	}
 	for _, port := range service.Ports {
 		port := &v1alpha1.Port{
-			ID:            port.ID,
+			ID:            port.Id,
 			IngressPath:   port.IngressPath,
 			Protocol:      port.Protocol,
 			ContainerPort: port.ContainerPort,
@@ -282,29 +282,29 @@ func (s *ServicesInterface) bizToInterface(service *biz.Service) *v1alpha1.Servi
 }
 
 func (s *ServicesInterface) interfaceToBiz(service *v1alpha1.Service) *biz.Service {
-	ports := make([]biz.Port, 0)
+	ports := make([]*biz.Port, 0)
 	for _, port := range service.Ports {
-		ports = append(ports, biz.Port{
-			ID:            port.ID,
+		ports = append(ports, &biz.Port{
+			Id:            port.ID,
 			IngressPath:   port.IngressPath,
 			Protocol:      port.Protocol,
 			ContainerPort: port.ContainerPort,
 		})
 	}
 	return &biz.Service{
-		ID:          service.ID,
+		Id:          service.ID,
 		Name:        service.Name,
 		CodeRepo:    service.CodeRepo,
 		Replicas:    service.Replicas,
-		CPU:         service.CPU,
+		Cpu:         service.CPU,
 		LimitCpu:    service.LimitCpu,
-		GPU:         service.GPU,
-		LimitGPU:    service.LimitGPU,
+		Gpu:         service.GPU,
+		LimitGpu:    service.LimitGPU,
 		Memory:      service.Memory,
 		LimitMemory: service.LimitMemory,
 		Disk:        service.Disk,
 		LimitDisk:   service.LimitDisk,
-		ProjectID:   service.ProjectID,
+		ProjectId:   service.ProjectID,
 		Business:    service.Business,
 		Technology:  service.Technology,
 		Ports:       ports,
@@ -313,16 +313,16 @@ func (s *ServicesInterface) interfaceToBiz(service *v1alpha1.Service) *biz.Servi
 
 func (s *ServicesInterface) bizCiTointerface(ci *biz.CI) *v1alpha1.CI {
 	ciInterface := &v1alpha1.CI{
-		ID:          ci.ID,
+		ID:          ci.Id,
 		Version:     ci.Version,
 		Branch:      ci.Branch,
 		Tag:         ci.Tag,
-		State:       ci.State,
+		Status:      ci.Status.String(),
 		Description: ci.Description,
-		ServiceID:   ci.ServiceID,
-		UserId:      ci.UserID,
+		ServiceID:   ci.ServiceId,
+		UserId:      ci.UserId,
 		Logs:        ci.Logs,
-		CreatedAt:   ci.CreatedAt.Format("2006-01-02 15:04:05"),
+		CreatedAt:   ci.CreatedAt.AsTime().Format("2006-01-02 15:04:05"),
 	}
 	return ciInterface
 }

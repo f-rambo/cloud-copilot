@@ -22,8 +22,8 @@ func NewAppRepo(data *Data, logger log.Logger) biz.AppData {
 
 func (a *appRepo) Save(ctx context.Context, app *biz.App) error {
 	appVersions := make([]*biz.AppVersion, 0)
-	if app.ID != 0 {
-		err := a.data.db.Model(&biz.AppVersion{}).Where("app_id = ?", app.ID).Find(&appVersions).Error
+	if app.Id != 0 {
+		err := a.data.db.Model(&biz.AppVersion{}).Where("app_id = ?", app.Id).Find(&appVersions).Error
 		if err != nil {
 			return err
 		}
@@ -32,28 +32,26 @@ func (a *appRepo) Save(ctx context.Context, app *biz.App) error {
 	if err != nil {
 		return err
 	}
-	// 保存新增加的删除不存在的版本
 	for _, v := range app.Versions {
-		v.AppID = app.ID
-		if v.ID == 0 {
+		v.AppId = app.Id
+		if v.Id == 0 {
 			err = a.data.db.Model(&biz.AppVersion{}).Create(v).Error
 		} else {
-			err = a.data.db.Model(&biz.AppVersion{}).Where("id = ?", v.ID).Save(v).Error
+			err = a.data.db.Model(&biz.AppVersion{}).Where("id = ?", v.Id).Save(v).Error
 		}
 		if err != nil {
 			return err
 		}
 	}
-	// 删除不存在的版本
 	for _, version := range appVersions {
 		isExist := false
 		for _, v := range app.Versions {
-			if v.ID == version.ID {
+			if v.Id == version.Id {
 				isExist = true
 			}
 		}
 		if !isExist {
-			err = a.data.db.Model(&biz.AppVersion{}).Where("id = ?", version.ID).Delete(version).Error
+			err = a.data.db.Model(&biz.AppVersion{}).Where("id = ?", version.Id).Delete(version).Error
 			if err != nil {
 				return err
 			}
@@ -78,11 +76,10 @@ func (a *appRepo) List(ctx context.Context, appReq *biz.App, page, pageSize int3
 	if err != nil {
 		return nil, 0, err
 	}
-	// app versions
 	appIDs := make([]int64, 0)
 	appVersions := make([]*biz.AppVersion, 0)
 	for _, v := range appItems {
-		appIDs = append(appIDs, v.ID)
+		appIDs = append(appIDs, v.Id)
 	}
 	err = a.data.db.Model(&biz.AppVersion{}).Where("app_id in (?)", appIDs).Find(&appVersions).Error
 	if err != nil {
@@ -90,7 +87,7 @@ func (a *appRepo) List(ctx context.Context, appReq *biz.App, page, pageSize int3
 	}
 	for _, v := range appItems {
 		for _, version := range appVersions {
-			if v.ID == version.AppID {
+			if v.Id == version.AppId {
 				v.Versions = append(v.Versions, version)
 			}
 		}
@@ -118,11 +115,11 @@ func (a *appRepo) GetByName(ctx context.Context, appName string) (*biz.App, erro
 	if err != nil && err != gorm.ErrRecordNotFound {
 		return nil, err
 	}
-	if app.ID == 0 {
+	if app.Id == 0 {
 		return nil, nil
 	}
 	appVersions := make([]*biz.AppVersion, 0)
-	err = a.data.db.Model(&biz.AppVersion{}).Where("app_id = ?", app.ID).Find(&appVersions).Error
+	err = a.data.db.Model(&biz.AppVersion{}).Where("app_id = ?", app.Id).Find(&appVersions).Error
 	if err != nil {
 		return nil, err
 	}
@@ -159,15 +156,11 @@ func (a *appRepo) SaveAppRelease(ctx context.Context, appDeployed *biz.AppReleas
 	return a.data.db.Save(appDeployed).Error
 }
 
-func (a *appRepo) AppReleaseList(ctx context.Context, appReleaseReq biz.AppRelease, page, pageSize int32) ([]*biz.AppRelease, int32, error) {
-	appReleaseReq.Config = ""
-	appReleaseReq.Notes = ""
-	appReleaseReq.Logs = ""
+func (a *appRepo) AppReleaseList(ctx context.Context, appReleaseReq map[string]string, page, pageSize int32) ([]*biz.AppRelease, int32, error) {
 	appDeployeds := make([]*biz.AppRelease, 0)
 	appDeployedOrmDb := a.data.db.Model(&biz.AppRelease{})
-	if appReleaseReq.ReleaseName != "" {
-		appDeployedOrmDb = appDeployedOrmDb.Where("release_name like ?", "%"+appReleaseReq.ReleaseName+"%")
-		appReleaseReq.ReleaseName = ""
+	if releaseName, ok := appReleaseReq["release_name"]; ok {
+		appDeployedOrmDb = appDeployedOrmDb.Where("release_name like ?", "%"+releaseName+"%")
 	}
 	err := appDeployedOrmDb.Where(appReleaseReq).Offset(int((page - 1) * pageSize)).Limit(int(pageSize)).Find(&appDeployeds).Error
 	if err != nil {

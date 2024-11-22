@@ -25,22 +25,24 @@ func (u *UserInterface) SignIn(ctx context.Context, request *v1alpha1.SignIn) (*
 	user := &biz.User{
 		Name:        request.Username,
 		Email:       request.Email,
-		PassWord:    request.Password,
+		Password:    request.Password,
 		AccessToken: request.AccessToken,
-		SignType:    request.SignType,
+		SignType:    biz.UserSignType(request.SignType),
 	}
 	err := u.uc.SignIn(ctx, user)
 	if err != nil {
 		return nil, err
 	}
 	return &v1alpha1.User{
-		Id:          user.ID,
-		Email:       user.Email,
-		Username:    user.Name,
-		AccessToken: user.AccessToken,
-		State:       string(user.State),
-		UpdatedAt:   user.UpdatedAt.Format("2006-01-02 15:04:05"),
-		SignType:    user.SignType,
+		Id:             user.Id,
+		Email:          user.Email,
+		Username:       user.Name,
+		AccessToken:    user.AccessToken,
+		Status:         int32(user.Status),
+		StatusString:   user.Status.String(),
+		UpdatedAt:      user.UpdatedAt.AsTime().Format("2006-01-02 15:04:05"),
+		SignType:       int32(user.SignType),
+		SignTypeString: user.SignType.String(),
 	}, nil
 }
 
@@ -50,12 +52,12 @@ func (u *UserInterface) GetUserInfo(ctx context.Context, _ *emptypb.Empty) (*v1a
 		return nil, err
 	}
 	return &v1alpha1.User{
-		Id:          user.ID,
+		Id:          user.Id,
 		Email:       user.Email,
 		Username:    user.Name,
 		AccessToken: user.AccessToken,
-		State:       string(user.State),
-		UpdatedAt:   user.UpdatedAt.Format("2006-01-02 15:04:05"),
+		Status:      int32(user.Status),
+		UpdatedAt:   user.UpdatedAt.AsTime().Format("2006-01-02 15:04:05"),
 	}, nil
 }
 
@@ -67,13 +69,15 @@ func (u *UserInterface) GetUsers(ctx context.Context, request *v1alpha1.UsersReq
 	var userList []*v1alpha1.User
 	for _, user := range users {
 		userList = append(userList, &v1alpha1.User{
-			Id:          user.ID,
-			Email:       user.Email,
-			Username:    user.Name,
-			AccessToken: user.AccessToken,
-			State:       strings.ToUpper(string(user.State)),
-			SignType:    strings.ToUpper(user.SignType),
-			UpdatedAt:   user.UpdatedAt.Format("2006-01-02 15:04:05"),
+			Id:             user.Id,
+			Email:          user.Email,
+			Username:       user.Name,
+			AccessToken:    user.AccessToken,
+			Status:         int32(user.Status),
+			SignType:       int32(user.SignType),
+			StatusString:   strings.ToUpper(user.Status.String()),
+			SignTypeString: strings.ToUpper(user.SignType.String()),
+			UpdatedAt:      user.UpdatedAt.AsTime().Format("2006-01-02 15:04:05"),
 		})
 	}
 	return &v1alpha1.Users{
@@ -84,23 +88,24 @@ func (u *UserInterface) GetUsers(ctx context.Context, request *v1alpha1.UsersReq
 
 func (u *UserInterface) SaveUser(ctx context.Context, request *v1alpha1.User) (*v1alpha1.User, error) {
 	user := &biz.User{
-		ID:       request.Id,
+		Id:       request.Id,
 		Email:    request.Email,
 		Name:     request.Username,
-		State:    biz.UserState(request.State),
-		SignType: request.SignType,
+		Status:   biz.UserStatus(request.Status),
+		SignType: biz.UserSignType(request.SignType),
 	}
 	err := u.uc.Save(ctx, user)
 	if err != nil {
 		return nil, err
 	}
 	return &v1alpha1.User{
-		Id:          user.ID,
-		Email:       user.Email,
-		Username:    user.Name,
-		AccessToken: user.AccessToken,
-		State:       string(user.State),
-		UpdatedAt:   user.UpdatedAt.Format("2006-01-02 15:04:05"),
+		Id:           user.Id,
+		Email:        user.Email,
+		Username:     user.Name,
+		AccessToken:  user.AccessToken,
+		Status:       int32(user.Status),
+		StatusString: user.Status.String(),
+		UpdatedAt:    user.UpdatedAt.AsTime().Format("2006-01-02 15:04:05"),
 	}, nil
 }
 

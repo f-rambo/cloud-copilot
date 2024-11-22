@@ -60,5 +60,5 @@ func GetLogFilePath(filename string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(logPath, fmt.Sprintf("%s.%s", filename, LogPackage)), nil
+	return filepath.Join(logPath, fmt.Sprintf("%s.log", filename)), nil
 }

@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package project;
+
+option go_package = "github.com/f-rambo/cloud-copilot/internal/repository/clusterruntime/api/project;";
+
+
+message CreateNamespaceReq {
+      string namespace = 1;
+}
+
+message Namesapces {
+      repeated string namespaces = 1;
+}

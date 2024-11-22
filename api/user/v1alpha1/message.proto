@@ -8,7 +8,7 @@ message SignIn {
       string email = 1 [json_name = "email"];
       string password = 2 [json_name = "password"];
       string access_token = 3 [json_name = "access_token"];
-      string sign_type = 4 [json_name = "sign_type"];
+      int32 sign_type = 4 [json_name = "sign_type"];
       string username = 5 [json_name = "username"];
 }
 
@@ -29,7 +29,9 @@ message User {
       string username = 2 [json_name = "username"];
       string email = 3 [json_name = "email"];
       string access_token = 4 [json_name = "access_token"];
-      string state = 5 [json_name = "state"];
-      string updated_at = 6 [json_name = "updated_at"];
-      string sign_type = 7 [json_name = "sign_type"];
+      int32 status = 5 [json_name = "status"];
+      string status_string = 6 [json_name = "status_string"];
+      string updated_at = 7 [json_name = "updated_at"];
+      int32 sign_type = 8 [json_name = "sign_type"];
+      string sign_type_string = 9 [json_name = "sign_type_string"];
 }

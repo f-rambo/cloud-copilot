@@ -11,7 +11,7 @@ message ServiceRequest {
       int64 projectId = 4 [json_name = "project_id"];
       int64 id = 5 [json_name = "id"];
       Worklfow workflow = 9 [json_name = "workflow"];
-      string wfType = 10 [json_name = "wf_type"];
+      int32 wfType = 10 [json_name = "wf_type"];
       int64 workflowId = 11 [json_name = "workflow_id"];
 }
 
@@ -69,7 +69,7 @@ message CI {
       string Description = 6 [json_name = "description"];
       string WorkflowName = 7 [json_name = "workflow_name"];
       int64 ServiceID = 8 [json_name = "service_id"];
-      string State = 9 [json_name = "state"];
+      string Status = 9 [json_name = "status"];
       string CreatedAt = 10 [json_name = "created_at"];
       string Username = 11 [json_name = "username"];
       int64 UserId = 12 [json_name = "user_id"];

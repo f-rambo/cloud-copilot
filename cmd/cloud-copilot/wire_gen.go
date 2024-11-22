@@ -11,12 +11,9 @@ import (
 	"github.com/f-rambo/cloud-copilot/internal/conf"
 	"github.com/f-rambo/cloud-copilot/internal/data"
 	"github.com/f-rambo/cloud-copilot/internal/interfaces"
+	"github.com/f-rambo/cloud-copilot/internal/repository/clusterruntime"
+	"github.com/f-rambo/cloud-copilot/internal/repository/infrastructure"
 	"github.com/f-rambo/cloud-copilot/internal/server"
-	"github.com/f-rambo/cloud-copilot/third_package/argoworkflows"
-	"github.com/f-rambo/cloud-copilot/third_package/githubapi"
-	"github.com/f-rambo/cloud-copilot/third_package/helm"
-	"github.com/f-rambo/cloud-copilot/third_package/infrastructure"
-	"github.com/f-rambo/cloud-copilot/third_package/kubernetes"
 	"github.com/go-kratos/kratos/v2"
 	"github.com/go-kratos/kratos/v2/log"
 )
@@ -35,24 +32,23 @@ func wireApp(bootstrap *conf.Bootstrap, logger log.Logger) (*kratos.App, func(),
 		return nil, nil, err
 	}
 	clusterData := data.NewClusterRepo(dataData, bootstrap, logger)
-	clusterInfrastructure := infrastructure.NewClusterInfrastructure(bootstrap, logger)
-	clusterRuntime := kubernetes.NewClusterRuntime(bootstrap, logger)
+	clusterInfrastructure := infrastructure.NewInfrastructureCluster(bootstrap, logger)
+	clusterRuntime := clusterruntime.NewClusterRuntimeCluster(bootstrap, logger)
 	clusterUsecase := biz.NewClusterUseCase(bootstrap, clusterData, clusterInfrastructure, clusterRuntime, logger)
 	userData := data.NewUserRepo(dataData, bootstrap, logger)
-	thirdparty := githubapi.NewUserClient(bootstrap, logger)
+	thirdparty := clusterruntime.NewClusterRuntimeUser(bootstrap, logger)
 	userUseCase := biz.NewUseUser(userData, thirdparty, logger, bootstrap)
 	clusterInterface := interfaces.NewClusterInterface(clusterUsecase, userUseCase, bootstrap, logger)
 	appData := data.NewAppRepo(dataData, logger)
-	appRuntime := kubernetes.NewAppDeployedResource(bootstrap, logger)
-	appConstruct := helm.NewAppConstructRepo(bootstrap, logger)
-	appUsecase := biz.NewAppUsecase(appData, appRuntime, appConstruct, logger, bootstrap)
+	appRuntime := clusterruntime.NewClusterRuntimeApp(bootstrap, logger)
+	appUsecase := biz.NewAppUsecase(appData, appRuntime, logger, bootstrap)
 	appInterface := interfaces.NewAppInterface(appUsecase, userUseCase, bootstrap, logger)
 	servicesData := data.NewServicesRepo(dataData, logger)
-	workflowRuntime := argoworkflows.NewWorkflowRepo(bootstrap, logger)
+	workflowRuntime := clusterruntime.NewClusterRuntimeService(bootstrap, logger)
 	servicesUseCase := biz.NewServicesUseCase(servicesData, workflowRuntime, logger)
 	projectData := data.NewProjectRepo(dataData, bootstrap, logger)
-	porjectRuntime := kubernetes.NewProjectClient(bootstrap, logger)
-	projectUsecase := biz.NewProjectUseCase(projectData, porjectRuntime, logger, bootstrap)
+	projectRuntime := clusterruntime.NewClusterRuntimeProject(bootstrap, logger)
+	projectUsecase := biz.NewProjectUseCase(projectData, projectRuntime, logger, bootstrap)
 	servicesInterface := interfaces.NewServicesInterface(servicesUseCase, projectUsecase)
 	userInterface := interfaces.NewUserInterface(userUseCase, bootstrap)
 	projectInterface := interfaces.NewProjectInterface(projectUsecase, bootstrap, logger)

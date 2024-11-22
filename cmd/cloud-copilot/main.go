@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"flag"
-	"fmt"
 	"os"
 	"runtime"
 
@@ -62,7 +61,7 @@ func newApp(logger log.Logger, gs *grpc.Server, hs *http.Server, b *biz.Biz) *kr
 func main() {
 	defer func() {
 		if r := recover(); r != nil {
-			logStackTrace(r)
+			panic(r)
 		}
 	}()
 
@@ -75,12 +74,12 @@ func main() {
 	defer c.Close()
 
 	if err := c.Load(); err != nil {
-		logFatalWithStack(err)
+		panic(err)
 	}
 
 	var bc conf.Bootstrap
 	if err := c.Scan(&bc); err != nil {
-		logFatalWithStack(err)
+		panic(err)
 	}
 
 	Name = bc.Server.Name
@@ -88,16 +87,16 @@ func main() {
 
 	utils.ServerNameAsStoreDirName = Name
 	if err := utils.InitServerStore(); err != nil {
-		logFatalWithStack(err)
+		panic(err)
 	}
 
 	if err := utils.ShellToolsInit(); err != nil {
-		logFatalWithStack(err)
+		panic(err)
 	}
 
 	utilLog, err := utils.NewLog(&bc)
 	if err != nil {
-		logFatalWithStack(err)
+		panic(err)
 	}
 	defer utilLog.Close()
 	logger := log.With(utilLog, utilLog.GetLogContenteKeyvals()...)
@@ -106,24 +105,12 @@ func main() {
 		logger,
 	)
 	if err != nil {
-		logFatalWithStack(err)
+		panic(err)
 	}
 
 	defer cleanup()
 	// start and wait for stop signal
 	if err := app.Run(); err != nil {
-		logFatalWithStack(err)
+		panic(err)
 	}
-}
-
-func logStackTrace(err any) {
-	buf := make([]byte, 1024)
-	n := runtime.Stack(buf, true)
-	fmt.Printf("Panic: %v\nStack trace:\n%s", err, buf[:n])
-}
-
-func logFatalWithStack(err error) {
-	buf := make([]byte, 1024)
-	n := runtime.Stack(buf, true)
-	log.Fatalf("Error: %v\nStack trace:\n%s", err, buf[:n])
 }

@@ -76,9 +76,9 @@ func (a *AppInterface) List(ctx context.Context, appReq *v1alpha1.AppReq) (*v1al
 		appReq.PageSize = 10
 	}
 	bizAppReq := &biz.App{
-		ID:        appReq.Id,
+		Id:        appReq.Id,
 		Name:      appReq.Name,
-		AppTypeID: appReq.AppTypeId,
+		AppTypeId: appReq.AppTypeId,
 	}
 	appItems, itemCount, err := a.uc.List(ctx, bizAppReq, appReq.Page, appReq.PageSize)
 	if err != nil {
@@ -99,7 +99,7 @@ func (a *AppInterface) List(ctx context.Context, appReq *v1alpha1.AppReq) (*v1al
 			return nil, err
 		}
 		for _, v := range appTypes {
-			if v.ID == app.AppTypeId {
+			if v.Id == app.AppTypeId {
 				app.AppTypeName = v.Name
 				break
 			}
@@ -117,7 +117,7 @@ func (a *AppInterface) Delete(ctx context.Context, appReq *v1alpha1.AppReq) (*co
 	if err != nil {
 		return nil, err
 	}
-	if app == nil || app.ID == 0 {
+	if app == nil || app.Id == 0 {
 		return common.Response("app not found"), nil
 	}
 	err = a.uc.Delete(ctx, appReq.Id)
@@ -135,10 +135,10 @@ func (a *AppInterface) DeleteAppVersion(ctx context.Context, appReq *v1alpha1.Ap
 	if err != nil {
 		return nil, err
 	}
-	if app == nil || app.ID == 0 {
+	if app == nil || app.Id == 0 {
 		return common.Response("app not found"), nil
 	}
-	appVersion, err := a.uc.GetAppVersion(ctx, app.ID, appReq.VersionId)
+	appVersion, err := a.uc.GetAppVersion(ctx, app.Id, appReq.VersionId)
 	if err != nil {
 		return nil, err
 	}
@@ -236,7 +236,7 @@ func (a *AppInterface) ListAppType(ctx context.Context, _ *emptypb.Empty) (*v1al
 	}
 	for index, appType := range appTypes {
 		appTypeList.Items[index] = &v1alpha1.AppType{
-			Id:   appType.ID,
+			Id:   appType.Id,
 			Name: appType.Name,
 		}
 	}
@@ -262,7 +262,7 @@ func (a *AppInterface) SaveRepo(ctx context.Context, repo *v1alpha1.AppRepo) (*c
 		return nil, errors.New("repo url is required")
 	}
 	err := a.uc.SaveRepo(ctx, &biz.AppRepo{
-		ID:          repo.Id,
+		Id:          repo.Id,
 		Name:        repo.Name,
 		Url:         repo.Url,
 		Description: repo.Description,
@@ -283,7 +283,7 @@ func (a *AppInterface) ListRepo(ctx context.Context, _ *emptypb.Empty) (*v1alpha
 	}
 	for index, repo := range repos {
 		repoList.Items[index] = &v1alpha1.AppRepo{
-			Id:          repo.ID,
+			Id:          repo.Id,
 			Name:        repo.Name,
 			Url:         repo.Url,
 			Description: repo.Description,
@@ -322,7 +322,7 @@ func (a *AppInterface) GetAppsByRepo(ctx context.Context, repoReq *v1alpha1.AppR
 			return nil, err
 		}
 		dataApp.Id = int64(index) + 1
-		dataApp.UpdateTime = app.UpdatedAt.Format("2006/01/02")
+		dataApp.UpdateTime = app.UpdatedAt.AsTime().Format("2006/01/02")
 		appList.Items[index] = dataApp
 	}
 	return appList, nil
@@ -360,24 +360,23 @@ func (a *AppInterface) GetAppRelease(ctx context.Context, AppReleaseReq *v1alpha
 	if err != nil {
 		return nil, err
 	}
-	appRelease.Id = appReleaseRes.ID
+	appRelease.Id = appReleaseRes.Id
 	user, err := a.user.GetUserByID(ctx, appRelease.UserId)
 	if err != nil {
 		return nil, err
 	}
 	appRelease.UserName = user.Name
-	appRelease.CreateTime = appReleaseRes.CreatedAt.Format("2006-01-02 15:04:05")
-	appRelease.UpdateTime = appReleaseRes.UpdatedAt.Format("2006-01-02 15:04:05")
+	appRelease.CreateTime = appReleaseRes.CreatedAt.AsTime().Format("2006-01-02 15:04:05")
+	appRelease.UpdateTime = appReleaseRes.UpdatedAt.AsTime().Format("2006-01-02 15:04:05")
 	return appRelease, nil
 }
 
 func (a *AppInterface) AppReleaseList(ctx context.Context, appReleaseReq *v1alpha1.AppReleaseReq) (*v1alpha1.AppReleaseList, error) {
-	bizAppRelease := biz.AppRelease{}
-	err := utils.StructTransform(appReleaseReq, &bizAppRelease)
+	appReleaseReqMap := make(map[string]string)
+	err := utils.StructTransform(appReleaseReq, &appReleaseReqMap)
 	if err != nil {
 		return nil, err
 	}
-	bizAppRelease.ID = appReleaseReq.Id
 	if appReleaseReq.Page == 0 {
 		appReleaseReq.Page = 1
 	}
@@ -387,7 +386,7 @@ func (a *AppInterface) AppReleaseList(ctx context.Context, appReleaseReq *v1alph
 	if appReleaseReq.PageSize > 30 {
 		appReleaseReq.PageSize = 30
 	}
-	appReleases, count, err := a.uc.AppReleaseList(ctx, bizAppRelease, appReleaseReq.Page, appReleaseReq.PageSize)
+	appReleases, count, err := a.uc.AppReleaseList(ctx, appReleaseReqMap, appReleaseReq.Page, appReleaseReq.PageSize)
 	if err != nil {
 		return nil, err
 	}
@@ -398,7 +397,7 @@ func (a *AppInterface) AppReleaseList(ctx context.Context, appReleaseReq *v1alph
 		if err != nil {
 			return nil, err
 		}
-		appReleaseList[index].Id = appRelease.ID
+		appReleaseList[index].Id = appRelease.Id
 	}
 	return &v1alpha1.AppReleaseList{
 		Items: appReleaseList,
@@ -448,11 +447,11 @@ func (a *AppInterface) SaveAppRelease(ctx context.Context, appReleaseReq *v1alph
 	}
 	err = a.uc.CreateAppRelease(ctx, &biz.AppRelease{
 		ReleaseName: appReleaseReq.ReleaseName,
-		AppID:       app.ID,
-		VersionID:   appVersion.ID,
-		UserID:      user.ID,
-		ProjectID:   appReleaseReq.ProjectId,
-		ClusterID:   appReleaseReq.ClusterId,
+		AppId:       app.Id,
+		VersionId:   appVersion.Id,
+		UserId:      user.Id,
+		ProjectId:   appReleaseReq.ProjectId,
+		ClusterId:   appReleaseReq.ClusterId,
 		Namespace:   appReleaseReq.Namespace,
 		Config:      appReleaseReq.Config,
 	})
@@ -475,12 +474,12 @@ func (a *AppInterface) DeleteAppRelease(ctx context.Context, appReleaseReq *v1al
 
 func (a *AppInterface) bizAppToApp(bizApp *biz.App) (*v1alpha1.App, error) {
 	app := &v1alpha1.App{
-		Id:         bizApp.ID,
+		Id:         bizApp.Id,
 		Name:       bizApp.Name,
 		Icon:       bizApp.Icon,
-		AppTypeId:  bizApp.AppTypeID,
+		AppTypeId:  bizApp.AppTypeId,
 		Versions:   make([]*v1alpha1.AppVersion, len(bizApp.Versions)),
-		UpdateTime: bizApp.UpdatedAt.Format("2006/01/02"),
+		UpdateTime: bizApp.UpdatedAt.AsTime().Format("2006/01/02"),
 	}
 	for index, v := range bizApp.Versions {
 		appversion, err := a.bizAppVersionToAppVersion(v)
@@ -499,7 +498,7 @@ func (a *AppInterface) bizAppVersionToAppVersion(bizAppVersion *biz.AppVersion) 
 	if err != nil {
 		return nil, err
 	}
-	appVersion.Id = bizAppVersion.ID
+	appVersion.Id = bizAppVersion.Id
 	return appVersion, nil
 }
 
@@ -509,7 +508,7 @@ func (a *AppInterface) appTobizApp(app *v1alpha1.App) (*biz.App, error) {
 	if err != nil {
 		return nil, err
 	}
-	bizApp.ID = app.Id
+	bizApp.Id = app.Id
 	for index, v := range app.Versions {
 		appVersion, err := a.appVersionToBizAppVersion(v)
 		if err != nil {
@@ -526,6 +525,6 @@ func (a *AppInterface) appVersionToBizAppVersion(appVersion *v1alpha1.AppVersion
 	if err != nil {
 		return nil, err
 	}
-	bizAppVersion.ID = appVersion.Id
+	bizAppVersion.Id = appVersion.Id
 	return bizAppVersion, nil
 }

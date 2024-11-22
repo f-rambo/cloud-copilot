@@ -11,6 +11,19 @@ server:
   grpc:
     network: tcp
     addr: 0.0.0.0:9000
+services:
+  - name: cluster-runtime
+    version: "0.0.1"
+    port: 9003
+    addr: localhost
+  - name: infrastructure
+    version: "0.0.1"
+    port: 9002
+    addr: localhost
+  - name: sidecar
+    version: "0.0.1"
+    port: 9001
+    addr: localhost
 data:
   driver: sqlite
   database: cloud-copilot

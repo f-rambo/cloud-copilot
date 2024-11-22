@@ -6,34 +6,7 @@ import (
 	"github.com/f-rambo/cloud-copilot/internal/conf"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/spf13/cast"
-	"gorm.io/gorm"
 )
-
-type UserKey string
-type UserState string
-
-const (
-	UserStateEnable  UserState = "enable"
-	UserStateDisable UserState = "disable"
-
-	SignTypeGithub = "GITHUB"
-	SignTypeBasic  = "CREDENTIALS"
-
-	TokenKey     UserKey = "token"
-	SignType     UserKey = "sign_type"
-	UserEmailKey UserKey = "user_email"
-)
-
-type User struct {
-	ID          int64     `json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
-	Name        string    `json:"name,omitempty" gorm:"column:name; default:''; NOT NULL"`
-	Email       string    `json:"email,omitempty" gorm:"column:email; default:''; NOT NULL"`
-	PassWord    string    `json:"password,omitempty" gorm:"column:password; default:''; NOT NULL"`
-	State       UserState `json:"state,omitempty" gorm:"column:state; default:''; NOT NULL"`
-	AccessToken string    `json:"access_token,omitempty" gorm:"-"`
-	SignType    string    `json:"sign_type,omitempty" gorm:"column:sign_type; default:''; NOT NULL"`
-	gorm.Model
-}
 
 type UserData interface {
 	GetUserInfoByEmail(ctx context.Context, email string) (*User, error)
@@ -66,7 +39,7 @@ func (u *UserUseCase) InitAdminUser(ctx context.Context) error {
 	user := &User{
 		Name:     "admin",
 		Email:    "admin@eamil.com",
-		PassWord: u.conf.Auth.AdminPassword,
+		Password: u.conf.Auth.AdminPassword,
 	}
 	userData, err := u.userData.GetUserInfoByEmail(ctx, user.Email)
 	if err != nil {
@@ -97,15 +70,15 @@ func (u *UserUseCase) SignIn(ctx context.Context, user *User) error {
 			return err
 		}
 		user.Email = email
-		user.SignType = SignTypeGithub
+		user.SignType = UserSignType_GITHUB
 	} else {
 		err := u.userData.SignIn(ctx, user)
 		if err != nil {
 			return err
 		}
-		user.SignType = SignTypeBasic
+		user.SignType = UserSignType_CREDENTIALS
 	}
-	user.State = UserStateEnable
+	user.Status = UserStatus_USER_ENABLE
 	err := u.Save(ctx, user)
 	if err != nil {
 		return err

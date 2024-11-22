@@ -5,49 +5,7 @@ import (
 
 	"github.com/f-rambo/cloud-copilot/internal/conf"
 	"github.com/go-kratos/kratos/v2/log"
-	"gorm.io/gorm"
 )
-
-type Project struct {
-	ID           int64      `json:"id" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
-	Name         string     `json:"name" gorm:"column:name; default:''; NOT NULL"`
-	Namespace    string     `json:"namespace" gorm:"column:namespace; default:''; NOT NULL"`
-	State        string     `json:"state" gorm:"column:state; default:''; NOT NULL"`
-	Description  string     `json:"description" gorm:"column:description; default:''; NOT NULL"`
-	ClusterID    int64      `json:"cluster_id" gorm:"column:cluster_id; default:0; NOT NULL"`
-	Business     []Business `json:"business" gorm:"-"`
-	BusinessJson []byte     `json:"business_json" gorm:"column:business_json; type:json"`
-	gorm.Model
-}
-
-const (
-	ProjectStateInit    = "init"
-	ProjectStateRunning = "running"
-	ProjectStateStopped = "stopped"
-)
-
-const (
-	BackendBusiness  = "backend"
-	FrontendBusiness = "frontend"
-	BigDataBusiness  = "bigdata"
-	MLBusiness       = "ml"
-)
-
-const (
-	GolangTechnology = "golang"
-	PythonTechnology = "python"
-	JavaTechnology   = "java"
-	NodejsTechnology = "nodejs"
-)
-
-type Business struct {
-	Name        string       `json:"name" gorm:"column:name; default:''; NOT NULL"`
-	Technologys []Technology `json:"technologys" gorm:"-"`
-}
-
-type Technology struct {
-	Name string `json:"name" gorm:"column:name; default:''; NOT NULL"`
-}
 
 type ProjectData interface {
 	Save(context.Context, *Project) error
@@ -58,19 +16,19 @@ type ProjectData interface {
 	Delete(context.Context, int64) error
 }
 
-type PorjectRuntime interface {
+type ProjectRuntime interface {
 	CreateNamespace(context.Context, string) error
 	GetNamespaces(context.Context) (namespaces []string, err error)
 }
 
 type ProjectUsecase struct {
 	projectData    ProjectData
-	ProjectRuntime PorjectRuntime
+	ProjectRuntime ProjectRuntime
 	log            *log.Helper
 	conf           *conf.Bootstrap
 }
 
-func NewProjectUseCase(projectData ProjectData, ProjectTime PorjectRuntime, logger log.Logger, conf *conf.Bootstrap) *ProjectUsecase {
+func NewProjectUseCase(projectData ProjectData, ProjectTime ProjectRuntime, logger log.Logger, conf *conf.Bootstrap) *ProjectUsecase {
 	return &ProjectUsecase{projectData: projectData, ProjectRuntime: ProjectTime, log: log.NewHelper(logger), conf: conf}
 }
 
@@ -81,7 +39,7 @@ func (uc *ProjectUsecase) Init(ctx context.Context) error {
 		return err
 	}
 	if project == nil {
-		project := &Project{Name: uc.conf.Server.Name, State: ProjectStateInit}
+		project := &Project{Name: uc.conf.Server.Name, Status: ProjectStatus_PROJECT_INIT}
 		err = uc.Save(ctx, project)
 		if err != nil {
 			return err

@@ -1,0 +1,97 @@
+syntax = "proto3";
+
+package biz.app;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/f-rambo/cloud-copilot/internal/biz;";
+
+message AppType {
+      int64 id = 1; // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
+      string name = 2; // @gotags: gorm:"column:name; default:''; NOT NULL"
+      google.protobuf.Timestamp created_at = 3; // @gotags: gorm:"column:created_at; default:CURRENT_TIMESTAMP"
+      google.protobuf.Timestamp updated_at = 4; // @gotags: gorm:"column:updated_at; default:CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
+      google.protobuf.Timestamp deleted_at = 5; // @gotags: gorm:"column:deleted_at; default:NULL"
+}
+
+message AppRepo {
+      int64 id = 1; // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
+      string name = 2; // @gotags: gorm:"column:name; default:''; NOT NULL"
+      string url = 3; // @gotags: gorm:"column:url; default:''; NOT NULL"
+      string index_path = 4; // @gotags: gorm:"column:index_path; default:''; NOT NULL"
+      string description = 5; // @gotags: gorm:"column:description; default:''; NOT NULL"
+      google.protobuf.Timestamp created_at = 6; // @gotags: gorm:"column:created_at; default:CURRENT_TIMESTAMP"
+      google.protobuf.Timestamp updated_at = 7; // @gotags: gorm:"column:updated_at; default:CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
+      google.protobuf.Timestamp deleted_at = 8; // @gotags: gorm:"column:deleted_at; default:NULL"
+}
+
+message AppVersion {
+      int64 id = 1; // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
+      int64 app_id = 2; // @gotags: gorm:"column:app_id; default:0; NOT NULL; index"
+      string name = 3; // @gotags: gorm:"column:name; default:''; NOT NULL"
+      string chart = 4; // @gotags: gorm:"column:chart; default:''; NOT NULL" // as file path
+      string version = 5; // @gotags: gorm:"column:version; default:''; NOT NULL; index"
+      string default_config = 6; // @gotags: gorm:"column:default_config; default:''; NOT NULL"
+      google.protobuf.Timestamp created_at = 7; // @gotags: gorm:"column:created_at; default:CURRENT_TIMESTAMP"
+      google.protobuf.Timestamp updated_at = 8; // @gotags: gorm:"column:updated_at; default:CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
+      google.protobuf.Timestamp deleted_at = 9; // @gotags: gorm:"column:deleted_at; default:NULL"
+}
+
+message App {
+      int64 id = 1; // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
+      string name = 2; // @gotags: gorm:"column:name; default:''; NOT NULL; index"
+      string icon = 3; // @gotags: gorm:"column:icon; default:''; NOT NULL"
+      int64 app_type_id = 4; // @gotags: gorm:"column:app_type_id; default:0; NOT NULL"
+      int64 app_repo_id = 5; // @gotags: gorm:"column:app_repo_id; default:0; NOT NULL"
+      string description = 6; // @gotags: gorm:"column:description; default:''; NOT NULL"
+      repeated AppVersion versions = 7; // @gotags: gorm:"-"
+      string readme = 8; // @gotags: gorm:"-"
+      bytes metadata = 9; // @gotags: gorm:"-"
+      google.protobuf.Timestamp created_at = 10; // @gotags: gorm:"column:created_at; default:CURRENT_TIMESTAMP"
+      google.protobuf.Timestamp updated_at = 11; // @gotags: gorm:"column:updated_at; default:CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
+      google.protobuf.Timestamp deleted_at = 12; // @gotags: gorm:"column:deleted_at; default:NULL"
+}
+
+
+message AppReleaseResource {
+      int64 id = 1; // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
+      int64 release_id = 2; // @gotags: gorm:"column:release_id; default:0; NOT NULL; index"
+      string name = 3; // @gotags: gorm:"column:name; default:''; NOT NULL"
+      string kind = 4; // @gotags: gorm:"column:kind; default:''; NOT NULL"
+      string manifest = 5; // @gotags: gorm:"column:manifest; default:''; NOT NULL"
+      string started_at = 6; // @gotags: gorm:"column:started_at; default:''; NOT NULL"
+      repeated string events = 7; // @gotags: gorm:"column:events; default:''; NOT NULL"
+      repeated string status = 8; // @gotags: gorm:"column:status; default:''; NOT NULL"
+      google.protobuf.Timestamp created_at = 9; // @gotags: gorm:"column:created_at; default:CURRENT_TIMESTAMP"
+      google.protobuf.Timestamp updated_at = 10; // @gotags: gorm:"column:updated_at; default:CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
+      google.protobuf.Timestamp deleted_at = 11; // @gotags: gorm:"column:deleted_at; default:NULL"
+}
+
+enum AppReleaseSatus {
+      APP_RELEASE_PENDING = 0;
+      APP_RELEASE_RUNNING = 1;
+      APP_RELEASE_FAILED = 2;
+}
+
+message AppRelease {
+      int64 id = 1; // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
+      string release_name = 2; // @gotags: gorm:"column:release_name; default:''; NOT NULL"
+      int64 app_id = 3; // @gotags: gorm:"column:app_id; default:0; NOT NULL; index"
+      int64 version_id = 4; // @gotags: gorm:"column:version_id; default:0; NOT NULL; index"
+      int64 cluster_id = 5; // @gotags: gorm:"column:cluster_id; default:0; NOT NULL; index"
+      int64 project_id = 6; // @gotags: gorm:"column:project_id; default:0; NOT NULL; index"
+      int64 user_id = 7; // @gotags: gorm:"column:user_id; default:0; NOT NULL; index"
+      string namespace = 8; // @gotags: gorm:"column:namespace; default:''; NOT NULL"
+      string config = 9; // @gotags: gorm:"column:config; default:''; NOT NULL"
+      AppReleaseSatus status = 10; // @gotags: gorm:"column:status; default:''; NOT NULL"
+      string manifest = 11; // @gotags: gorm:"column:manifest; default:''; NOT NULL"
+      string notes = 12; // @gotags: gorm:"column:notes; default:''; NOT NULL"
+      string logs = 13; // @gotags: gorm:"column:logs; default:''; NOT NULL"
+      bool dryrun = 14; // @gotags: gorm:"column:dryrun; default:false; NOT NULL"
+      bool atomic = 15; // @gotags: gorm:"column:atomic; default:false; NOT NULL"
+      bool wait = 16; // @gotags: gorm:"column:wait; default:false; NOT NULL"
+      repeated AppReleaseResource resources = 17; // @gotags: gorm:"-"
+      google.protobuf.Timestamp created_at = 18; // @gotags: gorm:"column:created_at; default:CURRENT_TIMESTAMP"
+      google.protobuf.Timestamp updated_at = 19; // @gotags: gorm:"column:updated_at; default:CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
+      google.protobuf.Timestamp deleted_at = 20; // @gotags: gorm:"column:deleted_at; default:NULL"
+}

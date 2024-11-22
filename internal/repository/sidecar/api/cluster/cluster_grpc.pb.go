@@ -8,6 +8,7 @@ package cluster
 
 import (
 	context "context"
+	common "github.com/f-rambo/cloud-copilot/api/common"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -20,16 +21,16 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	ClusterInterface_Ping_FullMethodName    = "/cluster.ClusterInterface/Ping"
-	ClusterInterface_GetLogs_FullMethodName = "/cluster.ClusterInterface/GetLogs"
-	ClusterInterface_Info_FullMethodName    = "/cluster.ClusterInterface/Info"
+	ClusterInterface_Ping_FullMethodName    = "/sidecar.api.cluster.ClusterInterface/Ping"
+	ClusterInterface_GetLogs_FullMethodName = "/sidecar.api.cluster.ClusterInterface/GetLogs"
+	ClusterInterface_Info_FullMethodName    = "/sidecar.api.cluster.ClusterInterface/Info"
 )
 
 // ClusterInterfaceClient is the client API for ClusterInterface service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ClusterInterfaceClient interface {
-	Ping(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*Msg, error)
+	Ping(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*common.Msg, error)
 	GetLogs(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[LogRequest, LogResponse], error)
 	Info(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*Cluster, error)
 }
@@ -42,9 +43,9 @@ func NewClusterInterfaceClient(cc grpc.ClientConnInterface) ClusterInterfaceClie
 	return &clusterInterfaceClient{cc}
 }
 
-func (c *clusterInterfaceClient) Ping(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*Msg, error) {
+func (c *clusterInterfaceClient) Ping(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*common.Msg, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Msg)
+	out := new(common.Msg)
 	err := c.cc.Invoke(ctx, ClusterInterface_Ping_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -79,7 +80,7 @@ func (c *clusterInterfaceClient) Info(ctx context.Context, in *emptypb.Empty, op
 // All implementations must embed UnimplementedClusterInterfaceServer
 // for forward compatibility.
 type ClusterInterfaceServer interface {
-	Ping(context.Context, *emptypb.Empty) (*Msg, error)
+	Ping(context.Context, *emptypb.Empty) (*common.Msg, error)
 	GetLogs(grpc.BidiStreamingServer[LogRequest, LogResponse]) error
 	Info(context.Context, *emptypb.Empty) (*Cluster, error)
 	mustEmbedUnimplementedClusterInterfaceServer()
@@ -92,7 +93,7 @@ type ClusterInterfaceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedClusterInterfaceServer struct{}
 
-func (UnimplementedClusterInterfaceServer) Ping(context.Context, *emptypb.Empty) (*Msg, error) {
+func (UnimplementedClusterInterfaceServer) Ping(context.Context, *emptypb.Empty) (*common.Msg, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Ping not implemented")
 }
 func (UnimplementedClusterInterfaceServer) GetLogs(grpc.BidiStreamingServer[LogRequest, LogResponse]) error {
@@ -169,7 +170,7 @@ func _ClusterInterface_Info_Handler(srv interface{}, ctx context.Context, dec fu
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var ClusterInterface_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "cluster.ClusterInterface",
+	ServiceName: "sidecar.api.cluster.ClusterInterface",
 	HandlerType: (*ClusterInterfaceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{

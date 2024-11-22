@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package user;
+
+option go_package = "github.com/f-rambo/cloud-copilot/internal/repository/clusterruntime/api/user;";
+
+message UserEmaileReq {
+      string token = 1;
+}
+
+message UserEmaileResponse {
+      string email = 1;
+}

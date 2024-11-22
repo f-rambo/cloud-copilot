@@ -649,7 +649,8 @@ paths:
                 - name: type
                   in: query
                   schema:
-                    type: string
+                    type: integer
+                    format: int32
                 - name: public_key
                   in: query
                   schema:
@@ -714,7 +715,8 @@ paths:
                 - name: type
                   in: query
                   schema:
-                    type: string
+                    type: integer
+                    format: int32
                 - name: public_key
                   in: query
                   schema:
@@ -805,7 +807,8 @@ paths:
                 - name: type
                   in: query
                   schema:
-                    type: string
+                    type: integer
+                    format: int32
                 - name: public_key
                   in: query
                   schema:
@@ -1030,7 +1033,8 @@ paths:
                 - name: wf_type
                   in: query
                   schema:
-                    type: string
+                    type: integer
+                    format: int32
                 - name: workflow_id
                   in: query
                   schema:
@@ -1083,7 +1087,8 @@ paths:
                 - name: wf_type
                   in: query
                   schema:
-                    type: string
+                    type: integer
+                    format: int32
                 - name: workflow_id
                   in: query
                   schema:
@@ -1136,7 +1141,8 @@ paths:
                 - name: wf_type
                   in: query
                   schema:
-                    type: string
+                    type: integer
+                    format: int32
                 - name: workflow_id
                   in: query
                   schema:
@@ -1219,7 +1225,8 @@ paths:
                 - name: wf_type
                   in: query
                   schema:
-                    type: string
+                    type: integer
+                    format: int32
                 - name: workflow_id
                   in: query
                   schema:
@@ -1298,7 +1305,12 @@ paths:
                   in: query
                   schema:
                     type: string
-                - name: state
+                - name: status
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: status_string
                   in: query
                   schema:
                     type: string
@@ -1307,6 +1319,11 @@ paths:
                   schema:
                     type: string
                 - name: sign_type
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: sign_type_string
                   in: query
                   schema:
                     type: string
@@ -1745,7 +1762,8 @@ components:
                 name:
                     type: string
                 type:
-                    type: string
+                    type: integer
+                    format: int32
                 public_key:
                     type: string
                 region:
@@ -1861,7 +1879,8 @@ components:
                 user:
                     type: string
                 role:
-                    type: string
+                    type: integer
+                    format: int32
                 id:
                     type: string
         cluster.v1alpha1.NodeGroup:
@@ -1983,7 +2002,7 @@ components:
                     type: string
                 service_id:
                     type: string
-                state:
+                status:
                     type: string
                 created_at:
                     type: string
@@ -2080,7 +2099,8 @@ components:
                 workflow:
                     $ref: '#/components/schemas/service.v1alpha1.Worklfow'
                 wf_type:
-                    type: string
+                    type: integer
+                    format: int32
                 workflow_id:
                     type: string
         service.v1alpha1.Services:
@@ -2158,7 +2178,8 @@ components:
                 access_token:
                     type: string
                 sign_type:
-                    type: string
+                    type: integer
+                    format: int32
                 username:
                     type: string
         user.v1alpha1.User:
@@ -2172,11 +2193,17 @@ components:
                     type: string
                 access_token:
                     type: string
-                state:
+                status:
+                    type: integer
+                    format: int32
+                status_string:
                     type: string
                 updated_at:
                     type: string
                 sign_type:
+                    type: integer
+                    format: int32
+                sign_type_string:
                     type: string
         user.v1alpha1.Users:
             type: object

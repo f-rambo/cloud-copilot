@@ -8,7 +8,7 @@ option go_package = "api/cluster/v1alpha1;v1alpha1";
 message ClusterArgs {
     int64 id = 1 [json_name = "id"];
     string name = 2 [json_name = "name"];
-    string type = 3 [json_name = "type"];
+    int32 type = 3 [json_name = "type"];
     string public_key = 4 [json_name = "public_key"];
     string region = 5 [json_name = "region"];
     string access_id = 6 [json_name = "access_id"];
@@ -21,7 +21,7 @@ message ClusterArgs {
 message NodeArgs {
     string ip = 1 [json_name = "ip"];
     string user = 2 [json_name = "user"];
-    string role = 3 [json_name = "role"];
+    int32 role = 3 [json_name = "role"];
     int64 id = 4 [json_name = "id"];
 }
 

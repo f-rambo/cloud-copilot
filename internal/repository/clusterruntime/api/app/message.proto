@@ -1,0 +1,51 @@
+syntax = "proto3";
+
+package app;
+
+import "internal/biz/app.proto";
+
+option go_package = "github.com/f-rambo/cloud-copilot/internal/repository/clusterruntime/api/app;";
+
+message FileUploadRequest {
+      string icon = 1;
+      string file_name = 2;
+      string chunk = 3;
+      bool resume = 4;
+      bool finish = 5;
+}
+
+message CheckClusterResponse {
+      bool ok = 1;
+}
+
+message AppReleaseResourceItems {
+      repeated biz.app.AppReleaseResource resources = 1;
+}
+
+message AppReleaseReq {
+      biz.app.App app = 1;
+      biz.app.AppVersion version = 2;
+      biz.app.AppRelease release = 3;
+      biz.app.AppRepo repo = 4;
+}
+
+message GetAppDetailByRepoReq {
+      biz.app.AppRepo repo = 1;
+      string app_name = 2;
+      string version = 3;
+}
+
+
+message AppItems {
+      repeated biz.app.App apps = 1;
+}
+
+message GetAppAndVersionInfo {
+      biz.app.App app = 1;
+      biz.app.AppVersion version = 2;
+}
+
+message DeleteAppVersionReq {
+      biz.app.App app = 1;
+      biz.app.AppVersion version = 2;
+}

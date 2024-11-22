@@ -2,8 +2,13 @@ package utils
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/go-kratos/kratos/v2"
+	"github.com/go-kratos/kratos/v2/metadata"
+	mmd "github.com/go-kratos/kratos/v2/middleware/metadata"
+	"github.com/go-kratos/kratos/v2/transport/grpc"
+	grpcConnect "google.golang.org/grpc"
 )
 
 type MatedataKey string
@@ -39,4 +44,31 @@ func GetFromContext(ctx context.Context) map[string]string {
 		return nil
 	}
 	return appInfo.Metadata()
+}
+
+type GrpcConn struct {
+	Conn *grpcConnect.ClientConn
+	Ctx  context.Context
+}
+
+func (g *GrpcConn) OpenGrpcConn(ctx context.Context, addr string, port int32) (*GrpcConn, error) {
+	conn, err := grpc.DialInsecure(ctx,
+		grpc.WithEndpoint(fmt.Sprintf("%s:%d", addr, port)),
+		grpc.WithMiddleware(mmd.Client()),
+	)
+	if err != nil {
+		return nil, err
+	}
+	appInfo := GetFromContext(ctx)
+	for k, v := range appInfo {
+		ctx = metadata.AppendToClientContext(ctx, k, v)
+	}
+	return &GrpcConn{
+		Conn: conn,
+		Ctx:  ctx,
+	}, nil
+}
+
+func (g *GrpcConn) Close() {
+	g.Conn.Close()
 }

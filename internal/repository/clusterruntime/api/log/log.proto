@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package log;
+
+import "google/protobuf/empty.proto";
+import "api/common/error_reason.proto";
+import "internal/repository/clusterruntime/api/log/message.proto";
+
+option go_package = "github.com/f-rambo/cloud-copilot/internal/repository/clusterruntime/api/log;";
+
+service LogInterface {
+      rpc Ping(google.protobuf.Empty) returns (common.Msg);
+
+      rpc GetLogs(stream log.LogRequest) returns (stream log.LogResponse);
+}

@@ -110,7 +110,7 @@ func (p *ProjectInterface) projectTobizProject(project *v1alpha1.Project) (*biz.
 	if err != nil {
 		return nil, err
 	}
-	bizProject.ID = project.Id
+	bizProject.Id = project.Id
 	return bizProject, nil
 }
 
@@ -137,7 +137,7 @@ func (p *ProjectInterface) bizProjectToProject(bizProject *biz.Project) (*v1alph
 		businessTechnology = businessTechnology[:len(businessTechnology)-1]
 		businessTechnology += ";\n"
 	}
-	project.Id = bizProject.ID
+	project.Id = bizProject.Id
 	project.BusinessTechnology = businessTechnology
 	return project, nil
 }

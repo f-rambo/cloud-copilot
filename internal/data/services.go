@@ -2,7 +2,6 @@ package data
 
 import (
 	"context"
-	"encoding/json"
 
 	"github.com/f-rambo/cloud-copilot/internal/biz"
 	"github.com/go-kratos/kratos/v2/log"
@@ -24,8 +23,8 @@ func (s *servicesRepo) List(ctx context.Context, serviceParam *biz.Service, page
 	var itemCount int64 = 0
 	services := make([]*biz.Service, 0)
 	serviceModel := s.data.db.Model(&biz.Service{})
-	if serviceParam.ProjectID != 0 {
-		serviceModel = serviceModel.Where("project_id = ?", serviceParam.ProjectID)
+	if serviceParam.ProjectId != 0 {
+		serviceModel = serviceModel.Where("project_id = ?", serviceParam.ProjectId)
 	}
 	if serviceParam.Name != "" {
 		serviceModel = serviceModel.Where("name like ?", "%"+serviceParam.Name+"%")
@@ -41,30 +40,16 @@ func (s *servicesRepo) List(ctx context.Context, serviceParam *biz.Service, page
 	if err != nil {
 		return nil, 0, err
 	}
-	for _, service := range services {
-		err = json.Unmarshal(service.PortsJson, &service.Ports)
-		if err != nil {
-			return nil, 0, err
-		}
-	}
 	return services, itemCount, nil
 }
 
 func (s *servicesRepo) Save(ctx context.Context, service *biz.Service) (err error) {
-	service.PortsJson, err = json.Marshal(service.Ports)
-	if err != nil {
-		return err
-	}
 	return s.data.db.Save(service).Error
 }
 
 func (s *servicesRepo) Get(ctx context.Context, id int64) (*biz.Service, error) {
 	service := &biz.Service{}
 	err := s.data.db.Where("id = ?", id).First(service).Error
-	if err != nil {
-		return nil, err
-	}
-	err = json.Unmarshal(service.PortsJson, &service.Ports)
 	if err != nil {
 		return nil, err
 	}

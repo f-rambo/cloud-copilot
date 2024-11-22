@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package cluster;
+
+import "internal/biz/cluster.proto";
+
+option go_package = "github.com/f-rambo/cloud-copilot/internal/repository/clusterruntime/api/cluster;";
+
+service ClusterInterface {
+      rpc CurrentCluster(biz.cluster.Cluster) returns (biz.cluster.Cluster);
+
+      rpc HandlerNodes(biz.cluster.Cluster) returns (biz.cluster.Cluster);
+      
+      rpc MigrateToCluster(biz.cluster.Cluster) returns (biz.cluster.Cluster);
+}

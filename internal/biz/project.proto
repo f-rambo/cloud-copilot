@@ -1,0 +1,46 @@
+syntax = "proto3";
+
+package biz.project;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/f-rambo/cloud-copilot/internal/biz;";
+
+enum ProjectStatus {
+      PROJECT_INIT = 0;
+      PROJECT_RUNNING = 1;
+      PROJECT_STOPPED = 2;
+}
+
+message Technology {
+      int64 id = 1; // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
+      string name = 2; // @gotags: gorm:"column:name; default:''; NOT NULL"
+      int64 business_id = 3; // @gotags: gorm:"column:business_id; default:0; NOT NULL"
+      google.protobuf.Timestamp created_at = 4; // @gotags: gorm:"column:created_at; default:CURRENT_TIMESTAMP"
+      google.protobuf.Timestamp updated_at = 5; // @gotags: gorm:"column:updated_at; default:CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
+      google.protobuf.Timestamp deleted_at = 6; // @gotags: gorm:"column:deleted_at; default:NULL"
+}
+
+message Business {
+      int64 id = 1; // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
+      string name = 2; // @gotags: gorm:"column:name; default:''; NOT NULL"
+      int64 project_id = 3; // @gotags: gorm:"column:project_id; default:0; NOT NULL"
+      repeated Technology technologys = 4; // @gotags: gorm:"-"
+      google.protobuf.Timestamp created_at = 5; // @gotags: gorm:"column:created_at; default:CURRENT_TIMESTAMP"
+      google.protobuf.Timestamp updated_at = 6; // @gotags: gorm:"column:updated_at; default:CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
+      google.protobuf.Timestamp deleted_at = 7; // @gotags: gorm:"column:deleted_at; default:NULL"
+}
+
+message Project {
+      int64 id = 1; // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
+      string name = 2; // @gotags: gorm:"column:name; default:''; NOT NULL"
+      string description = 3; // @gotags: gorm:"column:namespace; default:''; NOT NULL"
+      int64 cluster_id = 4; // @gotags: gorm:"column:cluster_id; default:0; NOT NULL"
+      string namespace = 5; // @gotags: gorm:"column:namespace; default:''; NOT NULL"
+      ProjectStatus status = 6; // @gotags: gorm:"column:status; default:''; NOT NULL"
+      repeated Business business = 7; // @gotags: gorm:"-"
+      string business_technology = 8; // @gotags: gorm:"column:business_technology; default:''; NOT NULL"
+      google.protobuf.Timestamp created_at = 9; // @gotags: gorm:"column:created_at; default:CURRENT_TIMESTAMP"
+      google.protobuf.Timestamp updated_at = 10; // @gotags: gorm:"column:updated_at; default:CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
+      google.protobuf.Timestamp deleted_at = 11; // @gotags: gorm:"column:deleted_at; default:NULL"
+}
