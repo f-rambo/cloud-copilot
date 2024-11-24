@@ -28,6 +28,10 @@ func (c *ClusterRuntimeApp) CheckCluster(ctx context.Context) bool {
 	return false
 }
 
+func (c *ClusterRuntimeApp) Init(ctx context.Context) ([]*biz.App, []*biz.AppRelease, error) {
+	return nil, nil, nil
+}
+
 func (c *ClusterRuntimeApp) GetClusterResources(ctx context.Context, appRelease *biz.AppRelease) ([]*biz.AppReleaseResource, error) {
 	return nil, nil
 }

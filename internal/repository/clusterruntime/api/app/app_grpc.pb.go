@@ -24,6 +24,7 @@ const _ = grpc.SupportPackageIsVersion9
 const (
 	AppInterface_UploadApp_FullMethodName            = "/app.AppInterface/UploadApp"
 	AppInterface_CheckCluster_FullMethodName         = "/app.AppInterface/CheckCluster"
+	AppInterface_Init_FullMethodName                 = "/app.AppInterface/Init"
 	AppInterface_GetClusterResources_FullMethodName  = "/app.AppInterface/GetClusterResources"
 	AppInterface_DeleteApp_FullMethodName            = "/app.AppInterface/DeleteApp"
 	AppInterface_DeleteAppVersion_FullMethodName     = "/app.AppInterface/DeleteAppVersion"
@@ -41,6 +42,7 @@ const (
 type AppInterfaceClient interface {
 	UploadApp(ctx context.Context, in *FileUploadRequest, opts ...grpc.CallOption) (*GetAppAndVersionInfo, error)
 	CheckCluster(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*CheckClusterResponse, error)
+	Init(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*InitResponse, error)
 	GetClusterResources(ctx context.Context, in *biz.AppRelease, opts ...grpc.CallOption) (*AppReleaseResourceItems, error)
 	DeleteApp(ctx context.Context, in *biz.App, opts ...grpc.CallOption) (*common.Msg, error)
 	DeleteAppVersion(ctx context.Context, in *DeleteAppVersionReq, opts ...grpc.CallOption) (*common.Msg, error)
@@ -74,6 +76,16 @@ func (c *appInterfaceClient) CheckCluster(ctx context.Context, in *emptypb.Empty
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(CheckClusterResponse)
 	err := c.cc.Invoke(ctx, AppInterface_CheckCluster_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *appInterfaceClient) Init(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*InitResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(InitResponse)
+	err := c.cc.Invoke(ctx, AppInterface_Init_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -176,6 +188,7 @@ func (c *appInterfaceClient) GetAppDetailByRepo(ctx context.Context, in *GetAppD
 type AppInterfaceServer interface {
 	UploadApp(context.Context, *FileUploadRequest) (*GetAppAndVersionInfo, error)
 	CheckCluster(context.Context, *emptypb.Empty) (*CheckClusterResponse, error)
+	Init(context.Context, *emptypb.Empty) (*InitResponse, error)
 	GetClusterResources(context.Context, *biz.AppRelease) (*AppReleaseResourceItems, error)
 	DeleteApp(context.Context, *biz.App) (*common.Msg, error)
 	DeleteAppVersion(context.Context, *DeleteAppVersionReq) (*common.Msg, error)
@@ -200,6 +213,9 @@ func (UnimplementedAppInterfaceServer) UploadApp(context.Context, *FileUploadReq
 }
 func (UnimplementedAppInterfaceServer) CheckCluster(context.Context, *emptypb.Empty) (*CheckClusterResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CheckCluster not implemented")
+}
+func (UnimplementedAppInterfaceServer) Init(context.Context, *emptypb.Empty) (*InitResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Init not implemented")
 }
 func (UnimplementedAppInterfaceServer) GetClusterResources(context.Context, *biz.AppRelease) (*AppReleaseResourceItems, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetClusterResources not implemented")
@@ -281,6 +297,24 @@ func _AppInterface_CheckCluster_Handler(srv interface{}, ctx context.Context, de
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AppInterfaceServer).CheckCluster(ctx, req.(*emptypb.Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AppInterface_Init_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(emptypb.Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AppInterfaceServer).Init(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AppInterface_Init_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AppInterfaceServer).Init(ctx, req.(*emptypb.Empty))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -461,6 +495,10 @@ var AppInterface_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CheckCluster",
 			Handler:    _AppInterface_CheckCluster_Handler,
+		},
+		{
+			MethodName: "Init",
+			Handler:    _AppInterface_Init_Handler,
 		},
 		{
 			MethodName: "GetClusterResources",

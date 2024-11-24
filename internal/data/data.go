@@ -3,16 +3,14 @@ package data
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/f-rambo/cloud-copilot/internal/biz"
 	"github.com/f-rambo/cloud-copilot/internal/conf"
-	"github.com/f-rambo/cloud-copilot/utils"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/wire"
-	"github.com/pkg/errors"
 	"gorm.io/driver/postgres"
-	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	gormlogger "gorm.io/gorm/logger"
 	"gorm.io/gorm/schema"
@@ -20,21 +18,6 @@ import (
 
 // ProviderSet is data providers.
 var ProviderSet = wire.NewSet(NewData, NewClusterRepo, NewAppRepo, NewServicesRepo, NewUserRepo, NewProjectRepo)
-
-type DBDriver string
-
-const (
-	DBDriverPostgres DBDriver = "postgres"
-	DBDriverSQLite   DBDriver = "sqlite"
-)
-
-func (d DBDriver) String() string {
-	return string(d)
-}
-
-const (
-	DatabaseName = "cloud-copilot.db"
-)
 
 type Data struct {
 	conf          *conf.Bootstrap
@@ -53,27 +36,9 @@ func NewData(c *conf.Bootstrap, logger log.Logger) (*Data, func(), error) {
 	cleanup := func() {
 		log.Info("closing the data resources")
 	}
-	var gormDialector gorm.Dialector
-	if DBDriver(c.Data.GetDriver()) == DBDriverPostgres {
-		dns := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%d sslmode=disable TimeZone=Asia/Shanghai",
-			c.Data.GetHost(), c.Data.GetUsername(), c.Data.GetPassword(), c.Data.GetDatabase(), c.Data.GetPort())
-		gormDialector = postgres.Open(dns)
-	}
-	if DBDriver(c.Data.GetDriver()) == DBDriverSQLite {
-		dbFilePath, err := utils.GetServerStorePathByNames(utils.SqlitePackage, DatabaseName)
-		if err != nil {
-			return data, cleanup, err
-		}
-		err = utils.CreateStoreFile(dbFilePath)
-		if err != nil {
-			return data, cleanup, err
-		}
-		gormDialector = sqlite.Open(dbFilePath)
-	}
-	if gormDialector == nil {
-		return data, cleanup, errors.New("db driver is not supported")
-	}
-	tablePrefix := fmt.Sprintf("%s_", c.Data.GetDatabase())
+	gormDialector := postgres.Open(fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%d sslmode=disable TimeZone=Asia/Shanghai",
+		c.Data.GetHost(), c.Data.GetUsername(), c.Data.GetPassword(), c.Data.GetDatabase(), c.Data.GetPort()))
+	tablePrefix := fmt.Sprintf("%s_", strings.ReplaceAll(c.Data.GetDatabase(), "-", ""))
 	data.db, err = gorm.Open(gormDialector, &gorm.Config{
 		Logger: data,
 		NamingStrategy: schema.NamingStrategy{
@@ -84,26 +49,31 @@ func NewData(c *conf.Bootstrap, logger log.Logger) (*Data, func(), error) {
 	if err != nil {
 		return data, cleanup, err
 	}
-	// AutoMigrate
 	err = data.db.AutoMigrate(
+		&biz.AppType{},
+		&biz.AppRepo{},
+		&biz.App{},
+		&biz.AppRelease{},
+		&biz.AppReleaseResource{},
 		&biz.Cluster{},
+		&biz.Node{},
 		&biz.NodeGroup{},
 		&biz.BostionHost{},
-		&biz.Node{},
+		&biz.CloudResource{},
+		&biz.SecurityGroup{},
+		&biz.Technology{},
+		&biz.Business{},
 		&biz.Project{},
-		&biz.App{},
-		&biz.AppType{},
-		&biz.AppVersion{},
-		&biz.AppRelease{},
-		&biz.Service{},
+		&biz.Workflow{},
 		&biz.CI{},
+		&biz.CD{},
+		&biz.Port{},
+		&biz.Service{},
 		&biz.User{},
-		&biz.AppRepo{},
 	)
 	if err != nil {
 		return data, cleanup, err
 	}
-
 	return data, cleanup, nil
 }
 

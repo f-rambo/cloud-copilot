@@ -25,12 +25,11 @@ services:
     port: 9001
     addr: localhost
 data:
-  driver: sqlite
   database: cloud-copilot
-  host: ""
-  port: 3306
-  username: ""
-  password: ""
+  host: "localhost"
+  port: 5432
+  username: "postgres"
+  password: "123456"
 log:
   max_size: 500
   max_backups: 3
@@ -39,40 +38,3 @@ auth:
   exp: 24
   key: "S89XMkyGIpI0tgJkf7b8undK"
   admin_password: "123456"
-app:
-  - name: base
-    version: "1.24.0"
-    namespace: networking
-  - name: istiod
-    version: "1.24.0"
-    namespace: networking
-  - name: cni
-    version: "1.24.0"
-    namespace: networking
-  - name: ztunnel
-    version: "1.24.0"
-    namespace: networking
-  - name: gateway
-    version: "1.24.0"
-    namespace: networking
-  - name: rook-ceph
-    version: "v1.15.5"
-    namespace: storage
-  - name: rook-ceph-cluster
-    version: "v1.15.5"
-    namespace: storage
-  - name: postgresql
-    version: "15.1"
-    namespace: storage
-  - name: prometheus
-    version: "25.30.1"
-    namespace: monitoring
-  - name: grafana
-    version: "8.6.0"
-    namespace: monitoring
-  - name: argo-workflows
-    version: "0.42.7"
-    namespace: toolkit
-  - name: cluster-autoscaler
-    version: "9.43.2"
-    namespace: toolkit

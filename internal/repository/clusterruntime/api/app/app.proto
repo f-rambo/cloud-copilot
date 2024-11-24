@@ -15,6 +15,8 @@ service AppInterface {
 
       rpc CheckCluster(google.protobuf.Empty) returns(app.CheckClusterResponse);
 
+      rpc Init(google.protobuf.Empty) returns(app.InitResponse);
+
       rpc GetClusterResources(biz.app.AppRelease) returns(AppReleaseResourceItems); // GetPodResources GetNetResouces GetAppsReouces
 
       rpc DeleteApp(biz.app.App) returns (common.Msg);

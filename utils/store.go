@@ -11,12 +11,9 @@ import (
 var ServerNameAsStoreDirName string
 
 const (
-	ShellPackage    = "shell"
-	SqlitePackage   = "sqlite"
-	LogPackage      = "log"
-	ResourcePackage = "resource"
-	AppPackage      = "app"
-	ConfigPackage   = "configs"
+	SqlitePackage = "sqlite"
+	LogPackage    = "log"
+	ConfigPackage = "configs"
 )
 
 func InitServerStore() error {
@@ -25,11 +22,8 @@ func InitServerStore() error {
 	}
 	ServerNameAsStoreDirName = fmt.Sprintf(".%s", ServerNameAsStoreDirName)
 	storePackages := []string{
-		ShellPackage,
 		SqlitePackage,
 		LogPackage,
-		ResourcePackage,
-		AppPackage,
 		ConfigPackage,
 	}
 	for _, pkg := range storePackages {

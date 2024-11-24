@@ -40,7 +40,6 @@ func (u *UserInterface) SignIn(ctx context.Context, request *v1alpha1.SignIn) (*
 		AccessToken:    user.AccessToken,
 		Status:         int32(user.Status),
 		StatusString:   user.Status.String(),
-		UpdatedAt:      user.UpdatedAt.AsTime().Format("2006-01-02 15:04:05"),
 		SignType:       int32(user.SignType),
 		SignTypeString: user.SignType.String(),
 	}, nil
@@ -57,7 +56,6 @@ func (u *UserInterface) GetUserInfo(ctx context.Context, _ *emptypb.Empty) (*v1a
 		Username:    user.Name,
 		AccessToken: user.AccessToken,
 		Status:      int32(user.Status),
-		UpdatedAt:   user.UpdatedAt.AsTime().Format("2006-01-02 15:04:05"),
 	}, nil
 }
 
@@ -77,7 +75,6 @@ func (u *UserInterface) GetUsers(ctx context.Context, request *v1alpha1.UsersReq
 			SignType:       int32(user.SignType),
 			StatusString:   strings.ToUpper(user.Status.String()),
 			SignTypeString: strings.ToUpper(user.SignType.String()),
-			UpdatedAt:      user.UpdatedAt.AsTime().Format("2006-01-02 15:04:05"),
 		})
 	}
 	return &v1alpha1.Users{
@@ -105,7 +102,6 @@ func (u *UserInterface) SaveUser(ctx context.Context, request *v1alpha1.User) (*
 		AccessToken:  user.AccessToken,
 		Status:       int32(user.Status),
 		StatusString: user.Status.String(),
-		UpdatedAt:    user.UpdatedAt.AsTime().Format("2006-01-02 15:04:05"),
 	}, nil
 }
 

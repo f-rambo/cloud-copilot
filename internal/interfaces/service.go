@@ -104,7 +104,7 @@ func (s *ServicesInterface) GetWorkflow(ctx context.Context, serviceParam *v1alp
 		Description: "",
 	}
 	argoWf := wfv1.Workflow{}
-	err = json.Unmarshal(workflow.Workflow, &argoWf)
+	err = json.Unmarshal([]byte(workflow.Workflow), &argoWf)
 	if err != nil {
 		return nil, err
 	}
@@ -184,7 +184,7 @@ func (s *ServicesInterface) SaveWorkflow(ctx context.Context, request *v1alpha1.
 	}
 	wf := &biz.Workflow{
 		Name:     request.Workflow.Name,
-		Workflow: wfData,
+		Workflow: string(wfData),
 	}
 	err = s.serviceUc.SaveWorkflow(ctx, request.Id, biz.WorkflowType(request.WfType), wf)
 	if err != nil {
@@ -322,7 +322,7 @@ func (s *ServicesInterface) bizCiTointerface(ci *biz.CI) *v1alpha1.CI {
 		ServiceID:   ci.ServiceId,
 		UserId:      ci.UserId,
 		Logs:        ci.Logs,
-		CreatedAt:   ci.CreatedAt.AsTime().Format("2006-01-02 15:04:05"),
+		CreatedAt:   ci.CreatedAt.Format("2006-01-02 15:04:05"),
 	}
 	return ciInterface
 }

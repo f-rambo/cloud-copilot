@@ -2,12 +2,9 @@ package biz
 
 import (
 	"context"
-	"fmt"
-	"os"
 	"sync"
 
 	"github.com/f-rambo/cloud-copilot/internal/conf"
-	"github.com/f-rambo/cloud-copilot/utils"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/pkg/errors"
 )
@@ -34,6 +31,7 @@ type AppData interface {
 
 type AppRuntime interface {
 	CheckCluster(context.Context) bool
+	Init(context.Context) ([]*App, []*AppRelease, error)
 	GetClusterResources(context.Context, *AppRelease) ([]*AppReleaseResource, error)
 	DeleteApp(ctx context.Context, app *App) error
 	DeleteAppVersion(ctx context.Context, app *App, appVersion *AppVersion) error
@@ -64,10 +62,6 @@ func NewAppUsecase(appData AppData, appRuntime AppRuntime, logger log.Logger, co
 		locks:      make(map[int64]*sync.Mutex),
 		eventChan:  make(chan *AppRelease, AppPoolNumber),
 	}
-}
-
-func (a *AppRepo) SetIndexPath(path string) {
-	a.IndexPath = path
 }
 
 func (a *App) AddVersion(version *AppVersion) {
@@ -102,50 +96,22 @@ func (uc *AppUsecase) Init(ctx context.Context) error {
 	if !uc.appRuntime.CheckCluster(ctx) {
 		return nil
 	}
-	appPath, err := utils.GetServerStorePathByNames(utils.AppPackage)
+	apps, releases, err := uc.appRuntime.Init(ctx)
 	if err != nil {
 		return err
 	}
-	configPath, err := utils.GetServerStorePathByNames(utils.ConfigPackage)
-	if err != nil {
-		return err
-	}
-	for _, v := range uc.conf.App {
-		if uc.conf.Cluster.Type != ClusterType_LOCAL.String() && (v.Name == "rook-ceph" || v.Name == "rook-ceph-cluster") {
-			continue
-		}
-		appchart := fmt.Sprintf("%s/%s-%s.tgz", appPath, v.Name, v.Version)
-		if !utils.IsFileExist(appchart) {
-			return fmt.Errorf("appchart not found: %s", appchart)
-		}
-		app := &App{Name: v.Name}
-		appVersion := &AppVersion{Chart: appchart, Version: v.Version}
-		err = uc.GetAppVersionInfoByLocalFile(ctx, app, appVersion)
-		if err != nil {
-			return err
-		}
-		app.AddVersion(appVersion)
+	for _, app := range apps {
 		err = uc.appData.Save(ctx, app)
 		if err != nil {
 			return err
 		}
-		appConfigPath := fmt.Sprintf("%s/%s-%s.yaml", configPath, v.Name, v.Version)
-		if utils.IsFileExist(appConfigPath) {
-			appConfig, err := os.ReadFile(appConfigPath)
-			if err != nil {
-				return err
-			}
-			appVersion.DefaultConfig = string(appConfig)
+	}
+	for _, release := range releases {
+		err = uc.appData.SaveAppRelease(ctx, release)
+		if err != nil {
+			return err
 		}
-		uc.apply(&AppRelease{
-			ReleaseName: fmt.Sprintf("%s-%s", v.Name, v.Version),
-			AppId:       app.Id,
-			VersionId:   appVersion.Id,
-			Namespace:   v.Namespace,
-			Config:      appVersion.DefaultConfig,
-			Status:      AppReleaseSatus_APP_RELEASE_PENDING,
-			Wait:        true,
-		})
+		uc.apply(release)
 	}
 	return nil
 }
@@ -382,7 +348,7 @@ func (uc *AppUsecase) handleEvent(ctx context.Context, appRelease *AppRelease) (
 		uc.appData.SaveAppRelease(ctx, appRelease)
 		lock.Unlock()
 	}()
-	if appRelease.DeletedAt != nil {
+	if appRelease.DeletedAt.Valid {
 		err = uc.appRuntime.DeleteAppRelease(ctx, appRelease)
 		if err != nil {
 			return err

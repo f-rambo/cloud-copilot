@@ -430,7 +430,7 @@ func (uc *ClusterUsecase) handleEvent(ctx context.Context, cluster *Cluster) (er
 		lock.Unlock()
 		err = uc.clusterData.Save(ctx, cluster)
 	}()
-	if cluster.DeletedAt != nil {
+	if cluster.DeletedAt.Valid {
 		err = uc.clusterInfrastructure.UnInstall(ctx, cluster)
 		if err != nil {
 			return err

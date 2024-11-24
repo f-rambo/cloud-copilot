@@ -2,8 +2,6 @@ syntax = "proto3";
 
 package biz.service;
 
-import "google/protobuf/timestamp.proto";
-
 option go_package = "github.com/f-rambo/cloud-copilot/internal/biz;";
 
 
@@ -15,10 +13,8 @@ enum WorkflowType {
 message Workflow {
       int64 id = 1; // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
       string name = 2; // @gotags: gorm:"column:name; default:''; NOT NULL"
-      bytes workflow = 3; // @gotags: gorm:"column:workflow; type:json"
-      google.protobuf.Timestamp created_at = 4; // @gotags: gorm:"column:created_at; default:CURRENT_TIMESTAMP"
-      google.protobuf.Timestamp updated_at = 5; // @gotags: gorm:"column:updated_at; default:CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
-      google.protobuf.Timestamp deleted_at = 6; // @gotags: gorm:"column:deleted_at; default:NULL"
+      string workflow = 3; // @gotags: gorm:"column:workflow; default:''; NOT NULL"
+      string description = 4; // @gotags: gorm:"column:description; default:''; NOT NULL"
 }
 
 enum CIStatus {
@@ -32,14 +28,11 @@ message CI {
       string version = 2; // @gotags: gorm:"column:version; default:''; NOT NULL"
       string branch = 3; // @gotags: gorm:"column:branch; default:''; NOT NULL"
       string tag = 4; // @gotags: gorm:"column:tag; default:''; NOT NULL"
-      CIStatus status = 5; // @gotags: gorm:"column:status; default:''; NOT NULL"
+      CIStatus status = 5; // @gotags: gorm:"column:status; default:0; NOT NULL"
       string description = 6; // @gotags: gorm:"column:description; default:''; NOT NULL"
       int64 service_id = 7; // @gotags: gorm:"column:service_id; default:0; NOT NULL"
       int64 user_id = 8; // @gotags: gorm:"column:user_id; default:0; NOT NULL"
       string logs = 9; // @gotags: gorm:"-"
-      google.protobuf.Timestamp created_at = 10; // @gotags: gorm:"column:created_at; default:CURRENT_TIMESTAMP"
-      google.protobuf.Timestamp updated_at = 11; // @gotags: gorm:"column:updated_at; default:CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
-      google.protobuf.Timestamp deleted_at = 12; // @gotags: gorm:"column:deleted_at; default:NULL"
 }
 
 message CD {
@@ -48,9 +41,6 @@ message CD {
       int64 service_id = 3; // @gotags: gorm:"column:service_id; default:0; NOT NULL"
       int64 user_id = 4; // @gotags: gorm:"column:user_id; default:0; NOT NULL"
       string logs = 5; // @gotags: gorm:"-"
-      google.protobuf.Timestamp created_at = 6; // @gotags: gorm:"column:created_at; default:CURRENT_TIMESTAMP"
-      google.protobuf.Timestamp updated_at = 7; // @gotags: gorm:"column:updated_at; default:CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
-      google.protobuf.Timestamp deleted_at = 8; // @gotags: gorm:"column:deleted_at; default:NULL"
 }
 
 message Port {
@@ -59,9 +49,6 @@ message Port {
       string protocol = 3; // @gotags: gorm:"column:protocol; default:''; NOT NULL"
       int32 container_port = 4; // @gotags: gorm:"column:container_port; default:0; NOT NULL"
       int64 service_id = 5; // @gotags: gorm:"column:service_id; default:0; NOT NULL"
-      google.protobuf.Timestamp created_at = 6; // @gotags: gorm:"column:created_at; default:CURRENT_TIMESTAMP"
-      google.protobuf.Timestamp updated_at = 7; // @gotags: gorm:"column:updated_at; default:CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
-      google.protobuf.Timestamp deleted_at = 8; // @gotags: gorm:"column:deleted_at; default:NULL"
 }
 
 message Service {
@@ -83,7 +70,4 @@ message Service {
       int64 project_id = 16; // @gotags: gorm:"column:project_id; default:0; NOT NULL"
       int64 ci_workflow_id = 18; // @gotags: gorm:"column:ci_workflow_id; default:0; NOT NULL"
       int64 cd_workflow_id = 19; // @gotags: gorm:"column:cd_workflow_id; default:0; NOT NULL"
-      google.protobuf.Timestamp created_at = 20; // @gotags: gorm:"column:created_at; default:CURRENT_TIMESTAMP"
-      google.protobuf.Timestamp updated_at = 21; // @gotags: gorm:"column:updated_at; default:CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
-      google.protobuf.Timestamp deleted_at = 22; // @gotags: gorm:"column:deleted_at; default:NULL"
 }

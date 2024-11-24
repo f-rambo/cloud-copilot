@@ -41,12 +41,11 @@ message Service {
 }
 
 message Database {
-  string driver = 1;
-  string database = 2;
-  string host = 3;
-  int32 port = 4;
-  string username = 5;
-  string password = 6;
+  string database = 1;
+  string host = 2;
+  int32 port = 3;
+  string username = 4;
+  string password = 5;
 }
 
 message Log {
@@ -61,12 +60,6 @@ message Auth {
   string admin_password = 3;
 }
 
-message AppConfig {
-  string name = 1;
-  string version = 2;
-  string namespace = 3;
-}
-
 message Bootstrap {
   ClusterConfig cluster = 1;
   Server server = 2;
@@ -74,5 +67,4 @@ message Bootstrap {
   Database data = 4;
   Log log = 5;
   Auth auth = 6;
-  repeated AppConfig app = 7;
 }

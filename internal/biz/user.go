@@ -45,7 +45,7 @@ func (u *UserUseCase) InitAdminUser(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	if userData != nil {
+	if userData != nil && userData.Id > 0 {
 		return nil
 	}
 	err = u.userData.Save(ctx, user)

@@ -90,10 +90,6 @@ func main() {
 		panic(err)
 	}
 
-	if err := utils.ShellToolsInit(); err != nil {
-		panic(err)
-	}
-
 	utilLog, err := utils.NewLog(&bc)
 	if err != nil {
 		panic(err)

@@ -18,6 +18,11 @@ message CheckClusterResponse {
       bool ok = 1;
 }
 
+message InitResponse {
+      repeated biz.app.App apps = 1;
+      repeated biz.app.AppRelease releases = 2;
+}
+
 message AppReleaseResourceItems {
       repeated biz.app.AppReleaseResource resources = 1;
 }

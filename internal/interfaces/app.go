@@ -2,17 +2,13 @@ package interfaces
 
 import (
 	"context"
-	"encoding/base64"
-	"fmt"
 	"math"
-	"os"
-	"path/filepath"
-	"strings"
 
 	v1alpha1 "github.com/f-rambo/cloud-copilot/api/app/v1alpha1"
 	"github.com/f-rambo/cloud-copilot/api/common"
 	"github.com/f-rambo/cloud-copilot/internal/biz"
 	"github.com/f-rambo/cloud-copilot/internal/conf"
+	appApi "github.com/f-rambo/cloud-copilot/internal/repository/clusterruntime/api/app"
 	"github.com/f-rambo/cloud-copilot/utils"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/pkg/errors"
@@ -150,67 +146,31 @@ func (a *AppInterface) DeleteAppVersion(ctx context.Context, appReq *v1alpha1.Ap
 }
 
 func (a *AppInterface) UploadApp(ctx context.Context, req *v1alpha1.FileUploadRequest) (*v1alpha1.App, error) {
-	var fileExt string = ".tgz"
-	if filepath.Ext(req.GetFileName()) != fileExt {
-		return nil, errors.New("file type is not supported")
-	}
-	appPath, err := utils.GetServerStorePathByNames(utils.AppPackage)
-	if err != nil {
-		return nil, err
-	}
-	fileName, err := a.upload(appPath, req.GetFileName(), req.GetChunk())
-	if err != nil {
-		return nil, err
-	}
-	appTmpChartPath := fmt.Sprintf("%s/%s", appPath, fileName)
-	app := &biz.App{}
-	appVersion := &biz.AppVersion{Chart: appTmpChartPath}
-	err = a.uc.GetAppVersionInfoByLocalFile(ctx, app, appVersion)
-	if err != nil {
-		return nil, err
-	}
-	app.AddVersion(appVersion)
-	appChartPath := fmt.Sprintf("%s/%s-%s%s", appPath, app.Name, appVersion.Version, fileExt)
-	if utils.IsFileExist(appChartPath) {
-		err = os.Remove(appChartPath)
-		if err != nil {
-			return nil, err
+	var service *conf.Service
+	for _, v := range a.c.Services {
+		if v.Name == "cluster-runtime" {
+			service = v
 		}
 	}
-	err = os.Rename(appTmpChartPath, appChartPath)
+	grpcConn, err := new(utils.GrpcConn).OpenGrpcConn(ctx, service.Addr, service.Port)
 	if err != nil {
 		return nil, err
 	}
-	err = a.uc.Save(ctx, app)
+	uploadAppRes, err := appApi.NewAppInterfaceClient(grpcConn.Conn).UploadApp(ctx, &appApi.FileUploadRequest{
+		FileName: req.GetFileName(),
+		Chunk:    req.GetChunk(),
+		Resume:   req.GetResume(),
+		Finish:   req.GetFinish(),
+		Icon:     req.GetIcon(),
+	})
 	if err != nil {
 		return nil, err
 	}
-	return &v1alpha1.App{}, nil
-}
-
-func (a *AppInterface) upload(path, filename, chunk string) (string, error) {
-	data, err := base64.StdEncoding.DecodeString(chunk[strings.IndexByte(chunk, ',')+1:])
+	err = a.uc.Save(ctx, uploadAppRes.App)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	file, err := utils.NewFile(path, filename, false)
-	if err != nil {
-		return "", err
-	}
-	defer func() {
-		if file == nil {
-			return
-		}
-		err := file.Close()
-		if err != nil {
-			a.log.Error(err)
-		}
-	}()
-	err = file.Write(data)
-	if err != nil {
-		return "", err
-	}
-	return file.GetFileName(), nil
+	return a.bizAppToApp(uploadAppRes.App)
 }
 
 func (a *AppInterface) CreateAppType(ctx context.Context, appType *v1alpha1.AppType) (*common.Msg, error) {
@@ -322,7 +282,7 @@ func (a *AppInterface) GetAppsByRepo(ctx context.Context, repoReq *v1alpha1.AppR
 			return nil, err
 		}
 		dataApp.Id = int64(index) + 1
-		dataApp.UpdateTime = app.UpdatedAt.AsTime().Format("2006/01/02")
+		dataApp.UpdateTime = app.UpdatedAt.Format("2006-01-02 15:04:05")
 		appList.Items[index] = dataApp
 	}
 	return appList, nil
@@ -366,8 +326,8 @@ func (a *AppInterface) GetAppRelease(ctx context.Context, AppReleaseReq *v1alpha
 		return nil, err
 	}
 	appRelease.UserName = user.Name
-	appRelease.CreateTime = appReleaseRes.CreatedAt.AsTime().Format("2006-01-02 15:04:05")
-	appRelease.UpdateTime = appReleaseRes.UpdatedAt.AsTime().Format("2006-01-02 15:04:05")
+	appRelease.CreateTime = appReleaseRes.CreatedAt.Format("2006-01-02 15:04:05")
+	appRelease.UpdateTime = appReleaseRes.UpdatedAt.Format("2006-01-02 15:04:05")
 	return appRelease, nil
 }
 
@@ -479,7 +439,7 @@ func (a *AppInterface) bizAppToApp(bizApp *biz.App) (*v1alpha1.App, error) {
 		Icon:       bizApp.Icon,
 		AppTypeId:  bizApp.AppTypeId,
 		Versions:   make([]*v1alpha1.AppVersion, len(bizApp.Versions)),
-		UpdateTime: bizApp.UpdatedAt.AsTime().Format("2006/01/02"),
+		UpdateTime: bizApp.UpdatedAt.Format("2006-01-02 15:04:05"),
 	}
 	for index, v := range bizApp.Versions {
 		appversion, err := a.bizAppVersionToAppVersion(v)
