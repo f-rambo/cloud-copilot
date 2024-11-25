@@ -419,24 +419,25 @@ func (ResourceType) EnumDescriptor() ([]byte, []int) {
 }
 
 type Cluster struct {
-	gorm.Model
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// @goimport: "gorm.io/gorm"
+	// @gofield: gorm.Model
 	Id                   int64            `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT"`                                                                                // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
 	Name                 string           `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty" gorm:"column:name; default:''; NOT NULL"`                                                                               // @gotags: gorm:"column:name; default:''; NOT NULL"
 	Version              string           `protobuf:"bytes,3,opt,name=version,proto3" json:"version,omitempty" gorm:"column:version; default:''; NOT NULL"`                                                                      // @gotags: gorm:"column:version; default:''; NOT NULL"
 	ApiServerAddress     string           `protobuf:"bytes,4,opt,name=api_server_address,json=apiServerAddress,proto3" json:"api_server_address,omitempty" gorm:"column:api_server_address; default:''; NOT NULL"`               // @gotags: gorm:"column:api_server_address; default:''; NOT NULL"
 	Config               string           `protobuf:"bytes,5,opt,name=config,proto3" json:"config,omitempty" gorm:"column:config; default:''; NOT NULL"`                                                                         // @gotags: gorm:"column:config; default:''; NOT NULL"
-	Addons               string           `protobuf:"bytes,6,opt,name=addons,proto3" json:"addons,omitempty" gorm:"column:addons; default:''; NOT NULL"`                                                                         // @gotags: gorm:"column:addons; default:''; NOT NULL"
+	Addons               string           `gorm:"column:addons; default:''; NOT NULL" protobuf:"bytes,6,opt,name=addons,proto3" json:"addons,omitempty"`                                                                         // @gotags: gorm:"column:addons; default:''; NOT NULL"
 	AddonsConfig         string           `protobuf:"bytes,7,opt,name=addons_config,json=addonsConfig,proto3" json:"addons_config,omitempty" gorm:"column:addons_config; default:''; NOT NULL"`                                  // @gotags: gorm:"column:addons_config; default:''; NOT NULL"
-	Status               ClusterStatus    `protobuf:"varint,8,opt,name=status,proto3,enum=biz.cluster.ClusterStatus" json:"status,omitempty" gorm:"column:status; default:0; NOT NULL"`                                          // @gotags: gorm:"column:status; default:0; NOT NULL"
+	Status               ClusterStatus    `json:"status,omitempty" gorm:"column:status; default:0; NOT NULL" protobuf:"varint,8,opt,name=status,proto3,enum=biz.cluster.ClusterStatus"`                                          // @gotags: gorm:"column:status; default:0; NOT NULL"
 	Type                 ClusterType      `protobuf:"varint,9,opt,name=type,proto3,enum=biz.cluster.ClusterType" json:"type,omitempty" gorm:"column:type; default:0; NOT NULL"`                                                  // @gotags: gorm:"column:type; default:0; NOT NULL"
 	Level                ClusterLevel     `protobuf:"varint,10,opt,name=level,proto3,enum=biz.cluster.ClusterLevel" json:"level,omitempty" gorm:"column:level; default:0; NOT NULL"`                                             // @gotags: gorm:"column:level; default:0; NOT NULL"
 	PublicKey            string           `protobuf:"bytes,11,opt,name=public_key,json=publicKey,proto3" json:"public_key,omitempty" gorm:"column:public_key; default:''; NOT NULL"`                                             // @gotags: gorm:"column:public_key; default:''; NOT NULL"
-	PrivateKey           string           `protobuf:"bytes,12,opt,name=private_key,json=privateKey,proto3" json:"private_key,omitempty" gorm:"column:private_key; default:''; NOT NULL"`                                         // @gotags: gorm:"column:private_key; default:''; NOT NULL"
-	Connections          string           `protobuf:"bytes,13,opt,name=connections,proto3" json:"connections,omitempty" gorm:"column:connections; default:''; NOT NULL"`                                                         // @gotags: gorm:"column:connections; default:''; NOT NULL"
+	PrivateKey           string           `json:"private_key,omitempty" gorm:"column:private_key; default:''; NOT NULL" protobuf:"bytes,12,opt,name=private_key,json=privateKey,proto3"`                                         // @gotags: gorm:"column:private_key; default:''; NOT NULL"
+	Connections          string           `gorm:"column:connections; default:''; NOT NULL" protobuf:"bytes,13,opt,name=connections,proto3" json:"connections,omitempty"`                                                         // @gotags: gorm:"column:connections; default:''; NOT NULL"
 	CertificateAuthority string           `protobuf:"bytes,14,opt,name=certificate_authority,json=certificateAuthority,proto3" json:"certificate_authority,omitempty" gorm:"column:certificate_authority; default:''; NOT NULL"` // @gotags: gorm:"column:certificate_authority; default:''; NOT NULL"
 	Region               string           `protobuf:"bytes,15,opt,name=region,proto3" json:"region,omitempty" gorm:"column:region; default:''; NOT NULL"`                                                                        // @gotags: gorm:"column:region; default:''; NOT NULL"
 	UserId               int64            `protobuf:"varint,16,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty" gorm:"column:user_id; default:0; NOT NULL"`                                                         // @gotags: gorm:"column:user_id; default:0; NOT NULL"
@@ -444,16 +445,17 @@ type Cluster struct {
 	AccessId             string           `protobuf:"bytes,18,opt,name=access_id,json=accessId,proto3" json:"access_id,omitempty" gorm:"column:access_id; default:''; NOT NULL"`                                                 // @gotags: gorm:"column:access_id; default:''; NOT NULL"
 	AccessKey            string           `protobuf:"bytes,19,opt,name=access_key,json=accessKey,proto3" json:"access_key,omitempty" gorm:"column:access_key; default:''; NOT NULL"`                                             // @gotags: gorm:"column:access_key; default:''; NOT NULL"
 	MasterIp             string           `protobuf:"bytes,20,opt,name=master_ip,json=masterIp,proto3" json:"master_ip,omitempty" gorm:"column:master_ip; default:''; NOT NULL"`                                                 // @gotags: gorm:"column:master_ip; default:''; NOT NULL"
-	MasterUser           string           `protobuf:"bytes,21,opt,name=master_user,json=masterUser,proto3" json:"master_user,omitempty" gorm:"column:master_user; default:''; NOT NULL"`                                         // @gotags: gorm:"column:master_user; default:''; NOT NULL"
+	MasterUser           string           `json:"master_user,omitempty" gorm:"column:master_user; default:''; NOT NULL" protobuf:"bytes,21,opt,name=master_user,json=masterUser,proto3"`                                         // @gotags: gorm:"column:master_user; default:''; NOT NULL"
 	Token                string           `protobuf:"bytes,22,opt,name=token,proto3" json:"token,omitempty" gorm:"column:token; default:''; NOT NULL"`                                                                           // @gotags: gorm:"column:token; default:''; NOT NULL"
 	CaData               string           `protobuf:"bytes,23,opt,name=ca_data,json=caData,proto3" json:"ca_data,omitempty" gorm:"column:ca_data; default:''; NOT NULL"`                                                         // @gotags: gorm:"column:ca_data; default:''; NOT NULL"
 	CertData             string           `protobuf:"bytes,24,opt,name=cert_data,json=certData,proto3" json:"cert_data,omitempty" gorm:"column:cert_data; default:''; NOT NULL"`                                                 // @gotags: gorm:"column:cert_data; default:''; NOT NULL"
-	KeyData              string           `protobuf:"bytes,25,opt,name=key_data,json=keyData,proto3" json:"key_data,omitempty" gorm:"column:key_data; default:''; NOT NULL"`                                                     // @gotags: gorm:"column:key_data; default:''; NOT NULL"
-	BostionHost          *BostionHost     `protobuf:"bytes,26,opt,name=bostion_host,json=bostionHost,proto3" json:"bostion_host,omitempty" gorm:"-"`                                                                             // @gotags: gorm:"-"
+	KeyData              string           `json:"key_data,omitempty" gorm:"column:key_data; default:''; NOT NULL" protobuf:"bytes,25,opt,name=key_data,json=keyData,proto3"`                                                     // @gotags: gorm:"column:key_data; default:''; NOT NULL"
+	BostionHost          *BostionHost     `json:"bostion_host,omitempty" gorm:"-" protobuf:"bytes,26,opt,name=bostion_host,json=bostionHost,proto3"`                                                                             // @gotags: gorm:"-"
 	Nodes                []*Node          `protobuf:"bytes,27,rep,name=nodes,proto3" json:"nodes,omitempty" gorm:"-"`                                                                                                            // @gotags: gorm:"-"
 	NodeGroups           []*NodeGroup     `protobuf:"bytes,28,rep,name=node_groups,json=nodeGroups,proto3" json:"node_groups,omitempty" gorm:"-"`                                                                                // @gotags: gorm:"-"
 	CloudResources       []*CloudResource `protobuf:"bytes,29,rep,name=cloud_resources,json=cloudResources,proto3" json:"cloud_resources,omitempty" gorm:"-"`                                                                    // @gotags: gorm:"-"
-	SecurityGroups       []*SecurityGroup `protobuf:"bytes,30,rep,name=security_groups,json=securityGroups,proto3" json:"security_groups,omitempty" gorm:"-"`                                                                    // @gotags: gorm:"-"
+	SecurityGroups       []*SecurityGroup `protobuf:"bytes,30,rep,name=security_groups,json=securityGroups,proto3" json:"security_groups,omitempty" gorm:"-"`
+	gorm.Model                            // @gotags: gorm:"-"
 }
 
 func (x *Cluster) Reset() {
@@ -699,23 +701,25 @@ func (x *Cluster) GetSecurityGroups() []*SecurityGroup {
 }
 
 type Node struct {
-	gorm.Model
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// @goimport: "gorm.io/gorm"
+	// @gofield: gorm.Model
 	Id          int64      `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT"`                                               // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
-	Name        string     `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty" gorm:"column:name; default:''; NOT NULL"`                                              // @gotags: gorm:"column:name; default:''; NOT NULL"
+	Name        string     `json:"name,omitempty" gorm:"column:name; default:''; NOT NULL" protobuf:"bytes,2,opt,name=name,proto3"`                                              // @gotags: gorm:"column:name; default:''; NOT NULL"
 	Labels      string     `protobuf:"bytes,3,opt,name=labels,proto3" json:"labels,omitempty" gorm:"column:labels; default:''; NOT NULL"`                                        // @gotags: gorm:"column:labels; default:''; NOT NULL"
 	InternalIp  string     `protobuf:"bytes,4,opt,name=internal_ip,json=internalIp,proto3" json:"internal_ip,omitempty" gorm:"column:internal_ip; default:''; NOT NULL"`         // @gotags: gorm:"column:internal_ip; default:''; NOT NULL"
 	ExternalIp  string     `protobuf:"bytes,5,opt,name=external_ip,json=externalIp,proto3" json:"external_ip,omitempty" gorm:"column:external_ip; default:''; NOT NULL"`         // @gotags: gorm:"column:external_ip; default:''; NOT NULL"
-	User        string     `protobuf:"bytes,6,opt,name=user,proto3" json:"user,omitempty" gorm:"column:user; default:''; NOT NULL"`                                              // @gotags: gorm:"column:user; default:''; NOT NULL"
+	User        string     `gorm:"column:user; default:''; NOT NULL" protobuf:"bytes,6,opt,name=user,proto3" json:"user,omitempty"`                                              // @gotags: gorm:"column:user; default:''; NOT NULL"
 	Role        NodeRole   `protobuf:"varint,7,opt,name=role,proto3,enum=biz.cluster.NodeRole" json:"role,omitempty" gorm:"column:role; default:0; NOT NULL"`                    // @gotags: gorm:"column:role; default:0; NOT NULL"
 	Status      NodeStatus `protobuf:"varint,8,opt,name=status,proto3,enum=biz.cluster.NodeStatus" json:"status,omitempty" gorm:"column:status; default:0; NOT NULL"`            // @gotags: gorm:"column:status; default:0; NOT NULL"
 	ClusterId   int64      `protobuf:"varint,9,opt,name=cluster_id,json=clusterId,proto3" json:"cluster_id,omitempty" gorm:"column:cluster_id; default:0; NOT NULL"`             // @gotags: gorm:"column:cluster_id; default:0; NOT NULL"
 	NodeGroupId string     `protobuf:"bytes,10,opt,name=node_group_id,json=nodeGroupId,proto3" json:"node_group_id,omitempty" gorm:"column:node_group_id; default:''; NOT NULL"` // @gotags: gorm:"column:node_group_id; default:''; NOT NULL"
 	InstanceId  string     `protobuf:"bytes,11,opt,name=instance_id,json=instanceId,proto3" json:"instance_id,omitempty" gorm:"column:instance_id; default:''; NOT NULL"`        // @gotags: gorm:"column:instance_id; default:''; NOT NULL"
-	ErrorInfo   string     `protobuf:"bytes,12,opt,name=error_info,json=errorInfo,proto3" json:"error_info,omitempty" gorm:"column:error_info; default:''; NOT NULL"`            // @gotags: gorm:"column:error_info; default:''; NOT NULL"
+	ErrorInfo   string     `gorm:"column:error_info; default:''; NOT NULL" protobuf:"bytes,12,opt,name=error_info,json=errorInfo,proto3" json:"error_info,omitempty"`            // @gotags: gorm:"column:error_info; default:''; NOT NULL"
+	gorm.Model
 }
 
 func (x *Node) Reset() {
@@ -835,36 +839,38 @@ func (x *Node) GetErrorInfo() string {
 }
 
 type NodeGroup struct {
-	gorm.Model
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Id               string        `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty" gorm:"column:id;primaryKey; NOT NULL"`                                                                     // @gotags: gorm:"column:id;primaryKey; NOT NULL"
+	// @goimport: "gorm.io/gorm"
+	// @gofield: gorm.Model
+	Id               string        `json:"id,omitempty" gorm:"column:id;primaryKey; NOT NULL" protobuf:"bytes,1,opt,name=id,proto3"`                                                                     // @gotags: gorm:"column:id;primaryKey; NOT NULL"
 	Name             string        `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty" gorm:"column:name; default:''; NOT NULL"`                                                              // @gotags: gorm:"column:name; default:''; NOT NULL"
 	Type             NodeGroupType `protobuf:"varint,3,opt,name=type,proto3,enum=biz.cluster.NodeGroupType" json:"type,omitempty" gorm:"column:type; default:0; NOT NULL"`                               // @gotags: gorm:"column:type; default:0; NOT NULL"
 	Image            string        `protobuf:"bytes,4,opt,name=image,proto3" json:"image,omitempty" gorm:"column:image; default:''; NOT NULL"`                                                           // @gotags: gorm:"column:image; default:''; NOT NULL"
 	ImageDescription string        `protobuf:"bytes,5,opt,name=image_description,json=imageDescription,proto3" json:"image_description,omitempty" gorm:"column:image_description; default:''; NOT NULL"` // @gotags: gorm:"column:image_description; default:''; NOT NULL"
-	Os               string        `protobuf:"bytes,6,opt,name=os,proto3" json:"os,omitempty" gorm:"column:os; default:''; NOT NULL"`                                                                    // @gotags: gorm:"column:os; default:''; NOT NULL"
-	Arch             string        `protobuf:"bytes,7,opt,name=arch,proto3" json:"arch,omitempty" gorm:"column:arch; default:''; NOT NULL"`                                                              // @gotags: gorm:"column:arch; default:''; NOT NULL"
+	Os               string        `json:"os,omitempty" gorm:"column:os; default:''; NOT NULL" protobuf:"bytes,6,opt,name=os,proto3"`                                                                    // @gotags: gorm:"column:os; default:''; NOT NULL"
+	Arch             string        `gorm:"column:arch; default:''; NOT NULL" protobuf:"bytes,7,opt,name=arch,proto3" json:"arch,omitempty"`                                                              // @gotags: gorm:"column:arch; default:''; NOT NULL"
 	Cpu              int32         `protobuf:"varint,8,opt,name=cpu,proto3" json:"cpu,omitempty" gorm:"column:cpu; default:0; NOT NULL"`                                                                 // @gotags: gorm:"column:cpu; default:0; NOT NULL"
-	Memory           int32         `protobuf:"varint,9,opt,name=memory,proto3" json:"memory,omitempty" gorm:"column:memory; default:0; NOT NULL"`                                                        // @gotags: gorm:"column:memory; default:0; NOT NULL"
-	Gpu              int32         `protobuf:"varint,10,opt,name=gpu,proto3" json:"gpu,omitempty" gorm:"column:gpu; default:0; NOT NULL"`                                                                // @gotags: gorm:"column:gpu; default:0; NOT NULL"
+	Memory           int32         `json:"memory,omitempty" gorm:"column:memory; default:0; NOT NULL" protobuf:"varint,9,opt,name=memory,proto3"`                                                        // @gotags: gorm:"column:memory; default:0; NOT NULL"
+	Gpu              int32         `json:"gpu,omitempty" gorm:"column:gpu; default:0; NOT NULL" protobuf:"varint,10,opt,name=gpu,proto3"`                                                                // @gotags: gorm:"column:gpu; default:0; NOT NULL"
 	GpuSpec          string        `protobuf:"bytes,11,opt,name=gpu_spec,json=gpuSpec,proto3" json:"gpu_spec,omitempty" gorm:"column:gpu_spec; default:''; NOT NULL"`                                    // @gotags: gorm:"column:gpu_spec; default:''; NOT NULL"
-	DataDisk         int32         `protobuf:"varint,12,opt,name=data_disk,json=dataDisk,proto3" json:"data_disk,omitempty" gorm:"column:data_disk; default:0; NOT NULL"`                                // @gotags: gorm:"column:data_disk; default:0; NOT NULL"
-	RootDeviceName   string        `protobuf:"bytes,13,opt,name=root_device_name,json=rootDeviceName,proto3" json:"root_device_name,omitempty" gorm:"column:root_device_name; default:''; NOT NULL"`     // @gotags: gorm:"column:root_device_name; default:''; NOT NULL"
+	DataDisk         int32         `gorm:"column:data_disk; default:0; NOT NULL" protobuf:"varint,12,opt,name=data_disk,json=dataDisk,proto3" json:"data_disk,omitempty"`                                // @gotags: gorm:"column:data_disk; default:0; NOT NULL"
+	RootDeviceName   string        `gorm:"column:root_device_name; default:''; NOT NULL" protobuf:"bytes,13,opt,name=root_device_name,json=rootDeviceName,proto3" json:"root_device_name,omitempty"`     // @gotags: gorm:"column:root_device_name; default:''; NOT NULL"
 	DataDeviceName   string        `protobuf:"bytes,14,opt,name=data_device_name,json=dataDeviceName,proto3" json:"data_device_name,omitempty" gorm:"column:data_device_name; default:''; NOT NULL"`     // @gotags: gorm:"column:data_device_name; default:''; NOT NULL"
 	MinSize          int32         `protobuf:"varint,15,opt,name=min_size,json=minSize,proto3" json:"min_size,omitempty" gorm:"column:min_size; default:0; NOT NULL"`                                    // @gotags: gorm:"column:min_size; default:0; NOT NULL"
-	MaxSize          int32         `protobuf:"varint,16,opt,name=max_size,json=maxSize,proto3" json:"max_size,omitempty" gorm:"column:max_size; default:0; NOT NULL"`                                    // @gotags: gorm:"column:max_size; default:0; NOT NULL"
+	MaxSize          int32         `json:"max_size,omitempty" gorm:"column:max_size; default:0; NOT NULL" protobuf:"varint,16,opt,name=max_size,json=maxSize,proto3"`                                    // @gotags: gorm:"column:max_size; default:0; NOT NULL"
 	TargetSize       int32         `protobuf:"varint,17,opt,name=target_size,json=targetSize,proto3" json:"target_size,omitempty" gorm:"column:target_size; default:0; NOT NULL"`                        // @gotags: gorm:"column:target_size; default:0; NOT NULL"
 	InstanceType     string        `protobuf:"bytes,18,opt,name=instance_type,json=instanceType,proto3" json:"instance_type,omitempty" gorm:"column:instance_type; default:''; NOT NULL"`                // @gotags: gorm:"column:instance_type; default:''; NOT NULL"
 	DefaultUsername  string        `protobuf:"bytes,19,opt,name=default_username,json=defaultUsername,proto3" json:"default_username,omitempty" gorm:"column:default_username; default:''; NOT NULL"`    // @gotags: gorm:"column:default_username; default:''; NOT NULL"
 	NodePrice        float32       `protobuf:"fixed32,20,opt,name=node_price,json=nodePrice,proto3" json:"node_price,omitempty" gorm:"column:node_price; default:0; NOT NULL"`                           // @gotags: gorm:"column:node_price; default:0; NOT NULL"
 	PodPrice         float32       `protobuf:"fixed32,21,opt,name=pod_price,json=podPrice,proto3" json:"pod_price,omitempty" gorm:"column:pod_price; default:0; NOT NULL"`                               // @gotags: gorm:"column:pod_price; default:0; NOT NULL"
 	Zone             string        `protobuf:"bytes,22,opt,name=zone,proto3" json:"zone,omitempty" gorm:"column:zone; default:''; NOT NULL"`                                                             // @gotags: gorm:"column:zone; default:''; NOT NULL"
-	SubnetIpCidr     string        `protobuf:"bytes,23,opt,name=subnet_ip_cidr,json=subnetIpCidr,proto3" json:"subnet_ip_cidr,omitempty" gorm:"column:subnet_ip_cidr; default:''; NOT NULL"`             // @gotags: gorm:"column:subnet_ip_cidr; default:''; NOT NULL"
-	NodeInitScript   string        `protobuf:"bytes,24,opt,name=node_init_script,json=nodeInitScript,proto3" json:"node_init_script,omitempty" gorm:"column:cloud_init_script; default:''; NOT NULL"`    // @gotags: gorm:"column:cloud_init_script; default:''; NOT NULL"
+	SubnetIpCidr     string        `gorm:"column:subnet_ip_cidr; default:''; NOT NULL" protobuf:"bytes,23,opt,name=subnet_ip_cidr,json=subnetIpCidr,proto3" json:"subnet_ip_cidr,omitempty"`             // @gotags: gorm:"column:subnet_ip_cidr; default:''; NOT NULL"
+	NodeInitScript   string        `gorm:"column:cloud_init_script; default:''; NOT NULL" protobuf:"bytes,24,opt,name=node_init_script,json=nodeInitScript,proto3" json:"node_init_script,omitempty"`    // @gotags: gorm:"column:cloud_init_script; default:''; NOT NULL"
 	ClusterId        int64         `protobuf:"varint,25,opt,name=cluster_id,json=clusterId,proto3" json:"cluster_id,omitempty" gorm:"column:cluster_id; default:0; NOT NULL"`                            // @gotags: gorm:"column:cluster_id; default:0; NOT NULL"
+	gorm.Model
 }
 
 func (x *NodeGroup) Reset() {
@@ -1075,11 +1081,12 @@ func (x *NodeGroup) GetClusterId() int64 {
 }
 
 type BostionHost struct {
-	gorm.Model
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// @goimport: "gorm.io/gorm"
+	// @gofield: gorm.Model
 	Id               string     `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty" gorm:"column:id;primaryKey; NOT NULL"`                                                                     // @gotags: gorm:"column:id;primaryKey; NOT NULL"
 	User             string     `protobuf:"bytes,2,opt,name=user,proto3" json:"user,omitempty" gorm:"column:user; default:''; NOT NULL"`                                                              // @gotags: gorm:"column:user; default:''; NOT NULL"
 	Image            string     `protobuf:"bytes,3,opt,name=image,proto3" json:"image,omitempty" gorm:"column:image; default:''; NOT NULL"`                                                           // @gotags: gorm:"column:image; default:''; NOT NULL"
@@ -1088,13 +1095,14 @@ type BostionHost struct {
 	Arch             string     `protobuf:"bytes,6,opt,name=arch,proto3" json:"arch,omitempty" gorm:"column:arch; default:''; NOT NULL"`                                                              // @gotags: gorm:"column:arch; default:''; NOT NULL"
 	Cpu              int32      `protobuf:"varint,7,opt,name=cpu,proto3" json:"cpu,omitempty" gorm:"column:cpu; default:0; NOT NULL"`                                                                 // @gotags: gorm:"column:cpu; default:0; NOT NULL"
 	Memory           int32      `protobuf:"varint,8,opt,name=memory,proto3" json:"memory,omitempty" gorm:"column:memory; default:0; NOT NULL"`                                                        // @gotags: gorm:"column:memory; default:0; NOT NULL"
-	Hostname         string     `protobuf:"bytes,9,opt,name=hostname,proto3" json:"hostname,omitempty" gorm:"column:hostname; default:''; NOT NULL"`                                                  // @gotags: gorm:"column:hostname; default:''; NOT NULL"
+	Hostname         string     `gorm:"column:hostname; default:''; NOT NULL" protobuf:"bytes,9,opt,name=hostname,proto3" json:"hostname,omitempty"`                                                  // @gotags: gorm:"column:hostname; default:''; NOT NULL"
 	ExternalIp       string     `protobuf:"bytes,10,opt,name=external_ip,json=externalIp,proto3" json:"external_ip,omitempty" gorm:"column:external_ip; default:''; NOT NULL"`                        // @gotags: gorm:"column:external_ip; default:''; NOT NULL"
-	InternalIp       string     `protobuf:"bytes,11,opt,name=internal_ip,json=internalIp,proto3" json:"internal_ip,omitempty" gorm:"column:internal_ip; default:''; NOT NULL"`                        // @gotags: gorm:"column:internal_ip; default:''; NOT NULL"
+	InternalIp       string     `gorm:"column:internal_ip; default:''; NOT NULL" protobuf:"bytes,11,opt,name=internal_ip,json=internalIp,proto3" json:"internal_ip,omitempty"`                        // @gotags: gorm:"column:internal_ip; default:''; NOT NULL"
 	SshPort          int32      `protobuf:"varint,12,opt,name=ssh_port,json=sshPort,proto3" json:"ssh_port,omitempty" gorm:"column:ssh_port; default:0; NOT NULL"`                                    // @gotags: gorm:"column:ssh_port; default:0; NOT NULL"
 	Status           NodeStatus `protobuf:"varint,13,opt,name=status,proto3,enum=biz.cluster.NodeStatus" json:"status,omitempty" gorm:"column:status; default:0; NOT NULL"`                           // @gotags: gorm:"column:status; default:0; NOT NULL"
-	InstanceId       string     `protobuf:"bytes,14,opt,name=instance_id,json=instanceId,proto3" json:"instance_id,omitempty" gorm:"column:instance_id; default:''; NOT NULL"`                        // @gotags: gorm:"column:instance_id; default:''; NOT NULL"
+	InstanceId       string     `json:"instance_id,omitempty" gorm:"column:instance_id; default:''; NOT NULL" protobuf:"bytes,14,opt,name=instance_id,json=instanceId,proto3"`                        // @gotags: gorm:"column:instance_id; default:''; NOT NULL"
 	ClusterId        int64      `protobuf:"varint,15,opt,name=cluster_id,json=clusterId,proto3" json:"cluster_id,omitempty" gorm:"column:cluster_id; default:0; NOT NULL"`                            // @gotags: gorm:"column:cluster_id; default:0; NOT NULL"
+	gorm.Model
 }
 
 func (x *BostionHost) Reset() {
@@ -1235,11 +1243,12 @@ func (x *BostionHost) GetClusterId() int64 {
 }
 
 type CloudResource struct {
-	gorm.Model
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// @goimport: "gorm.io/gorm"
+	// @gofield: gorm.Model
 	Id           string           `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty" gorm:"column:id;primaryKey; NOT NULL"`                                                     // @gotags: gorm:"column:id;primaryKey; NOT NULL"
 	Name         string           `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty" gorm:"column:name; default:''; NOT NULL"`                                              // @gotags: gorm:"column:name; default:''; NOT NULL"
 	RefId        string           `protobuf:"bytes,3,opt,name=ref_id,json=refId,proto3" json:"ref_id,omitempty" gorm:"column:ref_id; default:''; NOT NULL"`                             // @gotags: gorm:"column:ref_id; default:''; NOT NULL"
@@ -1248,6 +1257,7 @@ type CloudResource struct {
 	Tags         string           `protobuf:"bytes,6,opt,name=tags,proto3" json:"tags,omitempty" gorm:"column:tags; default:''; NOT NULL"`                                              // @gotags: gorm:"column:tags; default:''; NOT NULL"
 	Value        string           `protobuf:"bytes,7,opt,name=value,proto3" json:"value,omitempty" gorm:"column:value; default:''; NOT NULL"`                                           // @gotags: gorm:"column:value; default:''; NOT NULL"
 	SubResources []*CloudResource `protobuf:"bytes,8,rep,name=sub_resources,json=subResources,proto3" json:"sub_resources,omitempty" gorm:"-"`                                          // @gotags: gorm:"-"
+	gorm.Model
 }
 
 func (x *CloudResource) Reset() {
@@ -1339,20 +1349,22 @@ func (x *CloudResource) GetSubResources() []*CloudResource {
 }
 
 type SecurityGroup struct {
-	gorm.Model
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// @goimport: "gorm.io/gorm"
+	// @gofield: gorm.Model
 	Id          string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty" gorm:"column:id;primaryKey; NOT NULL"`                                                 // @gotags: gorm:"column:id;primaryKey; NOT NULL"
-	Name        string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty" gorm:"column:name; default:''; NOT NULL"`                                          // @gotags: gorm:"column:name; default:''; NOT NULL"
+	Name        string `gorm:"column:name; default:''; NOT NULL" protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`                                          // @gotags: gorm:"column:name; default:''; NOT NULL"
 	Description string `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty" gorm:"column:description; default:''; NOT NULL"`                     // @gotags: gorm:"column:description; default:''; NOT NULL"
 	VpcId       string `protobuf:"bytes,4,opt,name=vpc_id,json=vpcId,proto3" json:"vpc_id,omitempty" gorm:"column:vpc_id; default:''; NOT NULL"`                         // @gotags: gorm:"column:vpc_id; default:''; NOT NULL"
-	IngressPort int32  `protobuf:"varint,5,opt,name=ingress_port,json=ingressPort,proto3" json:"ingress_port,omitempty" gorm:"column:ingress_port; default:0; NOT NULL"` // @gotags: gorm:"column:ingress_port; default:0; NOT NULL"
+	IngressPort int32  `gorm:"column:ingress_port; default:0; NOT NULL" protobuf:"varint,5,opt,name=ingress_port,json=ingressPort,proto3" json:"ingress_port,omitempty"` // @gotags: gorm:"column:ingress_port; default:0; NOT NULL"
 	EgressPort  int32  `protobuf:"varint,6,opt,name=egress_port,json=egressPort,proto3" json:"egress_port,omitempty" gorm:"column:egress_port; default:0; NOT NULL"`     // @gotags: gorm:"column:egress_port; default:0; NOT NULL"
-	Protocol    string `protobuf:"bytes,7,opt,name=protocol,proto3" json:"protocol,omitempty" gorm:"column:protocol; default:''; NOT NULL"`                              // @gotags: gorm:"column:protocol; default:''; NOT NULL"
+	Protocol    string `gorm:"column:protocol; default:''; NOT NULL" protobuf:"bytes,7,opt,name=protocol,proto3" json:"protocol,omitempty"`                              // @gotags: gorm:"column:protocol; default:''; NOT NULL"
 	IpCidr      string `protobuf:"bytes,8,opt,name=ip_cidr,json=ipCidr,proto3" json:"ip_cidr,omitempty" gorm:"column:ip_cidr; default:''; NOT NULL"`                     // @gotags: gorm:"column:ip_cidr; default:''; NOT NULL"
 	ClusterId   int64  `protobuf:"varint,9,opt,name=cluster_id,json=clusterId,proto3" json:"cluster_id,omitempty" gorm:"column:cluster_id; default:0; NOT NULL"`         // @gotags: gorm:"column:cluster_id; default:0; NOT NULL"
+	gorm.Model
 }
 
 func (x *SecurityGroup) Reset() {

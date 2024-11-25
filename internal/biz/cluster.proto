@@ -27,6 +27,8 @@ enum ClusterLevel {
 }
 
 message Cluster {
+      // @goimport: "gorm.io/gorm"
+      // @gofield: gorm.Model
       int64 id = 1; // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
       string name = 2; // @gotags: gorm:"column:name; default:''; NOT NULL"
       string version = 3; // @gotags: gorm:"column:version; default:''; NOT NULL"
@@ -83,6 +85,8 @@ enum NodeGroupType {
 }
 
 message Node {
+      // @goimport: "gorm.io/gorm"
+      // @gofield: gorm.Model
       int64 id = 1; // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
       string name = 2; // @gotags: gorm:"column:name; default:''; NOT NULL"
       string labels = 3; // @gotags: gorm:"column:labels; default:''; NOT NULL"
@@ -98,6 +102,8 @@ message Node {
 }
 
 message NodeGroup {
+      // @goimport: "gorm.io/gorm"
+      // @gofield: gorm.Model
       string id = 1; // @gotags: gorm:"column:id;primaryKey; NOT NULL"
       string name = 2; // @gotags: gorm:"column:name; default:''; NOT NULL"
       NodeGroupType type = 3; // @gotags: gorm:"column:type; default:0; NOT NULL"
@@ -126,6 +132,8 @@ message NodeGroup {
 }
 
 message BostionHost {
+      // @goimport: "gorm.io/gorm"
+      // @gofield: gorm.Model
       string id = 1; // @gotags: gorm:"column:id;primaryKey; NOT NULL"
       string user = 2; // @gotags: gorm:"column:user; default:''; NOT NULL"
       string image = 3; // @gotags: gorm:"column:image; default:''; NOT NULL"
@@ -159,6 +167,8 @@ enum ResourceType {
 }
 
 message CloudResource {
+      // @goimport: "gorm.io/gorm"
+      // @gofield: gorm.Model
       string id = 1; // @gotags: gorm:"column:id;primaryKey; NOT NULL"
       string name = 2; // @gotags: gorm:"column:name; default:''; NOT NULL"
       string ref_id = 3; // @gotags: gorm:"column:ref_id; default:''; NOT NULL"
@@ -170,6 +180,8 @@ message CloudResource {
 }
 
 message SecurityGroup {
+      // @goimport: "gorm.io/gorm"
+      // @gofield: gorm.Model
       string id = 1; // @gotags: gorm:"column:id;primaryKey; NOT NULL"
       string name = 2; // @gotags: gorm:"column:name; default:''; NOT NULL"
       string description = 3; // @gotags: gorm:"column:description; default:''; NOT NULL"

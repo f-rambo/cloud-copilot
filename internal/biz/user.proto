@@ -17,6 +17,8 @@ enum UserSignType {
 }
 
 message User {
+      // @goimport: "gorm.io/gorm"
+      // @gofield: gorm.Model
       int64 id = 1; // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
       string name = 2; // @gotags: gorm:"column:name; default:''; NOT NULL"
       string email = 3; // @gotags: gorm:"column:email; default:''; NOT NULL"
@@ -24,4 +26,4 @@ message User {
       UserStatus status = 5; // @gotags: gorm:"column:status; default:0; NOT NULL"
       string access_token = 6; // @gotags: gorm:"-"`
       UserSignType sign_type = 7; // @gotags: gorm:"column:sign_type; default:0; NOT NULL"
-} 
+}

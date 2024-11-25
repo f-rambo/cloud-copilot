@@ -11,12 +11,16 @@ enum ProjectStatus {
 }
 
 message Technology {
+      // @goimport: "gorm.io/gorm"
+      // @gofield: gorm.Model
       int64 id = 1; // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
       string name = 2; // @gotags: gorm:"column:name; default:''; NOT NULL"
       int64 business_id = 3; // @gotags: gorm:"column:business_id; default:0; NOT NULL"
 }
 
 message Business {
+      // @goimport: "gorm.io/gorm"
+      // @gofield: gorm.Model
       int64 id = 1; // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
       string name = 2; // @gotags: gorm:"column:name; default:''; NOT NULL"
       int64 project_id = 3; // @gotags: gorm:"column:project_id; default:0; NOT NULL"
@@ -24,6 +28,8 @@ message Business {
 }
 
 message Project {
+      // @goimport: "gorm.io/gorm"
+      // @gofield: gorm.Model
       int64 id = 1; // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
       string name = 2; // @gotags: gorm:"column:name; default:''; NOT NULL"
       string description = 3; // @gotags: gorm:"column:namespace; default:''; NOT NULL"

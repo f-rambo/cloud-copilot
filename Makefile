@@ -12,6 +12,7 @@ IMG=$(AUTHOR)/$(SERVER_NAME):$(VERSION)
 PLATFORMS = linux/arm64 linux/amd64
 
 INTERNAL_PROTO_FILES=$(shell find internal -name *.proto)
+INTERNAL_BIZ_PBGO_FILES=$(shell find internal/biz -name *.pb.go)
 API_PROTO_FILES=$(shell find api -name *.proto)
 
 .PHONY: init
@@ -41,18 +42,17 @@ internal:
  	       --go_out=paths=source_relative:. \
  	       --go-grpc_out=paths=source_relative:. \
 	       $(INTERNAL_PROTO_FILES)
-	find internal -name "*.pb.go" -type f -exec protoc-go-inject-tag -input={} \;
-	bash internalpb.sh
+	protoc-go-inject $(INTERNAL_BIZ_PBGO_FILES)
 
 
 .PHONY: build
 build:
-	mkdir -p bin/ && go build -ldflags "-X main.Version=$(VERSION)" -o ./bin/ ./cmd/cloud-copilot
+	mkdir -p bin/ && go build -ldflags "-X main.Version=$(VERSION)" -o ./bin/$(SERVER_NAME) ./cmd/${SERVER_NAME}
 
 .PHONY: generate
 generate:
 	go mod tidy
-	@cd cmd/cloud-copilot && wire && cd -
+	@cd cmd/${SERVER_NAME} && wire && cd -
 
 
 .PHONY: docker-build
@@ -73,7 +73,7 @@ docker-push:
 
 .PHONY: run
 run:
-	go run ./cmd/cloud-copilot -conf ./configs/config.yaml
+	go run ./cmd/${SERVER_NAME} -conf ./configs/config.yaml
 
 .PHONY: multi-platform-build
 multi-platform-build:

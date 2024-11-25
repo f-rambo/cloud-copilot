@@ -38,12 +38,8 @@ func (uc *ProjectUsecase) Init(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	if project == nil {
-		project := &Project{Name: uc.conf.Server.Name, Status: ProjectStatus_PROJECT_INIT}
-		err = uc.Save(ctx, project)
-		if err != nil {
-			return err
-		}
+	if project == nil || project.ID == 0 {
+		return uc.Save(ctx, &Project{Name: uc.conf.Server.Name, Status: ProjectStatus_PROJECT_INIT})
 	}
 	return nil
 }

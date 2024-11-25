@@ -11,6 +11,8 @@ enum WorkflowType {
 }
 
 message Workflow {
+      // @goimport: "gorm.io/gorm"
+      // @gofield: gorm.Model
       int64 id = 1; // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
       string name = 2; // @gotags: gorm:"column:name; default:''; NOT NULL"
       string workflow = 3; // @gotags: gorm:"column:workflow; default:''; NOT NULL"
@@ -24,6 +26,8 @@ enum CIStatus {
 }
 
 message CI {
+      // @goimport: "gorm.io/gorm"
+      // @gofield: gorm.Model
       int64 id = 1; // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
       string version = 2; // @gotags: gorm:"column:version; default:''; NOT NULL"
       string branch = 3; // @gotags: gorm:"column:branch; default:''; NOT NULL"
@@ -36,6 +40,8 @@ message CI {
 }
 
 message CD {
+      // @goimport: "gorm.io/gorm"
+      // @gofield: gorm.Model
       int64 id = 1; // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
       int64 ci_id = 2; // @gotags: gorm:"column:ci_id; default:0; NOT NULL"
       int64 service_id = 3; // @gotags: gorm:"column:service_id; default:0; NOT NULL"
@@ -44,6 +50,8 @@ message CD {
 }
 
 message Port {
+      // @goimport: "gorm.io/gorm"
+      // @gofield: gorm.Model
       int64 id = 1; // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
       string ingress_path = 2; // @gotags: gorm:"column:ingress_path; default:''; NOT NULL"
       string protocol = 3; // @gotags: gorm:"column:protocol; default:''; NOT NULL"
@@ -52,6 +60,8 @@ message Port {
 }
 
 message Service {
+      // @goimport: "gorm.io/gorm"
+      // @gofield: gorm.Model
       int64 id = 1; // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
       string name = 2; // @gotags: gorm:"column:name; default:''; NOT NULL"
       string code_repo = 3; // @gotags: gorm:"column:code_repo; default:''; NOT NULL"
