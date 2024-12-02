@@ -77,9 +77,9 @@ type Technology struct {
 
 	// @goimport: "gorm.io/gorm"
 	// @gofield: gorm.Model
-	Id         int64  `gorm:"column:id;primaryKey;AUTO_INCREMENT" protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`                                       // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
-	Name       string `gorm:"column:name; default:''; NOT NULL" protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`                                      // @gotags: gorm:"column:name; default:''; NOT NULL"
-	BusinessId int64  `gorm:"column:business_id; default:0; NOT NULL" protobuf:"varint,3,opt,name=business_id,json=businessId,proto3" json:"business_id,omitempty"` // @gotags: gorm:"column:business_id; default:0; NOT NULL"
+	Id         int64  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT"`                                       // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
+	Name       string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty" gorm:"column:name; default:''; NOT NULL"`                                      // @gotags: gorm:"column:name; default:''; NOT NULL"
+	BusinessId int64  `protobuf:"varint,3,opt,name=business_id,json=businessId,proto3" json:"business_id,omitempty" gorm:"column:business_id; default:0; NOT NULL"` // @gotags: gorm:"column:business_id; default:0; NOT NULL"
 	gorm.Model
 }
 
@@ -143,10 +143,10 @@ type Business struct {
 
 	// @goimport: "gorm.io/gorm"
 	// @gofield: gorm.Model
-	Id          int64         `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT"`                                   // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
+	Id          int64         `json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT" protobuf:"varint,1,opt,name=id,proto3"`                                   // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
 	Name        string        `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty" gorm:"column:name; default:''; NOT NULL"`                                  // @gotags: gorm:"column:name; default:''; NOT NULL"
-	ProjectId   int64         `protobuf:"varint,3,opt,name=project_id,json=projectId,proto3" json:"project_id,omitempty" gorm:"column:project_id; default:0; NOT NULL"` // @gotags: gorm:"column:project_id; default:0; NOT NULL"
-	Technologys []*Technology `json:"technologys,omitempty" gorm:"-" protobuf:"bytes,4,rep,name=technologys,proto3"`
+	ProjectId   int64         `gorm:"column:project_id; default:0; NOT NULL" protobuf:"varint,3,opt,name=project_id,json=projectId,proto3" json:"project_id,omitempty"` // @gotags: gorm:"column:project_id; default:0; NOT NULL"
+	Technologys []*Technology `protobuf:"bytes,4,rep,name=technologys,proto3" json:"technologys,omitempty" gorm:"-"`
 	gorm.Model                // @gotags: gorm:"-"
 }
 
@@ -217,11 +217,11 @@ type Project struct {
 
 	// @goimport: "gorm.io/gorm"
 	// @gofield: gorm.Model
-	Id                 int64         `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT"`                                                                       // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
+	Id                 int64         `gorm:"column:id;primaryKey;AUTO_INCREMENT" protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`                                                                       // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
 	Name               string        `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty" gorm:"column:name; default:''; NOT NULL"`                                                                      // @gotags: gorm:"column:name; default:''; NOT NULL"
-	Description        string        `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty" gorm:"column:namespace; default:''; NOT NULL"`                                                   // @gotags: gorm:"column:namespace; default:''; NOT NULL"
+	Description        string        `gorm:"column:namespace; default:''; NOT NULL" protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`                                                   // @gotags: gorm:"column:namespace; default:''; NOT NULL"
 	ClusterId          int64         `protobuf:"varint,4,opt,name=cluster_id,json=clusterId,proto3" json:"cluster_id,omitempty" gorm:"column:cluster_id; default:0; NOT NULL"`                                     // @gotags: gorm:"column:cluster_id; default:0; NOT NULL"
-	Namespace          string        `protobuf:"bytes,5,opt,name=namespace,proto3" json:"namespace,omitempty" gorm:"column:namespace; default:''; NOT NULL"`                                                       // @gotags: gorm:"column:namespace; default:''; NOT NULL"
+	Namespace          string        `gorm:"column:namespace; default:''; NOT NULL" protobuf:"bytes,5,opt,name=namespace,proto3" json:"namespace,omitempty"`                                                       // @gotags: gorm:"column:namespace; default:''; NOT NULL"
 	Status             ProjectStatus `protobuf:"varint,6,opt,name=status,proto3,enum=biz.project.ProjectStatus" json:"status,omitempty" gorm:"column:status; default:0; NOT NULL"`                                 // @gotags: gorm:"column:status; default:0; NOT NULL"
 	Business           []*Business   `protobuf:"bytes,7,rep,name=business,proto3" json:"business,omitempty" gorm:"-"`                                                                                              // @gotags: gorm:"-"
 	BusinessTechnology string        `protobuf:"bytes,8,opt,name=business_technology,json=businessTechnology,proto3" json:"business_technology,omitempty" gorm:"column:business_technology; default:''; NOT NULL"` // @gotags: gorm:"column:business_technology; default:''; NOT NULL"
