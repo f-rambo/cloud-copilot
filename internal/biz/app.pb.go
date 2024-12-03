@@ -78,8 +78,8 @@ type AppType struct {
 	// @goimport: "gorm.io/gorm"
 	// @gofield: gorm.Model
 	Id          int64  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT"`                       // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
-	Name        string `gorm:"column:name; default:''; NOT NULL" protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`                      // @gotags: gorm:"column:name; default:''; NOT NULL"
-	Description string `json:"description,omitempty" gorm:"column:description; default:''; NOT NULL" protobuf:"bytes,3,opt,name=description,proto3"` // @gotags: gorm:"column:description; default:''; NOT NULL"
+	Name        string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty" gorm:"column:name; default:''; NOT NULL"`                      // @gotags: gorm:"column:name; default:''; NOT NULL"
+	Description string `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty" gorm:"column:description; default:''; NOT NULL"` // @gotags: gorm:"column:description; default:''; NOT NULL"
 	gorm.Model
 }
 
@@ -143,8 +143,8 @@ type AppRepo struct {
 
 	// @goimport: "gorm.io/gorm"
 	// @gofield: gorm.Model
-	Id          int64  `gorm:"column:id;primaryKey;AUTO_INCREMENT" protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`                                   // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
-	Name        string `json:"name,omitempty" gorm:"column:name; default:''; NOT NULL" protobuf:"bytes,2,opt,name=name,proto3"`                                  // @gotags: gorm:"column:name; default:''; NOT NULL"
+	Id          int64  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT"`                                   // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
+	Name        string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty" gorm:"column:name; default:''; NOT NULL"`                                  // @gotags: gorm:"column:name; default:''; NOT NULL"
 	Url         string `protobuf:"bytes,3,opt,name=url,proto3" json:"url,omitempty" gorm:"column:url; default:''; NOT NULL"`                                     // @gotags: gorm:"column:url; default:''; NOT NULL"
 	IndexPath   string `protobuf:"bytes,4,opt,name=index_path,json=indexPath,proto3" json:"index_path,omitempty" gorm:"column:index_path; default:''; NOT NULL"` // @gotags: gorm:"column:index_path; default:''; NOT NULL"
 	Description string `protobuf:"bytes,5,opt,name=description,proto3" json:"description,omitempty" gorm:"column:description; default:''; NOT NULL"`             // @gotags: gorm:"column:description; default:''; NOT NULL"
@@ -226,9 +226,9 @@ type AppVersion struct {
 	// @goimport: "gorm.io/gorm"
 	// @gofield: gorm.Model
 	Id            int64  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT"`                                                   // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
-	AppId         int64  `gorm:"column:app_id; default:0; NOT NULL; index" protobuf:"varint,2,opt,name=app_id,json=appId,proto3" json:"app_id,omitempty"`                          // @gotags: gorm:"column:app_id; default:0; NOT NULL; index"
-	Name          string `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty" gorm:"column:name; default:''; NOT NULL"`                                                  // @gotags: gorm:"column:name; default:''; NOT NULL"
-	Chart         string `protobuf:"bytes,4,opt,name=chart,proto3" json:"chart,omitempty" gorm:"column:chart; default:''; NOT NULL"`                                               // @gotags: gorm:"column:chart; default:''; NOT NULL" // as file path
+	AppId         int64  `protobuf:"varint,2,opt,name=app_id,json=appId,proto3" json:"app_id,omitempty" gorm:"column:app_id; default:0; NOT NULL; index"`                          // @gotags: gorm:"column:app_id; default:0; NOT NULL; index"
+	Name          string `gorm:"column:name; default:''; NOT NULL" protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`                                                  // @gotags: gorm:"column:name; default:''; NOT NULL"
+	Chart         string `gorm:"column:chart; default:''; NOT NULL" protobuf:"bytes,4,opt,name=chart,proto3" json:"chart,omitempty"`                                               // @gotags: gorm:"column:chart; default:''; NOT NULL" // as file path
 	Version       string `protobuf:"bytes,5,opt,name=version,proto3" json:"version,omitempty" gorm:"column:version; default:''; NOT NULL; index"`                                  // @gotags: gorm:"column:version; default:''; NOT NULL; index"
 	DefaultConfig string `protobuf:"bytes,6,opt,name=default_config,json=defaultConfig,proto3" json:"default_config,omitempty" gorm:"column:default_config; default:''; NOT NULL"` // @gotags: gorm:"column:default_config; default:''; NOT NULL"
 	gorm.Model
@@ -316,13 +316,13 @@ type App struct {
 	// @goimport: "gorm.io/gorm"
 	// @gofield: gorm.Model
 	Id          int64         `gorm:"column:id;primaryKey;AUTO_INCREMENT" protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`                                      // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
-	Name        string        `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty" gorm:"column:name; default:''; NOT NULL; index"`                              // @gotags: gorm:"column:name; default:''; NOT NULL; index"
-	Icon        string        `protobuf:"bytes,3,opt,name=icon,proto3" json:"icon,omitempty" gorm:"column:icon; default:''; NOT NULL"`                                     // @gotags: gorm:"column:icon; default:''; NOT NULL"
-	AppTypeId   int64         `protobuf:"varint,4,opt,name=app_type_id,json=appTypeId,proto3" json:"app_type_id,omitempty" gorm:"column:app_type_id; default:0; NOT NULL"` // @gotags: gorm:"column:app_type_id; default:0; NOT NULL"
-	AppRepoId   int64         `json:"app_repo_id,omitempty" gorm:"column:app_repo_id; default:0; NOT NULL" protobuf:"varint,5,opt,name=app_repo_id,json=appRepoId,proto3"` // @gotags: gorm:"column:app_repo_id; default:0; NOT NULL"
-	Description string        `gorm:"column:description; default:''; NOT NULL" protobuf:"bytes,6,opt,name=description,proto3" json:"description,omitempty"`                // @gotags: gorm:"column:description; default:''; NOT NULL"
-	Versions    []*AppVersion `protobuf:"bytes,7,rep,name=versions,proto3" json:"versions,omitempty" gorm:"-"`                                                             // @gotags: gorm:"-"
-	Readme      string        `gorm:"-" protobuf:"bytes,8,opt,name=readme,proto3" json:"readme,omitempty"`                                                                 // @gotags: gorm:"-"
+	Name        string        `json:"name,omitempty" gorm:"column:name; default:''; NOT NULL; index" protobuf:"bytes,2,opt,name=name,proto3"`                              // @gotags: gorm:"column:name; default:''; NOT NULL; index"
+	Icon        string        `gorm:"column:icon; default:''; NOT NULL" protobuf:"bytes,3,opt,name=icon,proto3" json:"icon,omitempty"`                                     // @gotags: gorm:"column:icon; default:''; NOT NULL"
+	AppTypeId   int64         `gorm:"column:app_type_id; default:0; NOT NULL" protobuf:"varint,4,opt,name=app_type_id,json=appTypeId,proto3" json:"app_type_id,omitempty"` // @gotags: gorm:"column:app_type_id; default:0; NOT NULL"
+	AppRepoId   int64         `protobuf:"varint,5,opt,name=app_repo_id,json=appRepoId,proto3" json:"app_repo_id,omitempty" gorm:"column:app_repo_id; default:0; NOT NULL"` // @gotags: gorm:"column:app_repo_id; default:0; NOT NULL"
+	Description string        `json:"description,omitempty" gorm:"column:description; default:''; NOT NULL" protobuf:"bytes,6,opt,name=description,proto3"`                // @gotags: gorm:"column:description; default:''; NOT NULL"
+	Versions    []*AppVersion `json:"versions,omitempty" gorm:"-" protobuf:"bytes,7,rep,name=versions,proto3"`                                                             // @gotags: gorm:"-"
+	Readme      string        `protobuf:"bytes,8,opt,name=readme,proto3" json:"readme,omitempty" gorm:"-"`                                                                 // @gotags: gorm:"-"
 	Metadata    []byte        `protobuf:"bytes,9,opt,name=metadata,proto3" json:"metadata,omitempty" gorm:"-"`
 	gorm.Model                // @gotags: gorm:"-"
 }
@@ -429,7 +429,7 @@ type AppReleaseResource struct {
 
 	// @goimport: "gorm.io/gorm"
 	// @gofield: gorm.Model
-	Id         int64    `json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT" protobuf:"varint,1,opt,name=id,proto3"`                                          // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
+	Id         int64    `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT"`                                          // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
 	ReleaseId  int64    `protobuf:"varint,2,opt,name=release_id,json=releaseId,proto3" json:"release_id,omitempty" gorm:"column:release_id; default:0; NOT NULL; index"` // @gotags: gorm:"column:release_id; default:0; NOT NULL; index"
 	Name       string   `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty" gorm:"column:name; default:''; NOT NULL"`                                         // @gotags: gorm:"column:name; default:''; NOT NULL"
 	Kind       string   `protobuf:"bytes,4,opt,name=kind,proto3" json:"kind,omitempty" gorm:"column:kind; default:''; NOT NULL"`                                         // @gotags: gorm:"column:kind; default:''; NOT NULL"
@@ -535,23 +535,23 @@ type AppRelease struct {
 
 	// @goimport: "gorm.io/gorm"
 	// @gofield: gorm.Model
-	Id          int64                 `gorm:"column:id;primaryKey;AUTO_INCREMENT" protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`                                           // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
+	Id          int64                 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT"`                                           // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
 	ReleaseName string                `protobuf:"bytes,2,opt,name=release_name,json=releaseName,proto3" json:"release_name,omitempty" gorm:"column:release_name; default:''; NOT NULL"` // @gotags: gorm:"column:release_name; default:''; NOT NULL"
-	AppId       int64                 `gorm:"column:app_id; default:0; NOT NULL; index" protobuf:"varint,3,opt,name=app_id,json=appId,proto3" json:"app_id,omitempty"`                  // @gotags: gorm:"column:app_id; default:0; NOT NULL; index"
-	VersionId   int64                 `gorm:"column:version_id; default:0; NOT NULL; index" protobuf:"varint,4,opt,name=version_id,json=versionId,proto3" json:"version_id,omitempty"`  // @gotags: gorm:"column:version_id; default:0; NOT NULL; index"
-	ClusterId   int64                 `json:"cluster_id,omitempty" gorm:"column:cluster_id; default:0; NOT NULL; index" protobuf:"varint,5,opt,name=cluster_id,json=clusterId,proto3"`  // @gotags: gorm:"column:cluster_id; default:0; NOT NULL; index"
+	AppId       int64                 `protobuf:"varint,3,opt,name=app_id,json=appId,proto3" json:"app_id,omitempty" gorm:"column:app_id; default:0; NOT NULL; index"`                  // @gotags: gorm:"column:app_id; default:0; NOT NULL; index"
+	VersionId   int64                 `protobuf:"varint,4,opt,name=version_id,json=versionId,proto3" json:"version_id,omitempty" gorm:"column:version_id; default:0; NOT NULL; index"`  // @gotags: gorm:"column:version_id; default:0; NOT NULL; index"
+	ClusterId   int64                 `protobuf:"varint,5,opt,name=cluster_id,json=clusterId,proto3" json:"cluster_id,omitempty" gorm:"column:cluster_id; default:0; NOT NULL; index"`  // @gotags: gorm:"column:cluster_id; default:0; NOT NULL; index"
 	ProjectId   int64                 `protobuf:"varint,6,opt,name=project_id,json=projectId,proto3" json:"project_id,omitempty" gorm:"column:project_id; default:0; NOT NULL; index"`  // @gotags: gorm:"column:project_id; default:0; NOT NULL; index"
-	UserId      int64                 `json:"user_id,omitempty" gorm:"column:user_id; default:0; NOT NULL; index" protobuf:"varint,7,opt,name=user_id,json=userId,proto3"`              // @gotags: gorm:"column:user_id; default:0; NOT NULL; index"
+	UserId      int64                 `protobuf:"varint,7,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty" gorm:"column:user_id; default:0; NOT NULL; index"`              // @gotags: gorm:"column:user_id; default:0; NOT NULL; index"
 	Namespace   string                `protobuf:"bytes,8,opt,name=namespace,proto3" json:"namespace,omitempty" gorm:"column:namespace; default:''; NOT NULL"`                           // @gotags: gorm:"column:namespace; default:''; NOT NULL"
 	Config      string                `protobuf:"bytes,9,opt,name=config,proto3" json:"config,omitempty" gorm:"column:config; default:''; NOT NULL"`                                    // @gotags: gorm:"column:config; default:''; NOT NULL"
-	Status      AppReleaseSatus       `gorm:"column:status; default:0; NOT NULL" protobuf:"varint,10,opt,name=status,proto3,enum=biz.app.AppReleaseSatus" json:"status,omitempty"`      // @gotags: gorm:"column:status; default:0; NOT NULL"
+	Status      AppReleaseSatus       `protobuf:"varint,10,opt,name=status,proto3,enum=biz.app.AppReleaseSatus" json:"status,omitempty" gorm:"column:status; default:0; NOT NULL"`      // @gotags: gorm:"column:status; default:0; NOT NULL"
 	Manifest    string                `protobuf:"bytes,11,opt,name=manifest,proto3" json:"manifest,omitempty" gorm:"column:manifest; default:''; NOT NULL"`                             // @gotags: gorm:"column:manifest; default:''; NOT NULL"
-	Notes       string                `json:"notes,omitempty" gorm:"column:notes; default:''; NOT NULL" protobuf:"bytes,12,opt,name=notes,proto3"`                                      // @gotags: gorm:"column:notes; default:''; NOT NULL"
+	Notes       string                `protobuf:"bytes,12,opt,name=notes,proto3" json:"notes,omitempty" gorm:"column:notes; default:''; NOT NULL"`                                      // @gotags: gorm:"column:notes; default:''; NOT NULL"
 	Logs        string                `protobuf:"bytes,13,opt,name=logs,proto3" json:"logs,omitempty" gorm:"column:logs; default:''; NOT NULL"`                                         // @gotags: gorm:"column:logs; default:''; NOT NULL"
-	Dryrun      bool                  `json:"dryrun,omitempty" gorm:"column:dryrun; default:false; NOT NULL" protobuf:"varint,14,opt,name=dryrun,proto3"`                               // @gotags: gorm:"column:dryrun; default:false; NOT NULL"
+	Dryrun      bool                  `protobuf:"varint,14,opt,name=dryrun,proto3" json:"dryrun,omitempty" gorm:"column:dryrun; default:false; NOT NULL"`                               // @gotags: gorm:"column:dryrun; default:false; NOT NULL"
 	Atomic      bool                  `protobuf:"varint,15,opt,name=atomic,proto3" json:"atomic,omitempty" gorm:"column:atomic; default:false; NOT NULL"`                               // @gotags: gorm:"column:atomic; default:false; NOT NULL"
 	Wait        bool                  `protobuf:"varint,16,opt,name=wait,proto3" json:"wait,omitempty" gorm:"column:wait; default:false; NOT NULL"`                                     // @gotags: gorm:"column:wait; default:false; NOT NULL"
-	Resources   []*AppReleaseResource `protobuf:"bytes,17,rep,name=resources,proto3" json:"resources,omitempty" gorm:"-"`
+	Resources   []*AppReleaseResource `json:"resources,omitempty" gorm:"-" protobuf:"bytes,17,rep,name=resources,proto3"`
 	gorm.Model                        // @gotags: gorm:"-"
 }
 

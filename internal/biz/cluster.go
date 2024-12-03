@@ -3,7 +3,6 @@ package biz
 import (
 	"context"
 	"fmt"
-	"os"
 	"strings"
 	"sync"
 
@@ -267,11 +266,6 @@ func (c *Cluster) SettingSpecifications() {
 	if len(c.NodeGroups) != 0 || len(c.Nodes) != 0 {
 		return
 	}
-	ipCidr := os.Getenv("CLUSTER_IP_CIDR")
-	if ipCidr == "" {
-		ipCidr = "10.0.0.0/16"
-	}
-	c.IpCidr = ipCidr
 	nodegroup := &NodeGroup{Id: uuid.New().String(), ClusterId: c.Id}
 	nodegroup.Type = NodeGroupType_NORMAL
 	c.GenerateNodeGroupName(nodegroup)
