@@ -57,7 +57,8 @@ message Log {
 message Auth {
   int32 exp = 1;
   string key = 2;
-  string admin_password = 3;
+  string admin_email = 3;
+  string admin_password = 4;
 }
 
 message Bootstrap {

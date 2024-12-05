@@ -53,6 +53,7 @@ func NewData(c *conf.Bootstrap, logger log.Logger) (*Data, func(), error) {
 		&biz.AppType{},
 		&biz.AppRepo{},
 		&biz.App{},
+		&biz.AppVersion{},
 		&biz.AppRelease{},
 		&biz.AppReleaseResource{},
 		&biz.Cluster{},

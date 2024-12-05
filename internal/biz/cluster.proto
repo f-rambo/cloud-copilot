@@ -10,6 +10,7 @@ enum ClusterStatus {
       DELETED = 2;
       STARTING = 3;
       STOPPING = 4;
+      STOPPED = 5;
 }
 
 enum ClusterType {
@@ -20,6 +21,7 @@ enum ClusterType {
       ALICLOUD_ECS = 4;
       ALICLOUD_AKS = 5;
       GCP_GKE = 6;
+      KUBERNETES = 7;
 }
 
 enum ClusterLevel {
@@ -27,6 +29,63 @@ enum ClusterLevel {
       BASIC = 1;
       STANDARD = 2;
       ADVANCED = 3;
+}
+
+enum NodeRole {
+      NodeRole_UNSPECIFIED = 0;
+      MASTER = 1;
+      WORKER = 2;
+      EDGE = 3;
+}
+
+enum NodeStatus {
+      NodeStatus_UNSPECIFIED = 0;
+      NODE_UNSPECIFIED = 1;
+      NODE_RUNNING = 2;
+      NODE_CREATING = 3;
+      NODE_DELETING = 4;
+      NODE_DELETED = 5;
+      NODE_ERROR = 6;
+      NODE_PENDING = 7;
+}
+
+enum NodeGroupType {
+      NodeGroupType_UNSPECIFIED = 0;
+      NORMAL = 1;
+      HIGH_COMPUTATION = 2;
+      GPU_ACCELERATERD = 3;
+      HIGH_MEMORY = 4;
+      LARGE_HARD_DISK = 5;
+}
+
+enum ResourceType {
+      RESOURCE_TYPE_UNSPECIFIED = 0;
+      VPC = 1;
+      SUBNET = 2;
+      INTERNET_GATEWAY = 3;
+      NAT_GATEWAY = 4;
+      ROUTE_TABLE = 5;
+      SECURITY_GROUP = 6;
+      LOAD_BALANCER = 7;
+      ELASTIC_IP = 8;
+      AVAILABILITY_ZONES = 9;
+      KEY_PAIR = 10;
+      VPC_ENDPOINT_S3 = 11;
+      DATA_DEVICE = 12;
+      INSTANCE_TYPE = 13;
+}
+
+enum ResourceTypeKeyValue {
+      ResourceTypeKeyValue_UNSPECIFIED = 0;
+      NAME = 1;
+      ACCESS = 2;
+      ZONE = 3;
+      SECURITY_GROUP_TYPE = 4;
+      VPC_REFID = 5;
+      ACCESS_PRIVATE = 6;
+      ACCESS_PUBLIC = 7;
+      SECURITY_GROUP_TYPE_CLUSTER = 8;
+      SECURITY_GROUP_TYPE_BOSTION = 9;
 }
 
 message Cluster {
@@ -62,33 +121,6 @@ message Cluster {
       repeated NodeGroup node_groups = 28; // @gotags: gorm:"-"
       repeated CloudResource cloud_resources = 29; // @gotags: gorm:"-"
       repeated SecurityGroup security_groups = 30; // @gotags: gorm:"-"
-}
-
-enum NodeRole {
-      NodeRole_UNSPECIFIED = 0;
-      MASTER = 1;
-      WORKER = 2;
-      EDGE = 3;
-}
-
-enum NodeStatus {
-      NodeStatus_UNSPECIFIED = 0;
-      NODE_UNSPECIFIED = 1;
-      NODE_RUNNING = 2;
-      NODE_CREATING = 3;
-      NODE_DELETING = 4;
-      NODE_DELETED = 5;
-      NODE_ERROR = 6;
-      NODE_PENDING = 7;
-}
-
-enum NodeGroupType {
-      NodeGroupType_UNSPECIFIED = 0;
-      NORMAL = 1;
-      HIGH_COMPUTATION = 2;
-      GPU_ACCELERATERD = 3;
-      HIGH_MEMORY = 4;
-      LARGE_HARD_DISK = 5;
 }
 
 message Node {
@@ -158,36 +190,6 @@ message BostionHost {
       NodeStatus status = 13; // @gotags: gorm:"column:status; default:0; NOT NULL"
       string instance_id = 14; // @gotags: gorm:"column:instance_id; default:''; NOT NULL"
       int64 cluster_id = 15; // @gotags: gorm:"column:cluster_id; default:0; NOT NULL"
-}
-
-enum ResourceType {
-      RESOURCE_TYPE_UNSPECIFIED = 0;
-      VPC = 1;
-      SUBNET = 2;
-      INTERNET_GATEWAY = 3;
-      NAT_GATEWAY = 4;
-      ROUTE_TABLE = 5;
-      SECURITY_GROUP = 6;
-      LOAD_BALANCER = 7;
-      ELASTIC_IP = 8;
-      AVAILABILITY_ZONES = 9;
-      KEY_PAIR = 10;
-      VPC_ENDPOINT_S3 = 11;
-      DATA_DEVICE = 12;
-      INSTANCE_TYPE = 13;
-}
-
-enum ResourceTypeKeyValue {
-      ResourceTypeKeyValue_UNSPECIFIED = 0;
-      NAME = 1;
-      ACCESS = 2;
-      ZONE = 3;
-      SECURITY_GROUP_TYPE = 4;
-      VPC_REFID = 5;
-      ACCESS_PRIVATE = 6;
-      ACCESS_PUBLIC = 7;
-      SECURITY_GROUP_TYPE_CLUSTER = 8;
-      SECURITY_GROUP_TYPE_BOSTION = 9;
 }
 
 message CloudResource {

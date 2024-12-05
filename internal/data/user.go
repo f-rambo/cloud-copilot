@@ -91,10 +91,11 @@ func (u *UserRepo) SignIn(ctx context.Context, userParam *biz.User) error {
 	if user == nil || user.Id == 0 {
 		return errors.New("user not exist")
 	}
+	userParam.Id = user.Id
 	if userParam.Password != user.Password {
 		return errors.New("password error")
 	}
-	user.AccessToken, err = u.encodeToken(user)
+	userParam.AccessToken, err = u.encodeToken(userParam)
 	if err != nil {
 		return err
 	}

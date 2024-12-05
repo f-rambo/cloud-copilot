@@ -9,6 +9,6 @@ etcd:
   local:
     imageRepository: "{IMAGE_REPO}"
 networking:
-  serviceSubnet: "10.96.0.0/12"
-  podSubnet: "10.244.0.0/16"
+  serviceSubnet: "{SERVICE_CIDR}"
+  podSubnet: "{POD_CIDR}"
   dnsDomain: "{CLUSTER_NAME}"

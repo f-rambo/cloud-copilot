@@ -4,6 +4,74 @@ package cluster.v1alpha1;
 
 option go_package = "api/cluster/v1alpha1;v1alpha1";
 
+message ClusterType {
+    int32 id = 1 [json_name = "id"];
+    string name = 2 [json_name = "name"];
+    bool is_cloud = 3 [json_name = "is_cloud"];
+}
+
+message ClusterTypes {
+    repeated ClusterType cluster_types = 1 [json_name = "cluster_types"];
+}
+
+message ClusterStatus {
+    int32 id = 1 [json_name = "id"];
+    string name = 2 [json_name = "name"];
+}
+
+message ClusterStatuses {
+    repeated ClusterStatus cluster_statuses = 1 [json_name = "cluster_statuses"];
+}
+
+message ClusterLevel {
+    int32 id = 1 [json_name = "id"];
+    string name = 2 [json_name = "name"];
+}
+
+message ClusterLevels {
+    repeated ClusterLevel cluster_levels = 1 [json_name = "cluster_levels"];
+}
+
+message NodeStatus {
+    int32 id = 1 [json_name = "id"];
+    string name = 2 [json_name = "name"];
+}
+
+message NodeStatuses {
+    repeated NodeStatus node_statuses = 1 [json_name = "node_statuses"];
+}
+
+
+message NodeGroupType {
+    int32 id = 1 [json_name = "id"];
+    string name = 2 [json_name = "name"];
+}
+
+message NodeGroupTypes {
+    repeated NodeGroupType node_group_types = 1 [json_name = "node_group_types"];
+}
+
+message NodeRole {
+    int32 id = 1 [json_name = "id"];
+    string name = 2 [json_name = "name"];
+}
+
+message NodeRoles {
+    repeated NodeRole node_roles = 1 [json_name = "node_roles"];
+}
+
+message ResourceType {
+    int32 id = 1 [json_name = "id"];
+    string name = 2 [json_name = "name"];
+}
+
+message ResourceTypes {
+    repeated ResourceType resource_types = 1 [json_name = "resource_types"];
+}
+
+message Regions {
+    repeated string regions = 1 [json_name = "regions"];
+}
 
 message ClusterArgs {
     int64 id = 1 [json_name = "id"];
@@ -34,90 +102,30 @@ message Cluster {
     string name = 2 [json_name = "name"];
     string version = 3 [json_name = "version"];
     string api_server_address = 4 [json_name = "api_server_address"];
-    string config = 5 [json_name = "config"];
-    string addons = 6 [json_name = "addons"];
-    string addons_config = 7 [json_name = "addons_config"];
-    uint32 status = 8 [json_name = "status"];
-    string type = 9 [json_name = "type"];
-    string kube_config = 10 [json_name = "kube_config"];
-    string public_key = 11 [json_name = "public_key"];
-    string private_key = 12 [json_name = "private_key"];
-    string connections = 13 [json_name = "connections"];
-    string certificate_authority = 14 [json_name = "certificate_authority"];
-    string region = 15 [json_name = "region"];
-    string ip_cidr = 16 [json_name = "ip_cidr"];
-    string access_id = 17 [json_name = "access_id"];
-    string access_key = 18 [json_name = "access_key"];
-    BostionHost bostion_host = 19 [json_name = "bostion_host"];
-    repeated Node nodes = 20 [json_name = "nodes"];
-    repeated NodeGroup node_groups = 21 [json_name = "node_groups"];
-    string status_string = 22 [json_name = "status_string"];
+    int32 status = 5 [json_name = "status"];
+    int32 type = 6 [json_name = "type"];
+    string public_key = 7 [json_name = "public_key"];
+    string private_key = 8 [json_name = "private_key"];
+    string region = 9 [json_name = "region"];
+    string access_id = 10 [json_name = "access_id"];
+    string access_key = 11 [json_name = "access_key"];
+    string create_at = 12 [json_name = "create_at"];
+    string update_at = 13 [json_name = "update_at"];
+    repeated Node nodes = 14 [json_name = "nodes"];
+    repeated NodeGroup node_groups = 15 [json_name = "node_groups"];
+    BostionHost bostion_host = 16 [json_name = "bostion_host"];
 }
 
 message NodeGroup {
-    string id = 1 [json_name = "id"];
-    string name = 2 [json_name = "name"];
-    string type = 3 [json_name = "type"];
-    string image = 4 [json_name = "image"];
-    string os = 5 [json_name = "os"];
-    string arch = 6 [json_name = "arch"];
-    int32 cpu = 7 [json_name = "cpu"];
-    double memory = 8 [json_name = "memory"];
-    int32 gpu = 9 [json_name = "gpu"];
-    string node_init_script = 10 [json_name = "node_init_script"];
-    int32 min_size = 11 [json_name = "min_size"];
-    int32 max_size = 12 [json_name = "max_size"];
-    int32 target_size = 13 [json_name = "target_size"];
-    int32 system_disk = 14 [json_name = "system_disk"];
-    int32 data_disk = 15 [json_name = "data_disk"];
-    int64 cluster_id = 16 [json_name = "cluster_id"];
 }
-
 
 message Node {
     int64 id = 1 [json_name = "id"];
-    string name = 2 [json_name = "name"];
-    string labels = 3 [json_name = "labels"];
-    string kernel = 4 [json_name = "kernel"];
-    string container_runtime = 5 [json_name = "container_runtime"];
-    string kubelet = 6 [json_name = "kubelet"];
-    string kube_proxy = 7 [json_name = "kube_proxy"];
-    int32 ssh_port = 8 [json_name = "ssh_port"];
-    int32 grpc_port = 9 [json_name = "grpc_port"];
-    string internal_ip = 10 [json_name = "internal_ip"];
-    string external_ip = 11 [json_name = "external_ip"];
-    string user = 12 [json_name = "user"];
-    string role = 13 [json_name = "role"];
-    uint32 status = 14 [json_name = "status"];
-    string error_info = 15 [json_name = "error_info"];
-    string zone = 16 [json_name = "zone"];
-    string ip_cidr = 17 [json_name = "ip_cidr"];
-    string gpu_spec = 18 [json_name = "gpu_spec"];
-    int32 system_disk = 19 [json_name = "system_disk"];
-    int32 data_disk = 20 [json_name = "data_disk"];
-    double node_price = 21 [json_name = "node_price"];
-    double pod_price = 22 [json_name = "pod_price"];
-    int32 internet_max_bandwidth_out = 23 [json_name = "internet_max_bandwidth_out"];
-    int64 cluster_id = 24 [json_name = "cluster_id"];
-    string node_group_id = 25 [json_name = "node_group_id"];
-    string status_string = 26 [json_name = "status_string"];
 }
-
 
 message BostionHost {
     int64 id = 1 [json_name = "id"];
-    string user = 2 [json_name = "user"];
-    string image_id = 3 [json_name = "image_id"];
-    string image = 4 [json_name = "image"];
-    string os = 5 [json_name = "os"];
-    string arch = 6 [json_name = "arch"];
-    string hostname = 7 [json_name = "hostname"];
-    string external_ip = 8 [json_name = "external_ip"];
-    string internal_ip = 9 [json_name = "internal_ip"];
-    int32 ssh_port = 10 [json_name = "ssh_port"];
-    int64 cluster_id = 11 [json_name = "cluster_id"];
 }
-
 
 message ClusterLogsRequest {
     int64 cluster_id = 1 [json_name = "cluster_id"];
@@ -129,8 +137,4 @@ message ClusterLogsRequest {
 message ClusterLogsResponse {
     string logs = 1 [json_name = "logs"];
     int32 last_line = 2 [json_name = "last_line"];
-}
-
-message Regions {
-    repeated string regions = 1 [json_name = "regions"];
 }

@@ -33,7 +33,6 @@ func NewServicesUseCase(serviceData ServicesData, wfRuntime WorkflowRuntime, log
 	return &ServicesUseCase{serviceData: serviceData, workflowRuntime: wfRuntime, log: log.NewHelper(logger)}
 }
 
-// init service
 func (uc *ServicesUseCase) Init(ctx context.Context) error {
 	return nil
 }

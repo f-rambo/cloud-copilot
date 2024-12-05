@@ -26,7 +26,7 @@ func NewInfrastructureCluster(conf *conf.Bootstrap, logger log.Logger) biz.Clust
 	}
 }
 
-func (i *InfrastructureCluster) getServiceConfig() *conf.Service {
+func (i *InfrastructureCluster) getInfrastructureClusterServiceConfig() *conf.Service {
 	for _, service := range i.conf.Services {
 		if service.Name == ServiceNameInfrastructure {
 			return service
@@ -36,7 +36,7 @@ func (i *InfrastructureCluster) getServiceConfig() *conf.Service {
 }
 
 func (i *InfrastructureCluster) GetRegions(ctx context.Context, cluster *biz.Cluster) error {
-	service := i.getServiceConfig()
+	service := i.getInfrastructureClusterServiceConfig()
 	grpconn, err := new(utils.GrpcConn).OpenGrpcConn(ctx, service.Addr, service.Port)
 	if err != nil {
 		return err
@@ -51,7 +51,7 @@ func (i *InfrastructureCluster) GetRegions(ctx context.Context, cluster *biz.Clu
 }
 
 func (i *InfrastructureCluster) Start(ctx context.Context, cluster *biz.Cluster) error {
-	service := i.getServiceConfig()
+	service := i.getInfrastructureClusterServiceConfig()
 	grpconn, err := new(utils.GrpcConn).OpenGrpcConn(ctx, service.Addr, service.Port)
 	if err != nil {
 		return err
@@ -69,7 +69,7 @@ func (i *InfrastructureCluster) Start(ctx context.Context, cluster *biz.Cluster)
 }
 
 func (i *InfrastructureCluster) Stop(ctx context.Context, cluster *biz.Cluster) error {
-	service := i.getServiceConfig()
+	service := i.getInfrastructureClusterServiceConfig()
 	grpconn, err := new(utils.GrpcConn).OpenGrpcConn(ctx, service.Addr, service.Port)
 	if err != nil {
 		return err
@@ -87,7 +87,7 @@ func (i *InfrastructureCluster) Stop(ctx context.Context, cluster *biz.Cluster) 
 }
 
 func (i *InfrastructureCluster) MigrateToBostionHost(ctx context.Context, cluster *biz.Cluster) error {
-	service := i.getServiceConfig()
+	service := i.getInfrastructureClusterServiceConfig()
 	grpconn, err := new(utils.GrpcConn).OpenGrpcConn(ctx, service.Addr, service.Port)
 	if err != nil {
 		return err
@@ -102,7 +102,7 @@ func (i *InfrastructureCluster) MigrateToBostionHost(ctx context.Context, cluste
 }
 
 func (i *InfrastructureCluster) GetNodesSystemInfo(ctx context.Context, cluster *biz.Cluster) error {
-	service := i.getServiceConfig()
+	service := i.getInfrastructureClusterServiceConfig()
 	grpconn, err := new(utils.GrpcConn).OpenGrpcConn(ctx, service.Addr, service.Port)
 	if err != nil {
 		return err
@@ -118,7 +118,7 @@ func (i *InfrastructureCluster) GetNodesSystemInfo(ctx context.Context, cluster 
 }
 
 func (i *InfrastructureCluster) Install(ctx context.Context, cluster *biz.Cluster) error {
-	service := i.getServiceConfig()
+	service := i.getInfrastructureClusterServiceConfig()
 	grpconn, err := new(utils.GrpcConn).OpenGrpcConn(ctx, service.Addr, service.Port)
 	if err != nil {
 		return err
@@ -135,7 +135,7 @@ func (i *InfrastructureCluster) Install(ctx context.Context, cluster *biz.Cluste
 }
 
 func (i *InfrastructureCluster) UnInstall(ctx context.Context, cluster *biz.Cluster) error {
-	service := i.getServiceConfig()
+	service := i.getInfrastructureClusterServiceConfig()
 	grpconn, err := new(utils.GrpcConn).OpenGrpcConn(ctx, service.Addr, service.Port)
 	if err != nil {
 		return err
@@ -152,7 +152,7 @@ func (i *InfrastructureCluster) UnInstall(ctx context.Context, cluster *biz.Clus
 }
 
 func (i *InfrastructureCluster) HandlerNodes(ctx context.Context, cluster *biz.Cluster) error {
-	service := i.getServiceConfig()
+	service := i.getInfrastructureClusterServiceConfig()
 	grpconn, err := new(utils.GrpcConn).OpenGrpcConn(ctx, service.Addr, service.Port)
 	if err != nil {
 		return err

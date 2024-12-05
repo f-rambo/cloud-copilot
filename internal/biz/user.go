@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/f-rambo/cloud-copilot/internal/conf"
+	"github.com/f-rambo/cloud-copilot/utils"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/spf13/cast"
 )
@@ -34,19 +35,18 @@ func NewUseUser(userData UserData, thirdparty Thirdparty, logger log.Logger, con
 	return &UserUseCase{userData: userData, thirdparty: thirdparty, log: log.NewHelper(logger), conf: conf}
 }
 
-// init admin user
 func (u *UserUseCase) InitAdminUser(ctx context.Context) error {
 	user := &User{
 		Name:     "admin",
-		Email:    "admin@eamil.com",
-		Password: u.conf.Auth.AdminPassword,
+		Email:    u.conf.Auth.AdminEmail,
+		Password: utils.Md5(u.conf.Auth.AdminPassword),
 	}
 	userData, err := u.userData.GetUserInfoByEmail(ctx, user.Email)
 	if err != nil {
 		return err
 	}
 	if userData != nil && userData.Id > 0 {
-		return nil
+		user.Id = userData.Id
 	}
 	err = u.userData.Save(ctx, user)
 	if err != nil {

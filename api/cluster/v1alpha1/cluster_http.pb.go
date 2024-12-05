@@ -23,29 +23,56 @@ const _ = http.SupportPackageIsVersion1
 
 const OperationClusterInterfaceDelete = "/cluster.v1alpha1.ClusterInterface/Delete"
 const OperationClusterInterfaceGet = "/cluster.v1alpha1.ClusterInterface/Get"
+const OperationClusterInterfaceGetClusterLevels = "/cluster.v1alpha1.ClusterInterface/GetClusterLevels"
+const OperationClusterInterfaceGetClusterStatuses = "/cluster.v1alpha1.ClusterInterface/GetClusterStatuses"
+const OperationClusterInterfaceGetClusterTypes = "/cluster.v1alpha1.ClusterInterface/GetClusterTypes"
+const OperationClusterInterfaceGetNodeGroupTypes = "/cluster.v1alpha1.ClusterInterface/GetNodeGroupTypes"
+const OperationClusterInterfaceGetNodeRoles = "/cluster.v1alpha1.ClusterInterface/GetNodeRoles"
+const OperationClusterInterfaceGetNodeStatuses = "/cluster.v1alpha1.ClusterInterface/GetNodeStatuses"
 const OperationClusterInterfaceGetRegions = "/cluster.v1alpha1.ClusterInterface/GetRegions"
+const OperationClusterInterfaceGetResourceTypes = "/cluster.v1alpha1.ClusterInterface/GetResourceTypes"
 const OperationClusterInterfaceList = "/cluster.v1alpha1.ClusterInterface/List"
 const OperationClusterInterfacePing = "/cluster.v1alpha1.ClusterInterface/Ping"
 const OperationClusterInterfacePollingLogs = "/cluster.v1alpha1.ClusterInterface/PollingLogs"
 const OperationClusterInterfaceSave = "/cluster.v1alpha1.ClusterInterface/Save"
+const OperationClusterInterfaceStart = "/cluster.v1alpha1.ClusterInterface/Start"
+const OperationClusterInterfaceStop = "/cluster.v1alpha1.ClusterInterface/Stop"
 
 type ClusterInterfaceHTTPServer interface {
 	Delete(context.Context, *ClusterArgs) (*common.Msg, error)
 	Get(context.Context, *ClusterArgs) (*Cluster, error)
+	GetClusterLevels(context.Context, *emptypb.Empty) (*ClusterLevels, error)
+	GetClusterStatuses(context.Context, *emptypb.Empty) (*ClusterStatuses, error)
+	GetClusterTypes(context.Context, *emptypb.Empty) (*ClusterTypes, error)
+	GetNodeGroupTypes(context.Context, *emptypb.Empty) (*NodeGroupTypes, error)
+	GetNodeRoles(context.Context, *emptypb.Empty) (*NodeRoles, error)
+	GetNodeStatuses(context.Context, *emptypb.Empty) (*NodeStatuses, error)
 	GetRegions(context.Context, *ClusterArgs) (*Regions, error)
+	GetResourceTypes(context.Context, *emptypb.Empty) (*ResourceTypes, error)
 	List(context.Context, *emptypb.Empty) (*ClusterList, error)
 	Ping(context.Context, *emptypb.Empty) (*common.Msg, error)
 	PollingLogs(context.Context, *ClusterLogsRequest) (*ClusterLogsResponse, error)
 	Save(context.Context, *ClusterArgs) (*Cluster, error)
+	Start(context.Context, *ClusterArgs) (*common.Msg, error)
+	Stop(context.Context, *ClusterArgs) (*common.Msg, error)
 }
 
 func RegisterClusterInterfaceHTTPServer(s *http.Server, srv ClusterInterfaceHTTPServer) {
 	r := s.Route("/")
 	r.GET("/api/v1alpha1/cluster/ping", _ClusterInterface_Ping0_HTTP_Handler(srv))
+	r.GET("/api/v1alpha1/cluster/types", _ClusterInterface_GetClusterTypes0_HTTP_Handler(srv))
+	r.GET("/api/v1alpha1/cluster/statuses", _ClusterInterface_GetClusterStatuses0_HTTP_Handler(srv))
+	r.GET("/api/v1alpha1/cluster/levels", _ClusterInterface_GetClusterLevels0_HTTP_Handler(srv))
+	r.GET("/api/v1alpha1/cluster/node/roles", _ClusterInterface_GetNodeRoles0_HTTP_Handler(srv))
+	r.GET("/api/v1alpha1/cluster/node/statuses", _ClusterInterface_GetNodeStatuses0_HTTP_Handler(srv))
+	r.GET("/api/v1alpha1/cluster/node/group/types", _ClusterInterface_GetNodeGroupTypes0_HTTP_Handler(srv))
+	r.GET("/api/v1alpha1/cluster/resource/types", _ClusterInterface_GetResourceTypes0_HTTP_Handler(srv))
 	r.GET("/api/v1alpha1/cluster", _ClusterInterface_Get0_HTTP_Handler(srv))
 	r.POST("/api/v1alpha1/cluster", _ClusterInterface_Save0_HTTP_Handler(srv))
 	r.GET("/api/v1alpha1/cluster/list", _ClusterInterface_List0_HTTP_Handler(srv))
 	r.DELETE("/api/v1alpha1/cluster", _ClusterInterface_Delete0_HTTP_Handler(srv))
+	r.POST("/api/v1alpha1/cluster/start", _ClusterInterface_Start0_HTTP_Handler(srv))
+	r.POST("/api/v1alpha1/cluster/stop", _ClusterInterface_Stop0_HTTP_Handler(srv))
 	r.GET("/api/v1alpha1/cluster/regions", _ClusterInterface_GetRegions0_HTTP_Handler(srv))
 	r.POST("/api/v1alpha1/cluster/logs", _ClusterInterface_PollingLogs0_HTTP_Handler(srv))
 }
@@ -65,6 +92,139 @@ func _ClusterInterface_Ping0_HTTP_Handler(srv ClusterInterfaceHTTPServer) func(c
 			return err
 		}
 		reply := out.(*common.Msg)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _ClusterInterface_GetClusterTypes0_HTTP_Handler(srv ClusterInterfaceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in emptypb.Empty
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationClusterInterfaceGetClusterTypes)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.GetClusterTypes(ctx, req.(*emptypb.Empty))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*ClusterTypes)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _ClusterInterface_GetClusterStatuses0_HTTP_Handler(srv ClusterInterfaceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in emptypb.Empty
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationClusterInterfaceGetClusterStatuses)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.GetClusterStatuses(ctx, req.(*emptypb.Empty))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*ClusterStatuses)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _ClusterInterface_GetClusterLevels0_HTTP_Handler(srv ClusterInterfaceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in emptypb.Empty
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationClusterInterfaceGetClusterLevels)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.GetClusterLevels(ctx, req.(*emptypb.Empty))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*ClusterLevels)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _ClusterInterface_GetNodeRoles0_HTTP_Handler(srv ClusterInterfaceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in emptypb.Empty
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationClusterInterfaceGetNodeRoles)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.GetNodeRoles(ctx, req.(*emptypb.Empty))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*NodeRoles)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _ClusterInterface_GetNodeStatuses0_HTTP_Handler(srv ClusterInterfaceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in emptypb.Empty
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationClusterInterfaceGetNodeStatuses)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.GetNodeStatuses(ctx, req.(*emptypb.Empty))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*NodeStatuses)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _ClusterInterface_GetNodeGroupTypes0_HTTP_Handler(srv ClusterInterfaceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in emptypb.Empty
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationClusterInterfaceGetNodeGroupTypes)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.GetNodeGroupTypes(ctx, req.(*emptypb.Empty))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*NodeGroupTypes)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _ClusterInterface_GetResourceTypes0_HTTP_Handler(srv ClusterInterfaceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in emptypb.Empty
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationClusterInterfaceGetResourceTypes)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.GetResourceTypes(ctx, req.(*emptypb.Empty))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*ResourceTypes)
 		return ctx.Result(200, reply)
 	}
 }
@@ -148,6 +308,50 @@ func _ClusterInterface_Delete0_HTTP_Handler(srv ClusterInterfaceHTTPServer) func
 	}
 }
 
+func _ClusterInterface_Start0_HTTP_Handler(srv ClusterInterfaceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in ClusterArgs
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationClusterInterfaceStart)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.Start(ctx, req.(*ClusterArgs))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*common.Msg)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _ClusterInterface_Stop0_HTTP_Handler(srv ClusterInterfaceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in ClusterArgs
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationClusterInterfaceStop)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.Stop(ctx, req.(*ClusterArgs))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*common.Msg)
+		return ctx.Result(200, reply)
+	}
+}
+
 func _ClusterInterface_GetRegions0_HTTP_Handler(srv ClusterInterfaceHTTPServer) func(ctx http.Context) error {
 	return func(ctx http.Context) error {
 		var in ClusterArgs
@@ -192,11 +396,20 @@ func _ClusterInterface_PollingLogs0_HTTP_Handler(srv ClusterInterfaceHTTPServer)
 type ClusterInterfaceHTTPClient interface {
 	Delete(ctx context.Context, req *ClusterArgs, opts ...http.CallOption) (rsp *common.Msg, err error)
 	Get(ctx context.Context, req *ClusterArgs, opts ...http.CallOption) (rsp *Cluster, err error)
+	GetClusterLevels(ctx context.Context, req *emptypb.Empty, opts ...http.CallOption) (rsp *ClusterLevels, err error)
+	GetClusterStatuses(ctx context.Context, req *emptypb.Empty, opts ...http.CallOption) (rsp *ClusterStatuses, err error)
+	GetClusterTypes(ctx context.Context, req *emptypb.Empty, opts ...http.CallOption) (rsp *ClusterTypes, err error)
+	GetNodeGroupTypes(ctx context.Context, req *emptypb.Empty, opts ...http.CallOption) (rsp *NodeGroupTypes, err error)
+	GetNodeRoles(ctx context.Context, req *emptypb.Empty, opts ...http.CallOption) (rsp *NodeRoles, err error)
+	GetNodeStatuses(ctx context.Context, req *emptypb.Empty, opts ...http.CallOption) (rsp *NodeStatuses, err error)
 	GetRegions(ctx context.Context, req *ClusterArgs, opts ...http.CallOption) (rsp *Regions, err error)
+	GetResourceTypes(ctx context.Context, req *emptypb.Empty, opts ...http.CallOption) (rsp *ResourceTypes, err error)
 	List(ctx context.Context, req *emptypb.Empty, opts ...http.CallOption) (rsp *ClusterList, err error)
 	Ping(ctx context.Context, req *emptypb.Empty, opts ...http.CallOption) (rsp *common.Msg, err error)
 	PollingLogs(ctx context.Context, req *ClusterLogsRequest, opts ...http.CallOption) (rsp *ClusterLogsResponse, err error)
 	Save(ctx context.Context, req *ClusterArgs, opts ...http.CallOption) (rsp *Cluster, err error)
+	Start(ctx context.Context, req *ClusterArgs, opts ...http.CallOption) (rsp *common.Msg, err error)
+	Stop(ctx context.Context, req *ClusterArgs, opts ...http.CallOption) (rsp *common.Msg, err error)
 }
 
 type ClusterInterfaceHTTPClientImpl struct {
@@ -233,11 +446,102 @@ func (c *ClusterInterfaceHTTPClientImpl) Get(ctx context.Context, in *ClusterArg
 	return &out, nil
 }
 
+func (c *ClusterInterfaceHTTPClientImpl) GetClusterLevels(ctx context.Context, in *emptypb.Empty, opts ...http.CallOption) (*ClusterLevels, error) {
+	var out ClusterLevels
+	pattern := "/api/v1alpha1/cluster/levels"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationClusterInterfaceGetClusterLevels))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *ClusterInterfaceHTTPClientImpl) GetClusterStatuses(ctx context.Context, in *emptypb.Empty, opts ...http.CallOption) (*ClusterStatuses, error) {
+	var out ClusterStatuses
+	pattern := "/api/v1alpha1/cluster/statuses"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationClusterInterfaceGetClusterStatuses))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *ClusterInterfaceHTTPClientImpl) GetClusterTypes(ctx context.Context, in *emptypb.Empty, opts ...http.CallOption) (*ClusterTypes, error) {
+	var out ClusterTypes
+	pattern := "/api/v1alpha1/cluster/types"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationClusterInterfaceGetClusterTypes))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *ClusterInterfaceHTTPClientImpl) GetNodeGroupTypes(ctx context.Context, in *emptypb.Empty, opts ...http.CallOption) (*NodeGroupTypes, error) {
+	var out NodeGroupTypes
+	pattern := "/api/v1alpha1/cluster/node/group/types"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationClusterInterfaceGetNodeGroupTypes))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *ClusterInterfaceHTTPClientImpl) GetNodeRoles(ctx context.Context, in *emptypb.Empty, opts ...http.CallOption) (*NodeRoles, error) {
+	var out NodeRoles
+	pattern := "/api/v1alpha1/cluster/node/roles"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationClusterInterfaceGetNodeRoles))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *ClusterInterfaceHTTPClientImpl) GetNodeStatuses(ctx context.Context, in *emptypb.Empty, opts ...http.CallOption) (*NodeStatuses, error) {
+	var out NodeStatuses
+	pattern := "/api/v1alpha1/cluster/node/statuses"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationClusterInterfaceGetNodeStatuses))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
 func (c *ClusterInterfaceHTTPClientImpl) GetRegions(ctx context.Context, in *ClusterArgs, opts ...http.CallOption) (*Regions, error) {
 	var out Regions
 	pattern := "/api/v1alpha1/cluster/regions"
 	path := binding.EncodeURL(pattern, in, true)
 	opts = append(opts, http.Operation(OperationClusterInterfaceGetRegions))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *ClusterInterfaceHTTPClientImpl) GetResourceTypes(ctx context.Context, in *emptypb.Empty, opts ...http.CallOption) (*ResourceTypes, error) {
+	var out ResourceTypes
+	pattern := "/api/v1alpha1/cluster/resource/types"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationClusterInterfaceGetResourceTypes))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
 	if err != nil {
@@ -290,6 +594,32 @@ func (c *ClusterInterfaceHTTPClientImpl) Save(ctx context.Context, in *ClusterAr
 	pattern := "/api/v1alpha1/cluster"
 	path := binding.EncodeURL(pattern, in, false)
 	opts = append(opts, http.Operation(OperationClusterInterfaceSave))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *ClusterInterfaceHTTPClientImpl) Start(ctx context.Context, in *ClusterArgs, opts ...http.CallOption) (*common.Msg, error) {
+	var out common.Msg
+	pattern := "/api/v1alpha1/cluster/start"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationClusterInterfaceStart))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *ClusterInterfaceHTTPClientImpl) Stop(ctx context.Context, in *ClusterArgs, opts ...http.CallOption) (*common.Msg, error) {
+	var out common.Msg
+	pattern := "/api/v1alpha1/cluster/stop"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationClusterInterfaceStop))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
 	if err != nil {

@@ -22,7 +22,7 @@ func NewClusterRuntimeUser(conf *conf.Bootstrap, logger log.Logger) biz.Thirdpar
 	}
 }
 
-func (u *ClusterRuntimeUser) getServiceConfig() *conf.Service {
+func (u *ClusterRuntimeUser) getClusterRuntimeUserServiceConfig() *conf.Service {
 	for _, service := range u.conf.Services {
 		if service.Name == ServiceNameClusterRuntime {
 			return service
@@ -32,7 +32,7 @@ func (u *ClusterRuntimeUser) getServiceConfig() *conf.Service {
 }
 
 func (u *ClusterRuntimeUser) GetUserEmail(ctx context.Context, token string) (string, error) {
-	service := u.getServiceConfig()
+	service := u.getClusterRuntimeUserServiceConfig()
 	grpconn, err := new(utils.GrpcConn).OpenGrpcConn(ctx, service.Addr, service.Port)
 	if err != nil {
 		return "", err

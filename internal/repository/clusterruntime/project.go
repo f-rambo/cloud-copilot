@@ -23,7 +23,7 @@ func NewClusterRuntimeProject(conf *conf.Bootstrap, logger log.Logger) biz.Proje
 	}
 }
 
-func (c *ClusterRuntimeProject) getServiceConfig() *conf.Service {
+func (c *ClusterRuntimeProject) getClusterRuntimeProjectServiceConfig() *conf.Service {
 	for _, service := range c.conf.Services {
 		if service.Name == ServiceNameClusterRuntime {
 			return service
@@ -33,7 +33,7 @@ func (c *ClusterRuntimeProject) getServiceConfig() *conf.Service {
 }
 
 func (c *ClusterRuntimeProject) CreateNamespace(ctx context.Context, namespace string) error {
-	service := c.getServiceConfig()
+	service := c.getClusterRuntimeProjectServiceConfig()
 	grpconn, err := new(utils.GrpcConn).OpenGrpcConn(ctx, service.Addr, service.Port)
 	if err != nil {
 		return err
@@ -49,7 +49,7 @@ func (c *ClusterRuntimeProject) CreateNamespace(ctx context.Context, namespace s
 }
 
 func (c *ClusterRuntimeProject) GetNamespaces(ctx context.Context) (namespaces []string, err error) {
-	service := c.getServiceConfig()
+	service := c.getClusterRuntimeProjectServiceConfig()
 	grpconn, err := new(utils.GrpcConn).OpenGrpcConn(ctx, service.Addr, service.Port)
 	if err != nil {
 		return nil, err

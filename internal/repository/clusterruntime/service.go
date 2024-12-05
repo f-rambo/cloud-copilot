@@ -22,7 +22,7 @@ func NewClusterRuntimeService(conf *conf.Bootstrap, logger log.Logger) biz.Workf
 	}
 }
 
-func (c *ClusterRuntimeService) getServiceConfig() *conf.Service {
+func (c *ClusterRuntimeService) getClusterRuntimeServiceServiceConfig() *conf.Service {
 	for _, service := range c.conf.Services {
 		if service.Name == ServiceNameClusterRuntime {
 			return service
@@ -32,7 +32,7 @@ func (c *ClusterRuntimeService) getServiceConfig() *conf.Service {
 }
 
 func (s *ClusterRuntimeService) GenerateCIWorkflow(ctx context.Context, service *biz.Service) (ciWf *biz.Workflow, cdwf *biz.Workflow, err error) {
-	serviceConf := s.getServiceConfig()
+	serviceConf := s.getClusterRuntimeServiceServiceConfig()
 	grpconn, err := new(utils.GrpcConn).OpenGrpcConn(ctx, serviceConf.Addr, serviceConf.Port)
 	if err != nil {
 		return nil, nil, err
@@ -46,7 +46,7 @@ func (s *ClusterRuntimeService) GenerateCIWorkflow(ctx context.Context, service 
 }
 
 func (s *ClusterRuntimeService) Create(ctx context.Context, namespace string, workflow *biz.Workflow) error {
-	serviceConf := s.getServiceConfig()
+	serviceConf := s.getClusterRuntimeServiceServiceConfig()
 	grpconn, err := new(utils.GrpcConn).OpenGrpcConn(ctx, serviceConf.Addr, serviceConf.Port)
 	if err != nil {
 		return err

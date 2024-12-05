@@ -203,21 +203,6 @@ func getRandomTimeString() string {
 	return fmt.Sprintf("%s%d", timePart, randPart)
 }
 
-func GetRandomString(lengths ...int) string {
-	var length int = 12
-	for _, v := range lengths {
-		length = v
-	}
-	str := "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-	bytes := []byte(str)
-	result := make([]byte, length)
-	r := initRand()
-	for i := 0; i < length; i++ {
-		result[i] = bytes[r.Intn(len(bytes))]
-	}
-	return string(result)
-}
-
 func ReadLastNLines(file *os.File, n int) (string, int64, error) {
 	if n <= 0 {
 		return "", 0, fmt.Errorf("invalid number of lines: %d", n)

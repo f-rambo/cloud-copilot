@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/f-rambo/cloud-copilot/utils"
+	"github.com/google/uuid"
 	"github.com/spf13/cast"
 )
 
@@ -33,7 +33,7 @@ func (uc *ClusterUsecase) GetCurrentCluster(ctx context.Context) (*Cluster, erro
 func (uc *ClusterUsecase) NodeGroupIncreaseSize(ctx context.Context, cluster *Cluster, nodeGroup *NodeGroup, size int32) error {
 	for i := 0; i < int(size); i++ {
 		node := &Node{
-			Name:        fmt.Sprintf("%s-%s", cluster.Name, utils.GetRandomString()),
+			Name:        fmt.Sprintf("%s-%s", cluster.Name, uuid.New().String()),
 			Role:        NodeRole_WORKER,
 			Status:      NodeStatus_NODE_CREATING,
 			ClusterId:   cluster.Id,
@@ -58,7 +58,7 @@ func (uc *ClusterUsecase) DeleteNodes(ctx context.Context, cluster *Cluster, nod
 
 func (uc *ClusterUsecase) NodeGroupTemplateNodeInfo(ctx context.Context, cluster *Cluster, nodeGroup *NodeGroup) (*Node, error) {
 	return &Node{
-		Name:        fmt.Sprintf("%s-%s", cluster.Name, utils.GetRandomString()),
+		Name:        fmt.Sprintf("%s-%s", cluster.Name, uuid.New().String()),
 		Role:        NodeRole_WORKER,
 		Status:      NodeStatus_NODE_CREATING,
 		ClusterId:   cluster.Id,

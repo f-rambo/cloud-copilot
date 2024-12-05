@@ -23,11 +23,9 @@ func NewUserInterface(uc *biz.UserUseCase, conf *conf.Bootstrap) *UserInterface 
 
 func (u *UserInterface) SignIn(ctx context.Context, request *v1alpha1.SignIn) (*v1alpha1.User, error) {
 	user := &biz.User{
-		Name:        request.Username,
 		Email:       request.Email,
 		Password:    request.Password,
 		AccessToken: request.AccessToken,
-		SignType:    biz.UserSignType(request.SignType),
 	}
 	err := u.uc.SignIn(ctx, user)
 	if err != nil {
@@ -38,10 +36,9 @@ func (u *UserInterface) SignIn(ctx context.Context, request *v1alpha1.SignIn) (*
 		Email:          user.Email,
 		Username:       user.Name,
 		AccessToken:    user.AccessToken,
-		Status:         int32(user.Status),
 		StatusString:   user.Status.String(),
-		SignType:       int32(user.SignType),
 		SignTypeString: user.SignType.String(),
+		UpdatedAt:      user.UpdatedAt.Format("2006-01-02 15:04:05"),
 	}, nil
 }
 
@@ -51,11 +48,13 @@ func (u *UserInterface) GetUserInfo(ctx context.Context, _ *emptypb.Empty) (*v1a
 		return nil, err
 	}
 	return &v1alpha1.User{
-		Id:          user.Id,
-		Email:       user.Email,
-		Username:    user.Name,
-		AccessToken: user.AccessToken,
-		Status:      int32(user.Status),
+		Id:             user.Id,
+		Email:          user.Email,
+		Username:       user.Name,
+		AccessToken:    user.AccessToken,
+		StatusString:   user.Status.String(),
+		SignTypeString: user.SignType.String(),
+		UpdatedAt:      user.UpdatedAt.Format("2006-01-02 15:04:05"),
 	}, nil
 }
 
@@ -71,10 +70,9 @@ func (u *UserInterface) GetUsers(ctx context.Context, request *v1alpha1.UsersReq
 			Email:          user.Email,
 			Username:       user.Name,
 			AccessToken:    user.AccessToken,
-			Status:         int32(user.Status),
-			SignType:       int32(user.SignType),
 			StatusString:   strings.ToUpper(user.Status.String()),
 			SignTypeString: strings.ToUpper(user.SignType.String()),
+			UpdatedAt:      user.UpdatedAt.Format("2006-01-02 15:04:05"),
 		})
 	}
 	return &v1alpha1.Users{
@@ -85,11 +83,9 @@ func (u *UserInterface) GetUsers(ctx context.Context, request *v1alpha1.UsersReq
 
 func (u *UserInterface) SaveUser(ctx context.Context, request *v1alpha1.User) (*v1alpha1.User, error) {
 	user := &biz.User{
-		Id:       request.Id,
-		Email:    request.Email,
-		Name:     request.Username,
-		Status:   biz.UserStatus(request.Status),
-		SignType: biz.UserSignType(request.SignType),
+		Id:    request.Id,
+		Email: request.Email,
+		Name:  request.Username,
 	}
 	err := u.uc.Save(ctx, user)
 	if err != nil {
@@ -100,7 +96,6 @@ func (u *UserInterface) SaveUser(ctx context.Context, request *v1alpha1.User) (*
 		Email:        user.Email,
 		Username:     user.Name,
 		AccessToken:  user.AccessToken,
-		Status:       int32(user.Status),
 		StatusString: user.Status.String(),
 	}, nil
 }

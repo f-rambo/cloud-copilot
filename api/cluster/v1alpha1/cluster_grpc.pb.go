@@ -21,14 +21,23 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	ClusterInterface_Ping_FullMethodName        = "/cluster.v1alpha1.ClusterInterface/Ping"
-	ClusterInterface_Get_FullMethodName         = "/cluster.v1alpha1.ClusterInterface/Get"
-	ClusterInterface_Save_FullMethodName        = "/cluster.v1alpha1.ClusterInterface/Save"
-	ClusterInterface_List_FullMethodName        = "/cluster.v1alpha1.ClusterInterface/List"
-	ClusterInterface_Delete_FullMethodName      = "/cluster.v1alpha1.ClusterInterface/Delete"
-	ClusterInterface_GetRegions_FullMethodName  = "/cluster.v1alpha1.ClusterInterface/GetRegions"
-	ClusterInterface_PollingLogs_FullMethodName = "/cluster.v1alpha1.ClusterInterface/PollingLogs"
-	ClusterInterface_GetLogs_FullMethodName     = "/cluster.v1alpha1.ClusterInterface/GetLogs"
+	ClusterInterface_Ping_FullMethodName               = "/cluster.v1alpha1.ClusterInterface/Ping"
+	ClusterInterface_GetClusterTypes_FullMethodName    = "/cluster.v1alpha1.ClusterInterface/GetClusterTypes"
+	ClusterInterface_GetClusterStatuses_FullMethodName = "/cluster.v1alpha1.ClusterInterface/GetClusterStatuses"
+	ClusterInterface_GetClusterLevels_FullMethodName   = "/cluster.v1alpha1.ClusterInterface/GetClusterLevels"
+	ClusterInterface_GetNodeRoles_FullMethodName       = "/cluster.v1alpha1.ClusterInterface/GetNodeRoles"
+	ClusterInterface_GetNodeStatuses_FullMethodName    = "/cluster.v1alpha1.ClusterInterface/GetNodeStatuses"
+	ClusterInterface_GetNodeGroupTypes_FullMethodName  = "/cluster.v1alpha1.ClusterInterface/GetNodeGroupTypes"
+	ClusterInterface_GetResourceTypes_FullMethodName   = "/cluster.v1alpha1.ClusterInterface/GetResourceTypes"
+	ClusterInterface_Get_FullMethodName                = "/cluster.v1alpha1.ClusterInterface/Get"
+	ClusterInterface_Save_FullMethodName               = "/cluster.v1alpha1.ClusterInterface/Save"
+	ClusterInterface_List_FullMethodName               = "/cluster.v1alpha1.ClusterInterface/List"
+	ClusterInterface_Delete_FullMethodName             = "/cluster.v1alpha1.ClusterInterface/Delete"
+	ClusterInterface_Start_FullMethodName              = "/cluster.v1alpha1.ClusterInterface/Start"
+	ClusterInterface_Stop_FullMethodName               = "/cluster.v1alpha1.ClusterInterface/Stop"
+	ClusterInterface_GetRegions_FullMethodName         = "/cluster.v1alpha1.ClusterInterface/GetRegions"
+	ClusterInterface_PollingLogs_FullMethodName        = "/cluster.v1alpha1.ClusterInterface/PollingLogs"
+	ClusterInterface_GetLogs_FullMethodName            = "/cluster.v1alpha1.ClusterInterface/GetLogs"
 )
 
 // ClusterInterfaceClient is the client API for ClusterInterface service.
@@ -36,10 +45,19 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ClusterInterfaceClient interface {
 	Ping(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*common.Msg, error)
+	GetClusterTypes(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*ClusterTypes, error)
+	GetClusterStatuses(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*ClusterStatuses, error)
+	GetClusterLevels(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*ClusterLevels, error)
+	GetNodeRoles(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*NodeRoles, error)
+	GetNodeStatuses(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*NodeStatuses, error)
+	GetNodeGroupTypes(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*NodeGroupTypes, error)
+	GetResourceTypes(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*ResourceTypes, error)
 	Get(ctx context.Context, in *ClusterArgs, opts ...grpc.CallOption) (*Cluster, error)
 	Save(ctx context.Context, in *ClusterArgs, opts ...grpc.CallOption) (*Cluster, error)
 	List(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*ClusterList, error)
 	Delete(ctx context.Context, in *ClusterArgs, opts ...grpc.CallOption) (*common.Msg, error)
+	Start(ctx context.Context, in *ClusterArgs, opts ...grpc.CallOption) (*common.Msg, error)
+	Stop(ctx context.Context, in *ClusterArgs, opts ...grpc.CallOption) (*common.Msg, error)
 	GetRegions(ctx context.Context, in *ClusterArgs, opts ...grpc.CallOption) (*Regions, error)
 	PollingLogs(ctx context.Context, in *ClusterLogsRequest, opts ...grpc.CallOption) (*ClusterLogsResponse, error)
 	GetLogs(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[ClusterLogsRequest, ClusterLogsResponse], error)
@@ -57,6 +75,76 @@ func (c *clusterInterfaceClient) Ping(ctx context.Context, in *emptypb.Empty, op
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(common.Msg)
 	err := c.cc.Invoke(ctx, ClusterInterface_Ping_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *clusterInterfaceClient) GetClusterTypes(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*ClusterTypes, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ClusterTypes)
+	err := c.cc.Invoke(ctx, ClusterInterface_GetClusterTypes_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *clusterInterfaceClient) GetClusterStatuses(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*ClusterStatuses, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ClusterStatuses)
+	err := c.cc.Invoke(ctx, ClusterInterface_GetClusterStatuses_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *clusterInterfaceClient) GetClusterLevels(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*ClusterLevels, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ClusterLevels)
+	err := c.cc.Invoke(ctx, ClusterInterface_GetClusterLevels_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *clusterInterfaceClient) GetNodeRoles(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*NodeRoles, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(NodeRoles)
+	err := c.cc.Invoke(ctx, ClusterInterface_GetNodeRoles_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *clusterInterfaceClient) GetNodeStatuses(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*NodeStatuses, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(NodeStatuses)
+	err := c.cc.Invoke(ctx, ClusterInterface_GetNodeStatuses_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *clusterInterfaceClient) GetNodeGroupTypes(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*NodeGroupTypes, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(NodeGroupTypes)
+	err := c.cc.Invoke(ctx, ClusterInterface_GetNodeGroupTypes_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *clusterInterfaceClient) GetResourceTypes(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*ResourceTypes, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ResourceTypes)
+	err := c.cc.Invoke(ctx, ClusterInterface_GetResourceTypes_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -103,6 +191,26 @@ func (c *clusterInterfaceClient) Delete(ctx context.Context, in *ClusterArgs, op
 	return out, nil
 }
 
+func (c *clusterInterfaceClient) Start(ctx context.Context, in *ClusterArgs, opts ...grpc.CallOption) (*common.Msg, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(common.Msg)
+	err := c.cc.Invoke(ctx, ClusterInterface_Start_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *clusterInterfaceClient) Stop(ctx context.Context, in *ClusterArgs, opts ...grpc.CallOption) (*common.Msg, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(common.Msg)
+	err := c.cc.Invoke(ctx, ClusterInterface_Stop_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *clusterInterfaceClient) GetRegions(ctx context.Context, in *ClusterArgs, opts ...grpc.CallOption) (*Regions, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Regions)
@@ -141,10 +249,19 @@ type ClusterInterface_GetLogsClient = grpc.BidiStreamingClient[ClusterLogsReques
 // for forward compatibility.
 type ClusterInterfaceServer interface {
 	Ping(context.Context, *emptypb.Empty) (*common.Msg, error)
+	GetClusterTypes(context.Context, *emptypb.Empty) (*ClusterTypes, error)
+	GetClusterStatuses(context.Context, *emptypb.Empty) (*ClusterStatuses, error)
+	GetClusterLevels(context.Context, *emptypb.Empty) (*ClusterLevels, error)
+	GetNodeRoles(context.Context, *emptypb.Empty) (*NodeRoles, error)
+	GetNodeStatuses(context.Context, *emptypb.Empty) (*NodeStatuses, error)
+	GetNodeGroupTypes(context.Context, *emptypb.Empty) (*NodeGroupTypes, error)
+	GetResourceTypes(context.Context, *emptypb.Empty) (*ResourceTypes, error)
 	Get(context.Context, *ClusterArgs) (*Cluster, error)
 	Save(context.Context, *ClusterArgs) (*Cluster, error)
 	List(context.Context, *emptypb.Empty) (*ClusterList, error)
 	Delete(context.Context, *ClusterArgs) (*common.Msg, error)
+	Start(context.Context, *ClusterArgs) (*common.Msg, error)
+	Stop(context.Context, *ClusterArgs) (*common.Msg, error)
 	GetRegions(context.Context, *ClusterArgs) (*Regions, error)
 	PollingLogs(context.Context, *ClusterLogsRequest) (*ClusterLogsResponse, error)
 	GetLogs(grpc.BidiStreamingServer[ClusterLogsRequest, ClusterLogsResponse]) error
@@ -161,6 +278,27 @@ type UnimplementedClusterInterfaceServer struct{}
 func (UnimplementedClusterInterfaceServer) Ping(context.Context, *emptypb.Empty) (*common.Msg, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Ping not implemented")
 }
+func (UnimplementedClusterInterfaceServer) GetClusterTypes(context.Context, *emptypb.Empty) (*ClusterTypes, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetClusterTypes not implemented")
+}
+func (UnimplementedClusterInterfaceServer) GetClusterStatuses(context.Context, *emptypb.Empty) (*ClusterStatuses, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetClusterStatuses not implemented")
+}
+func (UnimplementedClusterInterfaceServer) GetClusterLevels(context.Context, *emptypb.Empty) (*ClusterLevels, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetClusterLevels not implemented")
+}
+func (UnimplementedClusterInterfaceServer) GetNodeRoles(context.Context, *emptypb.Empty) (*NodeRoles, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetNodeRoles not implemented")
+}
+func (UnimplementedClusterInterfaceServer) GetNodeStatuses(context.Context, *emptypb.Empty) (*NodeStatuses, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetNodeStatuses not implemented")
+}
+func (UnimplementedClusterInterfaceServer) GetNodeGroupTypes(context.Context, *emptypb.Empty) (*NodeGroupTypes, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetNodeGroupTypes not implemented")
+}
+func (UnimplementedClusterInterfaceServer) GetResourceTypes(context.Context, *emptypb.Empty) (*ResourceTypes, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetResourceTypes not implemented")
+}
 func (UnimplementedClusterInterfaceServer) Get(context.Context, *ClusterArgs) (*Cluster, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Get not implemented")
 }
@@ -172,6 +310,12 @@ func (UnimplementedClusterInterfaceServer) List(context.Context, *emptypb.Empty)
 }
 func (UnimplementedClusterInterfaceServer) Delete(context.Context, *ClusterArgs) (*common.Msg, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Delete not implemented")
+}
+func (UnimplementedClusterInterfaceServer) Start(context.Context, *ClusterArgs) (*common.Msg, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Start not implemented")
+}
+func (UnimplementedClusterInterfaceServer) Stop(context.Context, *ClusterArgs) (*common.Msg, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Stop not implemented")
 }
 func (UnimplementedClusterInterfaceServer) GetRegions(context.Context, *ClusterArgs) (*Regions, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetRegions not implemented")
@@ -217,6 +361,132 @@ func _ClusterInterface_Ping_Handler(srv interface{}, ctx context.Context, dec fu
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ClusterInterfaceServer).Ping(ctx, req.(*emptypb.Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ClusterInterface_GetClusterTypes_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(emptypb.Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ClusterInterfaceServer).GetClusterTypes(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ClusterInterface_GetClusterTypes_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ClusterInterfaceServer).GetClusterTypes(ctx, req.(*emptypb.Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ClusterInterface_GetClusterStatuses_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(emptypb.Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ClusterInterfaceServer).GetClusterStatuses(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ClusterInterface_GetClusterStatuses_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ClusterInterfaceServer).GetClusterStatuses(ctx, req.(*emptypb.Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ClusterInterface_GetClusterLevels_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(emptypb.Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ClusterInterfaceServer).GetClusterLevels(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ClusterInterface_GetClusterLevels_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ClusterInterfaceServer).GetClusterLevels(ctx, req.(*emptypb.Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ClusterInterface_GetNodeRoles_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(emptypb.Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ClusterInterfaceServer).GetNodeRoles(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ClusterInterface_GetNodeRoles_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ClusterInterfaceServer).GetNodeRoles(ctx, req.(*emptypb.Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ClusterInterface_GetNodeStatuses_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(emptypb.Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ClusterInterfaceServer).GetNodeStatuses(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ClusterInterface_GetNodeStatuses_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ClusterInterfaceServer).GetNodeStatuses(ctx, req.(*emptypb.Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ClusterInterface_GetNodeGroupTypes_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(emptypb.Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ClusterInterfaceServer).GetNodeGroupTypes(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ClusterInterface_GetNodeGroupTypes_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ClusterInterfaceServer).GetNodeGroupTypes(ctx, req.(*emptypb.Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ClusterInterface_GetResourceTypes_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(emptypb.Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ClusterInterfaceServer).GetResourceTypes(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ClusterInterface_GetResourceTypes_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ClusterInterfaceServer).GetResourceTypes(ctx, req.(*emptypb.Empty))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -293,6 +563,42 @@ func _ClusterInterface_Delete_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ClusterInterface_Start_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ClusterArgs)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ClusterInterfaceServer).Start(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ClusterInterface_Start_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ClusterInterfaceServer).Start(ctx, req.(*ClusterArgs))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ClusterInterface_Stop_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ClusterArgs)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ClusterInterfaceServer).Stop(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ClusterInterface_Stop_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ClusterInterfaceServer).Stop(ctx, req.(*ClusterArgs))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _ClusterInterface_GetRegions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ClusterArgs)
 	if err := dec(in); err != nil {
@@ -348,6 +654,34 @@ var ClusterInterface_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _ClusterInterface_Ping_Handler,
 		},
 		{
+			MethodName: "GetClusterTypes",
+			Handler:    _ClusterInterface_GetClusterTypes_Handler,
+		},
+		{
+			MethodName: "GetClusterStatuses",
+			Handler:    _ClusterInterface_GetClusterStatuses_Handler,
+		},
+		{
+			MethodName: "GetClusterLevels",
+			Handler:    _ClusterInterface_GetClusterLevels_Handler,
+		},
+		{
+			MethodName: "GetNodeRoles",
+			Handler:    _ClusterInterface_GetNodeRoles_Handler,
+		},
+		{
+			MethodName: "GetNodeStatuses",
+			Handler:    _ClusterInterface_GetNodeStatuses_Handler,
+		},
+		{
+			MethodName: "GetNodeGroupTypes",
+			Handler:    _ClusterInterface_GetNodeGroupTypes_Handler,
+		},
+		{
+			MethodName: "GetResourceTypes",
+			Handler:    _ClusterInterface_GetResourceTypes_Handler,
+		},
+		{
 			MethodName: "Get",
 			Handler:    _ClusterInterface_Get_Handler,
 		},
@@ -362,6 +696,14 @@ var ClusterInterface_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Delete",
 			Handler:    _ClusterInterface_Delete_Handler,
+		},
+		{
+			MethodName: "Start",
+			Handler:    _ClusterInterface_Start_Handler,
+		},
+		{
+			MethodName: "Stop",
+			Handler:    _ClusterInterface_Stop_Handler,
 		},
 		{
 			MethodName: "GetRegions",

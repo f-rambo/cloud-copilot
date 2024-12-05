@@ -748,6 +748,18 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/common.Msg'
+    /api/v1alpha1/cluster/levels:
+        get:
+            tags:
+                - ClusterInterface
+            operationId: ClusterInterface_GetClusterLevels
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/cluster.v1alpha1.ClusterLevels'
     /api/v1alpha1/cluster/list:
         get:
             tags:
@@ -778,6 +790,42 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/cluster.v1alpha1.ClusterLogsResponse'
+    /api/v1alpha1/cluster/node/group/types:
+        get:
+            tags:
+                - ClusterInterface
+            operationId: ClusterInterface_GetNodeGroupTypes
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/cluster.v1alpha1.NodeGroupTypes'
+    /api/v1alpha1/cluster/node/roles:
+        get:
+            tags:
+                - ClusterInterface
+            operationId: ClusterInterface_GetNodeRoles
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/cluster.v1alpha1.NodeRoles'
+    /api/v1alpha1/cluster/node/statuses:
+        get:
+            tags:
+                - ClusterInterface
+            operationId: ClusterInterface_GetNodeStatuses
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/cluster.v1alpha1.NodeStatuses'
     /api/v1alpha1/cluster/ping:
         get:
             tags:
@@ -840,6 +888,78 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/cluster.v1alpha1.Regions'
+    /api/v1alpha1/cluster/resource/types:
+        get:
+            tags:
+                - ClusterInterface
+            operationId: ClusterInterface_GetResourceTypes
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/cluster.v1alpha1.ResourceTypes'
+    /api/v1alpha1/cluster/start:
+        post:
+            tags:
+                - ClusterInterface
+            operationId: ClusterInterface_Start
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/cluster.v1alpha1.ClusterArgs'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/common.Msg'
+    /api/v1alpha1/cluster/statuses:
+        get:
+            tags:
+                - ClusterInterface
+            operationId: ClusterInterface_GetClusterStatuses
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/cluster.v1alpha1.ClusterStatuses'
+    /api/v1alpha1/cluster/stop:
+        post:
+            tags:
+                - ClusterInterface
+            operationId: ClusterInterface_Stop
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/cluster.v1alpha1.ClusterArgs'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/common.Msg'
+    /api/v1alpha1/cluster/types:
+        get:
+            tags:
+                - ClusterInterface
+            operationId: ClusterInterface_GetClusterTypes
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/cluster.v1alpha1.ClusterTypes'
     /api/v1alpha1/project:
         get:
             tags:
@@ -1305,25 +1425,15 @@ paths:
                   in: query
                   schema:
                     type: string
-                - name: status
-                  in: query
-                  schema:
-                    type: integer
-                    format: int32
                 - name: status_string
                   in: query
                   schema:
                     type: string
-                - name: updated_at
+                - name: sign_type_string
                   in: query
                   schema:
                     type: string
-                - name: sign_type
-                  in: query
-                  schema:
-                    type: integer
-                    format: int32
-                - name: sign_type_string
+                - name: updated_at
                   in: query
                   schema:
                     type: string
@@ -1681,27 +1791,6 @@ components:
             properties:
                 id:
                     type: string
-                user:
-                    type: string
-                image_id:
-                    type: string
-                image:
-                    type: string
-                os:
-                    type: string
-                arch:
-                    type: string
-                hostname:
-                    type: string
-                external_ip:
-                    type: string
-                internal_ip:
-                    type: string
-                ssh_port:
-                    type: integer
-                    format: int32
-                cluster_id:
-                    type: string
         cluster.v1alpha1.Cluster:
             type: object
             properties:
@@ -1713,37 +1802,26 @@ components:
                     type: string
                 api_server_address:
                     type: string
-                config:
-                    type: string
-                addons:
-                    type: string
-                addons_config:
-                    type: string
                 status:
                     type: integer
-                    format: uint32
+                    format: int32
                 type:
-                    type: string
-                kube_config:
-                    type: string
+                    type: integer
+                    format: int32
                 public_key:
                     type: string
                 private_key:
                     type: string
-                connections:
-                    type: string
-                certificate_authority:
-                    type: string
                 region:
-                    type: string
-                ip_cidr:
                     type: string
                 access_id:
                     type: string
                 access_key:
                     type: string
-                bostion_host:
-                    $ref: '#/components/schemas/cluster.v1alpha1.BostionHost'
+                create_at:
+                    type: string
+                update_at:
+                    type: string
                 nodes:
                     type: array
                     items:
@@ -1752,8 +1830,8 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/cluster.v1alpha1.NodeGroup'
-                status_string:
-                    type: string
+                bostion_host:
+                    $ref: '#/components/schemas/cluster.v1alpha1.BostionHost'
         cluster.v1alpha1.ClusterArgs:
             type: object
             properties:
@@ -1780,6 +1858,21 @@ components:
                     type: string
                 private_key:
                     type: string
+        cluster.v1alpha1.ClusterLevel:
+            type: object
+            properties:
+                id:
+                    type: integer
+                    format: int32
+                name:
+                    type: string
+        cluster.v1alpha1.ClusterLevels:
+            type: object
+            properties:
+                cluster_levels:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/cluster.v1alpha1.ClusterLevel'
         cluster.v1alpha1.ClusterList:
             type: object
             properties:
@@ -1808,68 +1901,42 @@ components:
                 last_line:
                     type: integer
                     format: int32
+        cluster.v1alpha1.ClusterStatus:
+            type: object
+            properties:
+                id:
+                    type: integer
+                    format: int32
+                name:
+                    type: string
+        cluster.v1alpha1.ClusterStatuses:
+            type: object
+            properties:
+                cluster_statuses:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/cluster.v1alpha1.ClusterStatus'
+        cluster.v1alpha1.ClusterType:
+            type: object
+            properties:
+                id:
+                    type: integer
+                    format: int32
+                name:
+                    type: string
+                is_cloud:
+                    type: boolean
+        cluster.v1alpha1.ClusterTypes:
+            type: object
+            properties:
+                cluster_types:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/cluster.v1alpha1.ClusterType'
         cluster.v1alpha1.Node:
             type: object
             properties:
                 id:
-                    type: string
-                name:
-                    type: string
-                labels:
-                    type: string
-                kernel:
-                    type: string
-                container_runtime:
-                    type: string
-                kubelet:
-                    type: string
-                kube_proxy:
-                    type: string
-                ssh_port:
-                    type: integer
-                    format: int32
-                grpc_port:
-                    type: integer
-                    format: int32
-                internal_ip:
-                    type: string
-                external_ip:
-                    type: string
-                user:
-                    type: string
-                role:
-                    type: string
-                status:
-                    type: integer
-                    format: uint32
-                error_info:
-                    type: string
-                zone:
-                    type: string
-                ip_cidr:
-                    type: string
-                gpu_spec:
-                    type: string
-                system_disk:
-                    type: integer
-                    format: int32
-                data_disk:
-                    type: integer
-                    format: int32
-                node_price:
-                    type: number
-                    format: double
-                pod_price:
-                    type: number
-                    format: double
-                internet_max_bandwidth_out:
-                    type: integer
-                    format: int32
-                cluster_id:
-                    type: string
-                node_group_id:
-                    type: string
-                status_string:
                     type: string
         cluster.v1alpha1.NodeArgs:
             type: object
@@ -1885,47 +1952,52 @@ components:
                     type: string
         cluster.v1alpha1.NodeGroup:
             type: object
+            properties: {}
+        cluster.v1alpha1.NodeGroupType:
+            type: object
             properties:
                 id:
-                    type: string
+                    type: integer
+                    format: int32
                 name:
                     type: string
-                type:
+        cluster.v1alpha1.NodeGroupTypes:
+            type: object
+            properties:
+                node_group_types:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/cluster.v1alpha1.NodeGroupType'
+        cluster.v1alpha1.NodeRole:
+            type: object
+            properties:
+                id:
+                    type: integer
+                    format: int32
+                name:
                     type: string
-                image:
+        cluster.v1alpha1.NodeRoles:
+            type: object
+            properties:
+                node_roles:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/cluster.v1alpha1.NodeRole'
+        cluster.v1alpha1.NodeStatus:
+            type: object
+            properties:
+                id:
+                    type: integer
+                    format: int32
+                name:
                     type: string
-                os:
-                    type: string
-                arch:
-                    type: string
-                cpu:
-                    type: integer
-                    format: int32
-                memory:
-                    type: number
-                    format: double
-                gpu:
-                    type: integer
-                    format: int32
-                node_init_script:
-                    type: string
-                min_size:
-                    type: integer
-                    format: int32
-                max_size:
-                    type: integer
-                    format: int32
-                target_size:
-                    type: integer
-                    format: int32
-                system_disk:
-                    type: integer
-                    format: int32
-                data_disk:
-                    type: integer
-                    format: int32
-                cluster_id:
-                    type: string
+        cluster.v1alpha1.NodeStatuses:
+            type: object
+            properties:
+                node_statuses:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/cluster.v1alpha1.NodeStatus'
         cluster.v1alpha1.Regions:
             type: object
             properties:
@@ -1933,6 +2005,21 @@ components:
                     type: array
                     items:
                         type: string
+        cluster.v1alpha1.ResourceType:
+            type: object
+            properties:
+                id:
+                    type: integer
+                    format: int32
+                name:
+                    type: string
+        cluster.v1alpha1.ResourceTypes:
+            type: object
+            properties:
+                resource_types:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/cluster.v1alpha1.ResourceType'
         common.Msg:
             type: object
             properties:
@@ -2177,11 +2264,6 @@ components:
                     type: string
                 access_token:
                     type: string
-                sign_type:
-                    type: integer
-                    format: int32
-                username:
-                    type: string
         user.v1alpha1.User:
             type: object
             properties:
@@ -2193,17 +2275,11 @@ components:
                     type: string
                 access_token:
                     type: string
-                status:
-                    type: integer
-                    format: int32
                 status_string:
                     type: string
-                updated_at:
-                    type: string
-                sign_type:
-                    type: integer
-                    format: int32
                 sign_type_string:
+                    type: string
+                updated_at:
                     type: string
         user.v1alpha1.Users:
             type: object
