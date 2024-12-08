@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package cluster;
+package clusterruntime.api.cluster;
 
 import "internal/biz/cluster.proto";
 

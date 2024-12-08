@@ -21,8 +21,8 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	ProjectInterface_CreateNamespace_FullMethodName = "/project.ProjectInterface/CreateNamespace"
-	ProjectInterface_GetNamespaces_FullMethodName   = "/project.ProjectInterface/GetNamespaces"
+	ProjectInterface_CreateNamespace_FullMethodName = "/clusterruntime.api.project.ProjectInterface/CreateNamespace"
+	ProjectInterface_GetNamespaces_FullMethodName   = "/clusterruntime.api.project.ProjectInterface/GetNamespaces"
 )
 
 // ProjectInterfaceClient is the client API for ProjectInterface service.
@@ -144,7 +144,7 @@ func _ProjectInterface_GetNamespaces_Handler(srv interface{}, ctx context.Contex
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var ProjectInterface_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "project.ProjectInterface",
+	ServiceName: "clusterruntime.api.project.ProjectInterface",
 	HandlerType: (*ProjectInterfaceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{

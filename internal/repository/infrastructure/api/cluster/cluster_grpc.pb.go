@@ -8,12 +8,10 @@ package cluster
 
 import (
 	context "context"
-	common "github.com/f-rambo/cloud-copilot/api/common"
 	biz "github.com/f-rambo/cloud-copilot/internal/biz"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -22,8 +20,6 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	ClusterInterface_Ping_FullMethodName                 = "/infrastructure.api.cluster.ClusterInterface/Ping"
-	ClusterInterface_GetLogs_FullMethodName              = "/infrastructure.api.cluster.ClusterInterface/GetLogs"
 	ClusterInterface_Start_FullMethodName                = "/infrastructure.api.cluster.ClusterInterface/Start"
 	ClusterInterface_Stop_FullMethodName                 = "/infrastructure.api.cluster.ClusterInterface/Stop"
 	ClusterInterface_GetRegions_FullMethodName           = "/infrastructure.api.cluster.ClusterInterface/GetRegions"
@@ -38,8 +34,6 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ClusterInterfaceClient interface {
-	Ping(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*common.Msg, error)
-	GetLogs(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[LogRequest, LogResponse], error)
 	Start(ctx context.Context, in *biz.Cluster, opts ...grpc.CallOption) (*biz.Cluster, error)
 	Stop(ctx context.Context, in *biz.Cluster, opts ...grpc.CallOption) (*biz.Cluster, error)
 	GetRegions(ctx context.Context, in *biz.Cluster, opts ...grpc.CallOption) (*biz.Cluster, error)
@@ -57,29 +51,6 @@ type clusterInterfaceClient struct {
 func NewClusterInterfaceClient(cc grpc.ClientConnInterface) ClusterInterfaceClient {
 	return &clusterInterfaceClient{cc}
 }
-
-func (c *clusterInterfaceClient) Ping(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*common.Msg, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(common.Msg)
-	err := c.cc.Invoke(ctx, ClusterInterface_Ping_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *clusterInterfaceClient) GetLogs(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[LogRequest, LogResponse], error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &ClusterInterface_ServiceDesc.Streams[0], ClusterInterface_GetLogs_FullMethodName, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	x := &grpc.GenericClientStream[LogRequest, LogResponse]{ClientStream: stream}
-	return x, nil
-}
-
-// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type ClusterInterface_GetLogsClient = grpc.BidiStreamingClient[LogRequest, LogResponse]
 
 func (c *clusterInterfaceClient) Start(ctx context.Context, in *biz.Cluster, opts ...grpc.CallOption) (*biz.Cluster, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
@@ -165,8 +136,6 @@ func (c *clusterInterfaceClient) HandlerNodes(ctx context.Context, in *biz.Clust
 // All implementations must embed UnimplementedClusterInterfaceServer
 // for forward compatibility.
 type ClusterInterfaceServer interface {
-	Ping(context.Context, *emptypb.Empty) (*common.Msg, error)
-	GetLogs(grpc.BidiStreamingServer[LogRequest, LogResponse]) error
 	Start(context.Context, *biz.Cluster) (*biz.Cluster, error)
 	Stop(context.Context, *biz.Cluster) (*biz.Cluster, error)
 	GetRegions(context.Context, *biz.Cluster) (*biz.Cluster, error)
@@ -185,12 +154,6 @@ type ClusterInterfaceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedClusterInterfaceServer struct{}
 
-func (UnimplementedClusterInterfaceServer) Ping(context.Context, *emptypb.Empty) (*common.Msg, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Ping not implemented")
-}
-func (UnimplementedClusterInterfaceServer) GetLogs(grpc.BidiStreamingServer[LogRequest, LogResponse]) error {
-	return status.Errorf(codes.Unimplemented, "method GetLogs not implemented")
-}
 func (UnimplementedClusterInterfaceServer) Start(context.Context, *biz.Cluster) (*biz.Cluster, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Start not implemented")
 }
@@ -235,31 +198,6 @@ func RegisterClusterInterfaceServer(s grpc.ServiceRegistrar, srv ClusterInterfac
 	}
 	s.RegisterService(&ClusterInterface_ServiceDesc, srv)
 }
-
-func _ClusterInterface_Ping_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(emptypb.Empty)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ClusterInterfaceServer).Ping(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ClusterInterface_Ping_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ClusterInterfaceServer).Ping(ctx, req.(*emptypb.Empty))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _ClusterInterface_GetLogs_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(ClusterInterfaceServer).GetLogs(&grpc.GenericServerStream[LogRequest, LogResponse]{ServerStream: stream})
-}
-
-// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type ClusterInterface_GetLogsServer = grpc.BidiStreamingServer[LogRequest, LogResponse]
 
 func _ClusterInterface_Start_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(biz.Cluster)
@@ -413,10 +351,6 @@ var ClusterInterface_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*ClusterInterfaceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "Ping",
-			Handler:    _ClusterInterface_Ping_Handler,
-		},
-		{
 			MethodName: "Start",
 			Handler:    _ClusterInterface_Start_Handler,
 		},
@@ -449,13 +383,6 @@ var ClusterInterface_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _ClusterInterface_HandlerNodes_Handler,
 		},
 	},
-	Streams: []grpc.StreamDesc{
-		{
-			StreamName:    "GetLogs",
-			Handler:       _ClusterInterface_GetLogs_Handler,
-			ServerStreams: true,
-			ClientStreams: true,
-		},
-	},
+	Streams:  []grpc.StreamDesc{},
 	Metadata: "internal/repository/infrastructure/api/cluster/cluster.proto",
 }

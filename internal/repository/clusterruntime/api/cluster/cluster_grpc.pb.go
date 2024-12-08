@@ -20,9 +20,9 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	ClusterInterface_CurrentCluster_FullMethodName   = "/cluster.ClusterInterface/CurrentCluster"
-	ClusterInterface_HandlerNodes_FullMethodName     = "/cluster.ClusterInterface/HandlerNodes"
-	ClusterInterface_MigrateToCluster_FullMethodName = "/cluster.ClusterInterface/MigrateToCluster"
+	ClusterInterface_CurrentCluster_FullMethodName   = "/clusterruntime.api.cluster.ClusterInterface/CurrentCluster"
+	ClusterInterface_HandlerNodes_FullMethodName     = "/clusterruntime.api.cluster.ClusterInterface/HandlerNodes"
+	ClusterInterface_MigrateToCluster_FullMethodName = "/clusterruntime.api.cluster.ClusterInterface/MigrateToCluster"
 )
 
 // ClusterInterfaceClient is the client API for ClusterInterface service.
@@ -177,7 +177,7 @@ func _ClusterInterface_MigrateToCluster_Handler(srv interface{}, ctx context.Con
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var ClusterInterface_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "cluster.ClusterInterface",
+	ServiceName: "clusterruntime.api.cluster.ClusterInterface",
 	HandlerType: (*ClusterInterfaceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{

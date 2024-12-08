@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package log;
+package clusterruntime.api.log;
 
 option go_package = "github.com/f-rambo/cloud-copilot/internal/repository/clusterruntime/api/log;";
 

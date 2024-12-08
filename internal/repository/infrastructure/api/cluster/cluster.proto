@@ -2,19 +2,12 @@ syntax = "proto3";
 
 package infrastructure.api.cluster;
 
-import "google/protobuf/empty.proto";
-import "api/common/error_reason.proto";
-import "internal/repository/infrastructure/api/cluster/message.proto";
 import "internal/biz/cluster.proto";
 
 option go_package = "github.com/f-rambo/cloud-copilot/internal/repository/infrastructure/api/cluster";
 
 
 service ClusterInterface {
-      rpc Ping(google.protobuf.Empty) returns (common.Msg);
-
-      rpc GetLogs(stream infrastructure.api.cluster.LogRequest) returns (stream infrastructure.api.cluster.LogResponse);
-
       rpc Start(biz.cluster.Cluster) returns (biz.cluster.Cluster);
 
       rpc Stop(biz.cluster.Cluster) returns (biz.cluster.Cluster);

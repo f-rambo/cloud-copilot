@@ -19,7 +19,7 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	UserInterface_GetUserEmail_FullMethodName = "/user.UserInterface/GetUserEmail"
+	UserInterface_GetUserEmail_FullMethodName = "/clusterruntime.api.user.UserInterface/GetUserEmail"
 )
 
 // UserInterfaceClient is the client API for UserInterface service.
@@ -108,7 +108,7 @@ func _UserInterface_GetUserEmail_Handler(srv interface{}, ctx context.Context, d
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var UserInterface_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "user.UserInterface",
+	ServiceName: "clusterruntime.api.user.UserInterface",
 	HandlerType: (*UserInterfaceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{

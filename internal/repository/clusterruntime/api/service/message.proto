@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package service;
+package clusterruntime.api.service;
 
 import "internal/biz/service.proto";
 

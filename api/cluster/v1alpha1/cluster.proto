@@ -58,13 +58,13 @@ service ClusterInterface {
             };
       }
       
-      rpc Get(cluster.v1alpha1.ClusterArgs) returns (cluster.v1alpha1.Cluster) {
+      rpc Get(cluster.v1alpha1.ClusterIdMessge) returns (cluster.v1alpha1.Cluster) {
             option (google.api.http) = {
               get: "/api/v1alpha1/cluster"
             };
       }
 
-      rpc Save(cluster.v1alpha1.ClusterArgs) returns (cluster.v1alpha1.Cluster) {
+      rpc Save(cluster.v1alpha1.ClusterSaveArgs) returns (cluster.v1alpha1.ClusterIdMessge) {
             option (google.api.http) = {
               post: "/api/v1alpha1/cluster"
               body: "*"
@@ -77,27 +77,27 @@ service ClusterInterface {
             };
       }
 
-      rpc Delete(cluster.v1alpha1.ClusterArgs) returns (common.Msg) {
+      rpc Delete(cluster.v1alpha1.ClusterIdMessge) returns (common.Msg) {
             option (google.api.http) = {
               delete: "/api/v1alpha1/cluster"
             };
       }
 
-      rpc Start(cluster.v1alpha1.ClusterArgs) returns (common.Msg) {
+      rpc Start(cluster.v1alpha1.ClusterIdMessge) returns (common.Msg) {
             option (google.api.http) = {
               post: "/api/v1alpha1/cluster/start"
               body: "*"
             };
       }
 
-      rpc Stop(cluster.v1alpha1.ClusterArgs) returns (common.Msg) {
+      rpc Stop(cluster.v1alpha1.ClusterIdMessge) returns (common.Msg) {
             option (google.api.http) = {
               post: "/api/v1alpha1/cluster/stop"
               body: "*"
             };
       }
 
-      rpc GetRegions(cluster.v1alpha1.ClusterArgs) returns (cluster.v1alpha1.Regions) {
+      rpc GetRegions(cluster.v1alpha1.ClusterIdMessge) returns (cluster.v1alpha1.Regions) {
             option (google.api.http) = {
               get: "/api/v1alpha1/cluster/regions"
             };

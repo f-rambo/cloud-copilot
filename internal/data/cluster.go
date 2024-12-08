@@ -27,6 +27,7 @@ func (c *clusterRepo) Save(ctx context.Context, cluster *biz.Cluster) error {
 	tx := c.data.db.Begin()
 	defer func() {
 		if r := recover(); r != nil {
+			c.log.Error(r)
 			tx.Rollback()
 		}
 	}()
@@ -58,26 +59,13 @@ func (c *clusterRepo) Save(ctx context.Context, cluster *biz.Cluster) error {
 }
 
 func (c *clusterRepo) saveBostionHost(_ context.Context, cluster *biz.Cluster, tx *gorm.DB) error {
-	bostionHost := &biz.BostionHost{}
-	err := tx.Model(&biz.BostionHost{}).Where("cluster_id = ?", cluster.Id).First(bostionHost).Error
-	if err != nil && err != gorm.ErrRecordNotFound {
+	if cluster.BostionHost == nil {
+		return nil
+	}
+	cluster.BostionHost.ClusterId = cluster.Id
+	err := tx.Model(&biz.BostionHost{}).Where("id = ?", cluster.BostionHost.Id).Save(cluster.BostionHost).Error
+	if err != nil {
 		return err
-	}
-	if bostionHost.Id != "" && cluster.BostionHost != nil {
-		cluster.BostionHost.Id = bostionHost.Id
-	}
-	if bostionHost.Id != "" && cluster.BostionHost == nil {
-		err = tx.Model(&biz.BostionHost{}).Where("cluster_id = ?", cluster.Id).Delete(&biz.BostionHost{}).Error
-		if err != nil {
-			return err
-		}
-	}
-	if cluster.BostionHost != nil {
-		cluster.BostionHost.ClusterId = cluster.Id
-		err = tx.Model(&biz.BostionHost{}).Where("id = ?", cluster.BostionHost.Id).Save(cluster.BostionHost).Error
-		if err != nil {
-			return err
-		}
 	}
 	return nil
 }
@@ -150,7 +138,7 @@ func (c *clusterRepo) Get(ctx context.Context, id int64) (*biz.Cluster, error) {
 	if err != nil && err != gorm.ErrRecordNotFound {
 		return nil, err
 	}
-	if err == gorm.ErrRecordNotFound {
+	if cluster.Id == 0 {
 		return nil, nil
 	}
 	bostionHost := &biz.BostionHost{}
@@ -158,19 +146,25 @@ func (c *clusterRepo) Get(ctx context.Context, id int64) (*biz.Cluster, error) {
 	if err != nil && err != gorm.ErrRecordNotFound {
 		return nil, err
 	}
-	cluster.BostionHost = bostionHost
+	if bostionHost.Id != "" {
+		cluster.BostionHost = bostionHost
+	}
 	nodeGroups := make([]*biz.NodeGroup, 0)
 	err = c.data.db.Model(&biz.NodeGroup{}).Where("cluster_id = ?", cluster.Id).Find(&nodeGroups).Error
 	if err != nil {
 		return nil, err
+	}
+	if len(nodeGroups) != 0 {
+		cluster.NodeGroups = nodeGroups
 	}
 	nodes := make([]*biz.Node, 0)
 	err = c.data.db.Model(&biz.Node{}).Where("cluster_id = ?", cluster.Id).Find(&nodes).Error
 	if err != nil {
 		return nil, err
 	}
-	cluster.NodeGroups = append(cluster.NodeGroups, nodeGroups...)
-	cluster.Nodes = append(cluster.Nodes, nodes...)
+	if len(nodes) != 0 {
+		cluster.Nodes = nodes
+	}
 	return cluster, nil
 }
 

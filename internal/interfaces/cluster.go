@@ -125,8 +125,11 @@ func (c *ClusterInterface) GetResourceTypes(ctx context.Context, _ *emptypb.Empt
 	return resourceTypeResponse, nil
 }
 
-func (c *ClusterInterface) Get(ctx context.Context, clusterID *v1alpha1.ClusterArgs) (*v1alpha1.Cluster, error) {
-	cluster, err := c.clusterUc.Get(ctx, clusterID.Id)
+func (c *ClusterInterface) Get(ctx context.Context, clusterIdArgs *v1alpha1.ClusterIdMessge) (*v1alpha1.Cluster, error) {
+	if clusterIdArgs.Id == 0 {
+		return nil, errors.New("cluster id is required")
+	}
+	cluster, err := c.clusterUc.Get(ctx, clusterIdArgs.Id)
 	if err != nil {
 		return nil, err
 	}
@@ -136,7 +139,7 @@ func (c *ClusterInterface) Get(ctx context.Context, clusterID *v1alpha1.ClusterA
 	}
 	return c.bizCLusterToCluster(cluster), nil
 }
-func (c *ClusterInterface) Save(ctx context.Context, clusterArgs *v1alpha1.ClusterArgs) (*v1alpha1.Cluster, error) {
+func (c *ClusterInterface) Save(ctx context.Context, clusterArgs *v1alpha1.ClusterSaveArgs) (*v1alpha1.ClusterIdMessge, error) {
 	if clusterArgs.Name == "" || clusterArgs.PrivateKey == "" || clusterArgs.Type == 0 || clusterArgs.PublicKey == "" {
 		return nil, errors.New("cluster name, private key, type and public key are required")
 	}
@@ -204,10 +207,10 @@ func (c *ClusterInterface) Save(ctx context.Context, clusterArgs *v1alpha1.Clust
 	if err != nil {
 		return nil, err
 	}
-	return c.bizCLusterToCluster(cluster), nil
+	return &v1alpha1.ClusterIdMessge{Id: cluster.Id}, nil
 }
 
-func (c *ClusterInterface) Start(ctx context.Context, clusterArgs *v1alpha1.ClusterArgs) (*common.Msg, error) {
+func (c *ClusterInterface) Start(ctx context.Context, clusterArgs *v1alpha1.ClusterIdMessge) (*common.Msg, error) {
 	if clusterArgs.Id == 0 {
 		return nil, errors.New("cluster id is required")
 	}
@@ -229,7 +232,7 @@ func (c *ClusterInterface) Start(ctx context.Context, clusterArgs *v1alpha1.Clus
 	return common.Response(), nil
 }
 
-func (c *ClusterInterface) Stop(ctx context.Context, clusterArgs *v1alpha1.ClusterArgs) (*common.Msg, error) {
+func (c *ClusterInterface) Stop(ctx context.Context, clusterArgs *v1alpha1.ClusterIdMessge) (*common.Msg, error) {
 	if clusterArgs.Id == 0 {
 		return nil, errors.New("cluster id is required")
 	}
@@ -266,7 +269,7 @@ func (c *ClusterInterface) List(ctx context.Context, _ *emptypb.Empty) (*v1alpha
 	return data, nil
 }
 
-func (c *ClusterInterface) Delete(ctx context.Context, clusterID *v1alpha1.ClusterArgs) (*common.Msg, error) {
+func (c *ClusterInterface) Delete(ctx context.Context, clusterID *v1alpha1.ClusterIdMessge) (*common.Msg, error) {
 	if clusterID.Id == 0 {
 		return nil, errors.New("cluster id is required")
 	}
@@ -285,13 +288,16 @@ func (c *ClusterInterface) Delete(ctx context.Context, clusterID *v1alpha1.Clust
 }
 
 // get regions
-func (c *ClusterInterface) GetRegions(ctx context.Context, clusterID *v1alpha1.ClusterArgs) (*v1alpha1.Regions, error) {
-	if clusterID == nil || clusterID.Id == 0 {
+func (c *ClusterInterface) GetRegions(ctx context.Context, clusterArgs *v1alpha1.ClusterIdMessge) (*v1alpha1.Regions, error) {
+	if clusterArgs == nil || clusterArgs.Id == 0 {
 		return nil, errors.New("cluster id is required")
 	}
-	cluster, err := c.clusterUc.Get(ctx, clusterID.Id)
+	cluster, err := c.clusterUc.Get(ctx, clusterArgs.Id)
 	if err != nil {
 		return nil, err
+	}
+	if cluster.Id == 0 {
+		return nil, errors.New("cluster not found")
 	}
 	regions, err := c.clusterUc.GetRegions(ctx, cluster)
 	if err != nil {
@@ -529,7 +535,7 @@ func (c *ClusterInterface) bizCLusterToCluster(bizCluster *biz.Cluster) *v1alpha
 		nodeGroups = append(nodeGroups, c.bizNodeGroupToNodeGroup(v))
 	}
 	var bostionHost *v1alpha1.BostionHost
-	if bizCluster.BostionHost != nil {
+	if bizCluster.BostionHost != nil && bizCluster.BostionHost.Id != "" {
 		bostionHost = c.bizBostionHostToBostionHost(bizCluster.BostionHost)
 	}
 	return &v1alpha1.Cluster{
@@ -552,14 +558,53 @@ func (c *ClusterInterface) bizCLusterToCluster(bizCluster *biz.Cluster) *v1alpha
 	}
 }
 
-func (c *ClusterInterface) bizNodeToNode(_ *biz.Node) *v1alpha1.Node {
-	return &v1alpha1.Node{}
+func (c *ClusterInterface) bizNodeToNode(node *biz.Node) *v1alpha1.Node {
+	return &v1alpha1.Node{
+		Id:         node.Id,
+		Ip:         node.InternalIp,
+		Name:       node.Name,
+		Role:       int32(node.Role),
+		User:       node.User,
+		Status:     int32(node.Status),
+		InstanceId: node.InstanceId,
+		UpdateAt:   node.UpdatedAt.Format("2006-01-02 15:04:05"),
+	}
 }
 
-func (c *ClusterInterface) bizNodeGroupToNodeGroup(_ *biz.NodeGroup) *v1alpha1.NodeGroup {
-	return &v1alpha1.NodeGroup{}
+func (c *ClusterInterface) bizNodeGroupToNodeGroup(nodeGroup *biz.NodeGroup) *v1alpha1.NodeGroup {
+	return &v1alpha1.NodeGroup{
+		Id:             nodeGroup.Id,
+		Name:           nodeGroup.Name,
+		Type:           int32(nodeGroup.Type),
+		Os:             nodeGroup.Os,
+		Arch:           nodeGroup.Arch,
+		Cpu:            nodeGroup.Cpu,
+		Memory:         nodeGroup.Memory,
+		Gpu:            nodeGroup.Gpu,
+		GpuSpec:        nodeGroup.GpuSpec,
+		SystemDiskSize: nodeGroup.SystemDiskSize,
+		DataDiskSize:   nodeGroup.DataDiskSize,
+		MinSize:        nodeGroup.MinSize,
+		MaxSize:        nodeGroup.MaxSize,
+		TargetSize:     nodeGroup.TargetSize,
+		UpdateAt:       nodeGroup.UpdatedAt.Format("2006-01-02 15:04:05"),
+	}
 }
 
-func (c *ClusterInterface) bizBostionHostToBostionHost(_ *biz.BostionHost) *v1alpha1.BostionHost {
-	return &v1alpha1.BostionHost{}
+func (c *ClusterInterface) bizBostionHostToBostionHost(bh *biz.BostionHost) *v1alpha1.BostionHost {
+	return &v1alpha1.BostionHost{
+		Id:         bh.Id,
+		User:       bh.User,
+		Os:         bh.Os,
+		Arch:       bh.Arch,
+		Cpu:        bh.Cpu,
+		Memory:     bh.Memory,
+		Hostname:   bh.Hostname,
+		ExternalIp: bh.ExternalIp,
+		InternalIp: bh.InternalIp,
+		SshPort:    bh.SshPort,
+		Status:     int32(bh.Status),
+		InstanceId: bh.InstanceId,
+		UpdateAt:   bh.UpdatedAt.Format("2006-01-02 15:04:05"),
+	}
 }

@@ -642,39 +642,6 @@ paths:
                   in: query
                   schema:
                     type: string
-                - name: name
-                  in: query
-                  schema:
-                    type: string
-                - name: type
-                  in: query
-                  schema:
-                    type: integer
-                    format: int32
-                - name: public_key
-                  in: query
-                  schema:
-                    type: string
-                - name: region
-                  in: query
-                  schema:
-                    type: string
-                - name: access_id
-                  in: query
-                  schema:
-                    type: string
-                - name: access_key
-                  in: query
-                  schema:
-                    type: string
-                - name: node_id
-                  in: query
-                  schema:
-                    type: string
-                - name: private_key
-                  in: query
-                  schema:
-                    type: string
             responses:
                 "200":
                     description: OK
@@ -690,7 +657,7 @@ paths:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/cluster.v1alpha1.ClusterArgs'
+                            $ref: '#/components/schemas/cluster.v1alpha1.ClusterSaveArgs'
                 required: true
             responses:
                 "200":
@@ -698,46 +665,13 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/cluster.v1alpha1.Cluster'
+                                $ref: '#/components/schemas/cluster.v1alpha1.ClusterIdMessge'
         delete:
             tags:
                 - ClusterInterface
             operationId: ClusterInterface_Delete
             parameters:
                 - name: id
-                  in: query
-                  schema:
-                    type: string
-                - name: name
-                  in: query
-                  schema:
-                    type: string
-                - name: type
-                  in: query
-                  schema:
-                    type: integer
-                    format: int32
-                - name: public_key
-                  in: query
-                  schema:
-                    type: string
-                - name: region
-                  in: query
-                  schema:
-                    type: string
-                - name: access_id
-                  in: query
-                  schema:
-                    type: string
-                - name: access_key
-                  in: query
-                  schema:
-                    type: string
-                - name: node_id
-                  in: query
-                  schema:
-                    type: string
-                - name: private_key
                   in: query
                   schema:
                     type: string
@@ -848,39 +782,6 @@ paths:
                   in: query
                   schema:
                     type: string
-                - name: name
-                  in: query
-                  schema:
-                    type: string
-                - name: type
-                  in: query
-                  schema:
-                    type: integer
-                    format: int32
-                - name: public_key
-                  in: query
-                  schema:
-                    type: string
-                - name: region
-                  in: query
-                  schema:
-                    type: string
-                - name: access_id
-                  in: query
-                  schema:
-                    type: string
-                - name: access_key
-                  in: query
-                  schema:
-                    type: string
-                - name: node_id
-                  in: query
-                  schema:
-                    type: string
-                - name: private_key
-                  in: query
-                  schema:
-                    type: string
             responses:
                 "200":
                     description: OK
@@ -909,7 +810,7 @@ paths:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/cluster.v1alpha1.ClusterArgs'
+                            $ref: '#/components/schemas/cluster.v1alpha1.ClusterIdMessge'
                 required: true
             responses:
                 "200":
@@ -939,7 +840,7 @@ paths:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/cluster.v1alpha1.ClusterArgs'
+                            $ref: '#/components/schemas/cluster.v1alpha1.ClusterIdMessge'
                 required: true
             responses:
                 "200":
@@ -1791,6 +1692,34 @@ components:
             properties:
                 id:
                     type: string
+                user:
+                    type: string
+                os:
+                    type: string
+                arch:
+                    type: string
+                cpu:
+                    type: integer
+                    format: int32
+                memory:
+                    type: integer
+                    format: int32
+                hostname:
+                    type: string
+                external_ip:
+                    type: string
+                internal_ip:
+                    type: string
+                ssh_port:
+                    type: integer
+                    format: int32
+                status:
+                    type: integer
+                    format: int32
+                instance_id:
+                    type: string
+                update_at:
+                    type: string
         cluster.v1alpha1.Cluster:
             type: object
             properties:
@@ -1832,31 +1761,10 @@ components:
                         $ref: '#/components/schemas/cluster.v1alpha1.NodeGroup'
                 bostion_host:
                     $ref: '#/components/schemas/cluster.v1alpha1.BostionHost'
-        cluster.v1alpha1.ClusterArgs:
+        cluster.v1alpha1.ClusterIdMessge:
             type: object
             properties:
                 id:
-                    type: string
-                name:
-                    type: string
-                type:
-                    type: integer
-                    format: int32
-                public_key:
-                    type: string
-                region:
-                    type: string
-                access_id:
-                    type: string
-                access_key:
-                    type: string
-                nodes:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/cluster.v1alpha1.NodeArgs'
-                node_id:
-                    type: string
-                private_key:
                     type: string
         cluster.v1alpha1.ClusterLevel:
             type: object
@@ -1901,6 +1809,30 @@ components:
                 last_line:
                     type: integer
                     format: int32
+        cluster.v1alpha1.ClusterSaveArgs:
+            type: object
+            properties:
+                id:
+                    type: string
+                name:
+                    type: string
+                type:
+                    type: integer
+                    format: int32
+                public_key:
+                    type: string
+                private_key:
+                    type: string
+                region:
+                    type: string
+                access_id:
+                    type: string
+                access_key:
+                    type: string
+                nodes:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/cluster.v1alpha1.NodeSaveArgs'
         cluster.v1alpha1.ClusterStatus:
             type: object
             properties:
@@ -1938,21 +1870,64 @@ components:
             properties:
                 id:
                     type: string
-        cluster.v1alpha1.NodeArgs:
-            type: object
-            properties:
                 ip:
+                    type: string
+                name:
                     type: string
                 user:
                     type: string
                 role:
                     type: integer
                     format: int32
-                id:
+                status:
+                    type: integer
+                    format: int32
+                instance_id:
+                    type: string
+                update_at:
                     type: string
         cluster.v1alpha1.NodeGroup:
             type: object
-            properties: {}
+            properties:
+                id:
+                    type: string
+                name:
+                    type: string
+                type:
+                    type: integer
+                    format: int32
+                os:
+                    type: string
+                arch:
+                    type: string
+                cpu:
+                    type: integer
+                    format: int32
+                memory:
+                    type: integer
+                    format: int32
+                gpu:
+                    type: integer
+                    format: int32
+                gpu_spec:
+                    type: string
+                system_disk_size:
+                    type: integer
+                    format: int32
+                data_disk_size:
+                    type: integer
+                    format: int32
+                min_size:
+                    type: integer
+                    format: int32
+                max_size:
+                    type: integer
+                    format: int32
+                target_size:
+                    type: integer
+                    format: int32
+                update_at:
+                    type: string
         cluster.v1alpha1.NodeGroupType:
             type: object
             properties:
@@ -1983,6 +1958,18 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/cluster.v1alpha1.NodeRole'
+        cluster.v1alpha1.NodeSaveArgs:
+            type: object
+            properties:
+                ip:
+                    type: string
+                user:
+                    type: string
+                role:
+                    type: integer
+                    format: int32
+                id:
+                    type: string
         cluster.v1alpha1.NodeStatus:
             type: object
             properties:

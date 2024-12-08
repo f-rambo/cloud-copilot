@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package project;
+package clusterruntime.api.project;
 
 import "internal/repository/clusterruntime/api/project/message.proto";
 import "api/common/error_reason.proto";

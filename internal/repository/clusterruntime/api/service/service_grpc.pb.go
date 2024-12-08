@@ -21,8 +21,8 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	ServiceInterface_Create_FullMethodName             = "/service.ServiceInterface/Create"
-	ServiceInterface_GenerateCIWorkflow_FullMethodName = "/service.ServiceInterface/GenerateCIWorkflow"
+	ServiceInterface_Create_FullMethodName             = "/clusterruntime.api.service.ServiceInterface/Create"
+	ServiceInterface_GenerateCIWorkflow_FullMethodName = "/clusterruntime.api.service.ServiceInterface/GenerateCIWorkflow"
 )
 
 // ServiceInterfaceClient is the client API for ServiceInterface service.
@@ -144,7 +144,7 @@ func _ServiceInterface_GenerateCIWorkflow_Handler(srv interface{}, ctx context.C
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var ServiceInterface_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "service.ServiceInterface",
+	ServiceName: "clusterruntime.api.service.ServiceInterface",
 	HandlerType: (*ServiceInterfaceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{

@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.5.1
 // - protoc             v5.27.1
-// source: internal/repository/clusterruntime/api/log/log.proto
+// source: internal/repository/infrastructure/api/log/log.proto
 
 package log
 
@@ -21,8 +21,8 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	LogInterface_Ping_FullMethodName    = "/clusterruntime.api.log.LogInterface/Ping"
-	LogInterface_GetLogs_FullMethodName = "/clusterruntime.api.log.LogInterface/GetLogs"
+	LogInterface_Ping_FullMethodName    = "/infrastructure.api.log.LogInterface/Ping"
+	LogInterface_GetLogs_FullMethodName = "/infrastructure.api.log.LogInterface/GetLogs"
 )
 
 // LogInterfaceClient is the client API for LogInterface service.
@@ -136,7 +136,7 @@ type LogInterface_GetLogsServer = grpc.BidiStreamingServer[LogRequest, LogRespon
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var LogInterface_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "clusterruntime.api.log.LogInterface",
+	ServiceName: "infrastructure.api.log.LogInterface",
 	HandlerType: (*LogInterfaceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
@@ -152,5 +152,5 @@ var LogInterface_ServiceDesc = grpc.ServiceDesc{
 			ClientStreams: true,
 		},
 	},
-	Metadata: "internal/repository/clusterruntime/api/log/log.proto",
+	Metadata: "internal/repository/infrastructure/api/log/log.proto",
 }

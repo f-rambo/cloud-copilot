@@ -22,18 +22,18 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	AppInterface_UploadApp_FullMethodName            = "/app.AppInterface/UploadApp"
-	AppInterface_CheckCluster_FullMethodName         = "/app.AppInterface/CheckCluster"
-	AppInterface_Init_FullMethodName                 = "/app.AppInterface/Init"
-	AppInterface_GetClusterResources_FullMethodName  = "/app.AppInterface/GetClusterResources"
-	AppInterface_DeleteApp_FullMethodName            = "/app.AppInterface/DeleteApp"
-	AppInterface_DeleteAppVersion_FullMethodName     = "/app.AppInterface/DeleteAppVersion"
-	AppInterface_GetAppAndVersionInfo_FullMethodName = "/app.AppInterface/GetAppAndVersionInfo"
-	AppInterface_AppRelease_FullMethodName           = "/app.AppInterface/AppRelease"
-	AppInterface_DeleteAppRelease_FullMethodName     = "/app.AppInterface/DeleteAppRelease"
-	AppInterface_AddAppRepo_FullMethodName           = "/app.AppInterface/AddAppRepo"
-	AppInterface_GetAppsByRepo_FullMethodName        = "/app.AppInterface/GetAppsByRepo"
-	AppInterface_GetAppDetailByRepo_FullMethodName   = "/app.AppInterface/GetAppDetailByRepo"
+	AppInterface_UploadApp_FullMethodName            = "/clusterruntime.api.app.AppInterface/UploadApp"
+	AppInterface_CheckCluster_FullMethodName         = "/clusterruntime.api.app.AppInterface/CheckCluster"
+	AppInterface_Init_FullMethodName                 = "/clusterruntime.api.app.AppInterface/Init"
+	AppInterface_GetClusterResources_FullMethodName  = "/clusterruntime.api.app.AppInterface/GetClusterResources"
+	AppInterface_DeleteApp_FullMethodName            = "/clusterruntime.api.app.AppInterface/DeleteApp"
+	AppInterface_DeleteAppVersion_FullMethodName     = "/clusterruntime.api.app.AppInterface/DeleteAppVersion"
+	AppInterface_GetAppAndVersionInfo_FullMethodName = "/clusterruntime.api.app.AppInterface/GetAppAndVersionInfo"
+	AppInterface_AppRelease_FullMethodName           = "/clusterruntime.api.app.AppInterface/AppRelease"
+	AppInterface_DeleteAppRelease_FullMethodName     = "/clusterruntime.api.app.AppInterface/DeleteAppRelease"
+	AppInterface_AddAppRepo_FullMethodName           = "/clusterruntime.api.app.AppInterface/AddAppRepo"
+	AppInterface_GetAppsByRepo_FullMethodName        = "/clusterruntime.api.app.AppInterface/GetAppsByRepo"
+	AppInterface_GetAppDetailByRepo_FullMethodName   = "/clusterruntime.api.app.AppInterface/GetAppDetailByRepo"
 )
 
 // AppInterfaceClient is the client API for AppInterface service.
@@ -485,7 +485,7 @@ func _AppInterface_GetAppDetailByRepo_Handler(srv interface{}, ctx context.Conte
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var AppInterface_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "app.AppInterface",
+	ServiceName: "clusterruntime.api.app.AppInterface",
 	HandlerType: (*AppInterfaceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
