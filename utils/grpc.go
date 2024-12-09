@@ -51,10 +51,14 @@ type GrpcConn struct {
 	Ctx  context.Context
 }
 
-func (g *GrpcConn) OpenGrpcConn(ctx context.Context, addr string, port int32) (*GrpcConn, error) {
+func (g *GrpcConn) OpenGrpcConn(ctx context.Context, addr string, port int32, timeoutsecond int64) (*GrpcConn, error) {
+	if timeoutsecond == 0 {
+		timeoutsecond = 10
+	}
 	conn, err := grpc.DialInsecure(ctx,
 		grpc.WithEndpoint(fmt.Sprintf("%s:%d", addr, port)),
 		grpc.WithMiddleware(mmd.Client()),
+		// grpc.WithTimeout(time.Duration(timeoutsecond)*time.Second),
 	)
 	if err != nil {
 		return nil, err

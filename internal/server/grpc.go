@@ -26,7 +26,6 @@ func NewGRPCServer(c *conf.Bootstrap, cluster *interfaces.ClusterInterface, app 
 			recovery.Recovery(),
 			metadata.Server(),
 		),
-		grpc.Timeout(10 * time.Minute),
 	}
 	cserver := c.Server
 	netWork := cserver.GetGrpc().GetNetwork()
@@ -36,6 +35,10 @@ func NewGRPCServer(c *conf.Bootstrap, cluster *interfaces.ClusterInterface, app 
 	addr := cserver.GetGrpc().GetAddr()
 	if addr != "" {
 		opts = append(opts, grpc.Address(addr))
+	}
+	timeoutSecond := cserver.GetGrpc().GetTimeout()
+	if timeoutSecond != 0 {
+		opts = append(opts, grpc.Timeout(time.Duration(timeoutSecond)*time.Second))
 	}
 	srv := grpc.NewServer(opts...)
 	clusterv1alpha1.RegisterClusterInterfaceServer(srv, cluster)

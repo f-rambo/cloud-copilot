@@ -6,7 +6,6 @@ import (
 	"github.com/f-rambo/cloud-copilot/internal/biz"
 	"github.com/f-rambo/cloud-copilot/internal/conf"
 	userApi "github.com/f-rambo/cloud-copilot/internal/repository/clusterruntime/api/user"
-	"github.com/f-rambo/cloud-copilot/utils"
 	"github.com/go-kratos/kratos/v2/log"
 )
 
@@ -22,18 +21,8 @@ func NewClusterRuntimeUser(conf *conf.Bootstrap, logger log.Logger) biz.Thirdpar
 	}
 }
 
-func (u *ClusterRuntimeUser) getClusterRuntimeUserServiceConfig() *conf.Service {
-	for _, service := range u.conf.Services {
-		if service.Name == ServiceNameClusterRuntime {
-			return service
-		}
-	}
-	return nil
-}
-
 func (u *ClusterRuntimeUser) GetUserEmail(ctx context.Context, token string) (string, error) {
-	service := u.getClusterRuntimeUserServiceConfig()
-	grpconn, err := new(utils.GrpcConn).OpenGrpcConn(ctx, service.Addr, service.Port)
+	grpconn, err := connGrpc(ctx, u.conf)
 	if err != nil {
 		return "", err
 	}

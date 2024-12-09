@@ -6,7 +6,6 @@ import (
 	"github.com/f-rambo/cloud-copilot/internal/biz"
 	"github.com/f-rambo/cloud-copilot/internal/conf"
 	projectApi "github.com/f-rambo/cloud-copilot/internal/repository/clusterruntime/api/project"
-	"github.com/f-rambo/cloud-copilot/utils"
 	"github.com/go-kratos/kratos/v2/log"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
@@ -23,18 +22,8 @@ func NewClusterRuntimeProject(conf *conf.Bootstrap, logger log.Logger) biz.Proje
 	}
 }
 
-func (c *ClusterRuntimeProject) getClusterRuntimeProjectServiceConfig() *conf.Service {
-	for _, service := range c.conf.Services {
-		if service.Name == ServiceNameClusterRuntime {
-			return service
-		}
-	}
-	return nil
-}
-
 func (c *ClusterRuntimeProject) CreateNamespace(ctx context.Context, namespace string) error {
-	service := c.getClusterRuntimeProjectServiceConfig()
-	grpconn, err := new(utils.GrpcConn).OpenGrpcConn(ctx, service.Addr, service.Port)
+	grpconn, err := connGrpc(ctx, c.conf)
 	if err != nil {
 		return err
 	}
@@ -49,8 +38,7 @@ func (c *ClusterRuntimeProject) CreateNamespace(ctx context.Context, namespace s
 }
 
 func (c *ClusterRuntimeProject) GetNamespaces(ctx context.Context) (namespaces []string, err error) {
-	service := c.getClusterRuntimeProjectServiceConfig()
-	grpconn, err := new(utils.GrpcConn).OpenGrpcConn(ctx, service.Addr, service.Port)
+	grpconn, err := connGrpc(ctx, c.conf)
 	if err != nil {
 		return nil, err
 	}

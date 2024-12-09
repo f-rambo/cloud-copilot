@@ -22,18 +22,8 @@ func NewClusterRuntimeCluster(conf *conf.Bootstrap, logger log.Logger) biz.Clust
 	}
 }
 
-func (c *ClusterRuntimeCluster) getClusterRuntimeClusterServiceConfig() *conf.Service {
-	for _, service := range c.conf.Services {
-		if service.Name == ServiceNameClusterRuntime {
-			return service
-		}
-	}
-	return nil
-}
-
 func (c *ClusterRuntimeCluster) CurrentCluster(ctx context.Context, cluster *biz.Cluster) error {
-	service := c.getClusterRuntimeClusterServiceConfig()
-	grpconn, err := new(utils.GrpcConn).OpenGrpcConn(ctx, service.Addr, service.Port)
+	grpconn, err := connGrpc(ctx, c.conf)
 	if err != nil {
 		return err
 	}
@@ -50,8 +40,7 @@ func (c *ClusterRuntimeCluster) CurrentCluster(ctx context.Context, cluster *biz
 }
 
 func (c *ClusterRuntimeCluster) HandlerNodes(ctx context.Context, cluster *biz.Cluster) error {
-	service := c.getClusterRuntimeClusterServiceConfig()
-	grpconn, err := new(utils.GrpcConn).OpenGrpcConn(ctx, service.Addr, service.Port)
+	grpconn, err := connGrpc(ctx, c.conf)
 	if err != nil {
 		return err
 	}
@@ -68,8 +57,7 @@ func (c *ClusterRuntimeCluster) HandlerNodes(ctx context.Context, cluster *biz.C
 }
 
 func (c *ClusterRuntimeCluster) MigrateToCluster(ctx context.Context, cluster *biz.Cluster) error {
-	service := c.getClusterRuntimeClusterServiceConfig()
-	grpconn, err := new(utils.GrpcConn).OpenGrpcConn(ctx, service.Addr, service.Port)
+	grpconn, err := connGrpc(ctx, c.conf)
 	if err != nil {
 		return err
 	}

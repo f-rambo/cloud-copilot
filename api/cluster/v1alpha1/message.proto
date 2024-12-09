@@ -70,7 +70,12 @@ message ResourceTypes {
 }
 
 message Regions {
-    repeated string regions = 1;
+    repeated Region regions = 1;
+}
+
+message Region {
+    string id = 1 [json_name = "id"];
+    string name = 2 [json_name = "name"];
 }
 
 message ClusterIdMessge {

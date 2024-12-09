@@ -152,10 +152,14 @@ func (a *AppInterface) UploadApp(ctx context.Context, req *v1alpha1.FileUploadRe
 			service = v
 		}
 	}
-	grpcConn, err := new(utils.GrpcConn).OpenGrpcConn(ctx, service.Addr, service.Port)
+	if service == nil {
+		return nil, errors.New("cluster-runtime service not found")
+	}
+	grpcConn, err := new(utils.GrpcConn).OpenGrpcConn(ctx, service.Addr, service.Port, service.Timeout)
 	if err != nil {
 		return nil, err
 	}
+	defer grpcConn.Close()
 	uploadAppRes, err := appApi.NewAppInterfaceClient(grpcConn.Conn).UploadApp(ctx, &appApi.FileUploadRequest{
 		FileName: req.GetFileName(),
 		Chunk:    req.GetChunk(),

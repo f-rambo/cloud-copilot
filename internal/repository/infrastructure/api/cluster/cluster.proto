@@ -3,24 +3,27 @@ syntax = "proto3";
 package infrastructure.api.cluster;
 
 import "internal/biz/cluster.proto";
+import "internal/repository/infrastructure/api/cluster/message.proto";
 
 option go_package = "github.com/f-rambo/cloud-copilot/internal/repository/infrastructure/api/cluster";
 
 
 service ClusterInterface {
-      rpc Start(biz.cluster.Cluster) returns (biz.cluster.Cluster);
+      rpc Ping(infrastructure.api.cluster.PingMessage) returns (stream infrastructure.api.cluster.PingMessage);
 
-      rpc Stop(biz.cluster.Cluster) returns (biz.cluster.Cluster);
-      
-      rpc GetRegions(biz.cluster.Cluster) returns (biz.cluster.Cluster);
+      rpc GetRegions(biz.cluster.Cluster) returns (infrastructure.api.cluster.CloudResources);
 
-      rpc MigrateToBostionHost(biz.cluster.Cluster) returns (biz.cluster.Cluster);
+      rpc Start(biz.cluster.Cluster) returns (stream biz.cluster.Cluster);
+
+      rpc Stop(biz.cluster.Cluster) returns (stream biz.cluster.Cluster);
       
-      rpc GetNodesSystemInfo(biz.cluster.Cluster) returns (biz.cluster.Cluster);
+      rpc MigrateToBostionHost(biz.cluster.Cluster) returns (stream biz.cluster.Cluster);
       
-      rpc Install(biz.cluster.Cluster) returns (biz.cluster.Cluster);
+      rpc GetNodesSystemInfo(biz.cluster.Cluster) returns (stream biz.cluster.Cluster);
       
-      rpc UnInstall(biz.cluster.Cluster) returns (biz.cluster.Cluster);
+      rpc Install(biz.cluster.Cluster) returns (stream biz.cluster.Cluster);
       
-      rpc HandlerNodes(biz.cluster.Cluster) returns (biz.cluster.Cluster);
+      rpc UnInstall(biz.cluster.Cluster) returns (stream biz.cluster.Cluster);
+      
+      rpc HandlerNodes(biz.cluster.Cluster) returns (stream biz.cluster.Cluster);
 }

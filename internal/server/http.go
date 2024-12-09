@@ -26,7 +26,6 @@ func NewHTTPServer(c *conf.Bootstrap, cluster *interfaces.ClusterInterface, app 
 			recovery.Recovery(),
 			metadata.Server(),
 		),
-		http.Timeout(10 * time.Minute),
 	}
 	cserver := c.Server
 	netWork := cserver.GetHttp().GetNetwork()
@@ -37,7 +36,10 @@ func NewHTTPServer(c *conf.Bootstrap, cluster *interfaces.ClusterInterface, app 
 	if addr != "" {
 		opts = append(opts, http.Address(addr))
 	}
-
+	timeoutSecond := cserver.GetHttp().GetTimeout()
+	if timeoutSecond != 0 {
+		opts = append(opts, http.Timeout(time.Duration(timeoutSecond)*time.Second))
+	}
 	opts = append(opts, http.Filter(handlers.CORS(
 		handlers.AllowedOrigins([]string{"*"}),
 		handlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}),

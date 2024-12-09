@@ -6,7 +6,6 @@ import (
 	"github.com/f-rambo/cloud-copilot/internal/biz"
 	"github.com/f-rambo/cloud-copilot/internal/conf"
 	appApi "github.com/f-rambo/cloud-copilot/internal/repository/clusterruntime/api/app"
-	"github.com/f-rambo/cloud-copilot/utils"
 	"github.com/go-kratos/kratos/v2/log"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
@@ -27,18 +26,8 @@ func NewClusterRuntimeApp(conf *conf.Bootstrap, logger log.Logger) biz.AppRuntim
 	}
 }
 
-func (c *ClusterRuntimeApp) getClusterRuntimeAppServiceConfig() *conf.Service {
-	for _, service := range c.conf.Services {
-		if service.Name == ServiceNameClusterRuntime {
-			return service
-		}
-	}
-	return nil
-}
-
 func (c *ClusterRuntimeApp) CheckCluster(ctx context.Context) bool {
-	service := c.getClusterRuntimeAppServiceConfig()
-	grpconn, err := new(utils.GrpcConn).OpenGrpcConn(ctx, service.Addr, service.Port)
+	grpconn, err := connGrpc(ctx, c.conf)
 	if err != nil {
 		return false
 	}
@@ -54,8 +43,7 @@ func (c *ClusterRuntimeApp) CheckCluster(ctx context.Context) bool {
 }
 
 func (c *ClusterRuntimeApp) Init(ctx context.Context) ([]*biz.App, []*biz.AppRelease, error) {
-	service := c.getClusterRuntimeAppServiceConfig()
-	grpconn, err := new(utils.GrpcConn).OpenGrpcConn(ctx, service.Addr, service.Port)
+	grpconn, err := connGrpc(ctx, c.conf)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -68,8 +56,7 @@ func (c *ClusterRuntimeApp) Init(ctx context.Context) ([]*biz.App, []*biz.AppRel
 }
 
 func (c *ClusterRuntimeApp) GetClusterResources(ctx context.Context, appRelease *biz.AppRelease) ([]*biz.AppReleaseResource, error) {
-	service := c.getClusterRuntimeAppServiceConfig()
-	grpconn, err := new(utils.GrpcConn).OpenGrpcConn(ctx, service.Addr, service.Port)
+	grpconn, err := connGrpc(ctx, c.conf)
 	if err != nil {
 		return nil, err
 	}
@@ -82,8 +69,7 @@ func (c *ClusterRuntimeApp) GetClusterResources(ctx context.Context, appRelease 
 }
 
 func (c *ClusterRuntimeApp) DeleteApp(ctx context.Context, app *biz.App) error {
-	service := c.getClusterRuntimeAppServiceConfig()
-	grpconn, err := new(utils.GrpcConn).OpenGrpcConn(ctx, service.Addr, service.Port)
+	grpconn, err := connGrpc(ctx, c.conf)
 	if err != nil {
 		return err
 	}
@@ -96,8 +82,7 @@ func (c *ClusterRuntimeApp) DeleteApp(ctx context.Context, app *biz.App) error {
 }
 
 func (c *ClusterRuntimeApp) DeleteAppVersion(ctx context.Context, app *biz.App, appVersion *biz.AppVersion) error {
-	service := c.getClusterRuntimeAppServiceConfig()
-	grpconn, err := new(utils.GrpcConn).OpenGrpcConn(ctx, service.Addr, service.Port)
+	grpconn, err := connGrpc(ctx, c.conf)
 	if err != nil {
 		return err
 	}
@@ -113,8 +98,7 @@ func (c *ClusterRuntimeApp) DeleteAppVersion(ctx context.Context, app *biz.App, 
 }
 
 func (c *ClusterRuntimeApp) GetAppAndVersionInfo(ctx context.Context, app *biz.App, appVersion *biz.AppVersion) error {
-	service := c.getClusterRuntimeAppServiceConfig()
-	grpconn, err := new(utils.GrpcConn).OpenGrpcConn(ctx, service.Addr, service.Port)
+	grpconn, err := connGrpc(ctx, c.conf)
 	if err != nil {
 		return err
 	}
@@ -137,8 +121,7 @@ func (c *ClusterRuntimeApp) GetAppAndVersionInfo(ctx context.Context, app *biz.A
 }
 
 func (c *ClusterRuntimeApp) AppRelease(ctx context.Context, app *biz.App, appVersion *biz.AppVersion, appRelease *biz.AppRelease, appRepo *biz.AppRepo) error {
-	service := c.getClusterRuntimeAppServiceConfig()
-	grpconn, err := new(utils.GrpcConn).OpenGrpcConn(ctx, service.Addr, service.Port)
+	grpconn, err := connGrpc(ctx, c.conf)
 	if err != nil {
 		return err
 	}
@@ -160,8 +143,7 @@ func (c *ClusterRuntimeApp) AppRelease(ctx context.Context, app *biz.App, appVer
 }
 
 func (c *ClusterRuntimeApp) DeleteAppRelease(ctx context.Context, appRelease *biz.AppRelease) error {
-	service := c.getClusterRuntimeAppServiceConfig()
-	grpconn, err := new(utils.GrpcConn).OpenGrpcConn(ctx, service.Addr, service.Port)
+	grpconn, err := connGrpc(ctx, c.conf)
 	if err != nil {
 		return err
 	}
@@ -175,8 +157,7 @@ func (c *ClusterRuntimeApp) DeleteAppRelease(ctx context.Context, appRelease *bi
 }
 
 func (c *ClusterRuntimeApp) AddAppRepo(ctx context.Context, appRepo *biz.AppRepo) error {
-	service := c.getClusterRuntimeAppServiceConfig()
-	grpconn, err := new(utils.GrpcConn).OpenGrpcConn(ctx, service.Addr, service.Port)
+	grpconn, err := connGrpc(ctx, c.conf)
 	if err != nil {
 		return err
 	}
@@ -192,8 +173,7 @@ func (c *ClusterRuntimeApp) AddAppRepo(ctx context.Context, appRepo *biz.AppRepo
 }
 
 func (c *ClusterRuntimeApp) GetAppsByRepo(ctx context.Context, appRepo *biz.AppRepo) ([]*biz.App, error) {
-	service := c.getClusterRuntimeAppServiceConfig()
-	grpconn, err := new(utils.GrpcConn).OpenGrpcConn(ctx, service.Addr, service.Port)
+	grpconn, err := connGrpc(ctx, c.conf)
 	if err != nil {
 		return nil, err
 	}
@@ -206,8 +186,7 @@ func (c *ClusterRuntimeApp) GetAppsByRepo(ctx context.Context, appRepo *biz.AppR
 }
 
 func (c *ClusterRuntimeApp) GetAppDetailByRepo(ctx context.Context, apprepo *biz.AppRepo, appName, version string) (*biz.App, error) {
-	service := c.getClusterRuntimeAppServiceConfig()
-	grpconn, err := new(utils.GrpcConn).OpenGrpcConn(ctx, service.Addr, service.Port)
+	grpconn, err := connGrpc(ctx, c.conf)
 	if err != nil {
 		return nil, err
 	}

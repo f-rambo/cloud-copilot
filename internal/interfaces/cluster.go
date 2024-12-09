@@ -299,9 +299,16 @@ func (c *ClusterInterface) GetRegions(ctx context.Context, clusterArgs *v1alpha1
 	if cluster.Id == 0 {
 		return nil, errors.New("cluster not found")
 	}
-	regions, err := c.clusterUc.GetRegions(ctx, cluster)
+	regionsCloudResources, err := c.clusterUc.GetRegions(ctx, cluster)
 	if err != nil {
 		return nil, err
+	}
+	regions := make([]*v1alpha1.Region, 0)
+	for _, v := range regionsCloudResources {
+		regions = append(regions, &v1alpha1.Region{
+			Id:   v.RefId,
+			Name: v.Name,
+		})
 	}
 	return &v1alpha1.Regions{Regions: regions}, nil
 }

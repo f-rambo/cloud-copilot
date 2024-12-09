@@ -324,19 +324,15 @@ func (uc *ClusterUsecase) Save(ctx context.Context, cluster *Cluster) error {
 	return uc.clusterData.Save(ctx, cluster)
 }
 
-func (uc *ClusterUsecase) GetRegions(ctx context.Context, cluster *Cluster) ([]string, error) {
+func (uc *ClusterUsecase) GetRegions(ctx context.Context, cluster *Cluster) ([]*CloudResource, error) {
 	if cluster.Type == ClusterType_LOCAL {
-		return []string{}, nil
+		return []*CloudResource{}, nil
 	}
 	err := uc.clusterInfrastructure.GetRegions(ctx, cluster)
 	if err != nil {
 		return nil, err
 	}
-	regionNames := make([]string, 0)
-	for _, region := range cluster.GetCloudResource(ResourceType_AVAILABILITY_ZONES) {
-		regionNames = append(regionNames, region.Name)
-	}
-	return regionNames, nil
+	return cluster.GetCloudResource(ResourceType_AVAILABILITY_ZONES), nil
 }
 
 func (uc *ClusterUsecase) Start(ctx context.Context) error {

@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package infrastructure.api.cluster;
+
+import "internal/biz/cluster.proto";
+
+option go_package = "github.com/f-rambo/cloud-copilot/internal/repository/infrastructure/api/cluster";
+
+
+message CloudResources {
+      repeated biz.cluster.CloudResource resources = 1;
+}
+
+message PingMessage {
+      string message = 1;
+}
