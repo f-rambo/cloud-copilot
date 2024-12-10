@@ -3,6 +3,7 @@ package utils
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/go-kratos/kratos/v2"
 	"github.com/go-kratos/kratos/v2/metadata"
@@ -58,7 +59,7 @@ func (g *GrpcConn) OpenGrpcConn(ctx context.Context, addr string, port int32, ti
 	conn, err := grpc.DialInsecure(ctx,
 		grpc.WithEndpoint(fmt.Sprintf("%s:%d", addr, port)),
 		grpc.WithMiddleware(mmd.Client()),
-		// grpc.WithTimeout(time.Duration(timeoutsecond)*time.Second),
+		grpc.WithTimeout(time.Duration(timeoutsecond)*time.Second),
 	)
 	if err != nil {
 		return nil, err

@@ -96,6 +96,9 @@ func main() {
 	}
 	defer utilLog.Close()
 	logger := log.With(utilLog, utilLog.GetLogContenteKeyvals()...)
+
+	log.SetLogger(logger)
+
 	app, cleanup, err := wireApp(
 		&bc,
 		logger,

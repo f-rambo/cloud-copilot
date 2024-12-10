@@ -28,7 +28,15 @@ func (c *ClusterRuntimeCluster) CurrentCluster(ctx context.Context, cluster *biz
 		return err
 	}
 	defer grpconn.Close()
-	clusterRes, err := clusterApi.NewClusterInterfaceClient(grpconn.Conn).CurrentCluster(ctx, cluster)
+	clusterInterfaceClient := clusterApi.NewClusterInterfaceClient(grpconn.Conn)
+	res, err := clusterInterfaceClient.CheckClusterInstalled(ctx, cluster)
+	if err != nil {
+		return err
+	}
+	if !res.Installed {
+		return biz.ErrClusterNotFound
+	}
+	clusterRes, err := clusterInterfaceClient.CurrentCluster(ctx, cluster)
 	if err != nil {
 		return err
 	}

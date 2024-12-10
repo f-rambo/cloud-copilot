@@ -23,34 +23,31 @@ func NewClusterRepo(data *Data, c *conf.Bootstrap, logger log.Logger) biz.Cluste
 	}
 }
 
-func (c *clusterRepo) Save(ctx context.Context, cluster *biz.Cluster) error {
+func (c *clusterRepo) Save(ctx context.Context, cluster *biz.Cluster) (err error) {
 	tx := c.data.db.Begin()
 	defer func() {
-		if r := recover(); r != nil {
-			c.log.Error(r)
+		if err != nil {
 			tx.Rollback()
+			return
 		}
 	}()
-	err := tx.Model(&biz.Cluster{}).Where("id = ?", cluster.Id).Save(cluster).Error
+	err = tx.Model(&biz.Cluster{}).Where("id = ?", cluster.Id).Save(cluster).Error
 	if err != nil {
 		return err
 	}
-
-	err = c.saveBostionHost(ctx, cluster, tx)
-	if err != nil {
-		return err
+	funcs := []func(context.Context, *biz.Cluster, *gorm.DB) error{
+		c.saveBostionHost,
+		c.saveNodeGroup,
+		c.saveNode,
+		c.saveCloudResources,
+		c.saveSecurityGroup,
 	}
-
-	err = c.saveNodeGroup(ctx, cluster, tx)
-	if err != nil {
-		return err
+	for _, f := range funcs {
+		err := f(ctx, cluster, tx)
+		if err != nil {
+			return err
+		}
 	}
-
-	err = c.saveNode(ctx, cluster, tx)
-	if err != nil {
-		return err
-	}
-
 	err = tx.Commit().Error
 	if err != nil {
 		return err
@@ -60,6 +57,20 @@ func (c *clusterRepo) Save(ctx context.Context, cluster *biz.Cluster) error {
 
 func (c *clusterRepo) saveBostionHost(_ context.Context, cluster *biz.Cluster, tx *gorm.DB) error {
 	if cluster.BostionHost == nil {
+		bostionHosts := make([]*biz.BostionHost, 0)
+		err := tx.Model(&biz.BostionHost{}).Where("cluster_id = ?", cluster.Id).Find(&bostionHosts).Error
+		if err != nil {
+			return err
+		}
+		for _, bostionHost := range bostionHosts {
+			if bostionHost.Id == "" {
+				continue
+			}
+			err = tx.Model(&biz.BostionHost{}).Where("id = ?", bostionHost.Id).Delete(bostionHost).Error
+			if err != nil {
+				return err
+			}
+		}
 		return nil
 	}
 	cluster.BostionHost.ClusterId = cluster.Id
@@ -132,6 +143,66 @@ func (c *clusterRepo) saveNode(_ context.Context, cluster *biz.Cluster, tx *gorm
 	return nil
 }
 
+func (c *clusterRepo) saveCloudResources(_ context.Context, cluster *biz.Cluster, tx *gorm.DB) error {
+	for _, cloudResource := range cluster.CloudResources {
+		cloudResource.ClusterId = cluster.Id
+		err := tx.Model(&biz.CloudResource{}).Where("id = ?", cloudResource.Id).Save(cloudResource).Error
+		if err != nil {
+			return err
+		}
+	}
+	cloudResources := make([]*biz.CloudResource, 0)
+	err := tx.Model(&biz.CloudResource{}).Where("cluster_id = ?", cluster.Id).Find(&cloudResources).Error
+	if err != nil {
+		return err
+	}
+	for _, v := range cloudResources {
+		ok := false
+		for _, cloudResource := range cluster.CloudResources {
+			if v.Id == cloudResource.Id {
+				ok = true
+			}
+		}
+		if !ok {
+			err := tx.Delete(&biz.CloudResource{}, v.Id).Error
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (c *clusterRepo) saveSecurityGroup(_ context.Context, cluster *biz.Cluster, tx *gorm.DB) error {
+	for _, v := range cluster.SecurityGroups {
+		v.ClusterId = cluster.Id
+		err := tx.Model(&biz.SecurityGroup{}).Where("id = ?", v.Id).Save(v).Error
+		if err != nil {
+			return err
+		}
+	}
+	sgs := make([]*biz.SecurityGroup, 0)
+	err := tx.Model(&biz.SecurityGroup{}).Where("cluster_id = ?", cluster.Id).Find(&sgs).Error
+	if err != nil {
+		return err
+	}
+	for _, v := range sgs {
+		isExist := false
+		for _, v1 := range cluster.SecurityGroups {
+			if v.Id == v1.Id {
+				isExist = true
+			}
+		}
+		if !isExist {
+			err := tx.Model(&biz.SecurityGroup{}).Where("id = ?", v.Id).Delete(v).Error
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 func (c *clusterRepo) Get(ctx context.Context, id int64) (*biz.Cluster, error) {
 	cluster := &biz.Cluster{}
 	err := c.data.db.Model(&biz.Cluster{}).Where("id = ?", id).First(cluster).Error
@@ -165,6 +236,22 @@ func (c *clusterRepo) Get(ctx context.Context, id int64) (*biz.Cluster, error) {
 	if len(nodes) != 0 {
 		cluster.Nodes = nodes
 	}
+	cloudResources := make([]*biz.CloudResource, 0)
+	err = c.data.db.Model(&biz.CloudResource{}).Where("cluster_id = ?", cluster.Id).Find(&cloudResources).Error
+	if err != nil {
+		return nil, err
+	}
+	if len(cloudResources) != 0 {
+		cluster.CloudResources = cloudResources
+	}
+	sgs := make([]*biz.SecurityGroup, 0)
+	err = c.data.db.Model(&biz.SecurityGroup{}).Where("cluster_id = ?", cluster.Id).Find(&sgs).Error
+	if err != nil {
+		return nil, err
+	}
+	if len(sgs) != 0 {
+		cluster.SecurityGroups = sgs
+	}
 	return cluster, nil
 }
 
@@ -173,6 +260,9 @@ func (c *clusterRepo) GetByName(ctx context.Context, name string) (*biz.Cluster,
 	err := c.data.db.Model(&biz.Cluster{}).Where("name = ?", name).First(cluster).Error
 	if err != nil && err != gorm.ErrRecordNotFound {
 		return nil, err
+	}
+	if cluster.Id != 0 {
+		return c.Get(ctx, cluster.Id)
 	}
 	return cluster, nil
 }
@@ -197,14 +287,14 @@ func (c *clusterRepo) List(ctx context.Context, cluster *biz.Cluster) ([]*biz.Cl
 	return clusters, err
 }
 
-func (c *clusterRepo) Delete(ctx context.Context, id int64) error {
+func (c *clusterRepo) Delete(ctx context.Context, id int64) (err error) {
 	tx := c.data.db.Begin()
 	defer func() {
-		if r := recover(); r != nil {
+		if err != nil {
 			tx.Rollback()
 		}
 	}()
-	err := tx.Model(&biz.Cluster{}).Where("id = ?", id).Delete(&biz.Cluster{}).Error
+	err = tx.Model(&biz.Cluster{}).Where("id = ?", id).Delete(&biz.Cluster{}).Error
 	if err != nil {
 		return err
 	}
@@ -217,6 +307,14 @@ func (c *clusterRepo) Delete(ctx context.Context, id int64) error {
 		return err
 	}
 	err = tx.Model(&biz.BostionHost{}).Where("cluster_id = ?", id).Delete(&biz.BostionHost{}).Error
+	if err != nil {
+		return err
+	}
+	err = tx.Model(&biz.CloudResource{}).Where("cluster_id = ?", id).Delete(&biz.CloudResource{}).Error
+	if err != nil {
+		return err
+	}
+	err = tx.Model(&biz.SecurityGroup{}).Where("cluster_id = ?", id).Delete(&biz.SecurityGroup{}).Error
 	if err != nil {
 		return err
 	}

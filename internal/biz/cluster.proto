@@ -203,6 +203,7 @@ message CloudResource {
       string tags = 6; // @gotags: gorm:"column:tags; default:''; NOT NULL"
       string value = 7; // @gotags: gorm:"column:value; default:''; NOT NULL"
       repeated CloudResource sub_resources = 8; // @gotags: gorm:"-"
+      int64 cluster_id = 9; // @gotags: gorm:"column:cluster_id; default:0; NOT NULL"
 }
 
 message SecurityGroup {

@@ -11,7 +11,6 @@ import (
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
-	"github.com/spf13/cast"
 )
 
 const (
@@ -109,19 +108,6 @@ func (c *Cluster) DeleteCloudResource(resourceType ResourceType) {
 	c.CloudResources = cloudResources
 }
 
-func (c *Cluster) GenerateNodeGroupName(nodeGroup *NodeGroup) {
-	nodeGroup.Name = strings.Join([]string{
-		c.Name,
-		nodeGroup.Type.String(),
-		nodeGroup.Os,
-		nodeGroup.Arch,
-		cast.ToString(nodeGroup.Cpu),
-		cast.ToString(nodeGroup.Memory),
-		cast.ToString(nodeGroup.Gpu),
-		cast.ToString(nodeGroup.GpuSpec),
-	}, "-")
-}
-
 func (c *Cluster) SettingClusterAvailability() {
 	maxNodeNumber := 0
 	for _, nodeGroup := range c.NodeGroups {
@@ -157,22 +143,22 @@ func (c *Cluster) SettingClusterAvailability() {
 }
 
 func (c *Cluster) SettingCloudClusterInit() {
-	nodegroup := &NodeGroup{Id: uuid.New().String(), ClusterId: c.Id}
+	nodegroup := &NodeGroup{Id: uuid.NewString(), ClusterId: c.Id}
 	c.NodeGroups = append(c.NodeGroups, nodegroup)
 	nodegroup.Type = NodeGroupType_NORMAL
-	c.GenerateNodeGroupName(nodegroup)
 	nodegroup.Cpu = DefaultNodeGroupCpu
 	nodegroup.Memory = DefaultNodeGroupMemory
 	nodegroup.TargetSize = DefaultNodeGroupTargetSize
 	nodegroup.MinSize = DefaultNodeGroupMinSize
 	nodegroup.MaxSize = DefaultNodeGroupMaxSize
+	nodegroup.Name = strings.Join([]string{c.Name, NodeGroupType_NORMAL.String()}, "-")
 	if c.Type.IsIntegratedCloud() {
 		return
 	}
 	labels := c.generateNodeLables(nodegroup)
 	for i := 0; i < int(nodegroup.TargetSize); i++ {
 		node := &Node{
-			Name:        fmt.Sprintf("%s-%s-node-%s", c.Name, nodegroup.Name, uuid.New().String()),
+			Name:        strings.Join([]string{nodegroup.Name, uuid.NewString()}, "-"),
 			Status:      NodeStatus_NODE_CREATING,
 			ClusterId:   c.Id,
 			NodeGroupId: nodegroup.Id,
@@ -185,7 +171,7 @@ func (c *Cluster) SettingCloudClusterInit() {
 		c.Nodes = append(c.Nodes, node)
 	}
 	c.BostionHost = &BostionHost{
-		Id:        uuid.New().String(),
+		Id:        uuid.NewString(),
 		ClusterId: c.Id,
 		Hostname:  fmt.Sprintf("%s-bostion", c.Name),
 		Status:    NodeStatus_NODE_CREATING,
@@ -346,9 +332,8 @@ func (uc *ClusterUsecase) Start(ctx context.Context) error {
 			}
 			err := uc.handleEvent(ctx, data)
 			if err != nil {
-				return err
+				uc.log.Errorf("cluster handle event error: %v", err)
 			}
-			return nil
 		}
 	}
 }
@@ -409,7 +394,6 @@ func (uc *ClusterUsecase) handleEvent(ctx context.Context, cluster *Cluster) (er
 		}
 		return nil
 	}
-	cluster.SettingClusterAvailability()
 	err = uc.clusterRuntime.CurrentCluster(ctx, cluster)
 	if errors.Is(err, ErrClusterNotFound) {
 		return uc.handlerClusterNotInstalled(ctx, cluster)

@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package clusterruntime.api.cluster;
+
+option go_package = "github.com/f-rambo/cloud-copilot/internal/repository/clusterruntime/api/cluster;";
+
+
+message ClusterInstalled {
+      bool installed = 1;
+}
