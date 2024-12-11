@@ -150,6 +150,14 @@ func (c *clusterRepo) saveCloudResources(_ context.Context, cluster *biz.Cluster
 		if err != nil {
 			return err
 		}
+		for _, subCloudResource := range cloudResource.SubResources {
+			subCloudResource.ClusterId = cluster.Id
+			subCloudResource.ParentId = cloudResource.Id
+			err := tx.Model(&biz.CloudResource{}).Where("id = ?", subCloudResource.Id).Save(subCloudResource).Error
+			if err != nil {
+				return err
+			}
+		}
 	}
 	cloudResources := make([]*biz.CloudResource, 0)
 	err := tx.Model(&biz.CloudResource{}).Where("cluster_id = ?", cluster.Id).Find(&cloudResources).Error
@@ -161,6 +169,16 @@ func (c *clusterRepo) saveCloudResources(_ context.Context, cluster *biz.Cluster
 		for _, cloudResource := range cluster.CloudResources {
 			if v.Id == cloudResource.Id {
 				ok = true
+				break
+			}
+			for _, subCloudResource := range cloudResource.SubResources {
+				if subCloudResource.Id == v.Id {
+					ok = true
+					break
+				}
+			}
+			if ok {
+				break
 			}
 		}
 		if !ok {
@@ -242,7 +260,23 @@ func (c *clusterRepo) Get(ctx context.Context, id int64) (*biz.Cluster, error) {
 		return nil, err
 	}
 	if len(cloudResources) != 0 {
-		cluster.CloudResources = cloudResources
+		data := make([]*biz.CloudResource, 0)
+		for _, v := range cloudResources {
+			if v.ParentId != "" {
+				continue
+			}
+			data = append(data, v)
+		}
+		for _, v := range data {
+			subCloudResources := make([]*biz.CloudResource, 0)
+			for _, v1 := range cloudResources {
+				if v.Id != "" && v1.ParentId == v.Id {
+					subCloudResources = append(subCloudResources, v1)
+				}
+			}
+			v.SubResources = subCloudResources
+		}
+		cluster.CloudResources = data
 	}
 	sgs := make([]*biz.SecurityGroup, 0)
 	err = c.data.db.Model(&biz.SecurityGroup{}).Where("cluster_id = ?", cluster.Id).Find(&sgs).Error

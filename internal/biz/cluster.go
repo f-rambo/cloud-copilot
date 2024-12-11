@@ -179,6 +179,58 @@ func (c *Cluster) SettingCloudClusterInit() {
 		Memory:    DefaultNodeGroupMemory,
 		SshPort:   DefaultSSHPort,
 	}
+	c.SecurityGroups = []*SecurityGroup{
+		{
+			Id:          uuid.NewString(),
+			StartPort:   6443,
+			EndPort:     6443,
+			Protocol:    "TCP",
+			IpCidr:      "0.0.0.0/0",
+			ClusterId:   c.Id,
+			Name:        fmt.Sprintf("%s-%s", c.Name, "apiserver"),
+			Description: "apiserver sg",
+		},
+		{
+			Id:          uuid.NewString(),
+			StartPort:   10250,
+			EndPort:     10255,
+			Protocol:    "TCP",
+			IpCidr:      "0.0.0.0/0",
+			ClusterId:   c.Id,
+			Name:        fmt.Sprintf("%s-%s", c.Name, "kubelet"),
+			Description: "kubelet sg",
+		},
+		{
+			Id:          uuid.NewString(),
+			StartPort:   443,
+			EndPort:     443,
+			Protocol:    "TCP",
+			IpCidr:      "0.0.0.0/0",
+			ClusterId:   c.Id,
+			Name:        fmt.Sprintf("%s-%s", c.Name, "ingresscontroller-https"),
+			Description: "ingress controller https sg",
+		},
+		{
+			Id:          uuid.NewString(),
+			StartPort:   80,
+			EndPort:     80,
+			Protocol:    "TCP",
+			IpCidr:      "0.0.0.0/0",
+			ClusterId:   c.Id,
+			Name:        fmt.Sprintf("%s-%s", c.Name, "ingresscontroller-http"),
+			Description: "ingress controller http sg",
+		},
+		{
+			Id:          uuid.NewString(),
+			StartPort:   22,
+			EndPort:     22,
+			Protocol:    "TCP",
+			IpCidr:      "0.0.0.0/0",
+			ClusterId:   c.Id,
+			Name:        fmt.Sprintf("%s-%s", c.Name, "infrastructure-ssh"),
+			Description: "infrastructure remote shell sg",
+		},
+	}
 }
 
 func (c ClusterType) IsCloud() bool {

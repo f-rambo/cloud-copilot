@@ -126,11 +126,11 @@ type User struct {
 
 	// @goimport: "gorm.io/gorm"
 	// @gofield: gorm.Model
-	Id          int64        `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT"`                                                          // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
+	Id          int64        `gorm:"column:id;primaryKey;AUTO_INCREMENT" protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`                                                          // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
 	Name        string       `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty" gorm:"column:name; default:''; NOT NULL"`                                                         // @gotags: gorm:"column:name; default:''; NOT NULL"
-	Email       string       `gorm:"column:email; default:''; NOT NULL" protobuf:"bytes,3,opt,name=email,proto3" json:"email,omitempty"`                                                      // @gotags: gorm:"column:email; default:''; NOT NULL"
+	Email       string       `protobuf:"bytes,3,opt,name=email,proto3" json:"email,omitempty" gorm:"column:email; default:''; NOT NULL"`                                                      // @gotags: gorm:"column:email; default:''; NOT NULL"
 	Password    string       `protobuf:"bytes,4,opt,name=password,proto3" json:"password,omitempty" gorm:"column:password; default:''; NOT NULL"`                                             // @gotags: gorm:"column:password; default:''; NOT NULL"
-	Status      UserStatus   `gorm:"column:status; default:0; NOT NULL" protobuf:"varint,5,opt,name=status,proto3,enum=biz.user.UserStatus" json:"status,omitempty"`                          // @gotags: gorm:"column:status; default:0; NOT NULL"
+	Status      UserStatus   `protobuf:"varint,5,opt,name=status,proto3,enum=biz.user.UserStatus" json:"status,omitempty" gorm:"column:status; default:0; NOT NULL"`                          // @gotags: gorm:"column:status; default:0; NOT NULL"
 	AccessToken string       `protobuf:"bytes,6,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty" gorm:"-"`                                                        // @gotags: gorm:"-"`
 	SignType    UserSignType `protobuf:"varint,7,opt,name=sign_type,json=signType,proto3,enum=biz.user.UserSignType" json:"sign_type,omitempty" gorm:"column:sign_type; default:0; NOT NULL"` // @gotags: gorm:"column:sign_type; default:0; NOT NULL"
 	gorm.Model

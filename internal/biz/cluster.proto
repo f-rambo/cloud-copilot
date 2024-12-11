@@ -204,6 +204,7 @@ message CloudResource {
       string value = 7; // @gotags: gorm:"column:value; default:''; NOT NULL"
       repeated CloudResource sub_resources = 8; // @gotags: gorm:"-"
       int64 cluster_id = 9; // @gotags: gorm:"column:cluster_id; default:0; NOT NULL"
+      string parent_id = 10; // @gotags: gorm:"column:parent_id; default:''; NOT NULL"
 }
 
 message SecurityGroup {
@@ -213,8 +214,8 @@ message SecurityGroup {
       string name = 2; // @gotags: gorm:"column:name; default:''; NOT NULL"
       string description = 3; // @gotags: gorm:"column:description; default:''; NOT NULL"
       string vpc_id = 4; // @gotags: gorm:"column:vpc_id; default:''; NOT NULL"
-      int32 ingress_port = 5; // @gotags: gorm:"column:ingress_port; default:0; NOT NULL"
-      int32 egress_port = 6; // @gotags: gorm:"column:egress_port; default:0; NOT NULL"
+      int32 start_port = 5; // @gotags: gorm:"column:start_port; default:0; NOT NULL"
+      int32 end_port = 6; // @gotags: gorm:"column:end_port; default:0; NOT NULL"
       string protocol = 7; // @gotags: gorm:"column:protocol; default:''; NOT NULL"
       string ip_cidr = 8; // @gotags: gorm:"column:ip_cidr; default:''; NOT NULL"
       int64 cluster_id = 9; // @gotags: gorm:"column:cluster_id; default:0; NOT NULL"
