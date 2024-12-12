@@ -148,6 +148,7 @@ func (c *Cluster) SettingCloudClusterInit() {
 	nodegroup.Type = NodeGroupType_NORMAL
 	nodegroup.Cpu = DefaultNodeGroupCpu
 	nodegroup.Memory = DefaultNodeGroupMemory
+	nodegroup.Arch = NodeArchType_AMD64
 	nodegroup.TargetSize = DefaultNodeGroupTargetSize
 	nodegroup.MinSize = DefaultNodeGroupMinSize
 	nodegroup.MaxSize = DefaultNodeGroupMaxSize

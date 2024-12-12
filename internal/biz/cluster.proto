@@ -58,6 +58,21 @@ enum NodeGroupType {
       LARGE_HARD_DISK = 5;
 }
 
+enum NodeArchType {
+      NodeArchType_UNSPECIFIED = 0;
+      AMD64 = 1;
+      ARM64 = 2;
+}
+
+enum NodeGPUSpec {
+      NodeGPUSpec_UNSPECIFIED = 0;
+      NVIDIA_A10 = 1;
+      NVIDIA_V100 = 2;
+      NVIDIA_T4 = 3;
+      NVIDIA_P100 = 4;
+      NVIDIA_P4 = 5;
+}
+
 enum ResourceType {
       RESOURCE_TYPE_UNSPECIFIED = 0;
       VPC = 1;
@@ -149,11 +164,11 @@ message NodeGroup {
       string image = 4; // @gotags: gorm:"column:image; default:''; NOT NULL"
       string image_description = 5; // @gotags: gorm:"column:image_description; default:''; NOT NULL"
       string os = 6; // @gotags: gorm:"column:os; default:''; NOT NULL"
-      string arch = 7; // @gotags: gorm:"column:arch; default:''; NOT NULL"
+      NodeArchType arch = 7; // @gotags: gorm:"column:arch; default:0; NOT NULL"
       int32 cpu = 8; // @gotags: gorm:"column:cpu; default:0; NOT NULL"
       int32 memory = 9; // @gotags: gorm:"column:memory; default:0; NOT NULL"
       int32 gpu = 10; // @gotags: gorm:"column:gpu; default:0; NOT NULL"
-      string gpu_spec = 11; // @gotags: gorm:"column:gpu_spec; default:''; NOT NULL"
+      NodeGPUSpec gpu_spec = 11; // @gotags: gorm:"column:gpu_spec; default:0; NOT NULL"
       int32 system_disk_size = 12; // @gotags: gorm:"column:system_disk_size; default:0; NOT NULL"
       int32 data_disk_size = 13; // @gotags: gorm:"column:data_disk_size; default:0; NOT NULL"
       string root_device_name = 14; // @gotags: gorm:"column:root_device_name; default:''; NOT NULL"
@@ -180,7 +195,7 @@ message BostionHost {
       string image = 3; // @gotags: gorm:"column:image; default:''; NOT NULL"
       string image_description = 4; // @gotags: gorm:"column:image_description; default:''; NOT NULL"
       string os = 5; // @gotags: gorm:"column:os; default:''; NOT NULL"
-      string arch = 6; // @gotags: gorm:"column:arch; default:''; NOT NULL"
+      NodeArchType arch = 6; // @gotags: gorm:"column:arch; default:0; NOT NULL"
       int32 cpu = 7; // @gotags: gorm:"column:cpu; default:0; NOT NULL"
       int32 memory = 8; // @gotags: gorm:"column:memory; default:0; NOT NULL"
       string hostname = 9; // @gotags: gorm:"column:hostname; default:''; NOT NULL"

@@ -184,8 +184,8 @@ func (a *Autoscaler) GPULabel(ctx context.Context, in *autoscaler.GPULabelReques
 		if nodeGroup == nil {
 			continue
 		}
-		if nodeGroup.GpuSpec != "" {
-			gpuLable = nodeGroup.GpuSpec
+		if nodeGroup.GpuSpec != biz.NodeGPUSpec_NodeGPUSpec_UNSPECIFIED {
+			gpuLable = nodeGroup.GpuSpec.String()
 			break
 		}
 	}
@@ -206,10 +206,10 @@ func (a *Autoscaler) GetAvailableGPUTypes(ctx context.Context, in *autoscaler.Ge
 		if nodeGroup == nil {
 			continue
 		}
-		if nodeGroup.GpuSpec == "" {
+		if nodeGroup.GpuSpec == biz.NodeGPUSpec_NodeGPUSpec_UNSPECIFIED {
 			continue
 		}
-		pbGpuTypes[nodeGroup.GpuSpec] = nil
+		pbGpuTypes[nodeGroup.GpuSpec.String()] = nil
 	}
 	return &autoscaler.GetAvailableGPUTypesResponse{
 		GpuTypes: pbGpuTypes,

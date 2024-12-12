@@ -369,6 +369,113 @@ func (NodeGroupType) EnumDescriptor() ([]byte, []int) {
 	return file_internal_biz_cluster_proto_rawDescGZIP(), []int{5}
 }
 
+type NodeArchType int32
+
+const (
+	NodeArchType_NodeArchType_UNSPECIFIED NodeArchType = 0
+	NodeArchType_AMD64                    NodeArchType = 1
+	NodeArchType_ARM64                    NodeArchType = 2
+)
+
+// Enum value maps for NodeArchType.
+var (
+	NodeArchType_name = map[int32]string{
+		0: "NodeArchType_UNSPECIFIED",
+		1: "AMD64",
+		2: "ARM64",
+	}
+	NodeArchType_value = map[string]int32{
+		"NodeArchType_UNSPECIFIED": 0,
+		"AMD64":                    1,
+		"ARM64":                    2,
+	}
+)
+
+func (x NodeArchType) Enum() *NodeArchType {
+	p := new(NodeArchType)
+	*p = x
+	return p
+}
+
+func (x NodeArchType) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (NodeArchType) Descriptor() protoreflect.EnumDescriptor {
+	return file_internal_biz_cluster_proto_enumTypes[6].Descriptor()
+}
+
+func (NodeArchType) Type() protoreflect.EnumType {
+	return &file_internal_biz_cluster_proto_enumTypes[6]
+}
+
+func (x NodeArchType) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use NodeArchType.Descriptor instead.
+func (NodeArchType) EnumDescriptor() ([]byte, []int) {
+	return file_internal_biz_cluster_proto_rawDescGZIP(), []int{6}
+}
+
+type NodeGPUSpec int32
+
+const (
+	NodeGPUSpec_NodeGPUSpec_UNSPECIFIED NodeGPUSpec = 0
+	NodeGPUSpec_NVIDIA_A10              NodeGPUSpec = 1
+	NodeGPUSpec_NVIDIA_V100             NodeGPUSpec = 2
+	NodeGPUSpec_NVIDIA_T4               NodeGPUSpec = 3
+	NodeGPUSpec_NVIDIA_P100             NodeGPUSpec = 4
+	NodeGPUSpec_NVIDIA_P4               NodeGPUSpec = 5
+)
+
+// Enum value maps for NodeGPUSpec.
+var (
+	NodeGPUSpec_name = map[int32]string{
+		0: "NodeGPUSpec_UNSPECIFIED",
+		1: "NVIDIA_A10",
+		2: "NVIDIA_V100",
+		3: "NVIDIA_T4",
+		4: "NVIDIA_P100",
+		5: "NVIDIA_P4",
+	}
+	NodeGPUSpec_value = map[string]int32{
+		"NodeGPUSpec_UNSPECIFIED": 0,
+		"NVIDIA_A10":              1,
+		"NVIDIA_V100":             2,
+		"NVIDIA_T4":               3,
+		"NVIDIA_P100":             4,
+		"NVIDIA_P4":               5,
+	}
+)
+
+func (x NodeGPUSpec) Enum() *NodeGPUSpec {
+	p := new(NodeGPUSpec)
+	*p = x
+	return p
+}
+
+func (x NodeGPUSpec) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (NodeGPUSpec) Descriptor() protoreflect.EnumDescriptor {
+	return file_internal_biz_cluster_proto_enumTypes[7].Descriptor()
+}
+
+func (NodeGPUSpec) Type() protoreflect.EnumType {
+	return &file_internal_biz_cluster_proto_enumTypes[7]
+}
+
+func (x NodeGPUSpec) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use NodeGPUSpec.Descriptor instead.
+func (NodeGPUSpec) EnumDescriptor() ([]byte, []int) {
+	return file_internal_biz_cluster_proto_rawDescGZIP(), []int{7}
+}
+
 type ResourceType int32
 
 const (
@@ -435,11 +542,11 @@ func (x ResourceType) String() string {
 }
 
 func (ResourceType) Descriptor() protoreflect.EnumDescriptor {
-	return file_internal_biz_cluster_proto_enumTypes[6].Descriptor()
+	return file_internal_biz_cluster_proto_enumTypes[8].Descriptor()
 }
 
 func (ResourceType) Type() protoreflect.EnumType {
-	return &file_internal_biz_cluster_proto_enumTypes[6]
+	return &file_internal_biz_cluster_proto_enumTypes[8]
 }
 
 func (x ResourceType) Number() protoreflect.EnumNumber {
@@ -448,7 +555,7 @@ func (x ResourceType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use ResourceType.Descriptor instead.
 func (ResourceType) EnumDescriptor() ([]byte, []int) {
-	return file_internal_biz_cluster_proto_rawDescGZIP(), []int{6}
+	return file_internal_biz_cluster_proto_rawDescGZIP(), []int{8}
 }
 
 type ResourceTypeKeyValue int32
@@ -505,11 +612,11 @@ func (x ResourceTypeKeyValue) String() string {
 }
 
 func (ResourceTypeKeyValue) Descriptor() protoreflect.EnumDescriptor {
-	return file_internal_biz_cluster_proto_enumTypes[7].Descriptor()
+	return file_internal_biz_cluster_proto_enumTypes[9].Descriptor()
 }
 
 func (ResourceTypeKeyValue) Type() protoreflect.EnumType {
-	return &file_internal_biz_cluster_proto_enumTypes[7]
+	return &file_internal_biz_cluster_proto_enumTypes[9]
 }
 
 func (x ResourceTypeKeyValue) Number() protoreflect.EnumNumber {
@@ -518,7 +625,7 @@ func (x ResourceTypeKeyValue) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use ResourceTypeKeyValue.Descriptor instead.
 func (ResourceTypeKeyValue) EnumDescriptor() ([]byte, []int) {
-	return file_internal_biz_cluster_proto_rawDescGZIP(), []int{7}
+	return file_internal_biz_cluster_proto_rawDescGZIP(), []int{9}
 }
 
 type Cluster struct {
@@ -530,10 +637,10 @@ type Cluster struct {
 	// @gofield: gorm.Model
 	Id                   int64            `gorm:"column:id;primaryKey;AUTO_INCREMENT" protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`                                                                                // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
 	Name                 string           `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty" gorm:"column:name; default:''; NOT NULL"`                                                                               // @gotags: gorm:"column:name; default:''; NOT NULL"
-	Version              string           `protobuf:"bytes,3,opt,name=version,proto3" json:"version,omitempty" gorm:"column:version; default:''; NOT NULL"`                                                                      // @gotags: gorm:"column:version; default:''; NOT NULL"
-	ApiServerAddress     string           `protobuf:"bytes,4,opt,name=api_server_address,json=apiServerAddress,proto3" json:"api_server_address,omitempty" gorm:"column:api_server_address; default:''; NOT NULL"`               // @gotags: gorm:"column:api_server_address; default:''; NOT NULL"
+	Version              string           `gorm:"column:version; default:''; NOT NULL" protobuf:"bytes,3,opt,name=version,proto3" json:"version,omitempty"`                                                                      // @gotags: gorm:"column:version; default:''; NOT NULL"
+	ApiServerAddress     string           `json:"api_server_address,omitempty" gorm:"column:api_server_address; default:''; NOT NULL" protobuf:"bytes,4,opt,name=api_server_address,json=apiServerAddress,proto3"`               // @gotags: gorm:"column:api_server_address; default:''; NOT NULL"
 	Config               string           `protobuf:"bytes,5,opt,name=config,proto3" json:"config,omitempty" gorm:"column:config; default:''; NOT NULL"`                                                                         // @gotags: gorm:"column:config; default:''; NOT NULL"
-	Addons               string           `protobuf:"bytes,6,opt,name=addons,proto3" json:"addons,omitempty" gorm:"column:addons; default:''; NOT NULL"`                                                                         // @gotags: gorm:"column:addons; default:''; NOT NULL"
+	Addons               string           `json:"addons,omitempty" gorm:"column:addons; default:''; NOT NULL" protobuf:"bytes,6,opt,name=addons,proto3"`                                                                         // @gotags: gorm:"column:addons; default:''; NOT NULL"
 	AddonsConfig         string           `protobuf:"bytes,7,opt,name=addons_config,json=addonsConfig,proto3" json:"addons_config,omitempty" gorm:"column:addons_config; default:''; NOT NULL"`                                  // @gotags: gorm:"column:addons_config; default:''; NOT NULL"
 	Status               ClusterStatus    `protobuf:"varint,8,opt,name=status,proto3,enum=biz.cluster.ClusterStatus" json:"status,omitempty" gorm:"column:status; default:0; NOT NULL"`                                          // @gotags: gorm:"column:status; default:0; NOT NULL"
 	Type                 ClusterType      `protobuf:"varint,9,opt,name=type,proto3,enum=biz.cluster.ClusterType" json:"type,omitempty" gorm:"column:type; default:0; NOT NULL"`                                                  // @gotags: gorm:"column:type; default:0; NOT NULL"
@@ -541,20 +648,20 @@ type Cluster struct {
 	PublicKey            string           `protobuf:"bytes,11,opt,name=public_key,json=publicKey,proto3" json:"public_key,omitempty" gorm:"column:public_key; default:''; NOT NULL"`                                             // @gotags: gorm:"column:public_key; default:''; NOT NULL"
 	PrivateKey           string           `protobuf:"bytes,12,opt,name=private_key,json=privateKey,proto3" json:"private_key,omitempty" gorm:"column:private_key; default:''; NOT NULL"`                                         // @gotags: gorm:"column:private_key; default:''; NOT NULL"
 	Connections          string           `protobuf:"bytes,13,opt,name=connections,proto3" json:"connections,omitempty" gorm:"column:connections; default:''; NOT NULL"`                                                         // @gotags: gorm:"column:connections; default:''; NOT NULL"
-	CertificateAuthority string           `protobuf:"bytes,14,opt,name=certificate_authority,json=certificateAuthority,proto3" json:"certificate_authority,omitempty" gorm:"column:certificate_authority; default:''; NOT NULL"` // @gotags: gorm:"column:certificate_authority; default:''; NOT NULL"
-	Region               string           `gorm:"column:region; default:''; NOT NULL" protobuf:"bytes,15,opt,name=region,proto3" json:"region,omitempty"`                                                                        // @gotags: gorm:"column:region; default:''; NOT NULL"
-	UserId               int64            `protobuf:"varint,16,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty" gorm:"column:user_id; default:0; NOT NULL"`                                                         // @gotags: gorm:"column:user_id; default:0; NOT NULL"
+	CertificateAuthority string           `gorm:"column:certificate_authority; default:''; NOT NULL" protobuf:"bytes,14,opt,name=certificate_authority,json=certificateAuthority,proto3" json:"certificate_authority,omitempty"` // @gotags: gorm:"column:certificate_authority; default:''; NOT NULL"
+	Region               string           `protobuf:"bytes,15,opt,name=region,proto3" json:"region,omitempty" gorm:"column:region; default:''; NOT NULL"`                                                                        // @gotags: gorm:"column:region; default:''; NOT NULL"
+	UserId               int64            `json:"user_id,omitempty" gorm:"column:user_id; default:0; NOT NULL" protobuf:"varint,16,opt,name=user_id,json=userId,proto3"`                                                         // @gotags: gorm:"column:user_id; default:0; NOT NULL"
 	AccessId             string           `protobuf:"bytes,17,opt,name=access_id,json=accessId,proto3" json:"access_id,omitempty" gorm:"column:access_id; default:''; NOT NULL"`                                                 // @gotags: gorm:"column:access_id; default:''; NOT NULL"
-	AccessKey            string           `protobuf:"bytes,18,opt,name=access_key,json=accessKey,proto3" json:"access_key,omitempty" gorm:"column:access_key; default:''; NOT NULL"`                                             // @gotags: gorm:"column:access_key; default:''; NOT NULL"
-	MasterIp             string           `json:"master_ip,omitempty" gorm:"column:master_ip; default:''; NOT NULL" protobuf:"bytes,19,opt,name=master_ip,json=masterIp,proto3"`                                                 // @gotags: gorm:"column:master_ip; default:''; NOT NULL"
+	AccessKey            string           `gorm:"column:access_key; default:''; NOT NULL" protobuf:"bytes,18,opt,name=access_key,json=accessKey,proto3" json:"access_key,omitempty"`                                             // @gotags: gorm:"column:access_key; default:''; NOT NULL"
+	MasterIp             string           `protobuf:"bytes,19,opt,name=master_ip,json=masterIp,proto3" json:"master_ip,omitempty" gorm:"column:master_ip; default:''; NOT NULL"`                                                 // @gotags: gorm:"column:master_ip; default:''; NOT NULL"
 	MasterUser           string           `protobuf:"bytes,20,opt,name=master_user,json=masterUser,proto3" json:"master_user,omitempty" gorm:"column:master_user; default:''; NOT NULL"`                                         // @gotags: gorm:"column:master_user; default:''; NOT NULL"
-	Token                string           `gorm:"column:token; default:''; NOT NULL" protobuf:"bytes,21,opt,name=token,proto3" json:"token,omitempty"`                                                                           // @gotags: gorm:"column:token; default:''; NOT NULL"
+	Token                string           `protobuf:"bytes,21,opt,name=token,proto3" json:"token,omitempty" gorm:"column:token; default:''; NOT NULL"`                                                                           // @gotags: gorm:"column:token; default:''; NOT NULL"
 	CaData               string           `protobuf:"bytes,22,opt,name=ca_data,json=caData,proto3" json:"ca_data,omitempty" gorm:"column:ca_data; default:''; NOT NULL"`                                                         // @gotags: gorm:"column:ca_data; default:''; NOT NULL"
 	CertData             string           `protobuf:"bytes,23,opt,name=cert_data,json=certData,proto3" json:"cert_data,omitempty" gorm:"column:cert_data; default:''; NOT NULL"`                                                 // @gotags: gorm:"column:cert_data; default:''; NOT NULL"
 	KeyData              string           `protobuf:"bytes,24,opt,name=key_data,json=keyData,proto3" json:"key_data,omitempty" gorm:"column:key_data; default:''; NOT NULL"`                                                     // @gotags: gorm:"column:key_data; default:''; NOT NULL"
 	CloudClusterId       string           `protobuf:"bytes,25,opt,name=cloud_cluster_id,json=cloudClusterId,proto3" json:"cloud_cluster_id,omitempty" gorm:"column:cloud_cluster_id; default:''; NOT NULL"`                      // @gotags: gorm:"column:cloud_cluster_id; default:''; NOT NULL"
-	BostionHost          *BostionHost     `json:"bostion_host,omitempty" gorm:"-" protobuf:"bytes,26,opt,name=bostion_host,json=bostionHost,proto3"`                                                                             // @gotags: gorm:"-"
-	Nodes                []*Node          `json:"nodes,omitempty" gorm:"-" protobuf:"bytes,27,rep,name=nodes,proto3"`                                                                                                            // @gotags: gorm:"-"
+	BostionHost          *BostionHost     `gorm:"-" protobuf:"bytes,26,opt,name=bostion_host,json=bostionHost,proto3" json:"bostion_host,omitempty"`                                                                             // @gotags: gorm:"-"
+	Nodes                []*Node          `protobuf:"bytes,27,rep,name=nodes,proto3" json:"nodes,omitempty" gorm:"-"`                                                                                                            // @gotags: gorm:"-"
 	NodeGroups           []*NodeGroup     `protobuf:"bytes,28,rep,name=node_groups,json=nodeGroups,proto3" json:"node_groups,omitempty" gorm:"-"`                                                                                // @gotags: gorm:"-"
 	CloudResources       []*CloudResource `protobuf:"bytes,29,rep,name=cloud_resources,json=cloudResources,proto3" json:"cloud_resources,omitempty" gorm:"-"`                                                                    // @gotags: gorm:"-"
 	SecurityGroups       []*SecurityGroup `protobuf:"bytes,30,rep,name=security_groups,json=securityGroups,proto3" json:"security_groups,omitempty" gorm:"-"`
@@ -814,11 +921,11 @@ type Node struct {
 	Name        string     `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty" gorm:"column:name; default:''; NOT NULL"`                                              // @gotags: gorm:"column:name; default:''; NOT NULL"
 	Labels      string     `protobuf:"bytes,3,opt,name=labels,proto3" json:"labels,omitempty" gorm:"column:labels; default:''; NOT NULL"`                                        // @gotags: gorm:"column:labels; default:''; NOT NULL"
 	InternalIp  string     `protobuf:"bytes,4,opt,name=internal_ip,json=internalIp,proto3" json:"internal_ip,omitempty" gorm:"column:internal_ip; default:''; NOT NULL"`         // @gotags: gorm:"column:internal_ip; default:''; NOT NULL"
-	ExternalIp  string     `gorm:"column:external_ip; default:''; NOT NULL" protobuf:"bytes,5,opt,name=external_ip,json=externalIp,proto3" json:"external_ip,omitempty"`         // @gotags: gorm:"column:external_ip; default:''; NOT NULL"
+	ExternalIp  string     `protobuf:"bytes,5,opt,name=external_ip,json=externalIp,proto3" json:"external_ip,omitempty" gorm:"column:external_ip; default:''; NOT NULL"`         // @gotags: gorm:"column:external_ip; default:''; NOT NULL"
 	User        string     `json:"user,omitempty" gorm:"column:user; default:''; NOT NULL" protobuf:"bytes,6,opt,name=user,proto3"`                                              // @gotags: gorm:"column:user; default:''; NOT NULL"
-	Role        NodeRole   `protobuf:"varint,7,opt,name=role,proto3,enum=biz.cluster.NodeRole" json:"role,omitempty" gorm:"column:role; default:0; NOT NULL"`                    // @gotags: gorm:"column:role; default:0; NOT NULL"
+	Role        NodeRole   `json:"role,omitempty" gorm:"column:role; default:0; NOT NULL" protobuf:"varint,7,opt,name=role,proto3,enum=biz.cluster.NodeRole"`                    // @gotags: gorm:"column:role; default:0; NOT NULL"
 	Status      NodeStatus `protobuf:"varint,8,opt,name=status,proto3,enum=biz.cluster.NodeStatus" json:"status,omitempty" gorm:"column:status; default:0; NOT NULL"`            // @gotags: gorm:"column:status; default:0; NOT NULL"
-	ClusterId   int64      `protobuf:"varint,9,opt,name=cluster_id,json=clusterId,proto3" json:"cluster_id,omitempty" gorm:"column:cluster_id; default:0; NOT NULL"`             // @gotags: gorm:"column:cluster_id; default:0; NOT NULL"
+	ClusterId   int64      `json:"cluster_id,omitempty" gorm:"column:cluster_id; default:0; NOT NULL" protobuf:"varint,9,opt,name=cluster_id,json=clusterId,proto3"`             // @gotags: gorm:"column:cluster_id; default:0; NOT NULL"
 	NodeGroupId string     `protobuf:"bytes,10,opt,name=node_group_id,json=nodeGroupId,proto3" json:"node_group_id,omitempty" gorm:"column:node_group_id; default:''; NOT NULL"` // @gotags: gorm:"column:node_group_id; default:''; NOT NULL"
 	InstanceId  string     `protobuf:"bytes,11,opt,name=instance_id,json=instanceId,proto3" json:"instance_id,omitempty" gorm:"column:instance_id; default:''; NOT NULL"`        // @gotags: gorm:"column:instance_id; default:''; NOT NULL"
 	ErrorInfo   string     `protobuf:"bytes,12,opt,name=error_info,json=errorInfo,proto3" json:"error_info,omitempty" gorm:"column:error_info; default:''; NOT NULL"`            // @gotags: gorm:"column:error_info; default:''; NOT NULL"
@@ -950,31 +1057,31 @@ type NodeGroup struct {
 	// @gofield: gorm.Model
 	Id               string        `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty" gorm:"column:id;primaryKey; NOT NULL"`                                                                            // @gotags: gorm:"column:id;primaryKey; NOT NULL"
 	Name             string        `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty" gorm:"column:name; default:''; NOT NULL"`                                                                     // @gotags: gorm:"column:name; default:''; NOT NULL"
-	Type             NodeGroupType `json:"type,omitempty" gorm:"column:type; default:0; NOT NULL" protobuf:"varint,3,opt,name=type,proto3,enum=biz.cluster.NodeGroupType"`                                      // @gotags: gorm:"column:type; default:0; NOT NULL"
+	Type             NodeGroupType `protobuf:"varint,3,opt,name=type,proto3,enum=biz.cluster.NodeGroupType" json:"type,omitempty" gorm:"column:type; default:0; NOT NULL"`                                      // @gotags: gorm:"column:type; default:0; NOT NULL"
 	Image            string        `protobuf:"bytes,4,opt,name=image,proto3" json:"image,omitempty" gorm:"column:image; default:''; NOT NULL"`                                                                  // @gotags: gorm:"column:image; default:''; NOT NULL"
-	ImageDescription string        `gorm:"column:image_description; default:''; NOT NULL" protobuf:"bytes,5,opt,name=image_description,json=imageDescription,proto3" json:"image_description,omitempty"`        // @gotags: gorm:"column:image_description; default:''; NOT NULL"
+	ImageDescription string        `json:"image_description,omitempty" gorm:"column:image_description; default:''; NOT NULL" protobuf:"bytes,5,opt,name=image_description,json=imageDescription,proto3"`        // @gotags: gorm:"column:image_description; default:''; NOT NULL"
 	Os               string        `json:"os,omitempty" gorm:"column:os; default:''; NOT NULL" protobuf:"bytes,6,opt,name=os,proto3"`                                                                           // @gotags: gorm:"column:os; default:''; NOT NULL"
-	Arch             string        `protobuf:"bytes,7,opt,name=arch,proto3" json:"arch,omitempty" gorm:"column:arch; default:''; NOT NULL"`                                                                     // @gotags: gorm:"column:arch; default:''; NOT NULL"
-	Cpu              int32         `json:"cpu,omitempty" gorm:"column:cpu; default:0; NOT NULL" protobuf:"varint,8,opt,name=cpu,proto3"`                                                                        // @gotags: gorm:"column:cpu; default:0; NOT NULL"
+	Arch             NodeArchType  `gorm:"column:arch; default:0; NOT NULL" protobuf:"varint,7,opt,name=arch,proto3,enum=biz.cluster.NodeArchType" json:"arch,omitempty"`                                       // @gotags: gorm:"column:arch; default:0; NOT NULL"
+	Cpu              int32         `protobuf:"varint,8,opt,name=cpu,proto3" json:"cpu,omitempty" gorm:"column:cpu; default:0; NOT NULL"`                                                                        // @gotags: gorm:"column:cpu; default:0; NOT NULL"
 	Memory           int32         `protobuf:"varint,9,opt,name=memory,proto3" json:"memory,omitempty" gorm:"column:memory; default:0; NOT NULL"`                                                               // @gotags: gorm:"column:memory; default:0; NOT NULL"
 	Gpu              int32         `protobuf:"varint,10,opt,name=gpu,proto3" json:"gpu,omitempty" gorm:"column:gpu; default:0; NOT NULL"`                                                                       // @gotags: gorm:"column:gpu; default:0; NOT NULL"
-	GpuSpec          string        `protobuf:"bytes,11,opt,name=gpu_spec,json=gpuSpec,proto3" json:"gpu_spec,omitempty" gorm:"column:gpu_spec; default:''; NOT NULL"`                                           // @gotags: gorm:"column:gpu_spec; default:''; NOT NULL"
+	GpuSpec          NodeGPUSpec   `protobuf:"varint,11,opt,name=gpu_spec,json=gpuSpec,proto3,enum=biz.cluster.NodeGPUSpec" json:"gpu_spec,omitempty" gorm:"column:gpu_spec; default:0; NOT NULL"`              // @gotags: gorm:"column:gpu_spec; default:0; NOT NULL"
 	SystemDiskSize   int32         `protobuf:"varint,12,opt,name=system_disk_size,json=systemDiskSize,proto3" json:"system_disk_size,omitempty" gorm:"column:system_disk_size; default:0; NOT NULL"`            // @gotags: gorm:"column:system_disk_size; default:0; NOT NULL"
-	DataDiskSize     int32         `gorm:"column:data_disk_size; default:0; NOT NULL" protobuf:"varint,13,opt,name=data_disk_size,json=dataDiskSize,proto3" json:"data_disk_size,omitempty"`                    // @gotags: gorm:"column:data_disk_size; default:0; NOT NULL"
+	DataDiskSize     int32         `json:"data_disk_size,omitempty" gorm:"column:data_disk_size; default:0; NOT NULL" protobuf:"varint,13,opt,name=data_disk_size,json=dataDiskSize,proto3"`                    // @gotags: gorm:"column:data_disk_size; default:0; NOT NULL"
 	RootDeviceName   string        `protobuf:"bytes,14,opt,name=root_device_name,json=rootDeviceName,proto3" json:"root_device_name,omitempty" gorm:"column:root_device_name; default:''; NOT NULL"`            // @gotags: gorm:"column:root_device_name; default:''; NOT NULL"
-	DataDeviceName   string        `protobuf:"bytes,15,opt,name=data_device_name,json=dataDeviceName,proto3" json:"data_device_name,omitempty" gorm:"column:data_device_name; default:''; NOT NULL"`            // @gotags: gorm:"column:data_device_name; default:''; NOT NULL"
+	DataDeviceName   string        `json:"data_device_name,omitempty" gorm:"column:data_device_name; default:''; NOT NULL" protobuf:"bytes,15,opt,name=data_device_name,json=dataDeviceName,proto3"`            // @gotags: gorm:"column:data_device_name; default:''; NOT NULL"
 	MinSize          int32         `protobuf:"varint,16,opt,name=min_size,json=minSize,proto3" json:"min_size,omitempty" gorm:"column:min_size; default:0; NOT NULL"`                                           // @gotags: gorm:"column:min_size; default:0; NOT NULL"
-	MaxSize          int32         `json:"max_size,omitempty" gorm:"column:max_size; default:0; NOT NULL" protobuf:"varint,17,opt,name=max_size,json=maxSize,proto3"`                                           // @gotags: gorm:"column:max_size; default:0; NOT NULL"
+	MaxSize          int32         `protobuf:"varint,17,opt,name=max_size,json=maxSize,proto3" json:"max_size,omitempty" gorm:"column:max_size; default:0; NOT NULL"`                                           // @gotags: gorm:"column:max_size; default:0; NOT NULL"
 	TargetSize       int32         `protobuf:"varint,18,opt,name=target_size,json=targetSize,proto3" json:"target_size,omitempty" gorm:"column:target_size; default:0; NOT NULL"`                               // @gotags: gorm:"column:target_size; default:0; NOT NULL"
 	InstanceType     string        `json:"instance_type,omitempty" gorm:"column:instance_type; default:''; NOT NULL" protobuf:"bytes,19,opt,name=instance_type,json=instanceType,proto3"`                       // @gotags: gorm:"column:instance_type; default:''; NOT NULL"
 	DefaultUsername  string        `protobuf:"bytes,20,opt,name=default_username,json=defaultUsername,proto3" json:"default_username,omitempty" gorm:"column:default_username; default:''; NOT NULL"`           // @gotags: gorm:"column:default_username; default:''; NOT NULL"
 	NodePrice        float32       `protobuf:"fixed32,21,opt,name=node_price,json=nodePrice,proto3" json:"node_price,omitempty" gorm:"column:node_price; default:0; NOT NULL"`                                  // @gotags: gorm:"column:node_price; default:0; NOT NULL"
 	PodPrice         float32       `protobuf:"fixed32,22,opt,name=pod_price,json=podPrice,proto3" json:"pod_price,omitempty" gorm:"column:pod_price; default:0; NOT NULL"`                                      // @gotags: gorm:"column:pod_price; default:0; NOT NULL"
-	Zone             string        `json:"zone,omitempty" gorm:"column:zone; default:''; NOT NULL" protobuf:"bytes,23,opt,name=zone,proto3"`                                                                    // @gotags: gorm:"column:zone; default:''; NOT NULL"
-	SubnetIpCidr     string        `gorm:"column:subnet_ip_cidr; default:''; NOT NULL" protobuf:"bytes,24,opt,name=subnet_ip_cidr,json=subnetIpCidr,proto3" json:"subnet_ip_cidr,omitempty"`                    // @gotags: gorm:"column:subnet_ip_cidr; default:''; NOT NULL"
-	NodeInitScript   string        `protobuf:"bytes,25,opt,name=node_init_script,json=nodeInitScript,proto3" json:"node_init_script,omitempty" gorm:"column:cloud_init_script; default:''; NOT NULL"`           // @gotags: gorm:"column:cloud_init_script; default:''; NOT NULL"
+	Zone             string        `protobuf:"bytes,23,opt,name=zone,proto3" json:"zone,omitempty" gorm:"column:zone; default:''; NOT NULL"`                                                                    // @gotags: gorm:"column:zone; default:''; NOT NULL"
+	SubnetIpCidr     string        `protobuf:"bytes,24,opt,name=subnet_ip_cidr,json=subnetIpCidr,proto3" json:"subnet_ip_cidr,omitempty" gorm:"column:subnet_ip_cidr; default:''; NOT NULL"`                    // @gotags: gorm:"column:subnet_ip_cidr; default:''; NOT NULL"
+	NodeInitScript   string        `gorm:"column:cloud_init_script; default:''; NOT NULL" protobuf:"bytes,25,opt,name=node_init_script,json=nodeInitScript,proto3" json:"node_init_script,omitempty"`           // @gotags: gorm:"column:cloud_init_script; default:''; NOT NULL"
 	ClusterId        int64         `protobuf:"varint,26,opt,name=cluster_id,json=clusterId,proto3" json:"cluster_id,omitempty" gorm:"column:cluster_id; default:0; NOT NULL"`                                   // @gotags: gorm:"column:cluster_id; default:0; NOT NULL"
-	CloudNodeGroupId string        `protobuf:"bytes,27,opt,name=cloud_node_group_id,json=cloudNodeGroupId,proto3" json:"cloud_node_group_id,omitempty" gorm:"column:cloud_node_group_id; default:''; NOT NULL"` // @gotags: gorm:"column:cloud_node_group_id; default:''; NOT NULL"
+	CloudNodeGroupId string        `json:"cloud_node_group_id,omitempty" gorm:"column:cloud_node_group_id; default:''; NOT NULL" protobuf:"bytes,27,opt,name=cloud_node_group_id,json=cloudNodeGroupId,proto3"` // @gotags: gorm:"column:cloud_node_group_id; default:''; NOT NULL"
 	gorm.Model
 }
 
@@ -1052,11 +1159,11 @@ func (x *NodeGroup) GetOs() string {
 	return ""
 }
 
-func (x *NodeGroup) GetArch() string {
+func (x *NodeGroup) GetArch() NodeArchType {
 	if x != nil {
 		return x.Arch
 	}
-	return ""
+	return NodeArchType_NodeArchType_UNSPECIFIED
 }
 
 func (x *NodeGroup) GetCpu() int32 {
@@ -1080,11 +1187,11 @@ func (x *NodeGroup) GetGpu() int32 {
 	return 0
 }
 
-func (x *NodeGroup) GetGpuSpec() string {
+func (x *NodeGroup) GetGpuSpec() NodeGPUSpec {
 	if x != nil {
 		return x.GpuSpec
 	}
-	return ""
+	return NodeGPUSpec_NodeGPUSpec_UNSPECIFIED
 }
 
 func (x *NodeGroup) GetSystemDiskSize() int32 {
@@ -1206,21 +1313,21 @@ type BostionHost struct {
 
 	// @goimport: "gorm.io/gorm"
 	// @gofield: gorm.Model
-	Id               string     `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty" gorm:"column:id;primaryKey; NOT NULL"`                                                                     // @gotags: gorm:"column:id;primaryKey; NOT NULL"
-	User             string     `json:"user,omitempty" gorm:"column:user; default:''; NOT NULL" protobuf:"bytes,2,opt,name=user,proto3"`                                                              // @gotags: gorm:"column:user; default:''; NOT NULL"
-	Image            string     `gorm:"column:image; default:''; NOT NULL" protobuf:"bytes,3,opt,name=image,proto3" json:"image,omitempty"`                                                           // @gotags: gorm:"column:image; default:''; NOT NULL"
-	ImageDescription string     `protobuf:"bytes,4,opt,name=image_description,json=imageDescription,proto3" json:"image_description,omitempty" gorm:"column:image_description; default:''; NOT NULL"` // @gotags: gorm:"column:image_description; default:''; NOT NULL"
-	Os               string     `protobuf:"bytes,5,opt,name=os,proto3" json:"os,omitempty" gorm:"column:os; default:''; NOT NULL"`                                                                    // @gotags: gorm:"column:os; default:''; NOT NULL"
-	Arch             string     `protobuf:"bytes,6,opt,name=arch,proto3" json:"arch,omitempty" gorm:"column:arch; default:''; NOT NULL"`                                                              // @gotags: gorm:"column:arch; default:''; NOT NULL"
-	Cpu              int32      `protobuf:"varint,7,opt,name=cpu,proto3" json:"cpu,omitempty" gorm:"column:cpu; default:0; NOT NULL"`                                                                 // @gotags: gorm:"column:cpu; default:0; NOT NULL"
-	Memory           int32      `protobuf:"varint,8,opt,name=memory,proto3" json:"memory,omitempty" gorm:"column:memory; default:0; NOT NULL"`                                                        // @gotags: gorm:"column:memory; default:0; NOT NULL"
-	Hostname         string     `protobuf:"bytes,9,opt,name=hostname,proto3" json:"hostname,omitempty" gorm:"column:hostname; default:''; NOT NULL"`                                                  // @gotags: gorm:"column:hostname; default:''; NOT NULL"
-	ExternalIp       string     `protobuf:"bytes,10,opt,name=external_ip,json=externalIp,proto3" json:"external_ip,omitempty" gorm:"column:external_ip; default:''; NOT NULL"`                        // @gotags: gorm:"column:external_ip; default:''; NOT NULL"
-	InternalIp       string     `protobuf:"bytes,11,opt,name=internal_ip,json=internalIp,proto3" json:"internal_ip,omitempty" gorm:"column:internal_ip; default:''; NOT NULL"`                        // @gotags: gorm:"column:internal_ip; default:''; NOT NULL"
-	SshPort          int32      `protobuf:"varint,12,opt,name=ssh_port,json=sshPort,proto3" json:"ssh_port,omitempty" gorm:"column:ssh_port; default:0; NOT NULL"`                                    // @gotags: gorm:"column:ssh_port; default:0; NOT NULL"
-	Status           NodeStatus `protobuf:"varint,13,opt,name=status,proto3,enum=biz.cluster.NodeStatus" json:"status,omitempty" gorm:"column:status; default:0; NOT NULL"`                           // @gotags: gorm:"column:status; default:0; NOT NULL"
-	InstanceId       string     `gorm:"column:instance_id; default:''; NOT NULL" protobuf:"bytes,14,opt,name=instance_id,json=instanceId,proto3" json:"instance_id,omitempty"`                        // @gotags: gorm:"column:instance_id; default:''; NOT NULL"
-	ClusterId        int64      `gorm:"column:cluster_id; default:0; NOT NULL" protobuf:"varint,15,opt,name=cluster_id,json=clusterId,proto3" json:"cluster_id,omitempty"`                            // @gotags: gorm:"column:cluster_id; default:0; NOT NULL"
+	Id               string       `gorm:"column:id;primaryKey; NOT NULL" protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`                                                                     // @gotags: gorm:"column:id;primaryKey; NOT NULL"
+	User             string       `protobuf:"bytes,2,opt,name=user,proto3" json:"user,omitempty" gorm:"column:user; default:''; NOT NULL"`                                                              // @gotags: gorm:"column:user; default:''; NOT NULL"
+	Image            string       `protobuf:"bytes,3,opt,name=image,proto3" json:"image,omitempty" gorm:"column:image; default:''; NOT NULL"`                                                           // @gotags: gorm:"column:image; default:''; NOT NULL"
+	ImageDescription string       `protobuf:"bytes,4,opt,name=image_description,json=imageDescription,proto3" json:"image_description,omitempty" gorm:"column:image_description; default:''; NOT NULL"` // @gotags: gorm:"column:image_description; default:''; NOT NULL"
+	Os               string       `protobuf:"bytes,5,opt,name=os,proto3" json:"os,omitempty" gorm:"column:os; default:''; NOT NULL"`                                                                    // @gotags: gorm:"column:os; default:''; NOT NULL"
+	Arch             NodeArchType `protobuf:"varint,6,opt,name=arch,proto3,enum=biz.cluster.NodeArchType" json:"arch,omitempty" gorm:"column:arch; default:0; NOT NULL"`                                // @gotags: gorm:"column:arch; default:0; NOT NULL"
+	Cpu              int32        `protobuf:"varint,7,opt,name=cpu,proto3" json:"cpu,omitempty" gorm:"column:cpu; default:0; NOT NULL"`                                                                 // @gotags: gorm:"column:cpu; default:0; NOT NULL"
+	Memory           int32        `protobuf:"varint,8,opt,name=memory,proto3" json:"memory,omitempty" gorm:"column:memory; default:0; NOT NULL"`                                                        // @gotags: gorm:"column:memory; default:0; NOT NULL"
+	Hostname         string       `protobuf:"bytes,9,opt,name=hostname,proto3" json:"hostname,omitempty" gorm:"column:hostname; default:''; NOT NULL"`                                                  // @gotags: gorm:"column:hostname; default:''; NOT NULL"
+	ExternalIp       string       `protobuf:"bytes,10,opt,name=external_ip,json=externalIp,proto3" json:"external_ip,omitempty" gorm:"column:external_ip; default:''; NOT NULL"`                        // @gotags: gorm:"column:external_ip; default:''; NOT NULL"
+	InternalIp       string       `gorm:"column:internal_ip; default:''; NOT NULL" protobuf:"bytes,11,opt,name=internal_ip,json=internalIp,proto3" json:"internal_ip,omitempty"`                        // @gotags: gorm:"column:internal_ip; default:''; NOT NULL"
+	SshPort          int32        `protobuf:"varint,12,opt,name=ssh_port,json=sshPort,proto3" json:"ssh_port,omitempty" gorm:"column:ssh_port; default:0; NOT NULL"`                                    // @gotags: gorm:"column:ssh_port; default:0; NOT NULL"
+	Status           NodeStatus   `protobuf:"varint,13,opt,name=status,proto3,enum=biz.cluster.NodeStatus" json:"status,omitempty" gorm:"column:status; default:0; NOT NULL"`                           // @gotags: gorm:"column:status; default:0; NOT NULL"
+	InstanceId       string       `protobuf:"bytes,14,opt,name=instance_id,json=instanceId,proto3" json:"instance_id,omitempty" gorm:"column:instance_id; default:''; NOT NULL"`                        // @gotags: gorm:"column:instance_id; default:''; NOT NULL"
+	ClusterId        int64        `json:"cluster_id,omitempty" gorm:"column:cluster_id; default:0; NOT NULL" protobuf:"varint,15,opt,name=cluster_id,json=clusterId,proto3"`                            // @gotags: gorm:"column:cluster_id; default:0; NOT NULL"
 	gorm.Model
 }
 
@@ -1291,11 +1398,11 @@ func (x *BostionHost) GetOs() string {
 	return ""
 }
 
-func (x *BostionHost) GetArch() string {
+func (x *BostionHost) GetArch() NodeArchType {
 	if x != nil {
 		return x.Arch
 	}
-	return ""
+	return NodeArchType_NodeArchType_UNSPECIFIED
 }
 
 func (x *BostionHost) GetCpu() int32 {
@@ -1368,16 +1475,16 @@ type CloudResource struct {
 
 	// @goimport: "gorm.io/gorm"
 	// @gofield: gorm.Model
-	Id           string           `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty" gorm:"column:id;primaryKey; NOT NULL"`                                                     // @gotags: gorm:"column:id;primaryKey; NOT NULL"
+	Id           string           `json:"id,omitempty" gorm:"column:id;primaryKey; NOT NULL" protobuf:"bytes,1,opt,name=id,proto3"`                                                     // @gotags: gorm:"column:id;primaryKey; NOT NULL"
 	Name         string           `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty" gorm:"column:name; default:''; NOT NULL"`                                              // @gotags: gorm:"column:name; default:''; NOT NULL"
-	RefId        string           `protobuf:"bytes,3,opt,name=ref_id,json=refId,proto3" json:"ref_id,omitempty" gorm:"column:ref_id; default:''; NOT NULL"`                             // @gotags: gorm:"column:ref_id; default:''; NOT NULL"
+	RefId        string           `json:"ref_id,omitempty" gorm:"column:ref_id; default:''; NOT NULL" protobuf:"bytes,3,opt,name=ref_id,json=refId,proto3"`                             // @gotags: gorm:"column:ref_id; default:''; NOT NULL"
 	AssociatedId string           `protobuf:"bytes,4,opt,name=associated_id,json=associatedId,proto3" json:"associated_id,omitempty" gorm:"column:associated_id; default:''; NOT NULL"` // @gotags: gorm:"column:associated_id; default:''; NOT NULL"
 	Type         ResourceType     `protobuf:"varint,5,opt,name=type,proto3,enum=biz.cluster.ResourceType" json:"type,omitempty" gorm:"column:type; default:0; NOT NULL"`                // @gotags: gorm:"column:type; default:0; NOT NULL"
 	Tags         string           `protobuf:"bytes,6,opt,name=tags,proto3" json:"tags,omitempty" gorm:"column:tags; default:''; NOT NULL"`                                              // @gotags: gorm:"column:tags; default:''; NOT NULL"
-	Value        string           `protobuf:"bytes,7,opt,name=value,proto3" json:"value,omitempty" gorm:"column:value; default:''; NOT NULL"`                                           // @gotags: gorm:"column:value; default:''; NOT NULL"
+	Value        string           `gorm:"column:value; default:''; NOT NULL" protobuf:"bytes,7,opt,name=value,proto3" json:"value,omitempty"`                                           // @gotags: gorm:"column:value; default:''; NOT NULL"
 	SubResources []*CloudResource `protobuf:"bytes,8,rep,name=sub_resources,json=subResources,proto3" json:"sub_resources,omitempty" gorm:"-"`                                          // @gotags: gorm:"-"
 	ClusterId    int64            `protobuf:"varint,9,opt,name=cluster_id,json=clusterId,proto3" json:"cluster_id,omitempty" gorm:"column:cluster_id; default:0; NOT NULL"`             // @gotags: gorm:"column:cluster_id; default:0; NOT NULL"
-	ParentId     string           `protobuf:"bytes,10,opt,name=parent_id,json=parentId,proto3" json:"parent_id,omitempty" gorm:"column:parent_id; default:''; NOT NULL"`                // @gotags: gorm:"column:parent_id; default:''; NOT NULL"
+	ParentId     string           `json:"parent_id,omitempty" gorm:"column:parent_id; default:''; NOT NULL" protobuf:"bytes,10,opt,name=parent_id,json=parentId,proto3"`                // @gotags: gorm:"column:parent_id; default:''; NOT NULL"
 	gorm.Model
 }
 
@@ -1491,14 +1598,14 @@ type SecurityGroup struct {
 	// @goimport: "gorm.io/gorm"
 	// @gofield: gorm.Model
 	Id          string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty" gorm:"column:id;primaryKey; NOT NULL"`                                         // @gotags: gorm:"column:id;primaryKey; NOT NULL"
-	Name        string `gorm:"column:name; default:''; NOT NULL" protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`                                  // @gotags: gorm:"column:name; default:''; NOT NULL"
-	Description string `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty" gorm:"column:description; default:''; NOT NULL"`             // @gotags: gorm:"column:description; default:''; NOT NULL"
-	VpcId       string `json:"vpc_id,omitempty" gorm:"column:vpc_id; default:''; NOT NULL" protobuf:"bytes,4,opt,name=vpc_id,json=vpcId,proto3"`                 // @gotags: gorm:"column:vpc_id; default:''; NOT NULL"
-	StartPort   int32  `json:"start_port,omitempty" gorm:"column:start_port; default:0; NOT NULL" protobuf:"varint,5,opt,name=start_port,json=startPort,proto3"` // @gotags: gorm:"column:start_port; default:0; NOT NULL"
+	Name        string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty" gorm:"column:name; default:''; NOT NULL"`                                  // @gotags: gorm:"column:name; default:''; NOT NULL"
+	Description string `json:"description,omitempty" gorm:"column:description; default:''; NOT NULL" protobuf:"bytes,3,opt,name=description,proto3"`             // @gotags: gorm:"column:description; default:''; NOT NULL"
+	VpcId       string `protobuf:"bytes,4,opt,name=vpc_id,json=vpcId,proto3" json:"vpc_id,omitempty" gorm:"column:vpc_id; default:''; NOT NULL"`                 // @gotags: gorm:"column:vpc_id; default:''; NOT NULL"
+	StartPort   int32  `protobuf:"varint,5,opt,name=start_port,json=startPort,proto3" json:"start_port,omitempty" gorm:"column:start_port; default:0; NOT NULL"` // @gotags: gorm:"column:start_port; default:0; NOT NULL"
 	EndPort     int32  `protobuf:"varint,6,opt,name=end_port,json=endPort,proto3" json:"end_port,omitempty" gorm:"column:end_port; default:0; NOT NULL"`         // @gotags: gorm:"column:end_port; default:0; NOT NULL"
 	Protocol    string `protobuf:"bytes,7,opt,name=protocol,proto3" json:"protocol,omitempty" gorm:"column:protocol; default:''; NOT NULL"`                      // @gotags: gorm:"column:protocol; default:''; NOT NULL"
 	IpCidr      string `protobuf:"bytes,8,opt,name=ip_cidr,json=ipCidr,proto3" json:"ip_cidr,omitempty" gorm:"column:ip_cidr; default:''; NOT NULL"`             // @gotags: gorm:"column:ip_cidr; default:''; NOT NULL"
-	ClusterId   int64  `protobuf:"varint,9,opt,name=cluster_id,json=clusterId,proto3" json:"cluster_id,omitempty" gorm:"column:cluster_id; default:0; NOT NULL"` // @gotags: gorm:"column:cluster_id; default:0; NOT NULL"
+	ClusterId   int64  `gorm:"column:cluster_id; default:0; NOT NULL" protobuf:"varint,9,opt,name=cluster_id,json=clusterId,proto3" json:"cluster_id,omitempty"` // @gotags: gorm:"column:cluster_id; default:0; NOT NULL"
 	gorm.Model
 }
 
@@ -1696,7 +1803,7 @@ var file_internal_biz_cluster_proto_rawDesc = []byte{
 	0x20, 0x01, 0x28, 0x09, 0x52, 0x0a, 0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x49, 0x64,
 	0x12, 0x1d, 0x0a, 0x0a, 0x65, 0x72, 0x72, 0x6f, 0x72, 0x5f, 0x69, 0x6e, 0x66, 0x6f, 0x18, 0x0c,
 	0x20, 0x01, 0x28, 0x09, 0x52, 0x09, 0x65, 0x72, 0x72, 0x6f, 0x72, 0x49, 0x6e, 0x66, 0x6f, 0x22,
-	0xd6, 0x06, 0x0a, 0x09, 0x4e, 0x6f, 0x64, 0x65, 0x47, 0x72, 0x6f, 0x75, 0x70, 0x12, 0x0e, 0x0a,
+	0x8b, 0x07, 0x0a, 0x09, 0x4e, 0x6f, 0x64, 0x65, 0x47, 0x72, 0x6f, 0x75, 0x70, 0x12, 0x0e, 0x0a,
 	0x02, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x02, 0x69, 0x64, 0x12, 0x12, 0x0a,
 	0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x6e, 0x61, 0x6d,
 	0x65, 0x12, 0x2e, 0x0a, 0x04, 0x74, 0x79, 0x70, 0x65, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0e, 0x32,
@@ -1707,58 +1814,63 @@ var file_internal_biz_cluster_proto_rawDesc = []byte{
 	0x5f, 0x64, 0x65, 0x73, 0x63, 0x72, 0x69, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x18, 0x05, 0x20, 0x01,
 	0x28, 0x09, 0x52, 0x10, 0x69, 0x6d, 0x61, 0x67, 0x65, 0x44, 0x65, 0x73, 0x63, 0x72, 0x69, 0x70,
 	0x74, 0x69, 0x6f, 0x6e, 0x12, 0x0e, 0x0a, 0x02, 0x6f, 0x73, 0x18, 0x06, 0x20, 0x01, 0x28, 0x09,
-	0x52, 0x02, 0x6f, 0x73, 0x12, 0x12, 0x0a, 0x04, 0x61, 0x72, 0x63, 0x68, 0x18, 0x07, 0x20, 0x01,
-	0x28, 0x09, 0x52, 0x04, 0x61, 0x72, 0x63, 0x68, 0x12, 0x10, 0x0a, 0x03, 0x63, 0x70, 0x75, 0x18,
-	0x08, 0x20, 0x01, 0x28, 0x05, 0x52, 0x03, 0x63, 0x70, 0x75, 0x12, 0x16, 0x0a, 0x06, 0x6d, 0x65,
-	0x6d, 0x6f, 0x72, 0x79, 0x18, 0x09, 0x20, 0x01, 0x28, 0x05, 0x52, 0x06, 0x6d, 0x65, 0x6d, 0x6f,
-	0x72, 0x79, 0x12, 0x10, 0x0a, 0x03, 0x67, 0x70, 0x75, 0x18, 0x0a, 0x20, 0x01, 0x28, 0x05, 0x52,
-	0x03, 0x67, 0x70, 0x75, 0x12, 0x19, 0x0a, 0x08, 0x67, 0x70, 0x75, 0x5f, 0x73, 0x70, 0x65, 0x63,
-	0x18, 0x0b, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x67, 0x70, 0x75, 0x53, 0x70, 0x65, 0x63, 0x12,
-	0x28, 0x0a, 0x10, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x5f, 0x64, 0x69, 0x73, 0x6b, 0x5f, 0x73,
-	0x69, 0x7a, 0x65, 0x18, 0x0c, 0x20, 0x01, 0x28, 0x05, 0x52, 0x0e, 0x73, 0x79, 0x73, 0x74, 0x65,
-	0x6d, 0x44, 0x69, 0x73, 0x6b, 0x53, 0x69, 0x7a, 0x65, 0x12, 0x24, 0x0a, 0x0e, 0x64, 0x61, 0x74,
-	0x61, 0x5f, 0x64, 0x69, 0x73, 0x6b, 0x5f, 0x73, 0x69, 0x7a, 0x65, 0x18, 0x0d, 0x20, 0x01, 0x28,
-	0x05, 0x52, 0x0c, 0x64, 0x61, 0x74, 0x61, 0x44, 0x69, 0x73, 0x6b, 0x53, 0x69, 0x7a, 0x65, 0x12,
-	0x28, 0x0a, 0x10, 0x72, 0x6f, 0x6f, 0x74, 0x5f, 0x64, 0x65, 0x76, 0x69, 0x63, 0x65, 0x5f, 0x6e,
-	0x61, 0x6d, 0x65, 0x18, 0x0e, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0e, 0x72, 0x6f, 0x6f, 0x74, 0x44,
-	0x65, 0x76, 0x69, 0x63, 0x65, 0x4e, 0x61, 0x6d, 0x65, 0x12, 0x28, 0x0a, 0x10, 0x64, 0x61, 0x74,
-	0x61, 0x5f, 0x64, 0x65, 0x76, 0x69, 0x63, 0x65, 0x5f, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x0f, 0x20,
-	0x01, 0x28, 0x09, 0x52, 0x0e, 0x64, 0x61, 0x74, 0x61, 0x44, 0x65, 0x76, 0x69, 0x63, 0x65, 0x4e,
-	0x61, 0x6d, 0x65, 0x12, 0x19, 0x0a, 0x08, 0x6d, 0x69, 0x6e, 0x5f, 0x73, 0x69, 0x7a, 0x65, 0x18,
-	0x10, 0x20, 0x01, 0x28, 0x05, 0x52, 0x07, 0x6d, 0x69, 0x6e, 0x53, 0x69, 0x7a, 0x65, 0x12, 0x19,
-	0x0a, 0x08, 0x6d, 0x61, 0x78, 0x5f, 0x73, 0x69, 0x7a, 0x65, 0x18, 0x11, 0x20, 0x01, 0x28, 0x05,
-	0x52, 0x07, 0x6d, 0x61, 0x78, 0x53, 0x69, 0x7a, 0x65, 0x12, 0x1f, 0x0a, 0x0b, 0x74, 0x61, 0x72,
-	0x67, 0x65, 0x74, 0x5f, 0x73, 0x69, 0x7a, 0x65, 0x18, 0x12, 0x20, 0x01, 0x28, 0x05, 0x52, 0x0a,
-	0x74, 0x61, 0x72, 0x67, 0x65, 0x74, 0x53, 0x69, 0x7a, 0x65, 0x12, 0x23, 0x0a, 0x0d, 0x69, 0x6e,
-	0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x5f, 0x74, 0x79, 0x70, 0x65, 0x18, 0x13, 0x20, 0x01, 0x28,
-	0x09, 0x52, 0x0c, 0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x54, 0x79, 0x70, 0x65, 0x12,
-	0x29, 0x0a, 0x10, 0x64, 0x65, 0x66, 0x61, 0x75, 0x6c, 0x74, 0x5f, 0x75, 0x73, 0x65, 0x72, 0x6e,
-	0x61, 0x6d, 0x65, 0x18, 0x14, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0f, 0x64, 0x65, 0x66, 0x61, 0x75,
-	0x6c, 0x74, 0x55, 0x73, 0x65, 0x72, 0x6e, 0x61, 0x6d, 0x65, 0x12, 0x1d, 0x0a, 0x0a, 0x6e, 0x6f,
-	0x64, 0x65, 0x5f, 0x70, 0x72, 0x69, 0x63, 0x65, 0x18, 0x15, 0x20, 0x01, 0x28, 0x02, 0x52, 0x09,
-	0x6e, 0x6f, 0x64, 0x65, 0x50, 0x72, 0x69, 0x63, 0x65, 0x12, 0x1b, 0x0a, 0x09, 0x70, 0x6f, 0x64,
-	0x5f, 0x70, 0x72, 0x69, 0x63, 0x65, 0x18, 0x16, 0x20, 0x01, 0x28, 0x02, 0x52, 0x08, 0x70, 0x6f,
-	0x64, 0x50, 0x72, 0x69, 0x63, 0x65, 0x12, 0x12, 0x0a, 0x04, 0x7a, 0x6f, 0x6e, 0x65, 0x18, 0x17,
-	0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x7a, 0x6f, 0x6e, 0x65, 0x12, 0x24, 0x0a, 0x0e, 0x73, 0x75,
-	0x62, 0x6e, 0x65, 0x74, 0x5f, 0x69, 0x70, 0x5f, 0x63, 0x69, 0x64, 0x72, 0x18, 0x18, 0x20, 0x01,
-	0x28, 0x09, 0x52, 0x0c, 0x73, 0x75, 0x62, 0x6e, 0x65, 0x74, 0x49, 0x70, 0x43, 0x69, 0x64, 0x72,
-	0x12, 0x28, 0x0a, 0x10, 0x6e, 0x6f, 0x64, 0x65, 0x5f, 0x69, 0x6e, 0x69, 0x74, 0x5f, 0x73, 0x63,
-	0x72, 0x69, 0x70, 0x74, 0x18, 0x19, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0e, 0x6e, 0x6f, 0x64, 0x65,
-	0x49, 0x6e, 0x69, 0x74, 0x53, 0x63, 0x72, 0x69, 0x70, 0x74, 0x12, 0x1d, 0x0a, 0x0a, 0x63, 0x6c,
-	0x75, 0x73, 0x74, 0x65, 0x72, 0x5f, 0x69, 0x64, 0x18, 0x1a, 0x20, 0x01, 0x28, 0x03, 0x52, 0x09,
-	0x63, 0x6c, 0x75, 0x73, 0x74, 0x65, 0x72, 0x49, 0x64, 0x12, 0x2d, 0x0a, 0x13, 0x63, 0x6c, 0x6f,
-	0x75, 0x64, 0x5f, 0x6e, 0x6f, 0x64, 0x65, 0x5f, 0x67, 0x72, 0x6f, 0x75, 0x70, 0x5f, 0x69, 0x64,
-	0x18, 0x1b, 0x20, 0x01, 0x28, 0x09, 0x52, 0x10, 0x63, 0x6c, 0x6f, 0x75, 0x64, 0x4e, 0x6f, 0x64,
-	0x65, 0x47, 0x72, 0x6f, 0x75, 0x70, 0x49, 0x64, 0x22, 0xac, 0x03, 0x0a, 0x0b, 0x42, 0x6f, 0x73,
-	0x74, 0x69, 0x6f, 0x6e, 0x48, 0x6f, 0x73, 0x74, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18, 0x01,
-	0x20, 0x01, 0x28, 0x09, 0x52, 0x02, 0x69, 0x64, 0x12, 0x12, 0x0a, 0x04, 0x75, 0x73, 0x65, 0x72,
-	0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x75, 0x73, 0x65, 0x72, 0x12, 0x14, 0x0a, 0x05,
-	0x69, 0x6d, 0x61, 0x67, 0x65, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x69, 0x6d, 0x61,
-	0x67, 0x65, 0x12, 0x2b, 0x0a, 0x11, 0x69, 0x6d, 0x61, 0x67, 0x65, 0x5f, 0x64, 0x65, 0x73, 0x63,
-	0x72, 0x69, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x18, 0x04, 0x20, 0x01, 0x28, 0x09, 0x52, 0x10, 0x69,
-	0x6d, 0x61, 0x67, 0x65, 0x44, 0x65, 0x73, 0x63, 0x72, 0x69, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x12,
-	0x0e, 0x0a, 0x02, 0x6f, 0x73, 0x18, 0x05, 0x20, 0x01, 0x28, 0x09, 0x52, 0x02, 0x6f, 0x73, 0x12,
-	0x12, 0x0a, 0x04, 0x61, 0x72, 0x63, 0x68, 0x18, 0x06, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x61,
+	0x52, 0x02, 0x6f, 0x73, 0x12, 0x2d, 0x0a, 0x04, 0x61, 0x72, 0x63, 0x68, 0x18, 0x07, 0x20, 0x01,
+	0x28, 0x0e, 0x32, 0x19, 0x2e, 0x62, 0x69, 0x7a, 0x2e, 0x63, 0x6c, 0x75, 0x73, 0x74, 0x65, 0x72,
+	0x2e, 0x4e, 0x6f, 0x64, 0x65, 0x41, 0x72, 0x63, 0x68, 0x54, 0x79, 0x70, 0x65, 0x52, 0x04, 0x61,
+	0x72, 0x63, 0x68, 0x12, 0x10, 0x0a, 0x03, 0x63, 0x70, 0x75, 0x18, 0x08, 0x20, 0x01, 0x28, 0x05,
+	0x52, 0x03, 0x63, 0x70, 0x75, 0x12, 0x16, 0x0a, 0x06, 0x6d, 0x65, 0x6d, 0x6f, 0x72, 0x79, 0x18,
+	0x09, 0x20, 0x01, 0x28, 0x05, 0x52, 0x06, 0x6d, 0x65, 0x6d, 0x6f, 0x72, 0x79, 0x12, 0x10, 0x0a,
+	0x03, 0x67, 0x70, 0x75, 0x18, 0x0a, 0x20, 0x01, 0x28, 0x05, 0x52, 0x03, 0x67, 0x70, 0x75, 0x12,
+	0x33, 0x0a, 0x08, 0x67, 0x70, 0x75, 0x5f, 0x73, 0x70, 0x65, 0x63, 0x18, 0x0b, 0x20, 0x01, 0x28,
+	0x0e, 0x32, 0x18, 0x2e, 0x62, 0x69, 0x7a, 0x2e, 0x63, 0x6c, 0x75, 0x73, 0x74, 0x65, 0x72, 0x2e,
+	0x4e, 0x6f, 0x64, 0x65, 0x47, 0x50, 0x55, 0x53, 0x70, 0x65, 0x63, 0x52, 0x07, 0x67, 0x70, 0x75,
+	0x53, 0x70, 0x65, 0x63, 0x12, 0x28, 0x0a, 0x10, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x5f, 0x64,
+	0x69, 0x73, 0x6b, 0x5f, 0x73, 0x69, 0x7a, 0x65, 0x18, 0x0c, 0x20, 0x01, 0x28, 0x05, 0x52, 0x0e,
+	0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x44, 0x69, 0x73, 0x6b, 0x53, 0x69, 0x7a, 0x65, 0x12, 0x24,
+	0x0a, 0x0e, 0x64, 0x61, 0x74, 0x61, 0x5f, 0x64, 0x69, 0x73, 0x6b, 0x5f, 0x73, 0x69, 0x7a, 0x65,
+	0x18, 0x0d, 0x20, 0x01, 0x28, 0x05, 0x52, 0x0c, 0x64, 0x61, 0x74, 0x61, 0x44, 0x69, 0x73, 0x6b,
+	0x53, 0x69, 0x7a, 0x65, 0x12, 0x28, 0x0a, 0x10, 0x72, 0x6f, 0x6f, 0x74, 0x5f, 0x64, 0x65, 0x76,
+	0x69, 0x63, 0x65, 0x5f, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x0e, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0e,
+	0x72, 0x6f, 0x6f, 0x74, 0x44, 0x65, 0x76, 0x69, 0x63, 0x65, 0x4e, 0x61, 0x6d, 0x65, 0x12, 0x28,
+	0x0a, 0x10, 0x64, 0x61, 0x74, 0x61, 0x5f, 0x64, 0x65, 0x76, 0x69, 0x63, 0x65, 0x5f, 0x6e, 0x61,
+	0x6d, 0x65, 0x18, 0x0f, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0e, 0x64, 0x61, 0x74, 0x61, 0x44, 0x65,
+	0x76, 0x69, 0x63, 0x65, 0x4e, 0x61, 0x6d, 0x65, 0x12, 0x19, 0x0a, 0x08, 0x6d, 0x69, 0x6e, 0x5f,
+	0x73, 0x69, 0x7a, 0x65, 0x18, 0x10, 0x20, 0x01, 0x28, 0x05, 0x52, 0x07, 0x6d, 0x69, 0x6e, 0x53,
+	0x69, 0x7a, 0x65, 0x12, 0x19, 0x0a, 0x08, 0x6d, 0x61, 0x78, 0x5f, 0x73, 0x69, 0x7a, 0x65, 0x18,
+	0x11, 0x20, 0x01, 0x28, 0x05, 0x52, 0x07, 0x6d, 0x61, 0x78, 0x53, 0x69, 0x7a, 0x65, 0x12, 0x1f,
+	0x0a, 0x0b, 0x74, 0x61, 0x72, 0x67, 0x65, 0x74, 0x5f, 0x73, 0x69, 0x7a, 0x65, 0x18, 0x12, 0x20,
+	0x01, 0x28, 0x05, 0x52, 0x0a, 0x74, 0x61, 0x72, 0x67, 0x65, 0x74, 0x53, 0x69, 0x7a, 0x65, 0x12,
+	0x23, 0x0a, 0x0d, 0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x5f, 0x74, 0x79, 0x70, 0x65,
+	0x18, 0x13, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0c, 0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65,
+	0x54, 0x79, 0x70, 0x65, 0x12, 0x29, 0x0a, 0x10, 0x64, 0x65, 0x66, 0x61, 0x75, 0x6c, 0x74, 0x5f,
+	0x75, 0x73, 0x65, 0x72, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x14, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0f,
+	0x64, 0x65, 0x66, 0x61, 0x75, 0x6c, 0x74, 0x55, 0x73, 0x65, 0x72, 0x6e, 0x61, 0x6d, 0x65, 0x12,
+	0x1d, 0x0a, 0x0a, 0x6e, 0x6f, 0x64, 0x65, 0x5f, 0x70, 0x72, 0x69, 0x63, 0x65, 0x18, 0x15, 0x20,
+	0x01, 0x28, 0x02, 0x52, 0x09, 0x6e, 0x6f, 0x64, 0x65, 0x50, 0x72, 0x69, 0x63, 0x65, 0x12, 0x1b,
+	0x0a, 0x09, 0x70, 0x6f, 0x64, 0x5f, 0x70, 0x72, 0x69, 0x63, 0x65, 0x18, 0x16, 0x20, 0x01, 0x28,
+	0x02, 0x52, 0x08, 0x70, 0x6f, 0x64, 0x50, 0x72, 0x69, 0x63, 0x65, 0x12, 0x12, 0x0a, 0x04, 0x7a,
+	0x6f, 0x6e, 0x65, 0x18, 0x17, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x7a, 0x6f, 0x6e, 0x65, 0x12,
+	0x24, 0x0a, 0x0e, 0x73, 0x75, 0x62, 0x6e, 0x65, 0x74, 0x5f, 0x69, 0x70, 0x5f, 0x63, 0x69, 0x64,
+	0x72, 0x18, 0x18, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0c, 0x73, 0x75, 0x62, 0x6e, 0x65, 0x74, 0x49,
+	0x70, 0x43, 0x69, 0x64, 0x72, 0x12, 0x28, 0x0a, 0x10, 0x6e, 0x6f, 0x64, 0x65, 0x5f, 0x69, 0x6e,
+	0x69, 0x74, 0x5f, 0x73, 0x63, 0x72, 0x69, 0x70, 0x74, 0x18, 0x19, 0x20, 0x01, 0x28, 0x09, 0x52,
+	0x0e, 0x6e, 0x6f, 0x64, 0x65, 0x49, 0x6e, 0x69, 0x74, 0x53, 0x63, 0x72, 0x69, 0x70, 0x74, 0x12,
+	0x1d, 0x0a, 0x0a, 0x63, 0x6c, 0x75, 0x73, 0x74, 0x65, 0x72, 0x5f, 0x69, 0x64, 0x18, 0x1a, 0x20,
+	0x01, 0x28, 0x03, 0x52, 0x09, 0x63, 0x6c, 0x75, 0x73, 0x74, 0x65, 0x72, 0x49, 0x64, 0x12, 0x2d,
+	0x0a, 0x13, 0x63, 0x6c, 0x6f, 0x75, 0x64, 0x5f, 0x6e, 0x6f, 0x64, 0x65, 0x5f, 0x67, 0x72, 0x6f,
+	0x75, 0x70, 0x5f, 0x69, 0x64, 0x18, 0x1b, 0x20, 0x01, 0x28, 0x09, 0x52, 0x10, 0x63, 0x6c, 0x6f,
+	0x75, 0x64, 0x4e, 0x6f, 0x64, 0x65, 0x47, 0x72, 0x6f, 0x75, 0x70, 0x49, 0x64, 0x22, 0xc7, 0x03,
+	0x0a, 0x0b, 0x42, 0x6f, 0x73, 0x74, 0x69, 0x6f, 0x6e, 0x48, 0x6f, 0x73, 0x74, 0x12, 0x0e, 0x0a,
+	0x02, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x02, 0x69, 0x64, 0x12, 0x12, 0x0a,
+	0x04, 0x75, 0x73, 0x65, 0x72, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x75, 0x73, 0x65,
+	0x72, 0x12, 0x14, 0x0a, 0x05, 0x69, 0x6d, 0x61, 0x67, 0x65, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09,
+	0x52, 0x05, 0x69, 0x6d, 0x61, 0x67, 0x65, 0x12, 0x2b, 0x0a, 0x11, 0x69, 0x6d, 0x61, 0x67, 0x65,
+	0x5f, 0x64, 0x65, 0x73, 0x63, 0x72, 0x69, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x18, 0x04, 0x20, 0x01,
+	0x28, 0x09, 0x52, 0x10, 0x69, 0x6d, 0x61, 0x67, 0x65, 0x44, 0x65, 0x73, 0x63, 0x72, 0x69, 0x70,
+	0x74, 0x69, 0x6f, 0x6e, 0x12, 0x0e, 0x0a, 0x02, 0x6f, 0x73, 0x18, 0x05, 0x20, 0x01, 0x28, 0x09,
+	0x52, 0x02, 0x6f, 0x73, 0x12, 0x2d, 0x0a, 0x04, 0x61, 0x72, 0x63, 0x68, 0x18, 0x06, 0x20, 0x01,
+	0x28, 0x0e, 0x32, 0x19, 0x2e, 0x62, 0x69, 0x7a, 0x2e, 0x63, 0x6c, 0x75, 0x73, 0x74, 0x65, 0x72,
+	0x2e, 0x4e, 0x6f, 0x64, 0x65, 0x41, 0x72, 0x63, 0x68, 0x54, 0x79, 0x70, 0x65, 0x52, 0x04, 0x61,
 	0x72, 0x63, 0x68, 0x12, 0x10, 0x0a, 0x03, 0x63, 0x70, 0x75, 0x18, 0x07, 0x20, 0x01, 0x28, 0x05,
 	0x52, 0x03, 0x63, 0x70, 0x75, 0x12, 0x16, 0x0a, 0x06, 0x6d, 0x65, 0x6d, 0x6f, 0x72, 0x79, 0x18,
 	0x08, 0x20, 0x01, 0x28, 0x05, 0x52, 0x06, 0x6d, 0x65, 0x6d, 0x6f, 0x72, 0x79, 0x12, 0x1a, 0x0a,
@@ -1857,7 +1969,19 @@ var file_internal_biz_cluster_proto_rawDesc = []byte{
 	0x02, 0x12, 0x14, 0x0a, 0x10, 0x47, 0x50, 0x55, 0x5f, 0x41, 0x43, 0x43, 0x45, 0x4c, 0x45, 0x52,
 	0x41, 0x54, 0x45, 0x52, 0x44, 0x10, 0x03, 0x12, 0x0f, 0x0a, 0x0b, 0x48, 0x49, 0x47, 0x48, 0x5f,
 	0x4d, 0x45, 0x4d, 0x4f, 0x52, 0x59, 0x10, 0x04, 0x12, 0x13, 0x0a, 0x0f, 0x4c, 0x41, 0x52, 0x47,
-	0x45, 0x5f, 0x48, 0x41, 0x52, 0x44, 0x5f, 0x44, 0x49, 0x53, 0x4b, 0x10, 0x05, 0x2a, 0x90, 0x02,
+	0x45, 0x5f, 0x48, 0x41, 0x52, 0x44, 0x5f, 0x44, 0x49, 0x53, 0x4b, 0x10, 0x05, 0x2a, 0x42, 0x0a,
+	0x0c, 0x4e, 0x6f, 0x64, 0x65, 0x41, 0x72, 0x63, 0x68, 0x54, 0x79, 0x70, 0x65, 0x12, 0x1c, 0x0a,
+	0x18, 0x4e, 0x6f, 0x64, 0x65, 0x41, 0x72, 0x63, 0x68, 0x54, 0x79, 0x70, 0x65, 0x5f, 0x55, 0x4e,
+	0x53, 0x50, 0x45, 0x43, 0x49, 0x46, 0x49, 0x45, 0x44, 0x10, 0x00, 0x12, 0x09, 0x0a, 0x05, 0x41,
+	0x4d, 0x44, 0x36, 0x34, 0x10, 0x01, 0x12, 0x09, 0x0a, 0x05, 0x41, 0x52, 0x4d, 0x36, 0x34, 0x10,
+	0x02, 0x2a, 0x7a, 0x0a, 0x0b, 0x4e, 0x6f, 0x64, 0x65, 0x47, 0x50, 0x55, 0x53, 0x70, 0x65, 0x63,
+	0x12, 0x1b, 0x0a, 0x17, 0x4e, 0x6f, 0x64, 0x65, 0x47, 0x50, 0x55, 0x53, 0x70, 0x65, 0x63, 0x5f,
+	0x55, 0x4e, 0x53, 0x50, 0x45, 0x43, 0x49, 0x46, 0x49, 0x45, 0x44, 0x10, 0x00, 0x12, 0x0e, 0x0a,
+	0x0a, 0x4e, 0x56, 0x49, 0x44, 0x49, 0x41, 0x5f, 0x41, 0x31, 0x30, 0x10, 0x01, 0x12, 0x0f, 0x0a,
+	0x0b, 0x4e, 0x56, 0x49, 0x44, 0x49, 0x41, 0x5f, 0x56, 0x31, 0x30, 0x30, 0x10, 0x02, 0x12, 0x0d,
+	0x0a, 0x09, 0x4e, 0x56, 0x49, 0x44, 0x49, 0x41, 0x5f, 0x54, 0x34, 0x10, 0x03, 0x12, 0x0f, 0x0a,
+	0x0b, 0x4e, 0x56, 0x49, 0x44, 0x49, 0x41, 0x5f, 0x50, 0x31, 0x30, 0x30, 0x10, 0x04, 0x12, 0x0d,
+	0x0a, 0x09, 0x4e, 0x56, 0x49, 0x44, 0x49, 0x41, 0x5f, 0x50, 0x34, 0x10, 0x05, 0x2a, 0x90, 0x02,
 	0x0a, 0x0c, 0x52, 0x65, 0x73, 0x6f, 0x75, 0x72, 0x63, 0x65, 0x54, 0x79, 0x70, 0x65, 0x12, 0x1d,
 	0x0a, 0x19, 0x52, 0x45, 0x53, 0x4f, 0x55, 0x52, 0x43, 0x45, 0x5f, 0x54, 0x59, 0x50, 0x45, 0x5f,
 	0x55, 0x4e, 0x53, 0x50, 0x45, 0x43, 0x49, 0x46, 0x49, 0x45, 0x44, 0x10, 0x00, 0x12, 0x07, 0x0a,
@@ -1908,7 +2032,7 @@ func file_internal_biz_cluster_proto_rawDescGZIP() []byte {
 	return file_internal_biz_cluster_proto_rawDescData
 }
 
-var file_internal_biz_cluster_proto_enumTypes = make([]protoimpl.EnumInfo, 8)
+var file_internal_biz_cluster_proto_enumTypes = make([]protoimpl.EnumInfo, 10)
 var file_internal_biz_cluster_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_internal_biz_cluster_proto_goTypes = []any{
 	(ClusterStatus)(0),        // 0: biz.cluster.ClusterStatus
@@ -1917,35 +2041,40 @@ var file_internal_biz_cluster_proto_goTypes = []any{
 	(NodeRole)(0),             // 3: biz.cluster.NodeRole
 	(NodeStatus)(0),           // 4: biz.cluster.NodeStatus
 	(NodeGroupType)(0),        // 5: biz.cluster.NodeGroupType
-	(ResourceType)(0),         // 6: biz.cluster.ResourceType
-	(ResourceTypeKeyValue)(0), // 7: biz.cluster.ResourceTypeKeyValue
-	(*Cluster)(nil),           // 8: biz.cluster.Cluster
-	(*Node)(nil),              // 9: biz.cluster.Node
-	(*NodeGroup)(nil),         // 10: biz.cluster.NodeGroup
-	(*BostionHost)(nil),       // 11: biz.cluster.BostionHost
-	(*CloudResource)(nil),     // 12: biz.cluster.CloudResource
-	(*SecurityGroup)(nil),     // 13: biz.cluster.SecurityGroup
+	(NodeArchType)(0),         // 6: biz.cluster.NodeArchType
+	(NodeGPUSpec)(0),          // 7: biz.cluster.NodeGPUSpec
+	(ResourceType)(0),         // 8: biz.cluster.ResourceType
+	(ResourceTypeKeyValue)(0), // 9: biz.cluster.ResourceTypeKeyValue
+	(*Cluster)(nil),           // 10: biz.cluster.Cluster
+	(*Node)(nil),              // 11: biz.cluster.Node
+	(*NodeGroup)(nil),         // 12: biz.cluster.NodeGroup
+	(*BostionHost)(nil),       // 13: biz.cluster.BostionHost
+	(*CloudResource)(nil),     // 14: biz.cluster.CloudResource
+	(*SecurityGroup)(nil),     // 15: biz.cluster.SecurityGroup
 }
 var file_internal_biz_cluster_proto_depIdxs = []int32{
 	0,  // 0: biz.cluster.Cluster.status:type_name -> biz.cluster.ClusterStatus
 	1,  // 1: biz.cluster.Cluster.type:type_name -> biz.cluster.ClusterType
 	2,  // 2: biz.cluster.Cluster.level:type_name -> biz.cluster.ClusterLevel
-	11, // 3: biz.cluster.Cluster.bostion_host:type_name -> biz.cluster.BostionHost
-	9,  // 4: biz.cluster.Cluster.nodes:type_name -> biz.cluster.Node
-	10, // 5: biz.cluster.Cluster.node_groups:type_name -> biz.cluster.NodeGroup
-	12, // 6: biz.cluster.Cluster.cloud_resources:type_name -> biz.cluster.CloudResource
-	13, // 7: biz.cluster.Cluster.security_groups:type_name -> biz.cluster.SecurityGroup
+	13, // 3: biz.cluster.Cluster.bostion_host:type_name -> biz.cluster.BostionHost
+	11, // 4: biz.cluster.Cluster.nodes:type_name -> biz.cluster.Node
+	12, // 5: biz.cluster.Cluster.node_groups:type_name -> biz.cluster.NodeGroup
+	14, // 6: biz.cluster.Cluster.cloud_resources:type_name -> biz.cluster.CloudResource
+	15, // 7: biz.cluster.Cluster.security_groups:type_name -> biz.cluster.SecurityGroup
 	3,  // 8: biz.cluster.Node.role:type_name -> biz.cluster.NodeRole
 	4,  // 9: biz.cluster.Node.status:type_name -> biz.cluster.NodeStatus
 	5,  // 10: biz.cluster.NodeGroup.type:type_name -> biz.cluster.NodeGroupType
-	4,  // 11: biz.cluster.BostionHost.status:type_name -> biz.cluster.NodeStatus
-	6,  // 12: biz.cluster.CloudResource.type:type_name -> biz.cluster.ResourceType
-	12, // 13: biz.cluster.CloudResource.sub_resources:type_name -> biz.cluster.CloudResource
-	14, // [14:14] is the sub-list for method output_type
-	14, // [14:14] is the sub-list for method input_type
-	14, // [14:14] is the sub-list for extension type_name
-	14, // [14:14] is the sub-list for extension extendee
-	0,  // [0:14] is the sub-list for field type_name
+	6,  // 11: biz.cluster.NodeGroup.arch:type_name -> biz.cluster.NodeArchType
+	7,  // 12: biz.cluster.NodeGroup.gpu_spec:type_name -> biz.cluster.NodeGPUSpec
+	6,  // 13: biz.cluster.BostionHost.arch:type_name -> biz.cluster.NodeArchType
+	4,  // 14: biz.cluster.BostionHost.status:type_name -> biz.cluster.NodeStatus
+	8,  // 15: biz.cluster.CloudResource.type:type_name -> biz.cluster.ResourceType
+	14, // 16: biz.cluster.CloudResource.sub_resources:type_name -> biz.cluster.CloudResource
+	17, // [17:17] is the sub-list for method output_type
+	17, // [17:17] is the sub-list for method input_type
+	17, // [17:17] is the sub-list for extension type_name
+	17, // [17:17] is the sub-list for extension extendee
+	0,  // [0:17] is the sub-list for field type_name
 }
 
 func init() { file_internal_biz_cluster_proto_init() }
@@ -2032,7 +2161,7 @@ func file_internal_biz_cluster_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_internal_biz_cluster_proto_rawDesc,
-			NumEnums:      8,
+			NumEnums:      10,
 			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   0,
