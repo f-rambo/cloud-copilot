@@ -4,6 +4,13 @@ package biz.cluster;
 
 option go_package = "github.com/f-rambo/cloud-copilot/internal/biz;";
 
+enum ClusterType {
+      ClusterType_UNSPECIFIED = 0;
+      LOCAL = 1;
+      AWS = 2;
+      ALICLOUD = 3;
+}
+
 enum ClusterStatus {
       UNSPECIFIED = 0;
       RUNNING = 1;
@@ -11,17 +18,6 @@ enum ClusterStatus {
       STARTING = 3;
       STOPPING = 4;
       STOPPED = 5;
-}
-
-enum ClusterType {
-      ClusterType_UNSPECIFIED = 0;
-      LOCAL = 1;
-      AWS_EC2 = 2;
-      AWS_EKS = 3;
-      ALICLOUD_ECS = 4;
-      ALICLOUD_AKS = 5;
-      GCP_GKE = 6;
-      KUBERNETES = 7;
 }
 
 enum ClusterLevel {
@@ -144,15 +140,14 @@ message Node {
       int64 id = 1; // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
       string name = 2; // @gotags: gorm:"column:name; default:''; NOT NULL"
       string labels = 3; // @gotags: gorm:"column:labels; default:''; NOT NULL"
-      string internal_ip = 4; // @gotags: gorm:"column:internal_ip; default:''; NOT NULL"
-      string external_ip = 5; // @gotags: gorm:"column:external_ip; default:''; NOT NULL"
-      string user = 6; // @gotags: gorm:"column:user; default:''; NOT NULL"
-      NodeRole role = 7; // @gotags: gorm:"column:role; default:0; NOT NULL"
-      NodeStatus status = 8; // @gotags: gorm:"column:status; default:0; NOT NULL"
-      int64 cluster_id = 9; // @gotags: gorm:"column:cluster_id; default:0; NOT NULL"
-      string node_group_id = 10; // @gotags: gorm:"column:node_group_id; default:''; NOT NULL"
-      string instance_id = 11; // @gotags: gorm:"column:instance_id; default:''; NOT NULL"
-      string error_info = 12; // @gotags: gorm:"column:error_info; default:''; NOT NULL"
+      string ip = 4; // @gotags: gorm:"column:ip; default:''; NOT NULL"
+      string user = 5; // @gotags: gorm:"column:user; default:''; NOT NULL"
+      NodeRole role = 6; // @gotags: gorm:"column:role; default:0; NOT NULL"
+      NodeStatus status = 7; // @gotags: gorm:"column:status; default:0; NOT NULL"
+      int64 cluster_id = 8; // @gotags: gorm:"column:cluster_id; default:0; NOT NULL"
+      string node_group_id = 9; // @gotags: gorm:"column:node_group_id; default:''; NOT NULL"
+      string instance_id = 10; // @gotags: gorm:"column:instance_id; default:''; NOT NULL"
+      string error_info = 11; // @gotags: gorm:"column:error_info; default:''; NOT NULL"
 }
 
 message NodeGroup {

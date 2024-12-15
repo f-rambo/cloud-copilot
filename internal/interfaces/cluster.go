@@ -183,15 +183,15 @@ func (c *ClusterInterface) Save(ctx context.Context, clusterArgs *v1alpha1.Clust
 		}
 		if nodeArgs.Id == 0 {
 			cluster.Nodes = append(cluster.Nodes, &biz.Node{
-				InternalIp: nodeArgs.Ip,
-				User:       nodeArgs.User,
-				Role:       biz.NodeRole(nodeArgs.Role),
+				Ip:   nodeArgs.Ip,
+				User: nodeArgs.User,
+				Role: biz.NodeRole(nodeArgs.Role),
 			})
 			continue
 		}
 		for _, v := range cluster.Nodes {
 			if v.Id == nodeArgs.Id {
-				v.InternalIp = nodeArgs.Ip
+				v.Ip = nodeArgs.Ip
 				v.User = nodeArgs.User
 				v.Role = biz.NodeRole(nodeArgs.Role)
 				break
@@ -420,7 +420,7 @@ func (c *ClusterInterface) GetLogs(stream v1alpha1.ClusterInterface_GetLogsServe
 		}
 		if cluster != nil {
 			for _, node := range cluster.Nodes {
-				err = c.getSidecarLogContent(ctx, sidecarLogContentChan, node.InternalIp, 22)
+				err = c.getSidecarLogContent(ctx, sidecarLogContentChan, node.Ip, 22)
 				if err != nil {
 					return err
 				}
@@ -568,7 +568,7 @@ func (c *ClusterInterface) bizCLusterToCluster(bizCluster *biz.Cluster) *v1alpha
 func (c *ClusterInterface) bizNodeToNode(node *biz.Node) *v1alpha1.Node {
 	return &v1alpha1.Node{
 		Id:         node.Id,
-		Ip:         node.InternalIp,
+		Ip:         node.Ip,
 		Name:       node.Name,
 		Role:       int32(node.Role),
 		User:       node.User,

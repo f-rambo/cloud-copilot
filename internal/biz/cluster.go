@@ -14,9 +14,9 @@ import (
 )
 
 const (
-	DefaultNodeGroupCpu        = 4
-	DefaultNodeGroupMemory     = 8
-	DefaultNodeGroupGpu        = 0
+	DefaultNodeGroupCpu        = 2
+	DefaultNodeGroupMemory     = 4
+	DefaultNodeGroupSystemDisk = 30
 	DefaultNodeGroupMinSize    = 1
 	DefaultNodeGroupMaxSize    = 5
 	DefaultNodeGroupTargetSize = 3
@@ -148,14 +148,12 @@ func (c *Cluster) SettingCloudClusterInit() {
 	nodegroup.Type = NodeGroupType_NORMAL
 	nodegroup.Cpu = DefaultNodeGroupCpu
 	nodegroup.Memory = DefaultNodeGroupMemory
+	nodegroup.SystemDiskSize = DefaultNodeGroupSystemDisk
 	nodegroup.Arch = NodeArchType_AMD64
 	nodegroup.TargetSize = DefaultNodeGroupTargetSize
 	nodegroup.MinSize = DefaultNodeGroupMinSize
 	nodegroup.MaxSize = DefaultNodeGroupMaxSize
 	nodegroup.Name = strings.Join([]string{c.Name, NodeGroupType_NORMAL.String()}, "-")
-	if c.Type.IsIntegratedCloud() {
-		return
-	}
 	labels := c.generateNodeLables(nodegroup)
 	for i := 0; i < int(nodegroup.TargetSize); i++ {
 		node := &Node{
@@ -235,11 +233,7 @@ func (c *Cluster) SettingCloudClusterInit() {
 }
 
 func (c ClusterType) IsCloud() bool {
-	return c != ClusterType_LOCAL && c != ClusterType_KUBERNETES
-}
-
-func (c ClusterType) IsIntegratedCloud() bool {
-	return c == ClusterType_AWS_EKS || c == ClusterType_ALICLOUD_AKS
+	return c != ClusterType_LOCAL
 }
 
 func (ng *NodeGroup) SetTargetSize(size int32) {
