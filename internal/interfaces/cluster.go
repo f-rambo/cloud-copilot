@@ -541,10 +541,6 @@ func (c *ClusterInterface) bizCLusterToCluster(bizCluster *biz.Cluster) *v1alpha
 		}
 		nodeGroups = append(nodeGroups, c.bizNodeGroupToNodeGroup(v))
 	}
-	var bostionHost *v1alpha1.BostionHost
-	if bizCluster.BostionHost != nil && bizCluster.BostionHost.Id != "" {
-		bostionHost = c.bizBostionHostToBostionHost(bizCluster.BostionHost)
-	}
 	return &v1alpha1.Cluster{
 		Id:               bizCluster.Id,
 		Name:             bizCluster.Name,
@@ -561,7 +557,6 @@ func (c *ClusterInterface) bizCLusterToCluster(bizCluster *biz.Cluster) *v1alpha
 		UpdateAt:         bizCluster.UpdatedAt.Format("2006-01-02 15:04:05"),
 		Nodes:            nodes,
 		NodeGroups:       nodeGroups,
-		BostionHost:      bostionHost,
 	}
 }
 
@@ -580,38 +575,18 @@ func (c *ClusterInterface) bizNodeToNode(node *biz.Node) *v1alpha1.Node {
 
 func (c *ClusterInterface) bizNodeGroupToNodeGroup(nodeGroup *biz.NodeGroup) *v1alpha1.NodeGroup {
 	return &v1alpha1.NodeGroup{
-		Id:             nodeGroup.Id,
-		Name:           nodeGroup.Name,
-		Type:           int32(nodeGroup.Type),
-		Os:             nodeGroup.Os,
-		Arch:           nodeGroup.Arch.String(),
-		Cpu:            nodeGroup.Cpu,
-		Memory:         nodeGroup.Memory,
-		Gpu:            nodeGroup.Gpu,
-		GpuSpec:        nodeGroup.GpuSpec.String(),
-		SystemDiskSize: nodeGroup.SystemDiskSize,
-		DataDiskSize:   nodeGroup.DataDiskSize,
-		MinSize:        nodeGroup.MinSize,
-		MaxSize:        nodeGroup.MaxSize,
-		TargetSize:     nodeGroup.TargetSize,
-		UpdateAt:       nodeGroup.UpdatedAt.Format("2006-01-02 15:04:05"),
-	}
-}
-
-func (c *ClusterInterface) bizBostionHostToBostionHost(bh *biz.BostionHost) *v1alpha1.BostionHost {
-	return &v1alpha1.BostionHost{
-		Id:         bh.Id,
-		User:       bh.User,
-		Os:         bh.Os,
-		Arch:       bh.Arch.String(),
-		Cpu:        bh.Cpu,
-		Memory:     bh.Memory,
-		Hostname:   bh.Hostname,
-		ExternalIp: bh.ExternalIp,
-		InternalIp: bh.InternalIp,
-		SshPort:    bh.SshPort,
-		Status:     int32(bh.Status),
-		InstanceId: bh.InstanceId,
-		UpdateAt:   bh.UpdatedAt.Format("2006-01-02 15:04:05"),
+		Id:         nodeGroup.Id,
+		Name:       nodeGroup.Name,
+		Type:       int32(nodeGroup.Type),
+		Os:         nodeGroup.Os,
+		Arch:       nodeGroup.Arch.String(),
+		Cpu:        nodeGroup.Cpu,
+		Memory:     nodeGroup.Memory,
+		Gpu:        nodeGroup.Gpu,
+		GpuSpec:    nodeGroup.GpuSpec.String(),
+		MinSize:    nodeGroup.MinSize,
+		MaxSize:    nodeGroup.MaxSize,
+		TargetSize: nodeGroup.TargetSize,
+		UpdateAt:   nodeGroup.UpdatedAt.Format("2006-01-02 15:04:05"),
 	}
 }

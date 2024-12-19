@@ -4,27 +4,13 @@ import (
 	"context"
 	"fmt"
 	"math"
-	"strings"
 	"sync"
 
-	"github.com/f-rambo/cloud-copilot/internal/conf"
+	confPkg "github.com/f-rambo/cloud-copilot/internal/conf"
+	"github.com/f-rambo/cloud-copilot/utils"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
-)
-
-const (
-	DefaultNodeGroupCpu        = 2
-	DefaultNodeGroupMemory     = 4
-	DefaultNodeGroupSystemDisk = 30
-	DefaultNodeGroupMinSize    = 1
-	DefaultNodeGroupMaxSize    = 5
-	DefaultNodeGroupTargetSize = 3
-	DefaultSSHPort             = 22
-
-	ClusterLevel_BASIC_MaxSize    = 50
-	ClusterLevel_ADVANCED_MaxSize = 100
-	ClusterLevel_STANDARD_MaxSize = 200
 )
 
 type ClusterData interface {
@@ -36,11 +22,13 @@ type ClusterData interface {
 }
 
 type ClusterInfrastructure interface {
-	Start(context.Context, *Cluster) error
-	Stop(context.Context, *Cluster) error
 	GetRegions(context.Context, *Cluster) error
-	MigrateToBostionHost(context.Context, *Cluster) error
+	GetZones(context.Context, *Cluster) error
+	CreateCloudBasicResource(context.Context, *Cluster) error
+	DeleteCloudBasicResource(context.Context, *Cluster) error
+	ManageNodeResource(context.Context, *Cluster) error
 	GetNodesSystemInfo(context.Context, *Cluster) error
+	MigrateToBostionHost(context.Context, *Cluster) error
 	Install(context.Context, *Cluster) error
 	UnInstall(context.Context, *Cluster) error
 	HandlerNodes(context.Context, *Cluster) error
@@ -59,11 +47,11 @@ type ClusterUsecase struct {
 	locks                 map[int64]*sync.Mutex
 	locksMux              sync.Mutex
 	eventChan             chan *Cluster
-	conf                  *conf.Bootstrap
+	conf                  *confPkg.Bootstrap
 	log                   *log.Helper
 }
 
-func NewClusterUseCase(conf *conf.Bootstrap, clusterData ClusterData, clusterInfrastructure ClusterInfrastructure, clusterRuntime ClusterRuntime, logger log.Logger) *ClusterUsecase {
+func NewClusterUseCase(conf *confPkg.Bootstrap, clusterData ClusterData, clusterInfrastructure ClusterInfrastructure, clusterRuntime ClusterRuntime, logger log.Logger) *ClusterUsecase {
 	return &ClusterUsecase{
 		clusterData:           clusterData,
 		clusterInfrastructure: clusterInfrastructure,
@@ -108,21 +96,18 @@ func (c *Cluster) DeleteCloudResource(resourceType ResourceType) {
 	c.CloudResources = cloudResources
 }
 
-func (c *Cluster) SettingClusterAvailability() {
-	maxNodeNumber := 0
+func (c *Cluster) SettingClusterAvailabilityZone(clusterLevel *confPkg.Level) {
+	var maxNodeNumber int32 = 0
 	for _, nodeGroup := range c.NodeGroups {
-		maxNodeNumber += int(nodeGroup.TargetSize)
+		maxNodeNumber += nodeGroup.TargetSize
 	}
-	if maxNodeNumber == 0 {
-		return
-	}
-	if maxNodeNumber < ClusterLevel_BASIC_MaxSize {
+	if maxNodeNumber < clusterLevel.Basic {
 		c.Level = ClusterLevel_BASIC
 	}
-	if maxNodeNumber < ClusterLevel_ADVANCED_MaxSize && maxNodeNumber >= ClusterLevel_BASIC_MaxSize {
+	if maxNodeNumber < clusterLevel.Advanced && maxNodeNumber >= clusterLevel.Basic {
 		c.Level = ClusterLevel_ADVANCED
 	}
-	if maxNodeNumber >= ClusterLevel_ADVANCED_MaxSize {
+	if maxNodeNumber >= clusterLevel.Advanced {
 		c.Level = ClusterLevel_STANDARD
 	}
 	zones := c.GetCloudResource(ResourceType_AVAILABILITY_ZONES)
@@ -142,93 +127,70 @@ func (c *Cluster) SettingClusterAvailability() {
 	}
 }
 
-func (c *Cluster) SettingCloudClusterInit() {
-	nodegroup := &NodeGroup{Id: uuid.NewString(), ClusterId: c.Id}
-	c.NodeGroups = append(c.NodeGroups, nodegroup)
-	nodegroup.Type = NodeGroupType_NORMAL
-	nodegroup.Cpu = DefaultNodeGroupCpu
-	nodegroup.Memory = DefaultNodeGroupMemory
-	nodegroup.SystemDiskSize = DefaultNodeGroupSystemDisk
-	nodegroup.Arch = NodeArchType_AMD64
-	nodegroup.TargetSize = DefaultNodeGroupTargetSize
-	nodegroup.MinSize = DefaultNodeGroupMinSize
-	nodegroup.MaxSize = DefaultNodeGroupMaxSize
-	nodegroup.Name = strings.Join([]string{c.Name, NodeGroupType_NORMAL.String()}, "-")
-	labels := c.generateNodeLables(nodegroup)
-	for i := 0; i < int(nodegroup.TargetSize); i++ {
-		node := &Node{
-			Name:        strings.Join([]string{nodegroup.Name, uuid.NewString()}, "-"),
-			Status:      NodeStatus_NODE_CREATING,
-			ClusterId:   c.Id,
-			NodeGroupId: nodegroup.Id,
-			Role:        NodeRole_WORKER,
-			Labels:      labels,
-		}
-		if i == 0 {
-			node.Role = NodeRole_MASTER
-		}
-		c.Nodes = append(c.Nodes, node)
+func (c *Cluster) SettingCluster() {
+	// todo select instance type or local server
+	// gen node group
+	// nodegroup := &NodeGroup{Id: uuid.NewString(), ClusterId: c.Id}
+	// c.NodeGroups = append(c.NodeGroups, nodegroup)
+	// nodegroup.Type = NodeGroupType_NORMAL
+	// nodegroup.Os = DefaultNodeOs
+	// nodegroup.Platform = DefaultNodePlatform
+	// nodegroup.Arch = NodeArchType_AMD64
+	// nodegroup.Cpu = DefaultNodeGroupCpu
+	// nodegroup.Memory = DefaultNodeGroupMemory
+	// nodegroup.SystemDiskSize = DefaultNodeGroupSystemDisk
+	// nodegroup.TargetSize = DefaultNodeGroupTargetSize
+	// nodegroup.MinSize = DefaultNodeGroupMinSize
+	// nodegroup.MaxSize = DefaultNodeGroupMaxSize
+	// nodegroup.Name = strings.Join([]string{c.Name, NodeGroupType_NORMAL.String()}, "-")
+	// nodeLabels := c.generateNodeLables(nodegroup)
+	// for i := 0; i < int(nodegroup.TargetSize); i++ {
+	// 	node := &Node{
+	// 		Name:        strings.Join([]string{nodegroup.Name, uuid.NewString()}, "-"),
+	// 		Labels:      nodeLabels,
+	// 		Status:      NodeStatus_NODE_CREATING,
+	// 		Role:        NodeRole_WORKER,
+	// 		NodeGroupId: nodegroup.Id,
+	// 		ClusterId:   c.Id,
+	// 	}
+	// 	if i == 0 {
+	// 		node.Role = NodeRole_MASTER
+	// 	}
+	// 	c.Nodes = append(c.Nodes, node)
+	// }
+
+}
+
+func (c *Cluster) settingDefatultIngressRules(rules []*confPkg.IngressRule) {
+	if c.IngressControllerRules == nil {
+		c.IngressControllerRules = make([]*IngressControllerRule, 0)
 	}
-	c.BostionHost = &BostionHost{
-		Id:        uuid.NewString(),
-		ClusterId: c.Id,
-		Hostname:  fmt.Sprintf("%s-bostion", c.Name),
-		Status:    NodeStatus_NODE_CREATING,
-		Cpu:       DefaultNodeGroupCpu,
-		Memory:    DefaultNodeGroupMemory,
-		SshPort:   DefaultSSHPort,
-	}
-	c.SecurityGroups = []*SecurityGroup{
-		{
-			Id:          uuid.NewString(),
-			StartPort:   6443,
-			EndPort:     6443,
-			Protocol:    "TCP",
-			IpCidr:      "0.0.0.0/0",
-			ClusterId:   c.Id,
-			Name:        fmt.Sprintf("%s-%s", c.Name, "apiserver"),
-			Description: "apiserver sg",
-		},
-		{
-			Id:          uuid.NewString(),
-			StartPort:   10250,
-			EndPort:     10255,
-			Protocol:    "TCP",
-			IpCidr:      "0.0.0.0/0",
-			ClusterId:   c.Id,
-			Name:        fmt.Sprintf("%s-%s", c.Name, "kubelet"),
-			Description: "kubelet sg",
-		},
-		{
-			Id:          uuid.NewString(),
-			StartPort:   443,
-			EndPort:     443,
-			Protocol:    "TCP",
-			IpCidr:      "0.0.0.0/0",
-			ClusterId:   c.Id,
-			Name:        fmt.Sprintf("%s-%s", c.Name, "ingresscontroller-https"),
-			Description: "ingress controller https sg",
-		},
-		{
-			Id:          uuid.NewString(),
-			StartPort:   80,
-			EndPort:     80,
-			Protocol:    "TCP",
-			IpCidr:      "0.0.0.0/0",
-			ClusterId:   c.Id,
-			Name:        fmt.Sprintf("%s-%s", c.Name, "ingresscontroller-http"),
-			Description: "ingress controller http sg",
-		},
-		{
-			Id:          uuid.NewString(),
-			StartPort:   22,
-			EndPort:     22,
-			Protocol:    "TCP",
-			IpCidr:      "0.0.0.0/0",
-			ClusterId:   c.Id,
-			Name:        fmt.Sprintf("%s-%s", c.Name, "infrastructure-ssh"),
-			Description: "infrastructure remote shell sg",
-		},
+	for _, rule := range rules {
+		clusterIngressControllerRule := &IngressControllerRule{
+			StartPort: rule.StartPort,
+			EndPort:   rule.EndPort,
+			Protocol:  rule.Protocol,
+			IpCidr:    rule.IpCidr,
+			ClusterId: c.Id,
+			Name:      rule.Name,
+		}
+		if rule.Access == confPkg.Access_Private {
+			clusterIngressControllerRule.Access = IngressControllerRuleAccess_PRIVATE
+		}
+		if rule.Access == confPkg.Access_Public {
+			clusterIngressControllerRule.Access = IngressControllerRuleAccess_PUBLIC
+		}
+		clusterIngressControllerRule.Id = fmt.Sprintf("%s-%s-%s-%d-%d-%d-%d",
+			clusterIngressControllerRule.Name,
+			clusterIngressControllerRule.Protocol,
+			clusterIngressControllerRule.IpCidr,
+			clusterIngressControllerRule.StartPort,
+			clusterIngressControllerRule.EndPort,
+			clusterIngressControllerRule.Access,
+			clusterIngressControllerRule.ClusterId,
+		)
+		clusterIngressControllerRule.Id = utils.Md5(clusterIngressControllerRule.Id)
+		c.IngressControllerRules = append(c.IngressControllerRules, clusterIngressControllerRule)
 	}
 }
 
@@ -247,6 +209,10 @@ func (c *Cluster) GetNodeGroup(nodeGroupId string) *NodeGroup {
 		}
 	}
 	return nil
+}
+
+func (n *Node) SetNodeStatus(status NodeStatus) {
+	n.Status = status
 }
 
 func (uc *ClusterUsecase) GetClusterStatus() []ClusterStatus {
@@ -361,7 +327,7 @@ func (uc *ClusterUsecase) GetRegions(ctx context.Context, cluster *Cluster) ([]*
 	if cluster.Type == ClusterType_LOCAL {
 		return []*CloudResource{}, nil
 	}
-	err := uc.clusterInfrastructure.GetRegions(ctx, cluster)
+	err := uc.clusterInfrastructure.GetZones(ctx, cluster)
 	if err != nil {
 		return nil, err
 	}
@@ -431,13 +397,34 @@ func (uc *ClusterUsecase) handleEvent(ctx context.Context, cluster *Cluster) (er
 		err = uc.clusterData.Save(ctx, cluster)
 	}()
 	if cluster.DeletedAt.Valid {
+		for _, node := range cluster.Nodes {
+			if node.Status == NodeStatus_NODE_UNSPECIFIED || node.Status == NodeStatus_NODE_DELETED {
+				continue
+			}
+			node.SetNodeStatus(NodeStatus_NODE_DELETING)
+		}
+		err = uc.clusterRuntime.HandlerNodes(ctx, cluster)
+		if err != nil {
+			return err
+		}
+		err = uc.clusterInfrastructure.HandlerNodes(ctx, cluster)
+		if err != nil {
+			return err
+		}
 		err = uc.clusterInfrastructure.UnInstall(ctx, cluster)
 		if err != nil {
 			return err
 		}
-		err = uc.clusterInfrastructure.Stop(ctx, cluster)
+		err = uc.clusterInfrastructure.ManageNodeResource(ctx, cluster)
 		if err != nil {
 			return err
+		}
+		err = uc.clusterInfrastructure.DeleteCloudBasicResource(ctx, cluster)
+		if err != nil {
+			return err
+		}
+		for _, node := range cluster.Nodes {
+			node.SetNodeStatus(NodeStatus_NODE_DELETED)
 		}
 		return nil
 	}
@@ -452,7 +439,7 @@ func (uc *ClusterUsecase) handleEvent(ctx context.Context, cluster *Cluster) (er
 	if err != nil {
 		return err
 	}
-	err = uc.clusterInfrastructure.Start(ctx, cluster)
+	err = uc.clusterInfrastructure.ManageNodeResource(ctx, cluster)
 	if err != nil {
 		return err
 	}
@@ -464,19 +451,32 @@ func (uc *ClusterUsecase) handleEvent(ctx context.Context, cluster *Cluster) (er
 }
 
 func (uc *ClusterUsecase) handlerClusterNotInstalled(ctx context.Context, cluster *Cluster) error {
-	err := uc.clusterInfrastructure.GetRegions(ctx, cluster)
-	if err != nil {
-		return err
-	}
+	cluster.settingDefatultIngressRules(uc.conf.Cluster.IngressRules)
 	if cluster.Type.IsCloud() {
-		cluster.SettingCloudClusterInit()
-		cluster.SettingClusterAvailability()
+		err := uc.clusterInfrastructure.GetRegions(ctx, cluster)
+		if err != nil {
+			return err
+		}
+		err = uc.clusterInfrastructure.GetZones(ctx, cluster)
+		if err != nil {
+			return err
+		}
+		cluster.SettingClusterAvailabilityZone(uc.conf.Cluster.Level)
+		err = uc.clusterInfrastructure.CreateCloudBasicResource(ctx, cluster)
+		if err != nil {
+			return err
+		}
 	}
-	err = uc.clusterInfrastructure.Start(ctx, cluster)
+	err := uc.clusterInfrastructure.GetNodesSystemInfo(ctx, cluster)
 	if err != nil {
 		return err
 	}
-	if uc.conf.Cluster.GetEnv() == conf.Env_EnvLocal {
+	cluster.SettingCluster()
+	err = uc.clusterInfrastructure.ManageNodeResource(ctx, cluster)
+	if err != nil {
+		return err
+	}
+	if uc.conf.Cluster.GetEnv() == confPkg.Env_Local {
 		err = uc.clusterData.Save(ctx, cluster)
 		if err != nil {
 			return err
@@ -486,10 +486,6 @@ func (uc *ClusterUsecase) handlerClusterNotInstalled(ctx context.Context, cluste
 			return err
 		}
 		return nil
-	}
-	err = uc.clusterInfrastructure.GetNodesSystemInfo(ctx, cluster)
-	if err != nil {
-		return err
 	}
 	err = uc.clusterInfrastructure.Install(ctx, cluster)
 	if err != nil {

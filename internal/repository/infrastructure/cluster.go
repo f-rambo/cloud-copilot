@@ -37,6 +37,23 @@ func (i *InfrastructureCluster) GetRegions(ctx context.Context, cluster *biz.Clu
 	if err != nil {
 		return err
 	}
+	cluster.DeleteCloudResource(biz.ResourceType_REGION)
+	for _, v := range res.Resources {
+		cluster.AddCloudResource(v)
+	}
+	return nil
+}
+
+func (i *InfrastructureCluster) GetZones(ctx context.Context, cluster *biz.Cluster) error {
+	grpconn, err := coonGrpc(ctx, i.conf)
+	if err != nil {
+		return err
+	}
+	defer grpconn.Close()
+	res, err := clusterApi.NewClusterInterfaceClient(grpconn.Conn).GetZones(ctx, cluster)
+	if err != nil {
+		return err
+	}
 	cluster.DeleteCloudResource(biz.ResourceType_AVAILABILITY_ZONES)
 	for _, v := range res.Resources {
 		cluster.AddCloudResource(v)
@@ -44,13 +61,13 @@ func (i *InfrastructureCluster) GetRegions(ctx context.Context, cluster *biz.Clu
 	return nil
 }
 
-func (i *InfrastructureCluster) Start(ctx context.Context, cluster *biz.Cluster) error {
+func (i *InfrastructureCluster) CreateCloudBasicResource(ctx context.Context, cluster *biz.Cluster) error {
 	grpconn, err := coonGrpc(ctx, i.conf)
 	if err != nil {
 		return err
 	}
 	defer grpconn.Close()
-	stream, err := clusterApi.NewClusterInterfaceClient(grpconn.Conn).Start(ctx, cluster)
+	stream, err := clusterApi.NewClusterInterfaceClient(grpconn.Conn).CreateCloudBasicResource(ctx, cluster)
 	if err != nil {
 		return err
 	}
@@ -73,13 +90,42 @@ func (i *InfrastructureCluster) Start(ctx context.Context, cluster *biz.Cluster)
 	}
 }
 
-func (i *InfrastructureCluster) Stop(ctx context.Context, cluster *biz.Cluster) error {
+func (i *InfrastructureCluster) DeleteCloudBasicResource(ctx context.Context, cluster *biz.Cluster) error {
 	grpconn, err := coonGrpc(ctx, i.conf)
 	if err != nil {
 		return err
 	}
 	defer grpconn.Close()
-	stream, err := clusterApi.NewClusterInterfaceClient(grpconn.Conn).Stop(ctx, cluster)
+	stream, err := clusterApi.NewClusterInterfaceClient(grpconn.Conn).DeleteCloudBasicResource(ctx, cluster)
+	if err != nil {
+		return err
+	}
+	for {
+		data, err := stream.Recv()
+		if err == io.EOF {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		protoBuf, err := proto.Marshal(data)
+		if err != nil {
+			return err
+		}
+		err = proto.Unmarshal(protoBuf, cluster)
+		if err != nil {
+			return err
+		}
+	}
+}
+
+func (i *InfrastructureCluster) ManageNodeResource(ctx context.Context, cluster *biz.Cluster) error {
+	grpconn, err := coonGrpc(ctx, i.conf)
+	if err != nil {
+		return err
+	}
+	defer grpconn.Close()
+	stream, err := clusterApi.NewClusterInterfaceClient(grpconn.Conn).ManageNodeResource(ctx, cluster)
 	if err != nil {
 		return err
 	}

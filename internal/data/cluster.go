@@ -36,11 +36,10 @@ func (c *clusterRepo) Save(ctx context.Context, cluster *biz.Cluster) (err error
 		return err
 	}
 	funcs := []func(context.Context, *biz.Cluster, *gorm.DB) error{
-		c.saveBostionHost,
 		c.saveNodeGroup,
 		c.saveNode,
 		c.saveCloudResources,
-		c.saveSecurityGroup,
+		c.saveIngressControllerRules,
 	}
 	for _, f := range funcs {
 		err := f(ctx, cluster, tx)
@@ -49,32 +48,6 @@ func (c *clusterRepo) Save(ctx context.Context, cluster *biz.Cluster) (err error
 		}
 	}
 	err = tx.Commit().Error
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (c *clusterRepo) saveBostionHost(_ context.Context, cluster *biz.Cluster, tx *gorm.DB) error {
-	if cluster.BostionHost == nil {
-		bostionHosts := make([]*biz.BostionHost, 0)
-		err := tx.Model(&biz.BostionHost{}).Where("cluster_id = ?", cluster.Id).Find(&bostionHosts).Error
-		if err != nil {
-			return err
-		}
-		for _, bostionHost := range bostionHosts {
-			if bostionHost.Id == "" {
-				continue
-			}
-			err = tx.Model(&biz.BostionHost{}).Where("id = ?", bostionHost.Id).Delete(bostionHost).Error
-			if err != nil {
-				return err
-			}
-		}
-		return nil
-	}
-	cluster.BostionHost.ClusterId = cluster.Id
-	err := tx.Model(&biz.BostionHost{}).Where("id = ?", cluster.BostionHost.Id).Save(cluster.BostionHost).Error
 	if err != nil {
 		return err
 	}
@@ -150,14 +123,6 @@ func (c *clusterRepo) saveCloudResources(_ context.Context, cluster *biz.Cluster
 		if err != nil {
 			return err
 		}
-		for _, subCloudResource := range cloudResource.SubResources {
-			subCloudResource.ClusterId = cluster.Id
-			subCloudResource.ParentId = cloudResource.Id
-			err := tx.Model(&biz.CloudResource{}).Where("id = ?", subCloudResource.Id).Save(subCloudResource).Error
-			if err != nil {
-				return err
-			}
-		}
 	}
 	cloudResources := make([]*biz.CloudResource, 0)
 	err := tx.Model(&biz.CloudResource{}).Where("cluster_id = ?", cluster.Id).Find(&cloudResources).Error
@@ -171,15 +136,6 @@ func (c *clusterRepo) saveCloudResources(_ context.Context, cluster *biz.Cluster
 				ok = true
 				break
 			}
-			for _, subCloudResource := range cloudResource.SubResources {
-				if subCloudResource.Id == v.Id {
-					ok = true
-					break
-				}
-			}
-			if ok {
-				break
-			}
 		}
 		if !ok {
 			err := tx.Delete(&biz.CloudResource{}, v.Id).Error
@@ -191,28 +147,28 @@ func (c *clusterRepo) saveCloudResources(_ context.Context, cluster *biz.Cluster
 	return nil
 }
 
-func (c *clusterRepo) saveSecurityGroup(_ context.Context, cluster *biz.Cluster, tx *gorm.DB) error {
-	for _, v := range cluster.SecurityGroups {
+func (c *clusterRepo) saveIngressControllerRules(_ context.Context, cluster *biz.Cluster, tx *gorm.DB) error {
+	for _, v := range cluster.IngressControllerRules {
 		v.ClusterId = cluster.Id
-		err := tx.Model(&biz.SecurityGroup{}).Where("id = ?", v.Id).Save(v).Error
+		err := tx.Model(&biz.IngressControllerRule{}).Where("id = ?", v.Id).Save(v).Error
 		if err != nil {
 			return err
 		}
 	}
-	sgs := make([]*biz.SecurityGroup, 0)
-	err := tx.Model(&biz.SecurityGroup{}).Where("cluster_id = ?", cluster.Id).Find(&sgs).Error
+	sgs := make([]*biz.IngressControllerRule, 0)
+	err := tx.Model(&biz.IngressControllerRule{}).Where("cluster_id = ?", cluster.Id).Find(&sgs).Error
 	if err != nil {
 		return err
 	}
 	for _, v := range sgs {
 		isExist := false
-		for _, v1 := range cluster.SecurityGroups {
+		for _, v1 := range cluster.IngressControllerRules {
 			if v.Id == v1.Id {
 				isExist = true
 			}
 		}
 		if !isExist {
-			err := tx.Model(&biz.SecurityGroup{}).Where("id = ?", v.Id).Delete(v).Error
+			err := tx.Model(&biz.IngressControllerRule{}).Where("id = ?", v.Id).Delete(v).Error
 			if err != nil {
 				return err
 			}
@@ -229,14 +185,6 @@ func (c *clusterRepo) Get(ctx context.Context, id int64) (*biz.Cluster, error) {
 	}
 	if cluster.Id == 0 {
 		return nil, nil
-	}
-	bostionHost := &biz.BostionHost{}
-	err = c.data.db.Model(&biz.BostionHost{}).Where("cluster_id = ?", cluster.Id).First(bostionHost).Error
-	if err != nil && err != gorm.ErrRecordNotFound {
-		return nil, err
-	}
-	if bostionHost.Id != "" {
-		cluster.BostionHost = bostionHost
 	}
 	nodeGroups := make([]*biz.NodeGroup, 0)
 	err = c.data.db.Model(&biz.NodeGroup{}).Where("cluster_id = ?", cluster.Id).Find(&nodeGroups).Error
@@ -260,31 +208,15 @@ func (c *clusterRepo) Get(ctx context.Context, id int64) (*biz.Cluster, error) {
 		return nil, err
 	}
 	if len(cloudResources) != 0 {
-		data := make([]*biz.CloudResource, 0)
-		for _, v := range cloudResources {
-			if v.ParentId != "" {
-				continue
-			}
-			data = append(data, v)
-		}
-		for _, v := range data {
-			subCloudResources := make([]*biz.CloudResource, 0)
-			for _, v1 := range cloudResources {
-				if v.Id != "" && v1.ParentId == v.Id {
-					subCloudResources = append(subCloudResources, v1)
-				}
-			}
-			v.SubResources = subCloudResources
-		}
-		cluster.CloudResources = data
+		cluster.CloudResources = cloudResources
 	}
-	sgs := make([]*biz.SecurityGroup, 0)
-	err = c.data.db.Model(&biz.SecurityGroup{}).Where("cluster_id = ?", cluster.Id).Find(&sgs).Error
+	ingressRules := make([]*biz.IngressControllerRule, 0)
+	err = c.data.db.Model(&biz.IngressControllerRule{}).Where("cluster_id = ?", cluster.Id).Find(&ingressRules).Error
 	if err != nil {
 		return nil, err
 	}
-	if len(sgs) != 0 {
-		cluster.SecurityGroups = sgs
+	if len(ingressRules) != 0 {
+		cluster.IngressControllerRules = ingressRules
 	}
 	return cluster, nil
 }
@@ -340,15 +272,11 @@ func (c *clusterRepo) Delete(ctx context.Context, id int64) (err error) {
 	if err != nil {
 		return err
 	}
-	err = tx.Model(&biz.BostionHost{}).Where("cluster_id = ?", id).Delete(&biz.BostionHost{}).Error
-	if err != nil {
-		return err
-	}
 	err = tx.Model(&biz.CloudResource{}).Where("cluster_id = ?", id).Delete(&biz.CloudResource{}).Error
 	if err != nil {
 		return err
 	}
-	err = tx.Model(&biz.SecurityGroup{}).Where("cluster_id = ?", id).Delete(&biz.SecurityGroup{}).Error
+	err = tx.Model(&biz.IngressControllerRule{}).Where("cluster_id = ?", id).Delete(&biz.IngressControllerRule{}).Error
 	if err != nil {
 		return err
 	}

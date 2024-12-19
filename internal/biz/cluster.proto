@@ -52,6 +52,7 @@ enum NodeGroupType {
       GPU_ACCELERATERD = 3;
       HIGH_MEMORY = 4;
       LARGE_HARD_DISK = 5;
+      LOAD_DISK = 6;
 }
 
 enum NodeArchType {
@@ -81,22 +82,30 @@ enum ResourceType {
       ELASTIC_IP = 8;
       AVAILABILITY_ZONES = 9;
       KEY_PAIR = 10;
-      VPC_ENDPOINT_S3 = 11;
-      DATA_DEVICE = 12;
-      INSTANCE_TYPE = 13;
+      DATA_DEVICE = 11;
+      INSTANCE = 12;
+      REGION = 13;
 }
 
 enum ResourceTypeKeyValue {
       ResourceTypeKeyValue_UNSPECIFIED = 0;
       NAME = 1;
       ACCESS = 2;
-      ZONE = 3;
-      SECURITY_GROUP_TYPE = 4;
-      VPC_REFID = 5;
-      ACCESS_PRIVATE = 6;
-      ACCESS_PUBLIC = 7;
-      SECURITY_GROUP_TYPE_CLUSTER = 8;
-      SECURITY_GROUP_TYPE_BOSTION = 9;
+      ZONE_ID = 3;
+      REGION_ID = 4;
+      ACCESS_PRIVATE = 5;
+      ACCESS_PUBLIC = 6;
+}
+
+enum IngressControllerRuleAccess {
+      IngressControllerRuleAccess_UNSPECIFIED = 0;
+      PRIVATE = 1;
+      PUBLIC = 2;
+}
+
+enum NodeError {
+      NodeError_UNSPECIFIED = 0;
+      INSUFFICIENT_INVENTORY = 1;
 }
 
 message Cluster {
@@ -107,31 +116,47 @@ message Cluster {
       string version = 3; // @gotags: gorm:"column:version; default:''; NOT NULL"
       string api_server_address = 4; // @gotags: gorm:"column:api_server_address; default:''; NOT NULL"
       string config = 5; // @gotags: gorm:"column:config; default:''; NOT NULL"
-      string addons = 6; // @gotags: gorm:"column:addons; default:''; NOT NULL"
-      string addons_config = 7; // @gotags: gorm:"column:addons_config; default:''; NOT NULL"
-      ClusterStatus status = 8; // @gotags: gorm:"column:status; default:0; NOT NULL"
-      ClusterType type = 9; // @gotags: gorm:"column:type; default:0; NOT NULL"
-      ClusterLevel level = 10; // @gotags: gorm:"column:level; default:0; NOT NULL"
-      string public_key = 11; // @gotags: gorm:"column:public_key; default:''; NOT NULL"
-      string private_key = 12; // @gotags: gorm:"column:private_key; default:''; NOT NULL"
-      string connections = 13; // @gotags: gorm:"column:connections; default:''; NOT NULL"
-      string certificate_authority = 14; // @gotags: gorm:"column:certificate_authority; default:''; NOT NULL"
-      string region = 15; // @gotags: gorm:"column:region; default:''; NOT NULL"
-      int64 user_id = 16; // @gotags: gorm:"column:user_id; default:0; NOT NULL"
-      string access_id = 17; // @gotags: gorm:"column:access_id; default:''; NOT NULL"
-      string access_key = 18; // @gotags: gorm:"column:access_key; default:''; NOT NULL"
-      string master_ip = 19; // @gotags: gorm:"column:master_ip; default:''; NOT NULL"
-      string master_user = 20; // @gotags: gorm:"column:master_user; default:''; NOT NULL"
-      string token = 21; // @gotags: gorm:"column:token; default:''; NOT NULL"
-      string ca_data = 22; // @gotags: gorm:"column:ca_data; default:''; NOT NULL"
-      string cert_data = 23; // @gotags: gorm:"column:cert_data; default:''; NOT NULL"
-      string key_data = 24; // @gotags: gorm:"column:key_data; default:''; NOT NULL"
-      string cloud_cluster_id = 25; // @gotags: gorm:"column:cloud_cluster_id; default:''; NOT NULL"
-      BostionHost bostion_host = 26; // @gotags: gorm:"-"
-      repeated Node nodes = 27; // @gotags: gorm:"-"
-      repeated NodeGroup node_groups = 28; // @gotags: gorm:"-"
-      repeated CloudResource cloud_resources = 29; // @gotags: gorm:"-"
-      repeated SecurityGroup security_groups = 30; // @gotags: gorm:"-"
+      ClusterStatus status = 6; // @gotags: gorm:"column:status; default:0; NOT NULL"
+      ClusterType type = 7; // @gotags: gorm:"column:type; default:0; NOT NULL"
+      ClusterLevel level = 8; // @gotags: gorm:"column:level; default:0; NOT NULL"
+      string public_key = 9; // @gotags: gorm:"column:public_key; default:''; NOT NULL"
+      string private_key = 10; // @gotags: gorm:"column:private_key; default:''; NOT NULL"
+      string region = 11; // @gotags: gorm:"column:region; default:''; NOT NULL"
+      int64 user_id = 12; // @gotags: gorm:"column:user_id; default:0; NOT NULL"
+      string access_id = 13; // @gotags: gorm:"column:access_id; default:''; NOT NULL"
+      string access_key = 14; // @gotags: gorm:"column:access_key; default:''; NOT NULL"
+      string token = 15; // @gotags: gorm:"column:token; default:''; NOT NULL"
+      string ca_data = 16; // @gotags: gorm:"column:ca_data; default:''; NOT NULL"
+      string cert_data = 17; // @gotags: gorm:"column:cert_data; default:''; NOT NULL"
+      string key_data = 18; // @gotags: gorm:"column:key_data; default:''; NOT NULL"
+      string node_ips = 19; // @gotags: gorm:"column:node_ips; default:''; NOT NULL"
+      repeated NodeGroup node_groups = 20; // @gotags: gorm:"-"
+      repeated Node nodes = 21; // @gotags: gorm:"-"
+      repeated CloudResource cloud_resources = 22; // @gotags: gorm:"-"
+      repeated IngressControllerRule ingress_controller_rules = 23; // @gotags: gorm:"-"
+}
+
+message NodeGroup {
+      // @goimport: "gorm.io/gorm"
+      // @gofield: gorm.Model
+      string id = 1; // @gotags: gorm:"column:id;primaryKey; NOT NULL"
+      string name = 2; // @gotags: gorm:"column:name; default:''; NOT NULL"
+      NodeGroupType type = 3; // @gotags: gorm:"column:type; default:0; NOT NULL"
+      string os = 4; // @gotags: gorm:"column:os; default:''; NOT NULL"
+      string platform = 5; // @gotags: gorm:"column:platform; default:''; NOT NULL"
+      NodeArchType arch = 6; // @gotags: gorm:"column:arch; default:0; NOT NULL"
+      int32 cpu = 7; // @gotags: gorm:"column:cpu; default:0; NOT NULL"
+      int32 memory = 8; // @gotags: gorm:"column:memory; default:0; NOT NULL"
+      int32 gpu = 9; // @gotags: gorm:"column:gpu; default:0; NOT NULL"
+      NodeGPUSpec gpu_spec = 10; // @gotags: gorm:"column:gpu_spec; default:0; NOT NULL"
+      int32 min_size = 11; // @gotags: gorm:"column:min_size; default:0; NOT NULL"
+      int32 max_size = 12; // @gotags: gorm:"column:max_size; default:0; NOT NULL"
+      int32 target_size = 13; // @gotags: gorm:"column:target_size; default:0; NOT NULL"
+      float node_price = 14; // @gotags: gorm:"column:node_price; default:0; NOT NULL"
+      float pod_price = 15; // @gotags: gorm:"column:pod_price; default:0; NOT NULL"
+      string subnet_ip_cidr = 16; // @gotags: gorm:"column:subnet_ip_cidr; default:''; NOT NULL"
+      string pod_ip_cidr = 17; // @gotags: gorm:"column:pod_ip_cidr; default:''; NOT NULL"
+      int64 cluster_id = 18; // @gotags: gorm:"column:cluster_id; default:0; NOT NULL"
 }
 
 message Node {
@@ -144,62 +169,14 @@ message Node {
       string user = 5; // @gotags: gorm:"column:user; default:''; NOT NULL"
       NodeRole role = 6; // @gotags: gorm:"column:role; default:0; NOT NULL"
       NodeStatus status = 7; // @gotags: gorm:"column:status; default:0; NOT NULL"
-      int64 cluster_id = 8; // @gotags: gorm:"column:cluster_id; default:0; NOT NULL"
-      string node_group_id = 9; // @gotags: gorm:"column:node_group_id; default:''; NOT NULL"
-      string instance_id = 10; // @gotags: gorm:"column:instance_id; default:''; NOT NULL"
-      string error_info = 11; // @gotags: gorm:"column:error_info; default:''; NOT NULL"
-}
-
-message NodeGroup {
-      // @goimport: "gorm.io/gorm"
-      // @gofield: gorm.Model
-      string id = 1; // @gotags: gorm:"column:id;primaryKey; NOT NULL"
-      string name = 2; // @gotags: gorm:"column:name; default:''; NOT NULL"
-      NodeGroupType type = 3; // @gotags: gorm:"column:type; default:0; NOT NULL"
-      string image = 4; // @gotags: gorm:"column:image; default:''; NOT NULL"
-      string image_description = 5; // @gotags: gorm:"column:image_description; default:''; NOT NULL"
-      string os = 6; // @gotags: gorm:"column:os; default:''; NOT NULL"
-      NodeArchType arch = 7; // @gotags: gorm:"column:arch; default:0; NOT NULL"
-      int32 cpu = 8; // @gotags: gorm:"column:cpu; default:0; NOT NULL"
-      int32 memory = 9; // @gotags: gorm:"column:memory; default:0; NOT NULL"
-      int32 gpu = 10; // @gotags: gorm:"column:gpu; default:0; NOT NULL"
-      NodeGPUSpec gpu_spec = 11; // @gotags: gorm:"column:gpu_spec; default:0; NOT NULL"
-      int32 system_disk_size = 12; // @gotags: gorm:"column:system_disk_size; default:0; NOT NULL"
-      int32 data_disk_size = 13; // @gotags: gorm:"column:data_disk_size; default:0; NOT NULL"
-      string root_device_name = 14; // @gotags: gorm:"column:root_device_name; default:''; NOT NULL"
-      string data_device_name = 15; // @gotags: gorm:"column:data_device_name; default:''; NOT NULL"
-      int32 min_size = 16; // @gotags: gorm:"column:min_size; default:0; NOT NULL"
-      int32 max_size = 17; // @gotags: gorm:"column:max_size; default:0; NOT NULL"
-      int32 target_size = 18; // @gotags: gorm:"column:target_size; default:0; NOT NULL"
-      string instance_type = 19; // @gotags: gorm:"column:instance_type; default:''; NOT NULL"
-      string default_username = 20; // @gotags: gorm:"column:default_username; default:''; NOT NULL"
-      float node_price = 21; // @gotags: gorm:"column:node_price; default:0; NOT NULL"
-      float pod_price = 22; // @gotags: gorm:"column:pod_price; default:0; NOT NULL"
-      string zone = 23; // @gotags: gorm:"column:zone; default:''; NOT NULL"
-      string subnet_ip_cidr = 24; // @gotags: gorm:"column:subnet_ip_cidr; default:''; NOT NULL"
-      string node_init_script = 25; // @gotags: gorm:"column:cloud_init_script; default:''; NOT NULL"
-      int64 cluster_id = 26; // @gotags: gorm:"column:cluster_id; default:0; NOT NULL"
-      string cloud_node_group_id = 27; // @gotags: gorm:"column:cloud_node_group_id; default:''; NOT NULL"
-}
-
-message BostionHost {
-      // @goimport: "gorm.io/gorm"
-      // @gofield: gorm.Model
-      string id = 1; // @gotags: gorm:"column:id;primaryKey; NOT NULL"
-      string user = 2; // @gotags: gorm:"column:user; default:''; NOT NULL"
-      string image = 3; // @gotags: gorm:"column:image; default:''; NOT NULL"
-      string image_description = 4; // @gotags: gorm:"column:image_description; default:''; NOT NULL"
-      string os = 5; // @gotags: gorm:"column:os; default:''; NOT NULL"
-      NodeArchType arch = 6; // @gotags: gorm:"column:arch; default:0; NOT NULL"
-      int32 cpu = 7; // @gotags: gorm:"column:cpu; default:0; NOT NULL"
-      int32 memory = 8; // @gotags: gorm:"column:memory; default:0; NOT NULL"
-      string hostname = 9; // @gotags: gorm:"column:hostname; default:''; NOT NULL"
-      string external_ip = 10; // @gotags: gorm:"column:external_ip; default:''; NOT NULL"
-      string internal_ip = 11; // @gotags: gorm:"column:internal_ip; default:''; NOT NULL"
-      int32 ssh_port = 12; // @gotags: gorm:"column:ssh_port; default:0; NOT NULL"
-      NodeStatus status = 13; // @gotags: gorm:"column:status; default:0; NOT NULL"
-      string instance_id = 14; // @gotags: gorm:"column:instance_id; default:''; NOT NULL"
-      int64 cluster_id = 15; // @gotags: gorm:"column:cluster_id; default:0; NOT NULL"
+      string instance_id = 8; // @gotags: gorm:"column:instance_id; default:''; NOT NULL"
+      string image_id = 9; // @gotags: gorm:"column:image_id; default:''; NOT NULL"
+      string instance_type = 10; // @gotags: gorm:"column:instance_type; default:''; NOT NULL"
+      int32 system_disk_size = 11; // @gotags: gorm:"column:system_disk_size; default:0; NOT NULL"
+      int32 data_disk_size = 12; // @gotags: gorm:"column:data_disk_size; default:0; NOT NULL"
+      int64 cluster_id = 13; // @gotags: gorm:"column:cluster_id; default:0; NOT NULL"
+      string node_group_id = 14; // @gotags: gorm:"column:node_group_id; default:''; NOT NULL"
+      string error_info = 15; // @gotags: gorm:"column:error_info; default:''; NOT NULL"
 }
 
 message CloudResource {
@@ -212,21 +189,18 @@ message CloudResource {
       ResourceType type = 5; // @gotags: gorm:"column:type; default:0; NOT NULL"
       string tags = 6; // @gotags: gorm:"column:tags; default:''; NOT NULL"
       string value = 7; // @gotags: gorm:"column:value; default:''; NOT NULL"
-      repeated CloudResource sub_resources = 8; // @gotags: gorm:"-"
-      int64 cluster_id = 9; // @gotags: gorm:"column:cluster_id; default:0; NOT NULL"
-      string parent_id = 10; // @gotags: gorm:"column:parent_id; default:''; NOT NULL"
+      int64 cluster_id = 8; // @gotags: gorm:"column:cluster_id; default:0; NOT NULL"
 }
 
-message SecurityGroup {
+message IngressControllerRule {
       // @goimport: "gorm.io/gorm"
       // @gofield: gorm.Model
       string id = 1; // @gotags: gorm:"column:id;primaryKey; NOT NULL"
       string name = 2; // @gotags: gorm:"column:name; default:''; NOT NULL"
-      string description = 3; // @gotags: gorm:"column:description; default:''; NOT NULL"
-      string vpc_id = 4; // @gotags: gorm:"column:vpc_id; default:''; NOT NULL"
-      int32 start_port = 5; // @gotags: gorm:"column:start_port; default:0; NOT NULL"
-      int32 end_port = 6; // @gotags: gorm:"column:end_port; default:0; NOT NULL"
-      string protocol = 7; // @gotags: gorm:"column:protocol; default:''; NOT NULL"
-      string ip_cidr = 8; // @gotags: gorm:"column:ip_cidr; default:''; NOT NULL"
-      int64 cluster_id = 9; // @gotags: gorm:"column:cluster_id; default:0; NOT NULL"
+      int32 start_port = 3; // @gotags: gorm:"column:start_port; default:0; NOT NULL"
+      int32 end_port = 4; // @gotags: gorm:"column:end_port; default:0; NOT NULL"
+      string protocol = 5; // @gotags: gorm:"column:protocol; default:''; NOT NULL"
+      string ip_cidr = 6; // @gotags: gorm:"column:ip_cidr; default:''; NOT NULL"
+      IngressControllerRuleAccess access = 7; // @gotags: gorm:"column:access; default:0; NOT NULL"
+      int64 cluster_id = 8; // @gotags: gorm:"column:cluster_id; default:0; NOT NULL"
 }

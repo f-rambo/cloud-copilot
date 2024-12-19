@@ -13,9 +13,13 @@ service ClusterInterface {
 
       rpc GetRegions(biz.cluster.Cluster) returns (infrastructure.api.cluster.CloudResources);
 
-      rpc Start(biz.cluster.Cluster) returns (stream biz.cluster.Cluster);
+      rpc GetZones(biz.cluster.Cluster) returns (infrastructure.api.cluster.CloudResources);
 
-      rpc Stop(biz.cluster.Cluster) returns (stream biz.cluster.Cluster);
+      rpc CreateCloudBasicResource(biz.cluster.Cluster) returns (stream biz.cluster.Cluster);
+
+      rpc DeleteCloudBasicResource(biz.cluster.Cluster) returns (stream biz.cluster.Cluster);
+
+      rpc ManageNodeResource(biz.cluster.Cluster) returns (stream biz.cluster.Cluster);
       
       rpc MigrateToBostionHost(biz.cluster.Cluster) returns (stream biz.cluster.Cluster);
       

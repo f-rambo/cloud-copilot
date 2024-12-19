@@ -374,14 +374,6 @@ func (a *Autoscaler) NodeGroupNodes(ctx context.Context, in *autoscaler.NodeGrou
 		} else {
 			instance.Status = new(autoscaler.InstanceStatus)
 			instance.Status.InstanceState = autoscaler.InstanceStatus_InstanceState(node.Status)
-			if node.ErrorInfo == "" {
-				instance.Status.ErrorInfo = &autoscaler.InstanceErrorInfo{}
-			} else {
-				instance.Status.ErrorInfo = &autoscaler.InstanceErrorInfo{
-					ErrorCode:    string(node.Status),
-					ErrorMessage: node.ErrorInfo,
-				}
-			}
 		}
 		instances = append(instances, instance)
 	}

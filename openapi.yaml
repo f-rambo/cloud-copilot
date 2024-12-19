@@ -1687,39 +1687,6 @@ components:
                         $ref: '#/components/schemas/app.v1alpha1.Dependency'
                 type:
                     type: string
-        cluster.v1alpha1.BostionHost:
-            type: object
-            properties:
-                id:
-                    type: string
-                user:
-                    type: string
-                os:
-                    type: string
-                arch:
-                    type: string
-                cpu:
-                    type: integer
-                    format: int32
-                memory:
-                    type: integer
-                    format: int32
-                hostname:
-                    type: string
-                external_ip:
-                    type: string
-                internal_ip:
-                    type: string
-                ssh_port:
-                    type: integer
-                    format: int32
-                status:
-                    type: integer
-                    format: int32
-                instance_id:
-                    type: string
-                update_at:
-                    type: string
         cluster.v1alpha1.Cluster:
             type: object
             properties:
@@ -1759,8 +1726,6 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/cluster.v1alpha1.NodeGroup'
-                bostion_host:
-                    $ref: '#/components/schemas/cluster.v1alpha1.BostionHost'
         cluster.v1alpha1.ClusterIdMessge:
             type: object
             properties:

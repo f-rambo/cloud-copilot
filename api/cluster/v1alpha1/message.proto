@@ -121,7 +121,6 @@ message Cluster {
     string update_at = 13 [json_name = "update_at"];
     repeated Node nodes = 14 [json_name = "nodes"];
     repeated NodeGroup node_groups = 15 [json_name = "node_groups"];
-    BostionHost bostion_host = 16 [json_name = "bostion_host"];
 }
 
 message NodeGroup {
@@ -151,22 +150,6 @@ message Node {
     int32 status = 6 [json_name = "status"];
     string instance_id = 7 [json_name = "instance_id"];
     string update_at = 8 [json_name = "update_at"];
-}
-
-message BostionHost {
-    string id = 1 [json_name = "id"];
-    string user = 2 [json_name = "user"];
-    string os = 3 [json_name = "os"];
-    string arch = 4 [json_name = "arch"];
-    int32 cpu = 5 [json_name = "cpu"];
-    int32 memory = 6 [json_name = "memory"];
-    string hostname = 7 [json_name = "hostname"];
-    string external_ip = 8 [json_name = "external_ip"];
-    string internal_ip = 9 [json_name = "internal_ip"];
-    int32 ssh_port = 10 [json_name = "ssh_port"];
-    int32 status = 11 [json_name = "status"];
-    string instance_id = 12 [json_name = "instance_id"];
-    string update_at = 13 [json_name = "update_at"];
 }
 
 message ClusterLogsRequest {

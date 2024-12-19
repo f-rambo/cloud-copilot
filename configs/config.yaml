@@ -1,7 +1,3 @@
-cluster:
-  env: local
-  name: ""
-  type: local
 server:
   name: cloud-copilot
   version: "0.0.1"
@@ -44,3 +40,41 @@ auth:
   key: "S89XMkyGIpI0tgJkf7b8undK"
   admin_email: "admin@eamil.com"
   admin_password: "123456"
+cluster:
+  name: "cloud-copilot"
+  env: local
+  level:
+    basic: 50
+    advanced: 100
+    standard: 200
+  ingress_rules:
+    - name: "apiserver"
+      start_port: 6443
+      end_port: 6443
+      protocol: "TCP"
+      ip_cidr: "0.0.0.0/0"
+      access: 0
+    - name: "kubelet"
+      start_port: 10250
+      end_port: 10255
+      protocol: "TCP"
+      ip_cidr: "0.0.0.0/0"
+      access: 0
+    - name: "ssh"
+      start_port: 22
+      end_port: 22
+      protocol: "TCP"
+      ip_cidr: "0.0.0.0/0"
+      access: 0
+    - name: "https"
+      start_port: 443
+      end_port: 443
+      protocol: "TCP"
+      ip_cidr: "0.0.0.0/0"
+      access: 1
+    - name: "http"
+      start_port: 80
+      end_port: 80
+      protocol: "TCP"
+      ip_cidr: "0.0.0.0/0"
+      access: 1
