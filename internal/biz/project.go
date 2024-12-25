@@ -21,6 +21,9 @@ type ProjectRuntime interface {
 	GetNamespaces(context.Context) (namespaces []string, err error)
 }
 
+type ProjectAgent interface {
+}
+
 type ProjectUsecase struct {
 	projectData    ProjectData
 	ProjectRuntime ProjectRuntime

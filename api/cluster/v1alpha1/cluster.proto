@@ -83,7 +83,7 @@ service ClusterInterface {
             };
       }
 
-      rpc Start(cluster.v1alpha1.ClusterIdMessge) returns (common.Msg) {
+      rpc Start(cluster.v1alpha1.ClusterStartArgs) returns (common.Msg) {
             option (google.api.http) = {
               post: "/api/v1alpha1/cluster/start"
               body: "*"

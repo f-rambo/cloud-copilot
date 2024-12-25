@@ -21,6 +21,25 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+func IpRange(startIp, endIp string) []string {
+	ipList := make([]string, 0)
+	var start int = 0
+	var end int = 0
+	if len(strings.Split(startIp, ".")) < 4 {
+		return ipList
+	}
+	if len(strings.Split(endIp, ".")) < 4 {
+		return ipList
+	}
+	start = cast.ToInt(strings.Split(startIp, ".")[3])
+	end = cast.ToInt(strings.Split(endIp, ".")[3])
+	for i := start; i <= end; i++ {
+		ip := fmt.Sprintf("192.168.1.%d", i)
+		ipList = append(ipList, ip)
+	}
+	return ipList
+}
+
 func Contains(slice []string, item string) bool {
 	for _, s := range slice {
 		if s == item {

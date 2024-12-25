@@ -148,35 +148,6 @@ func (i *InfrastructureCluster) ManageNodeResource(ctx context.Context, cluster 
 	}
 }
 
-func (i *InfrastructureCluster) MigrateToBostionHost(ctx context.Context, cluster *biz.Cluster) error {
-	grpconn, err := coonGrpc(ctx, i.conf)
-	if err != nil {
-		return err
-	}
-	defer grpconn.Close()
-	stream, err := clusterApi.NewClusterInterfaceClient(grpconn.Conn).MigrateToBostionHost(ctx, cluster)
-	if err != nil {
-		return err
-	}
-	for {
-		data, err := stream.Recv()
-		if err == io.EOF {
-			return nil
-		}
-		if err != nil {
-			return err
-		}
-		protoBuf, err := proto.Marshal(data)
-		if err != nil {
-			return err
-		}
-		err = proto.Unmarshal(protoBuf, cluster)
-		if err != nil {
-			return err
-		}
-	}
-}
-
 func (i *InfrastructureCluster) GetNodesSystemInfo(ctx context.Context, cluster *biz.Cluster) error {
 	grpconn, err := coonGrpc(ctx, i.conf)
 	if err != nil {

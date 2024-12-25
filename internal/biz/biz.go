@@ -39,7 +39,7 @@ const (
 )
 
 // ProviderSet is biz providers.
-var ProviderSet = wire.NewSet(NewBiz, NewClusterUseCase, NewAppUsecase, NewServicesUseCase, NewUseUser, NewProjectUseCase)
+var ProviderSet = wire.NewSet(NewBiz, NewClusterUseCase, NewAppUsecase, NewServicesUseCase, NewUseUser, NewProjectUseCase, NewWorkspaceUsecase, NewEventUsecase, NewAgentUsecase)
 
 var ErrClusterNotFound error = errors.New("cluster not found")
 

@@ -16,6 +16,14 @@ import (
 	"gorm.io/gorm/schema"
 )
 
+// docker run -d \
+//     --name postgres \
+//     -e POSTGRES_PASSWORD=123456 \
+//     -e POSTGRES_USER=postgres \
+//     -e POSTGRES_DB=cloud-copilot \
+//     -p 5432:5432 \
+//     postgres:latest
+
 // ProviderSet is data providers.
 var ProviderSet = wire.NewSet(NewData, NewClusterRepo, NewAppRepo, NewServicesRepo, NewUserRepo, NewProjectRepo)
 

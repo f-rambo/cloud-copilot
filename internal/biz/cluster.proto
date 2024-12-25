@@ -36,7 +36,7 @@ enum NodeRole {
 
 enum NodeStatus {
       NodeStatus_UNSPECIFIED = 0;
-      NODE_UNSPECIFIED = 1;
+      NODE_FINDING = 1;
       NODE_RUNNING = 2;
       NODE_CREATING = 3;
       NODE_DELETING = 4;
@@ -106,6 +106,8 @@ enum IngressControllerRuleAccess {
 enum NodeError {
       NodeError_UNSPECIFIED = 0;
       INSUFFICIENT_INVENTORY = 1;
+      CREATE_FAILURE = 2;
+      START_TIMEOUT = 3;
 }
 
 message Cluster {
@@ -129,11 +131,12 @@ message Cluster {
       string ca_data = 16; // @gotags: gorm:"column:ca_data; default:''; NOT NULL"
       string cert_data = 17; // @gotags: gorm:"column:cert_data; default:''; NOT NULL"
       string key_data = 18; // @gotags: gorm:"column:key_data; default:''; NOT NULL"
-      string node_ips = 19; // @gotags: gorm:"column:node_ips; default:''; NOT NULL"
-      repeated NodeGroup node_groups = 20; // @gotags: gorm:"-"
-      repeated Node nodes = 21; // @gotags: gorm:"-"
-      repeated CloudResource cloud_resources = 22; // @gotags: gorm:"-"
-      repeated IngressControllerRule ingress_controller_rules = 23; // @gotags: gorm:"-"
+      string node_user = 19; // @gotags: gorm:"column:node_user; default:''; NOT NULL"
+      string node_ips = 20; // @gotags: gorm:"column:node_ips; default:''; NOT NULL"
+      repeated NodeGroup node_groups = 21; // @gotags: gorm:"-"
+      repeated Node nodes = 22; // @gotags: gorm:"-"
+      repeated CloudResource cloud_resources = 23; // @gotags: gorm:"-"
+      repeated IngressControllerRule ingress_controller_rules = 24; // @gotags: gorm:"-"
 }
 
 message NodeGroup {
@@ -171,12 +174,15 @@ message Node {
       NodeStatus status = 7; // @gotags: gorm:"column:status; default:0; NOT NULL"
       string instance_id = 8; // @gotags: gorm:"column:instance_id; default:''; NOT NULL"
       string image_id = 9; // @gotags: gorm:"column:image_id; default:''; NOT NULL"
-      string instance_type = 10; // @gotags: gorm:"column:instance_type; default:''; NOT NULL"
-      int32 system_disk_size = 11; // @gotags: gorm:"column:system_disk_size; default:0; NOT NULL"
-      int32 data_disk_size = 12; // @gotags: gorm:"column:data_disk_size; default:0; NOT NULL"
-      int64 cluster_id = 13; // @gotags: gorm:"column:cluster_id; default:0; NOT NULL"
-      string node_group_id = 14; // @gotags: gorm:"column:node_group_id; default:''; NOT NULL"
-      string error_info = 15; // @gotags: gorm:"column:error_info; default:''; NOT NULL"
+      string backup_instance_ids = 10; // @gotags: gorm:"column:backup_instance_ids; default:''; NOT NULL"
+      string instance_type = 11; // @gotags: gorm:"column:instance_type; default:''; NOT NULL"
+      int32 system_disk_size = 12; // @gotags: gorm:"column:system_disk_size; default:0; NOT NULL"
+      string system_disk_name = 13; // @gotags: gorm:"column:system_disk_name; default:''; NOT NULL"
+      int32 data_disk_size = 14; // @gotags: gorm:"column:data_disk_size; default:0; NOT NULL"
+      string data_disk_name = 15; // @gotags: gorm:"column:data_disk_name; default:''; NOT NULL"
+      int64 cluster_id = 16; // @gotags: gorm:"column:cluster_id; default:0; NOT NULL"
+      string node_group_id = 17; // @gotags: gorm:"column:node_group_id; default:''; NOT NULL"
+      NodeError error_info = 18; // @gotags: gorm:"column:error_info; default:0; NOT NULL"
 }
 
 message CloudResource {

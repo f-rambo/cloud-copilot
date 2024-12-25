@@ -366,7 +366,7 @@ func (a *Autoscaler) NodeGroupNodes(ctx context.Context, in *autoscaler.NodeGrou
 	for _, node := range nodes {
 		instance := new(autoscaler.Instance)
 		instance.Id = cast.ToString(node.Id)
-		if node.Status == biz.NodeStatus_NODE_UNSPECIFIED {
+		if node.Status == biz.NodeStatus_NodeStatus_UNSPECIFIED {
 			instance.Status = &autoscaler.InstanceStatus{
 				InstanceState: autoscaler.InstanceStatus_unspecified,
 				ErrorInfo:     &autoscaler.InstanceErrorInfo{},

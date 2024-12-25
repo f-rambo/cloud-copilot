@@ -28,7 +28,6 @@ type ClusterInfrastructure interface {
 	DeleteCloudBasicResource(context.Context, *Cluster) error
 	ManageNodeResource(context.Context, *Cluster) error
 	GetNodesSystemInfo(context.Context, *Cluster) error
-	MigrateToBostionHost(context.Context, *Cluster) error
 	Install(context.Context, *Cluster) error
 	UnInstall(context.Context, *Cluster) error
 	HandlerNodes(context.Context, *Cluster) error
@@ -38,6 +37,9 @@ type ClusterRuntime interface {
 	CurrentCluster(context.Context, *Cluster) error
 	HandlerNodes(context.Context, *Cluster) error
 	MigrateToCluster(context.Context, *Cluster) error
+}
+
+type ClusterAgent interface {
 }
 
 type ClusterUsecase struct {
@@ -127,38 +129,37 @@ func (c *Cluster) SettingClusterAvailabilityZone(clusterLevel *confPkg.Level) {
 	}
 }
 
-func (c *Cluster) SettingCluster() {
-	// todo select instance type or local server
-	// gen node group
-	// nodegroup := &NodeGroup{Id: uuid.NewString(), ClusterId: c.Id}
-	// c.NodeGroups = append(c.NodeGroups, nodegroup)
-	// nodegroup.Type = NodeGroupType_NORMAL
-	// nodegroup.Os = DefaultNodeOs
-	// nodegroup.Platform = DefaultNodePlatform
-	// nodegroup.Arch = NodeArchType_AMD64
-	// nodegroup.Cpu = DefaultNodeGroupCpu
-	// nodegroup.Memory = DefaultNodeGroupMemory
-	// nodegroup.SystemDiskSize = DefaultNodeGroupSystemDisk
-	// nodegroup.TargetSize = DefaultNodeGroupTargetSize
-	// nodegroup.MinSize = DefaultNodeGroupMinSize
-	// nodegroup.MaxSize = DefaultNodeGroupMaxSize
-	// nodegroup.Name = strings.Join([]string{c.Name, NodeGroupType_NORMAL.String()}, "-")
-	// nodeLabels := c.generateNodeLables(nodegroup)
-	// for i := 0; i < int(nodegroup.TargetSize); i++ {
-	// 	node := &Node{
-	// 		Name:        strings.Join([]string{nodegroup.Name, uuid.NewString()}, "-"),
-	// 		Labels:      nodeLabels,
-	// 		Status:      NodeStatus_NODE_CREATING,
-	// 		Role:        NodeRole_WORKER,
-	// 		NodeGroupId: nodegroup.Id,
-	// 		ClusterId:   c.Id,
-	// 	}
-	// 	if i == 0 {
-	// 		node.Role = NodeRole_MASTER
-	// 	}
-	// 	c.Nodes = append(c.Nodes, node)
-	// }
-
+func (c *Cluster) SettingDefaultNodeGroup(nodegroupConfig *confPkg.NodeGroupConfig) {
+	if c.NodeGroups == nil {
+		c.NodeGroups = make([]*NodeGroup, 0)
+	}
+	if len(c.NodeGroups) == 0 {
+		c.NodeGroups = append(c.NodeGroups, &NodeGroup{
+			Id:         uuid.NewString(),
+			Name:       "default",
+			ClusterId:  c.Id,
+			Type:       NodeGroupType_NORMAL,
+			TargetSize: nodegroupConfig.TargetSize,
+			MaxSize:    nodegroupConfig.MaxSize,
+			MinSize:    nodegroupConfig.MinSize,
+			Arch:       NodeArchType_AMD64,
+			Cpu:        nodegroupConfig.Cpu,
+			Memory:     nodegroupConfig.Memory,
+		})
+	}
+	if c.Nodes == nil {
+		c.Nodes = make([]*Node, 0)
+	}
+	if len(c.Nodes) == 0 {
+		c.Nodes = append(c.Nodes, &Node{
+			Name:           "default",
+			Status:         NodeStatus_NODE_FINDING,
+			Role:           NodeRole_MASTER,
+			NodeGroupId:    c.NodeGroups[0].Id,
+			SystemDiskSize: nodegroupConfig.DiskSize,
+			ClusterId:      c.Id,
+		})
+	}
 }
 
 func (c *Cluster) settingDefatultIngressRules(rules []*confPkg.IngressRule) {
@@ -398,7 +399,7 @@ func (uc *ClusterUsecase) handleEvent(ctx context.Context, cluster *Cluster) (er
 	}()
 	if cluster.DeletedAt.Valid {
 		for _, node := range cluster.Nodes {
-			if node.Status == NodeStatus_NODE_UNSPECIFIED || node.Status == NodeStatus_NODE_DELETED {
+			if node.Status == NodeStatus_NodeStatus_UNSPECIFIED || node.Status == NodeStatus_NODE_DELETED {
 				continue
 			}
 			node.SetNodeStatus(NodeStatus_NODE_DELETING)
@@ -435,6 +436,15 @@ func (uc *ClusterUsecase) handleEvent(ctx context.Context, cluster *Cluster) (er
 	if err != nil {
 		return err
 	}
+	err = uc.clusterInfrastructure.GetNodesSystemInfo(ctx, cluster)
+	if err != nil {
+		return err
+	}
+	for _, node := range cluster.Nodes {
+		if node.Status == NodeStatus_NODE_FINDING {
+			node.SetNodeStatus(NodeStatus_NODE_CREATING)
+		}
+	}
 	err = uc.clusterRuntime.HandlerNodes(ctx, cluster)
 	if err != nil {
 		return err
@@ -447,10 +457,16 @@ func (uc *ClusterUsecase) handleEvent(ctx context.Context, cluster *Cluster) (er
 	if err != nil {
 		return err
 	}
+	for _, node := range cluster.Nodes {
+		if node.Status == NodeStatus_NODE_CREATING {
+			node.SetNodeStatus(NodeStatus_NODE_RUNNING)
+		}
+	}
 	return
 }
 
 func (uc *ClusterUsecase) handlerClusterNotInstalled(ctx context.Context, cluster *Cluster) error {
+	cluster.SettingDefaultNodeGroup(uc.conf.Cluster.NodegroupConfig)
 	cluster.settingDefatultIngressRules(uc.conf.Cluster.IngressRules)
 	if cluster.Type.IsCloud() {
 		err := uc.clusterInfrastructure.GetRegions(ctx, cluster)
@@ -471,25 +487,23 @@ func (uc *ClusterUsecase) handlerClusterNotInstalled(ctx context.Context, cluste
 	if err != nil {
 		return err
 	}
-	cluster.SettingCluster()
+	for _, node := range cluster.Nodes {
+		if node.Status == NodeStatus_NODE_FINDING {
+			node.SetNodeStatus(NodeStatus_NODE_CREATING)
+		}
+	}
 	err = uc.clusterInfrastructure.ManageNodeResource(ctx, cluster)
 	if err != nil {
 		return err
 	}
-	if uc.conf.Cluster.GetEnv() == confPkg.Env_Local {
-		err = uc.clusterData.Save(ctx, cluster)
-		if err != nil {
-			return err
-		}
-		err = uc.clusterInfrastructure.MigrateToBostionHost(ctx, cluster)
-		if err != nil {
-			return err
-		}
-		return nil
-	}
 	err = uc.clusterInfrastructure.Install(ctx, cluster)
 	if err != nil {
 		return err
+	}
+	for _, node := range cluster.Nodes {
+		if node.Status == NodeStatus_NODE_CREATING {
+			node.SetNodeStatus(NodeStatus_NODE_RUNNING)
+		}
 	}
 	err = uc.clusterRuntime.MigrateToCluster(ctx, cluster)
 	if err != nil {

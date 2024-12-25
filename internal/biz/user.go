@@ -24,6 +24,9 @@ type Thirdparty interface {
 	GetUserEmail(ctx context.Context, token string) (string, error)
 }
 
+type UserAgent interface {
+}
+
 type UserUseCase struct {
 	userData   UserData
 	thirdparty Thirdparty

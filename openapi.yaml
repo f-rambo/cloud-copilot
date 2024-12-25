@@ -810,7 +810,7 @@ paths:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/cluster.v1alpha1.ClusterIdMessge'
+                            $ref: '#/components/schemas/cluster.v1alpha1.ClusterStartArgs'
                 required: true
             responses:
                 "200":
@@ -1788,16 +1788,23 @@ components:
                     type: string
                 private_key:
                     type: string
-                region:
-                    type: string
                 access_id:
                     type: string
                 access_key:
                     type: string
-                nodes:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/cluster.v1alpha1.NodeSaveArgs'
+                node_username:
+                    type: string
+                node_start_ip:
+                    type: string
+                node_end_ip:
+                    type: string
+        cluster.v1alpha1.ClusterStartArgs:
+            type: object
+            properties:
+                id:
+                    type: string
+                region:
+                    type: string
         cluster.v1alpha1.ClusterStatus:
             type: object
             properties:
@@ -1923,18 +1930,6 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/cluster.v1alpha1.NodeRole'
-        cluster.v1alpha1.NodeSaveArgs:
-            type: object
-            properties:
-                ip:
-                    type: string
-                user:
-                    type: string
-                role:
-                    type: integer
-                    format: int32
-                id:
-                    type: string
         cluster.v1alpha1.NodeStatus:
             type: object
             properties:

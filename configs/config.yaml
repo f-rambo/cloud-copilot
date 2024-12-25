@@ -47,6 +47,13 @@ cluster:
     basic: 50
     advanced: 100
     standard: 200
+  nodegroup_config:
+    cpu: 2
+    memory: 4
+    disk_size: 30
+    target_size: 1
+    min_size: 1
+    max_size: 1
   ingress_rules:
     - name: "apiserver"
       start_port: 6443

@@ -88,17 +88,16 @@ message ClusterSaveArgs {
     int32 type = 3 [json_name = "type"];
     string public_key = 4 [json_name = "public_key"];
     string private_key = 5 [json_name = "private_key"];
-    string region = 6 [json_name = "region"];
-    string access_id = 7 [json_name = "access_id"];
-    string access_key = 8 [json_name = "access_key"];
-    repeated NodeSaveArgs nodes = 9 [json_name = "nodes"];
+    string access_id = 6 [json_name = "access_id"];
+    string access_key = 7 [json_name = "access_key"];
+    string node_username = 8 [json_name = "node_username"];
+    string node_start_ip = 9 [json_name = "node_start_ip"];
+    string node_end_ip = 10 [json_name = "node_end_ip"];
 }
 
-message NodeSaveArgs {
-    string ip = 1 [json_name = "ip"];
-    string user = 2 [json_name = "user"];
-    int32 role = 3 [json_name = "role"];
-    int64 id = 4 [json_name = "id"];
+message ClusterStartArgs {
+    int64 id = 1 [json_name = "id"];
+    string region = 6 [json_name = "region"]; 
 }
 
 message ClusterList {

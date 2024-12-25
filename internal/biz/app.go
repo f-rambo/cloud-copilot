@@ -43,6 +43,9 @@ type AppRuntime interface {
 	GetAppDetailByRepo(ctx context.Context, apprepo *AppRepo, appName, version string) (*App, error)
 }
 
+type AppAgent interface {
+}
+
 type AppUsecase struct {
 	appData    AppData
 	appRuntime AppRuntime

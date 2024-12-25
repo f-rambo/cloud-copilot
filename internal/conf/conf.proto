@@ -30,11 +30,21 @@ message Level {
   int32 standard = 3;
 }
 
+message NodeGroupConfig {
+  int32 cpu = 1;
+  int32 memory = 2;
+  int32 disk_size = 3;
+  int32 target_size = 4;
+  int32 min_size = 5;
+  int32 max_size = 6;
+}
+
 message ClusterConfig {
   Env env = 1;
   string name = 2;
   repeated IngressRule ingress_rules = 3;
   Level level = 4;
+  NodeGroupConfig nodegroup_config = 5;
 }
 
 message HTTPServer {

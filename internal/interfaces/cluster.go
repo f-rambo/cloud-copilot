@@ -139,17 +139,16 @@ func (c *ClusterInterface) Get(ctx context.Context, clusterIdArgs *v1alpha1.Clus
 	}
 	return c.bizCLusterToCluster(cluster), nil
 }
-func (c *ClusterInterface) Save(ctx context.Context, clusterArgs *v1alpha1.ClusterSaveArgs) (*v1alpha1.ClusterIdMessge, error) {
+func (c *ClusterInterface) Save(ctx context.Context, clusterArgs *v1alpha1.ClusterSaveArgs) (msg *v1alpha1.ClusterIdMessge, err error) {
 	if clusterArgs.Name == "" || clusterArgs.PrivateKey == "" || clusterArgs.Type == 0 || clusterArgs.PublicKey == "" {
 		return nil, errors.New("cluster name, private key, type and public key are required")
 	}
-	if biz.ClusterType(clusterArgs.Type) != biz.ClusterType_LOCAL {
+	if biz.ClusterType(clusterArgs.Type).IsCloud() {
 		if clusterArgs.AccessId == "" || clusterArgs.AccessKey == "" {
 			return nil, errors.New("access key id and secret access key are required")
 		}
 	}
 	cluster := &biz.Cluster{}
-	var err error
 	if clusterArgs.Id != 0 {
 		cluster, err = c.clusterUc.Get(ctx, clusterArgs.Id)
 		if err != nil {
@@ -158,10 +157,8 @@ func (c *ClusterInterface) Save(ctx context.Context, clusterArgs *v1alpha1.Clust
 		if cluster == nil || cluster.Id == 0 {
 			return nil, errors.New("cluster not found")
 		}
-		if cluster.Type.IsCloud() && clusterArgs.Region == "" {
-			return nil, errors.New("region is required")
-		}
-	} else {
+	}
+	if cluster.Id == 0 {
 		cluster, err = c.clusterUc.GetByName(ctx, clusterArgs.Name)
 		if err != nil {
 			return nil, err
@@ -174,28 +171,18 @@ func (c *ClusterInterface) Save(ctx context.Context, clusterArgs *v1alpha1.Clust
 	cluster.Type = biz.ClusterType(clusterArgs.Type)
 	cluster.PublicKey = clusterArgs.PublicKey
 	cluster.PrivateKey = clusterArgs.PrivateKey
-	cluster.Region = clusterArgs.Region
 	cluster.AccessId = clusterArgs.AccessId
 	cluster.AccessKey = clusterArgs.AccessKey
-	for _, nodeArgs := range clusterArgs.Nodes {
-		if nodeArgs.Id == -1 {
-			continue
+	if !cluster.Type.IsCloud() {
+		nodeIps := utils.IpRange(clusterArgs.NodeStartIp, clusterArgs.NodeEndIp)
+		if len(nodeIps) == 0 {
+			return nil, errors.New("node start ip and end ip are required")
 		}
-		if nodeArgs.Id == 0 {
+		for _, nodeIp := range nodeIps {
 			cluster.Nodes = append(cluster.Nodes, &biz.Node{
-				Ip:   nodeArgs.Ip,
-				User: nodeArgs.User,
-				Role: biz.NodeRole(nodeArgs.Role),
+				Ip:   nodeIp,
+				User: clusterArgs.NodeUsername,
 			})
-			continue
-		}
-		for _, v := range cluster.Nodes {
-			if v.Id == nodeArgs.Id {
-				v.Ip = nodeArgs.Ip
-				v.User = nodeArgs.User
-				v.Role = biz.NodeRole(nodeArgs.Role)
-				break
-			}
 		}
 	}
 	user, err := c.userUc.GetUserInfo(ctx)
@@ -210,8 +197,8 @@ func (c *ClusterInterface) Save(ctx context.Context, clusterArgs *v1alpha1.Clust
 	return &v1alpha1.ClusterIdMessge{Id: cluster.Id}, nil
 }
 
-func (c *ClusterInterface) Start(ctx context.Context, clusterArgs *v1alpha1.ClusterIdMessge) (*common.Msg, error) {
-	if clusterArgs.Id == 0 {
+func (c *ClusterInterface) Start(ctx context.Context, clusterArgs *v1alpha1.ClusterStartArgs) (*common.Msg, error) {
+	if clusterArgs.Id == 0 || clusterArgs.Region == "" {
 		return nil, errors.New("cluster id is required")
 	}
 	cluster, err := c.clusterUc.Get(ctx, clusterArgs.Id)

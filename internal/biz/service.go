@@ -23,6 +23,9 @@ type WorkflowRuntime interface {
 	Create(ctx context.Context, namespace string, workflow *Workflow) error
 }
 
+type ServiceAgent interface {
+}
+
 type ServicesUseCase struct {
 	serviceData     ServicesData
 	workflowRuntime WorkflowRuntime

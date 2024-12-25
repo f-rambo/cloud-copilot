@@ -53,7 +53,7 @@ type ClusterInterfaceHTTPServer interface {
 	Ping(context.Context, *emptypb.Empty) (*common.Msg, error)
 	PollingLogs(context.Context, *ClusterLogsRequest) (*ClusterLogsResponse, error)
 	Save(context.Context, *ClusterSaveArgs) (*ClusterIdMessge, error)
-	Start(context.Context, *ClusterIdMessge) (*common.Msg, error)
+	Start(context.Context, *ClusterStartArgs) (*common.Msg, error)
 	Stop(context.Context, *ClusterIdMessge) (*common.Msg, error)
 }
 
@@ -310,7 +310,7 @@ func _ClusterInterface_Delete0_HTTP_Handler(srv ClusterInterfaceHTTPServer) func
 
 func _ClusterInterface_Start0_HTTP_Handler(srv ClusterInterfaceHTTPServer) func(ctx http.Context) error {
 	return func(ctx http.Context) error {
-		var in ClusterIdMessge
+		var in ClusterStartArgs
 		if err := ctx.Bind(&in); err != nil {
 			return err
 		}
@@ -319,7 +319,7 @@ func _ClusterInterface_Start0_HTTP_Handler(srv ClusterInterfaceHTTPServer) func(
 		}
 		http.SetOperation(ctx, OperationClusterInterfaceStart)
 		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.Start(ctx, req.(*ClusterIdMessge))
+			return srv.Start(ctx, req.(*ClusterStartArgs))
 		})
 		out, err := h(ctx, &in)
 		if err != nil {
@@ -408,7 +408,7 @@ type ClusterInterfaceHTTPClient interface {
 	Ping(ctx context.Context, req *emptypb.Empty, opts ...http.CallOption) (rsp *common.Msg, err error)
 	PollingLogs(ctx context.Context, req *ClusterLogsRequest, opts ...http.CallOption) (rsp *ClusterLogsResponse, err error)
 	Save(ctx context.Context, req *ClusterSaveArgs, opts ...http.CallOption) (rsp *ClusterIdMessge, err error)
-	Start(ctx context.Context, req *ClusterIdMessge, opts ...http.CallOption) (rsp *common.Msg, err error)
+	Start(ctx context.Context, req *ClusterStartArgs, opts ...http.CallOption) (rsp *common.Msg, err error)
 	Stop(ctx context.Context, req *ClusterIdMessge, opts ...http.CallOption) (rsp *common.Msg, err error)
 }
 
@@ -602,7 +602,7 @@ func (c *ClusterInterfaceHTTPClientImpl) Save(ctx context.Context, in *ClusterSa
 	return &out, nil
 }
 
-func (c *ClusterInterfaceHTTPClientImpl) Start(ctx context.Context, in *ClusterIdMessge, opts ...http.CallOption) (*common.Msg, error) {
+func (c *ClusterInterfaceHTTPClientImpl) Start(ctx context.Context, in *ClusterStartArgs, opts ...http.CallOption) (*common.Msg, error) {
 	var out common.Msg
 	pattern := "/api/v1alpha1/cluster/start"
 	path := binding.EncodeURL(pattern, in, false)
