@@ -31,7 +31,7 @@ func wireApp(bootstrap *conf.Bootstrap, logger log.Logger) (*kratos.App, func(),
 	if err != nil {
 		return nil, nil, err
 	}
-	clusterData := data.NewClusterRepo(dataData, bootstrap, logger)
+	clusterData := data.NewClusterRepo(dataData, logger)
 	clusterInfrastructure := infrastructure.NewInfrastructureCluster(bootstrap, logger)
 	clusterRuntime := clusterruntime.NewClusterRuntimeCluster(bootstrap, logger)
 	clusterUsecase := biz.NewClusterUseCase(bootstrap, clusterData, clusterInfrastructure, clusterRuntime, logger)

@@ -9,6 +9,12 @@ import (
 	"github.com/spf13/cast"
 )
 
+const (
+	TokenKey     UserKey = "token"
+	SignType     UserKey = "sign_type"
+	UserEmailKey UserKey = "user_email"
+)
+
 type UserData interface {
 	GetUserInfoByEmail(ctx context.Context, email string) (*User, error)
 	GetUserByID(ctx context.Context, id int64) (*User, error)

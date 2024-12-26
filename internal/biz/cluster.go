@@ -13,6 +13,12 @@ import (
 	"github.com/pkg/errors"
 )
 
+const (
+	ClusterPoolNumber = 10
+)
+
+var ErrClusterNotFound error = errors.New("cluster not found")
+
 type ClusterData interface {
 	Save(context.Context, *Cluster) error
 	Get(context.Context, int64) (*Cluster, error)
@@ -195,6 +201,14 @@ func (c *Cluster) settingDefatultIngressRules(rules []*confPkg.IngressRule) {
 	}
 }
 
+func (c *Cluster) SetStatus(status ClusterStatus) {
+	c.Status = status
+}
+
+func (c *Cluster) SetRegion(region string) {
+	c.Region = region
+}
+
 func (c ClusterType) IsCloud() bool {
 	return c != ClusterType_LOCAL
 }
@@ -318,9 +332,6 @@ func (uc *ClusterUsecase) Delete(ctx context.Context, clusterID int64) error {
 }
 
 func (uc *ClusterUsecase) Save(ctx context.Context, cluster *Cluster) error {
-	if cluster.Level.String() == "" {
-		cluster.Level = ClusterLevel_BASIC
-	}
 	return uc.clusterData.Save(ctx, cluster)
 }
 
@@ -328,13 +339,58 @@ func (uc *ClusterUsecase) GetRegions(ctx context.Context, cluster *Cluster) ([]*
 	if cluster.Type == ClusterType_LOCAL {
 		return []*CloudResource{}, nil
 	}
-	err := uc.clusterInfrastructure.GetZones(ctx, cluster)
+	err := uc.clusterInfrastructure.GetRegions(ctx, cluster)
 	if err != nil {
 		return nil, err
 	}
-	return cluster.GetCloudResource(ResourceType_AVAILABILITY_ZONES), nil
+	return cluster.GetCloudResource(ResourceType_REGION), nil
 }
 
+func (uc *ClusterUsecase) StartCluster(ctx context.Context, clusterId int64, region string) error {
+	cluster, err := uc.Get(ctx, clusterId)
+	if err != nil {
+		return err
+	}
+	if cluster == nil || cluster.Id == 0 {
+		return ErrClusterNotFound
+	}
+	if cluster.Status != ClusterStatus_UNSPECIFIED && cluster.Status != ClusterStatus_STOPPED {
+		return errors.New("cluster is not in stopped state")
+	}
+	if cluster.Type.IsCloud() {
+		if region == "" {
+			return errors.New("region is required")
+		}
+		cluster.SetRegion(region)
+	}
+	cluster.SetStatus(ClusterStatus_STARTING)
+	err = uc.Apply(cluster)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (uc *ClusterUsecase) StopCluster(ctx context.Context, clusterId int64) error {
+	cluster, err := uc.Get(ctx, clusterId)
+	if err != nil {
+		return err
+	}
+	if cluster == nil || cluster.Id == 0 {
+		return errors.New("cluster not found")
+	}
+	if cluster.Status != ClusterStatus_UNSPECIFIED && cluster.Status != ClusterStatus_RUNNING {
+		return errors.New("cluster is not in running state")
+	}
+	cluster.SetStatus(ClusterStatus_STOPPING)
+	err = uc.Apply(cluster)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// Start the cluster handler server
 func (uc *ClusterUsecase) Start(ctx context.Context) error {
 	for {
 		select {
@@ -391,11 +447,14 @@ func (uc *ClusterUsecase) handleEvent(ctx context.Context, cluster *Cluster) (er
 	lock := uc.getLock(cluster.Id)
 	lock.Lock()
 	defer func() {
-		if err != nil {
-			return
-		}
 		lock.Unlock()
+		if err != nil {
+			uc.log.Errorf("cluster handle event error: %v", err)
+		}
 		err = uc.clusterData.Save(ctx, cluster)
+		if err != nil {
+			uc.log.Errorf("cluster save error: %v", err)
+		}
 	}()
 	if cluster.DeletedAt.Valid {
 		for _, node := range cluster.Nodes {
@@ -469,16 +528,14 @@ func (uc *ClusterUsecase) handlerClusterNotInstalled(ctx context.Context, cluste
 	cluster.SettingDefaultNodeGroup(uc.conf.Cluster.NodegroupConfig)
 	cluster.settingDefatultIngressRules(uc.conf.Cluster.IngressRules)
 	if cluster.Type.IsCloud() {
-		err := uc.clusterInfrastructure.GetRegions(ctx, cluster)
-		if err != nil {
-			return err
+		if cluster.GetCloudResource(ResourceType_AVAILABILITY_ZONES) == nil {
+			err := uc.clusterInfrastructure.GetZones(ctx, cluster)
+			if err != nil {
+				return err
+			}
+			cluster.SettingClusterAvailabilityZone(uc.conf.Cluster.Level)
 		}
-		err = uc.clusterInfrastructure.GetZones(ctx, cluster)
-		if err != nil {
-			return err
-		}
-		cluster.SettingClusterAvailabilityZone(uc.conf.Cluster.Level)
-		err = uc.clusterInfrastructure.CreateCloudBasicResource(ctx, cluster)
+		err := uc.clusterInfrastructure.CreateCloudBasicResource(ctx, cluster)
 		if err != nil {
 			return err
 		}

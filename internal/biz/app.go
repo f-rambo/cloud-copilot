@@ -9,6 +9,10 @@ import (
 	"github.com/pkg/errors"
 )
 
+const (
+	AppPoolNumber = 100
+)
+
 type AppData interface {
 	Save(context.Context, *App) error
 	List(context.Context, *App, int32, int32) ([]*App, int32, error)

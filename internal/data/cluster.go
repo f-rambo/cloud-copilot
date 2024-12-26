@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/f-rambo/cloud-copilot/internal/biz"
-	"github.com/f-rambo/cloud-copilot/internal/conf"
 	"github.com/go-kratos/kratos/v2/log"
 	"gorm.io/gorm"
 )
@@ -12,14 +11,12 @@ import (
 type clusterRepo struct {
 	data *Data
 	log  *log.Helper
-	c    *conf.Bootstrap
 }
 
-func NewClusterRepo(data *Data, c *conf.Bootstrap, logger log.Logger) biz.ClusterData {
+func NewClusterRepo(data *Data, logger log.Logger) biz.ClusterData {
 	return &clusterRepo{
 		data: data,
 		log:  log.NewHelper(logger),
-		c:    c,
 	}
 }
 
@@ -138,7 +135,7 @@ func (c *clusterRepo) saveCloudResources(_ context.Context, cluster *biz.Cluster
 			}
 		}
 		if !ok {
-			err := tx.Delete(&biz.CloudResource{}, v.Id).Error
+			err := tx.Model(&biz.CloudResource{}).Where("id = ?", v.Id).Delete(v).Error
 			if err != nil {
 				return err
 			}
@@ -165,6 +162,7 @@ func (c *clusterRepo) saveIngressControllerRules(_ context.Context, cluster *biz
 		for _, v1 := range cluster.IngressControllerRules {
 			if v.Id == v1.Id {
 				isExist = true
+				break
 			}
 		}
 		if !isExist {

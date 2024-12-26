@@ -201,18 +201,7 @@ func (c *ClusterInterface) Start(ctx context.Context, clusterArgs *v1alpha1.Clus
 	if clusterArgs.Id == 0 || clusterArgs.Region == "" {
 		return nil, errors.New("cluster id is required")
 	}
-	cluster, err := c.clusterUc.Get(ctx, clusterArgs.Id)
-	if err != nil {
-		return nil, err
-	}
-	if cluster == nil || cluster.Id == 0 {
-		return nil, errors.New("cluster not found")
-	}
-	if cluster.Status != biz.ClusterStatus_UNSPECIFIED && cluster.Status != biz.ClusterStatus_STOPPED {
-		return nil, errors.New("cluster is not in stopped state")
-	}
-	cluster.Status = biz.ClusterStatus_STARTING
-	err = c.clusterUc.Apply(cluster)
+	err := c.clusterUc.StartCluster(ctx, clusterArgs.Id, clusterArgs.Region)
 	if err != nil {
 		return nil, err
 	}
@@ -223,18 +212,7 @@ func (c *ClusterInterface) Stop(ctx context.Context, clusterArgs *v1alpha1.Clust
 	if clusterArgs.Id == 0 {
 		return nil, errors.New("cluster id is required")
 	}
-	cluster, err := c.clusterUc.Get(ctx, clusterArgs.Id)
-	if err != nil {
-		return nil, err
-	}
-	if cluster == nil || cluster.Id == 0 {
-		return nil, errors.New("cluster not found")
-	}
-	if cluster.Status != biz.ClusterStatus_UNSPECIFIED && cluster.Status != biz.ClusterStatus_RUNNING {
-		return nil, errors.New("cluster is not in running state")
-	}
-	cluster.Status = biz.ClusterStatus_STOPPING
-	err = c.clusterUc.Apply(cluster)
+	err := c.clusterUc.StopCluster(ctx, clusterArgs.Id)
 	if err != nil {
 		return nil, err
 	}

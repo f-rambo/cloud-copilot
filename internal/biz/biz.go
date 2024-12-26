@@ -7,7 +7,6 @@ import (
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-kratos/kratos/v2/transport"
 	"github.com/google/wire"
-	"github.com/pkg/errors"
 )
 
 type QueueKey string
@@ -22,26 +21,8 @@ func (u UserKey) String() string {
 	return string(u)
 }
 
-const (
-	ClusterQueueKey QueueKey = "cluster-queue-key"
-	AppQueueKey     QueueKey = "app-queue-key"
-	ServiceQueueKey QueueKey = "service-queue-key"
-
-	TokenKey     UserKey = "token"
-	SignType     UserKey = "sign_type"
-	UserEmailKey UserKey = "user_email"
-)
-
-const (
-	ClusterPoolNumber = 10
-
-	AppPoolNumber = 100
-)
-
 // ProviderSet is biz providers.
-var ProviderSet = wire.NewSet(NewBiz, NewClusterUseCase, NewAppUsecase, NewServicesUseCase, NewUseUser, NewProjectUseCase, NewWorkspaceUsecase, NewEventUsecase, NewAgentUsecase)
-
-var ErrClusterNotFound error = errors.New("cluster not found")
+var ProviderSet = wire.NewSet(NewBiz, NewClusterUseCase, NewAppUsecase, NewServicesUseCase, NewUseUser, NewProjectUseCase, NewWorkspaceUsecase, NewAgentUsecase)
 
 type Biz struct {
 	clusterUc  *ClusterUsecase
