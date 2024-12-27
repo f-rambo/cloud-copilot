@@ -13,11 +13,11 @@ enum ClusterType {
 
 enum ClusterStatus {
       UNSPECIFIED = 0;
-      RUNNING = 1;
-      DELETED = 2;
-      STARTING = 3;
-      STOPPING = 4;
-      STOPPED = 5;
+      STARTING = 1;
+      RUNNING = 2;
+      STOPPING = 3;
+      STOPPED = 4;
+      DELETED = 5;
 }
 
 enum ClusterLevel {
@@ -37,12 +37,12 @@ enum NodeRole {
 enum NodeStatus {
       NodeStatus_UNSPECIFIED = 0;
       NODE_FINDING = 1;
-      NODE_RUNNING = 2;
-      NODE_CREATING = 3;
-      NODE_DELETING = 4;
-      NODE_DELETED = 5;
-      NODE_ERROR = 6;
-      NODE_PENDING = 7;
+      NODE_CREATING = 2;
+      NODE_PENDING = 3;
+      NODE_RUNNING = 4;
+      NODE_DELETING = 5;
+      NODE_DELETED = 6;
+      NODE_ERROR = 7;
 }
 
 enum NodeGroupType {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"sort"
 	"sync"
 
 	confPkg "github.com/f-rambo/cloud-copilot/internal/conf"
@@ -71,6 +72,20 @@ func NewClusterUseCase(conf *confPkg.Bootstrap, clusterData ClusterData, cluster
 	}
 }
 
+type CloudResources []*CloudResource
+
+func (c CloudResources) Len() int {
+	return len(c)
+}
+
+func (c CloudResources) Less(i, j int) bool {
+	return c[i].Name < c[j].Name
+}
+
+func (c CloudResources) Swap(i, j int) {
+	c[i], c[j] = c[j], c[i]
+}
+
 func (c *Cluster) GetCloudResource(resourceType ResourceType) []*CloudResource {
 	cloudResources := make([]*CloudResource, 0)
 	for _, resources := range c.CloudResources {
@@ -109,19 +124,24 @@ func (c *Cluster) SettingClusterAvailabilityZone(clusterLevel *confPkg.Level) {
 	for _, nodeGroup := range c.NodeGroups {
 		maxNodeNumber += nodeGroup.TargetSize
 	}
+	var setClusterLevel ClusterLevel = ClusterLevel_ClusterLevel_UNSPECIFIED
 	if maxNodeNumber < clusterLevel.Basic {
-		c.Level = ClusterLevel_BASIC
+		setClusterLevel = ClusterLevel_BASIC
 	}
 	if maxNodeNumber < clusterLevel.Advanced && maxNodeNumber >= clusterLevel.Basic {
-		c.Level = ClusterLevel_ADVANCED
+		setClusterLevel = ClusterLevel_ADVANCED
 	}
 	if maxNodeNumber >= clusterLevel.Advanced {
-		c.Level = ClusterLevel_STANDARD
+		setClusterLevel = ClusterLevel_STANDARD
+	}
+	if c.Level != setClusterLevel && setClusterLevel != ClusterLevel_ClusterLevel_UNSPECIFIED {
+		c.Level = setClusterLevel
 	}
 	zones := c.GetCloudResource(ResourceType_AVAILABILITY_ZONES)
 	if len(zones) == 0 {
 		return
 	}
+	sort.Sort(CloudResources(zones))
 	c.DeleteCloudResource(ResourceType_AVAILABILITY_ZONES)
 	zoneNumber := len(zones)
 	if c.Level == ClusterLevel_BASIC {
@@ -139,33 +159,29 @@ func (c *Cluster) SettingDefaultNodeGroup(nodegroupConfig *confPkg.NodeGroupConf
 	if c.NodeGroups == nil {
 		c.NodeGroups = make([]*NodeGroup, 0)
 	}
-	if len(c.NodeGroups) == 0 {
-		c.NodeGroups = append(c.NodeGroups, &NodeGroup{
-			Id:         uuid.NewString(),
-			Name:       "default",
-			ClusterId:  c.Id,
-			Type:       NodeGroupType_NORMAL,
-			TargetSize: nodegroupConfig.TargetSize,
-			MaxSize:    nodegroupConfig.MaxSize,
-			MinSize:    nodegroupConfig.MinSize,
-			Arch:       NodeArchType_AMD64,
-			Cpu:        nodegroupConfig.Cpu,
-			Memory:     nodegroupConfig.Memory,
-		})
-	}
+	c.NodeGroups = append(c.NodeGroups, &NodeGroup{
+		Id:         uuid.NewString(),
+		Name:       "default",
+		ClusterId:  c.Id,
+		Type:       NodeGroupType_NORMAL,
+		TargetSize: nodegroupConfig.TargetSize,
+		MaxSize:    nodegroupConfig.MaxSize,
+		MinSize:    nodegroupConfig.MinSize,
+		Arch:       NodeArchType_AMD64,
+		Cpu:        nodegroupConfig.Cpu,
+		Memory:     nodegroupConfig.Memory,
+	})
 	if c.Nodes == nil {
 		c.Nodes = make([]*Node, 0)
 	}
-	if len(c.Nodes) == 0 {
-		c.Nodes = append(c.Nodes, &Node{
-			Name:           "default",
-			Status:         NodeStatus_NODE_FINDING,
-			Role:           NodeRole_MASTER,
-			NodeGroupId:    c.NodeGroups[0].Id,
-			SystemDiskSize: nodegroupConfig.DiskSize,
-			ClusterId:      c.Id,
-		})
-	}
+	c.Nodes = append(c.Nodes, &Node{
+		Name:           "default",
+		Status:         NodeStatus_NODE_FINDING,
+		Role:           NodeRole_MASTER,
+		NodeGroupId:    c.NodeGroups[0].Id,
+		SystemDiskSize: nodegroupConfig.DiskSize,
+		ClusterId:      c.Id,
+	})
 }
 
 func (c *Cluster) settingDefatultIngressRules(rules []*confPkg.IngressRule) {
@@ -224,6 +240,14 @@ func (c *Cluster) GetNodeGroup(nodeGroupId string) *NodeGroup {
 		}
 	}
 	return nil
+}
+
+func (c *Cluster) SetNodeStatus(fromStatus, toStatus NodeStatus) {
+	for _, node := range c.Nodes {
+		if node.Status == fromStatus {
+			node.SetNodeStatus(toStatus)
+		}
+	}
 }
 
 func (n *Node) SetNodeStatus(status NodeStatus) {
@@ -525,17 +549,19 @@ func (uc *ClusterUsecase) handleEvent(ctx context.Context, cluster *Cluster) (er
 }
 
 func (uc *ClusterUsecase) handlerClusterNotInstalled(ctx context.Context, cluster *Cluster) error {
-	cluster.SettingDefaultNodeGroup(uc.conf.Cluster.NodegroupConfig)
-	cluster.settingDefatultIngressRules(uc.conf.Cluster.IngressRules)
+	if len(cluster.NodeGroups) == 0 {
+		cluster.SettingDefaultNodeGroup(uc.conf.Cluster.NodegroupConfig)
+	}
+	if len(cluster.NodeGroups) == 0 {
+		cluster.settingDefatultIngressRules(uc.conf.Cluster.IngressRules)
+	}
 	if cluster.Type.IsCloud() {
-		if cluster.GetCloudResource(ResourceType_AVAILABILITY_ZONES) == nil {
-			err := uc.clusterInfrastructure.GetZones(ctx, cluster)
-			if err != nil {
-				return err
-			}
-			cluster.SettingClusterAvailabilityZone(uc.conf.Cluster.Level)
+		err := uc.clusterInfrastructure.GetZones(ctx, cluster)
+		if err != nil {
+			return err
 		}
-		err := uc.clusterInfrastructure.CreateCloudBasicResource(ctx, cluster)
+		cluster.SettingClusterAvailabilityZone(uc.conf.Cluster.Level)
+		err = uc.clusterInfrastructure.CreateCloudBasicResource(ctx, cluster)
 		if err != nil {
 			return err
 		}
@@ -544,24 +570,19 @@ func (uc *ClusterUsecase) handlerClusterNotInstalled(ctx context.Context, cluste
 	if err != nil {
 		return err
 	}
-	for _, node := range cluster.Nodes {
-		if node.Status == NodeStatus_NODE_FINDING {
-			node.SetNodeStatus(NodeStatus_NODE_CREATING)
+	cluster.SetNodeStatus(NodeStatus_NODE_FINDING, NodeStatus_NODE_CREATING)
+	if cluster.Type.IsCloud() {
+		err = uc.clusterInfrastructure.ManageNodeResource(ctx, cluster)
+		if err != nil {
+			return err
 		}
 	}
-	err = uc.clusterInfrastructure.ManageNodeResource(ctx, cluster)
-	if err != nil {
-		return err
-	}
+	cluster.SetNodeStatus(NodeStatus_NODE_CREATING, NodeStatus_NODE_PENDING)
 	err = uc.clusterInfrastructure.Install(ctx, cluster)
 	if err != nil {
 		return err
 	}
-	for _, node := range cluster.Nodes {
-		if node.Status == NodeStatus_NODE_CREATING {
-			node.SetNodeStatus(NodeStatus_NODE_RUNNING)
-		}
-	}
+	cluster.SetNodeStatus(NodeStatus_NODE_PENDING, NodeStatus_NODE_RUNNING)
 	err = uc.clusterRuntime.MigrateToCluster(ctx, cluster)
 	if err != nil {
 		return err
