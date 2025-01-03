@@ -1,0 +1,22 @@
+FROM golang:1.22
+
+# Set Go environment variables
+ENV GOPATH="/go"
+ENV GOBIN="/go/bin"
+ENV GO111MODULE=on
+ENV GOPROXY=https://goproxy.cn
+ENV GOPRIVATE=github.com/f-rambo/
+ENV CGO_ENABLED=1
+
+# Create necessary directories
+RUN mkdir -p /go/bin /go/src /go/pkg
+
+# Expose ports
+EXPOSE 8000
+EXPOSE 9000
+
+# Set volume
+VOLUME [ "/go/src" ]
+
+# Set the default command
+CMD ["/bin/bash"]

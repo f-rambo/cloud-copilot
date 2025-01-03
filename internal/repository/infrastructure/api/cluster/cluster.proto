@@ -21,8 +21,6 @@ service ClusterInterface {
 
       rpc ManageNodeResource(biz.cluster.Cluster) returns (stream biz.cluster.Cluster);
       
-      rpc MigrateToBostionHost(biz.cluster.Cluster) returns (stream biz.cluster.Cluster);
-      
       rpc GetNodesSystemInfo(biz.cluster.Cluster) returns (stream biz.cluster.Cluster);
       
       rpc Install(biz.cluster.Cluster) returns (stream biz.cluster.Cluster);

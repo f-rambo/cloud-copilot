@@ -90,24 +90,6 @@ multi-platform-build:
 		sleep 5; \
 	done
 
-.PHONY: download-resources
-download-resources:
-	@mkdir -p ./resource/
-	@for platform in $(PLATFORMS); do \
-		image_name=resource/$$platform/$(IMG); \
-		echo "Building image $$image_name"; \
-		docker build --platform=$$platform -f Dockerfile.download_resource -t $$image_name --load . ; \
-		platform_formated=$$(echo $$platform | tr '[:upper:]' '[:lower:]' | tr '/' '-'); \
-		container_name=$$platform_formated-dind-container; \
-		arch=$$(echo $$platform | cut -d '/' -f2); \
-		mkdir -p ./resource/$$arch; \
-		docker run --privileged --platform=$$platform --name $$container_name -d --rm -v ./resource/$$arch:/resource -v ./shell/:/shell $$image_name; \
-		sleep 5; \
-		docker exec -it $$container_name /bin/bash /shell/download.sh /resource; \
-		docker stop $$container_name; \
-		sleep 5; \
-	done
-
 .PHONY: all
 all:
 	make api;

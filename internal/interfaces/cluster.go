@@ -284,10 +284,7 @@ func (c *ClusterInterface) PollingLogs(ctx context.Context, req *v1alpha1.Cluste
 		req.TailLines = 30
 	}
 
-	clusterLogPath, err := utils.GetLogFilePath(c.c.Server.Name)
-	if err != nil {
-		return nil, err
-	}
+	clusterLogPath := utils.GetLogFilePath()
 	if ok := utils.IsFileExist(clusterLogPath); !ok {
 		return nil, errors.New("cluster log does not exist")
 	}
@@ -333,10 +330,7 @@ func (c *ClusterInterface) GetLogs(stream v1alpha1.ClusterInterface_GetLogsServe
 			req.TailLines = 30
 		}
 
-		clusterLogPath, err := utils.GetLogFilePath(c.c.Server.Name)
-		if err != nil {
-			return err
-		}
+		clusterLogPath := utils.GetLogFilePath()
 		if ok := utils.IsFileExist(clusterLogPath); !ok {
 			return errors.New("cluster log does not exist")
 		}

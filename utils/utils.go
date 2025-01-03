@@ -21,6 +21,13 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+func GetServerStoragePathByNames(packageNames ...string) string {
+	if len(packageNames) == 0 {
+		return ""
+	}
+	return filepath.Join(packageNames...)
+}
+
 func IpRange(startIp, endIp string) []string {
 	ipList := make([]string, 0)
 	var start int = 0

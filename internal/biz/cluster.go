@@ -43,7 +43,7 @@ type ClusterInfrastructure interface {
 type ClusterRuntime interface {
 	CurrentCluster(context.Context, *Cluster) error
 	HandlerNodes(context.Context, *Cluster) error
-	MigrateToCluster(context.Context, *Cluster) error
+	StartCluster(context.Context, *Cluster) error
 }
 
 type ClusterAgent interface {
@@ -583,7 +583,7 @@ func (uc *ClusterUsecase) handlerClusterNotInstalled(ctx context.Context, cluste
 		return err
 	}
 	cluster.SetNodeStatus(NodeStatus_NODE_PENDING, NodeStatus_NODE_RUNNING)
-	err = uc.clusterRuntime.MigrateToCluster(ctx, cluster)
+	err = uc.clusterRuntime.StartCluster(ctx, cluster)
 	if err != nil {
 		return err
 	}

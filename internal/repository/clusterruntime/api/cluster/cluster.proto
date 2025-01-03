@@ -14,5 +14,5 @@ service ClusterInterface {
 
       rpc HandlerNodes(biz.cluster.Cluster) returns (biz.cluster.Cluster);
       
-      rpc MigrateToCluster(biz.cluster.Cluster) returns (biz.cluster.Cluster);
+      rpc StartCluster(biz.cluster.Cluster) returns (biz.cluster.Cluster);
 }

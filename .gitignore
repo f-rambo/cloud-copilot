@@ -36,6 +36,7 @@ bin/
 built/
 resource/
 shell/
+log/
 
 # Develop tools
 .vscode/

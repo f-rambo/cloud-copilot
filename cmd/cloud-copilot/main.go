@@ -4,6 +4,7 @@ import (
 	"context"
 	"flag"
 	"os"
+	"path/filepath"
 	"runtime"
 
 	"github.com/f-rambo/cloud-copilot/internal/biz"
@@ -51,6 +52,7 @@ func newApp(logger log.Logger, gs *grpc.Server, hs *http.Server, b *biz.Biz) *kr
 			utils.OSKey.String():             runtime.GOOS,
 			utils.ArchKey.String():           runtime.GOARCH,
 			utils.ConfKey.String():           flagconf,
+			utils.ConfDirKey.String():        filepath.Dir(flagconf),
 		}),
 		kratos.Logger(logger),
 		kratos.Server(servers...),
@@ -65,6 +67,7 @@ func main() {
 		}
 	}()
 
+	// config
 	flag.Parse()
 	c := config.New(
 		config.WithSource(
@@ -85,15 +88,8 @@ func main() {
 	Name = bc.Server.Name
 	Version = bc.Server.Version
 
-	utils.ServerNameAsStoreDirName = Name
-	if err := utils.InitServerStore(); err != nil {
-		panic(err)
-	}
-
-	utilLog, err := utils.NewLog(&bc)
-	if err != nil {
-		panic(err)
-	}
+	// logger
+	utilLog := utils.NewLog(&bc)
 	defer utilLog.Close()
 	logger := log.With(utilLog, utilLog.GetLogContenteKeyvals()...)
 

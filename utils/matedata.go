@@ -25,18 +25,19 @@ const (
 	OSKey             MatedataKey = "os"
 	ArchKey           MatedataKey = "arch"
 	ConfKey           MatedataKey = "conf"
+	ConfDirKey        MatedataKey = "confdir"
 )
 
-func GetFromContextByKey(ctx context.Context, key MatedataKey) (string, error) {
+func GetFromContextByKey(ctx context.Context, key MatedataKey) string {
 	appInfo, ok := kratos.FromContext(ctx)
 	if !ok {
-		return "", nil
+		return ""
 	}
 	value, ok := appInfo.Metadata()[key.String()]
 	if !ok {
-		return "", nil
+		return ""
 	}
-	return value, nil
+	return value
 }
 
 func GetFromContext(ctx context.Context) map[string]string {

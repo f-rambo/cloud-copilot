@@ -23,7 +23,7 @@ const (
 	ClusterInterface_CheckClusterInstalled_FullMethodName = "/clusterruntime.api.cluster.ClusterInterface/CheckClusterInstalled"
 	ClusterInterface_CurrentCluster_FullMethodName        = "/clusterruntime.api.cluster.ClusterInterface/CurrentCluster"
 	ClusterInterface_HandlerNodes_FullMethodName          = "/clusterruntime.api.cluster.ClusterInterface/HandlerNodes"
-	ClusterInterface_MigrateToCluster_FullMethodName      = "/clusterruntime.api.cluster.ClusterInterface/MigrateToCluster"
+	ClusterInterface_StartCluster_FullMethodName          = "/clusterruntime.api.cluster.ClusterInterface/StartCluster"
 )
 
 // ClusterInterfaceClient is the client API for ClusterInterface service.
@@ -33,7 +33,7 @@ type ClusterInterfaceClient interface {
 	CheckClusterInstalled(ctx context.Context, in *biz.Cluster, opts ...grpc.CallOption) (*ClusterInstalled, error)
 	CurrentCluster(ctx context.Context, in *biz.Cluster, opts ...grpc.CallOption) (*biz.Cluster, error)
 	HandlerNodes(ctx context.Context, in *biz.Cluster, opts ...grpc.CallOption) (*biz.Cluster, error)
-	MigrateToCluster(ctx context.Context, in *biz.Cluster, opts ...grpc.CallOption) (*biz.Cluster, error)
+	StartCluster(ctx context.Context, in *biz.Cluster, opts ...grpc.CallOption) (*biz.Cluster, error)
 }
 
 type clusterInterfaceClient struct {
@@ -74,10 +74,10 @@ func (c *clusterInterfaceClient) HandlerNodes(ctx context.Context, in *biz.Clust
 	return out, nil
 }
 
-func (c *clusterInterfaceClient) MigrateToCluster(ctx context.Context, in *biz.Cluster, opts ...grpc.CallOption) (*biz.Cluster, error) {
+func (c *clusterInterfaceClient) StartCluster(ctx context.Context, in *biz.Cluster, opts ...grpc.CallOption) (*biz.Cluster, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(biz.Cluster)
-	err := c.cc.Invoke(ctx, ClusterInterface_MigrateToCluster_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, ClusterInterface_StartCluster_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -91,7 +91,7 @@ type ClusterInterfaceServer interface {
 	CheckClusterInstalled(context.Context, *biz.Cluster) (*ClusterInstalled, error)
 	CurrentCluster(context.Context, *biz.Cluster) (*biz.Cluster, error)
 	HandlerNodes(context.Context, *biz.Cluster) (*biz.Cluster, error)
-	MigrateToCluster(context.Context, *biz.Cluster) (*biz.Cluster, error)
+	StartCluster(context.Context, *biz.Cluster) (*biz.Cluster, error)
 	mustEmbedUnimplementedClusterInterfaceServer()
 }
 
@@ -111,8 +111,8 @@ func (UnimplementedClusterInterfaceServer) CurrentCluster(context.Context, *biz.
 func (UnimplementedClusterInterfaceServer) HandlerNodes(context.Context, *biz.Cluster) (*biz.Cluster, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method HandlerNodes not implemented")
 }
-func (UnimplementedClusterInterfaceServer) MigrateToCluster(context.Context, *biz.Cluster) (*biz.Cluster, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method MigrateToCluster not implemented")
+func (UnimplementedClusterInterfaceServer) StartCluster(context.Context, *biz.Cluster) (*biz.Cluster, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method StartCluster not implemented")
 }
 func (UnimplementedClusterInterfaceServer) mustEmbedUnimplementedClusterInterfaceServer() {}
 func (UnimplementedClusterInterfaceServer) testEmbeddedByValue()                          {}
@@ -189,20 +189,20 @@ func _ClusterInterface_HandlerNodes_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ClusterInterface_MigrateToCluster_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _ClusterInterface_StartCluster_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(biz.Cluster)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ClusterInterfaceServer).MigrateToCluster(ctx, in)
+		return srv.(ClusterInterfaceServer).StartCluster(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: ClusterInterface_MigrateToCluster_FullMethodName,
+		FullMethod: ClusterInterface_StartCluster_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ClusterInterfaceServer).MigrateToCluster(ctx, req.(*biz.Cluster))
+		return srv.(ClusterInterfaceServer).StartCluster(ctx, req.(*biz.Cluster))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -227,8 +227,8 @@ var ClusterInterface_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _ClusterInterface_HandlerNodes_Handler,
 		},
 		{
-			MethodName: "MigrateToCluster",
-			Handler:    _ClusterInterface_MigrateToCluster_Handler,
+			MethodName: "StartCluster",
+			Handler:    _ClusterInterface_StartCluster_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

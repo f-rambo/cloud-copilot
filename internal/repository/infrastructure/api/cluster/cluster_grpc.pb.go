@@ -26,7 +26,6 @@ const (
 	ClusterInterface_CreateCloudBasicResource_FullMethodName = "/infrastructure.api.cluster.ClusterInterface/CreateCloudBasicResource"
 	ClusterInterface_DeleteCloudBasicResource_FullMethodName = "/infrastructure.api.cluster.ClusterInterface/DeleteCloudBasicResource"
 	ClusterInterface_ManageNodeResource_FullMethodName       = "/infrastructure.api.cluster.ClusterInterface/ManageNodeResource"
-	ClusterInterface_MigrateToBostionHost_FullMethodName     = "/infrastructure.api.cluster.ClusterInterface/MigrateToBostionHost"
 	ClusterInterface_GetNodesSystemInfo_FullMethodName       = "/infrastructure.api.cluster.ClusterInterface/GetNodesSystemInfo"
 	ClusterInterface_Install_FullMethodName                  = "/infrastructure.api.cluster.ClusterInterface/Install"
 	ClusterInterface_UnInstall_FullMethodName                = "/infrastructure.api.cluster.ClusterInterface/UnInstall"
@@ -43,7 +42,6 @@ type ClusterInterfaceClient interface {
 	CreateCloudBasicResource(ctx context.Context, in *biz.Cluster, opts ...grpc.CallOption) (grpc.ServerStreamingClient[biz.Cluster], error)
 	DeleteCloudBasicResource(ctx context.Context, in *biz.Cluster, opts ...grpc.CallOption) (grpc.ServerStreamingClient[biz.Cluster], error)
 	ManageNodeResource(ctx context.Context, in *biz.Cluster, opts ...grpc.CallOption) (grpc.ServerStreamingClient[biz.Cluster], error)
-	MigrateToBostionHost(ctx context.Context, in *biz.Cluster, opts ...grpc.CallOption) (grpc.ServerStreamingClient[biz.Cluster], error)
 	GetNodesSystemInfo(ctx context.Context, in *biz.Cluster, opts ...grpc.CallOption) (grpc.ServerStreamingClient[biz.Cluster], error)
 	Install(ctx context.Context, in *biz.Cluster, opts ...grpc.CallOption) (grpc.ServerStreamingClient[biz.Cluster], error)
 	UnInstall(ctx context.Context, in *biz.Cluster, opts ...grpc.CallOption) (grpc.ServerStreamingClient[biz.Cluster], error)
@@ -154,28 +152,9 @@ func (c *clusterInterfaceClient) ManageNodeResource(ctx context.Context, in *biz
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type ClusterInterface_ManageNodeResourceClient = grpc.ServerStreamingClient[biz.Cluster]
 
-func (c *clusterInterfaceClient) MigrateToBostionHost(ctx context.Context, in *biz.Cluster, opts ...grpc.CallOption) (grpc.ServerStreamingClient[biz.Cluster], error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &ClusterInterface_ServiceDesc.Streams[4], ClusterInterface_MigrateToBostionHost_FullMethodName, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	x := &grpc.GenericClientStream[biz.Cluster, biz.Cluster]{ClientStream: stream}
-	if err := x.ClientStream.SendMsg(in); err != nil {
-		return nil, err
-	}
-	if err := x.ClientStream.CloseSend(); err != nil {
-		return nil, err
-	}
-	return x, nil
-}
-
-// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type ClusterInterface_MigrateToBostionHostClient = grpc.ServerStreamingClient[biz.Cluster]
-
 func (c *clusterInterfaceClient) GetNodesSystemInfo(ctx context.Context, in *biz.Cluster, opts ...grpc.CallOption) (grpc.ServerStreamingClient[biz.Cluster], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &ClusterInterface_ServiceDesc.Streams[5], ClusterInterface_GetNodesSystemInfo_FullMethodName, cOpts...)
+	stream, err := c.cc.NewStream(ctx, &ClusterInterface_ServiceDesc.Streams[4], ClusterInterface_GetNodesSystemInfo_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -194,7 +173,7 @@ type ClusterInterface_GetNodesSystemInfoClient = grpc.ServerStreamingClient[biz.
 
 func (c *clusterInterfaceClient) Install(ctx context.Context, in *biz.Cluster, opts ...grpc.CallOption) (grpc.ServerStreamingClient[biz.Cluster], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &ClusterInterface_ServiceDesc.Streams[6], ClusterInterface_Install_FullMethodName, cOpts...)
+	stream, err := c.cc.NewStream(ctx, &ClusterInterface_ServiceDesc.Streams[5], ClusterInterface_Install_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -213,7 +192,7 @@ type ClusterInterface_InstallClient = grpc.ServerStreamingClient[biz.Cluster]
 
 func (c *clusterInterfaceClient) UnInstall(ctx context.Context, in *biz.Cluster, opts ...grpc.CallOption) (grpc.ServerStreamingClient[biz.Cluster], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &ClusterInterface_ServiceDesc.Streams[7], ClusterInterface_UnInstall_FullMethodName, cOpts...)
+	stream, err := c.cc.NewStream(ctx, &ClusterInterface_ServiceDesc.Streams[6], ClusterInterface_UnInstall_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -232,7 +211,7 @@ type ClusterInterface_UnInstallClient = grpc.ServerStreamingClient[biz.Cluster]
 
 func (c *clusterInterfaceClient) HandlerNodes(ctx context.Context, in *biz.Cluster, opts ...grpc.CallOption) (grpc.ServerStreamingClient[biz.Cluster], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &ClusterInterface_ServiceDesc.Streams[8], ClusterInterface_HandlerNodes_FullMethodName, cOpts...)
+	stream, err := c.cc.NewStream(ctx, &ClusterInterface_ServiceDesc.Streams[7], ClusterInterface_HandlerNodes_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -259,7 +238,6 @@ type ClusterInterfaceServer interface {
 	CreateCloudBasicResource(*biz.Cluster, grpc.ServerStreamingServer[biz.Cluster]) error
 	DeleteCloudBasicResource(*biz.Cluster, grpc.ServerStreamingServer[biz.Cluster]) error
 	ManageNodeResource(*biz.Cluster, grpc.ServerStreamingServer[biz.Cluster]) error
-	MigrateToBostionHost(*biz.Cluster, grpc.ServerStreamingServer[biz.Cluster]) error
 	GetNodesSystemInfo(*biz.Cluster, grpc.ServerStreamingServer[biz.Cluster]) error
 	Install(*biz.Cluster, grpc.ServerStreamingServer[biz.Cluster]) error
 	UnInstall(*biz.Cluster, grpc.ServerStreamingServer[biz.Cluster]) error
@@ -291,9 +269,6 @@ func (UnimplementedClusterInterfaceServer) DeleteCloudBasicResource(*biz.Cluster
 }
 func (UnimplementedClusterInterfaceServer) ManageNodeResource(*biz.Cluster, grpc.ServerStreamingServer[biz.Cluster]) error {
 	return status.Errorf(codes.Unimplemented, "method ManageNodeResource not implemented")
-}
-func (UnimplementedClusterInterfaceServer) MigrateToBostionHost(*biz.Cluster, grpc.ServerStreamingServer[biz.Cluster]) error {
-	return status.Errorf(codes.Unimplemented, "method MigrateToBostionHost not implemented")
 }
 func (UnimplementedClusterInterfaceServer) GetNodesSystemInfo(*biz.Cluster, grpc.ServerStreamingServer[biz.Cluster]) error {
 	return status.Errorf(codes.Unimplemented, "method GetNodesSystemInfo not implemented")
@@ -408,17 +383,6 @@ func _ClusterInterface_ManageNodeResource_Handler(srv interface{}, stream grpc.S
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type ClusterInterface_ManageNodeResourceServer = grpc.ServerStreamingServer[biz.Cluster]
 
-func _ClusterInterface_MigrateToBostionHost_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(biz.Cluster)
-	if err := stream.RecvMsg(m); err != nil {
-		return err
-	}
-	return srv.(ClusterInterfaceServer).MigrateToBostionHost(m, &grpc.GenericServerStream[biz.Cluster, biz.Cluster]{ServerStream: stream})
-}
-
-// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type ClusterInterface_MigrateToBostionHostServer = grpc.ServerStreamingServer[biz.Cluster]
-
 func _ClusterInterface_GetNodesSystemInfo_Handler(srv interface{}, stream grpc.ServerStream) error {
 	m := new(biz.Cluster)
 	if err := stream.RecvMsg(m); err != nil {
@@ -498,11 +462,6 @@ var ClusterInterface_ServiceDesc = grpc.ServiceDesc{
 		{
 			StreamName:    "ManageNodeResource",
 			Handler:       _ClusterInterface_ManageNodeResource_Handler,
-			ServerStreams: true,
-		},
-		{
-			StreamName:    "MigrateToBostionHost",
-			Handler:       _ClusterInterface_MigrateToBostionHost_Handler,
 			ServerStreams: true,
 		},
 		{
