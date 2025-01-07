@@ -36,13 +36,14 @@ enum NodeRole {
 
 enum NodeStatus {
       NodeStatus_UNSPECIFIED = 0;
-      NODE_FINDING = 1;
-      NODE_CREATING = 2;
-      NODE_PENDING = 3;
-      NODE_RUNNING = 4;
-      NODE_DELETING = 5;
-      NODE_DELETED = 6;
-      NODE_ERROR = 7;
+      NODE_READY = 1;
+      NODE_FINDING = 2;
+      NODE_CREATING = 3;
+      NODE_PENDING = 4;
+      NODE_RUNNING = 5;
+      NODE_DELETING = 6;
+      NODE_DELETED = 7;
+      NODE_ERROR = 8;
 }
 
 enum NodeGroupType {
@@ -132,11 +133,12 @@ message Cluster {
       string cert_data = 17; // @gotags: gorm:"column:cert_data; default:''; NOT NULL"
       string key_data = 18; // @gotags: gorm:"column:key_data; default:''; NOT NULL"
       string node_user = 19; // @gotags: gorm:"column:node_user; default:''; NOT NULL"
-      string node_ips = 20; // @gotags: gorm:"column:node_ips; default:''; NOT NULL"
-      repeated NodeGroup node_groups = 21; // @gotags: gorm:"-"
-      repeated Node nodes = 22; // @gotags: gorm:"-"
-      repeated CloudResource cloud_resources = 23; // @gotags: gorm:"-"
-      repeated IngressControllerRule ingress_controller_rules = 24; // @gotags: gorm:"-"
+      string node_start_ip = 20; // @gotags: gorm:"column:node_start_ip; default:''; NOT NULL"
+      string node_end_ip = 21; // @gotags: gorm:"column:node_end_ip; default:''; NOT NULL"
+      repeated NodeGroup node_groups = 22; // @gotags: gorm:"-"
+      repeated Node nodes = 23; // @gotags: gorm:"-"
+      repeated CloudResource cloud_resources = 24; // @gotags: gorm:"-"
+      repeated IngressControllerRule ingress_controller_rules = 25; // @gotags: gorm:"-"
 }
 
 message NodeGroup {

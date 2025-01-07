@@ -1,7 +1,7 @@
 package sidecar
 
 import (
-	"github.com/expr-lang/expr/conf"
+	"github.com/f-rambo/cloud-copilot/internal/conf"
 	"github.com/go-kratos/kratos/v2/log"
 )
 
@@ -10,11 +10,11 @@ const (
 )
 
 type SidecarCluster struct {
-	conf *conf.Config
+	conf *conf.Bootstrap
 	log  *log.Helper
 }
 
-func NewSidecarCluster(conf *conf.Config, logger log.Logger) *SidecarCluster {
+func NewSidecarCluster(conf *conf.Bootstrap, logger log.Logger) *SidecarCluster {
 	return &SidecarCluster{
 		conf: conf,
 		log:  log.NewHelper(logger),

@@ -90,14 +90,16 @@ message ClusterSaveArgs {
     string private_key = 5 [json_name = "private_key"];
     string access_id = 6 [json_name = "access_id"];
     string access_key = 7 [json_name = "access_key"];
-    string node_username = 8 [json_name = "node_username"];
-    string node_start_ip = 9 [json_name = "node_start_ip"];
-    string node_end_ip = 10 [json_name = "node_end_ip"];
+    string region = 8 [json_name = "region"];
+    string node_username = 9 [json_name = "node_username"];
+    string node_start_ip = 10 [json_name = "node_start_ip"];
+    string node_end_ip = 11 [json_name = "node_end_ip"];
 }
 
-message ClusterStartArgs {
-    int64 id = 1 [json_name = "id"];
-    string region = 6 [json_name = "region"]; 
+message ClusterRegionArgs {
+    string access_id = 1 [json_name = "access_id"];
+    string access_key = 2 [json_name = "access_key"];
+    int32 type = 3 [json_name = "type"];
 }
 
 message ClusterList {
@@ -114,12 +116,16 @@ message Cluster {
     string public_key = 7 [json_name = "public_key"];
     string private_key = 8 [json_name = "private_key"];
     string region = 9 [json_name = "region"];
-    string access_id = 10 [json_name = "access_id"];
-    string access_key = 11 [json_name = "access_key"];
-    string create_at = 12 [json_name = "create_at"];
-    string update_at = 13 [json_name = "update_at"];
-    repeated Node nodes = 14 [json_name = "nodes"];
-    repeated NodeGroup node_groups = 15 [json_name = "node_groups"];
+    string region_name = 10 [json_name = "region_name"];
+    string access_id = 11 [json_name = "access_id"];
+    string access_key = 12 [json_name = "access_key"];
+    string create_at = 13 [json_name = "create_at"];
+    string update_at = 14 [json_name = "update_at"];
+    repeated Node nodes = 15 [json_name = "nodes"];
+    repeated NodeGroup node_groups = 16 [json_name = "node_groups"];
+    string node_username = 17 [json_name = "node_username"];
+    string node_start_ip = 18 [json_name = "node_start_ip"];
+    string node_end_ip = 19 [json_name = "node_end_ip"];
 }
 
 message NodeGroup {

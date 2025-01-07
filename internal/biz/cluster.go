@@ -2,6 +2,7 @@ package biz
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"math"
 	"sort"
@@ -159,6 +160,12 @@ func (c *Cluster) SettingDefaultNodeGroup(nodegroupConfig *confPkg.NodeGroupConf
 	if c.NodeGroups == nil {
 		c.NodeGroups = make([]*NodeGroup, 0)
 	}
+	if c.Nodes == nil {
+		c.Nodes = make([]*Node, 0)
+	}
+	if !c.Type.IsCloud() {
+		return
+	}
 	c.NodeGroups = append(c.NodeGroups, &NodeGroup{
 		Id:         uuid.NewString(),
 		Name:       "default",
@@ -171,9 +178,6 @@ func (c *Cluster) SettingDefaultNodeGroup(nodegroupConfig *confPkg.NodeGroupConf
 		Cpu:        nodegroupConfig.Cpu,
 		Memory:     nodegroupConfig.Memory,
 	})
-	if c.Nodes == nil {
-		c.Nodes = make([]*Node, 0)
-	}
 	c.Nodes = append(c.Nodes, &Node{
 		Name:           "default",
 		Status:         NodeStatus_NODE_FINDING,
@@ -229,10 +233,6 @@ func (c ClusterType) IsCloud() bool {
 	return c != ClusterType_LOCAL
 }
 
-func (ng *NodeGroup) SetTargetSize(size int32) {
-	ng.TargetSize = size
-}
-
 func (c *Cluster) GetNodeGroup(nodeGroupId string) *NodeGroup {
 	for _, nodeGroup := range c.NodeGroups {
 		if nodeGroup.Id == nodeGroupId {
@@ -248,6 +248,10 @@ func (c *Cluster) SetNodeStatus(fromStatus, toStatus NodeStatus) {
 			node.SetNodeStatus(toStatus)
 		}
 	}
+}
+
+func (ng *NodeGroup) SetTargetSize(size int32) {
+	ng.TargetSize = size
 }
 
 func (n *Node) SetNodeStatus(status NodeStatus) {
@@ -359,18 +363,18 @@ func (uc *ClusterUsecase) Save(ctx context.Context, cluster *Cluster) error {
 	return uc.clusterData.Save(ctx, cluster)
 }
 
-func (uc *ClusterUsecase) GetRegions(ctx context.Context, cluster *Cluster) ([]*CloudResource, error) {
+func (uc *ClusterUsecase) GetRegions(ctx context.Context, cluster *Cluster) error {
 	if cluster.Type == ClusterType_LOCAL {
-		return []*CloudResource{}, nil
+		return nil
 	}
 	err := uc.clusterInfrastructure.GetRegions(ctx, cluster)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return cluster.GetCloudResource(ResourceType_REGION), nil
+	return nil
 }
 
-func (uc *ClusterUsecase) StartCluster(ctx context.Context, clusterId int64, region string) error {
+func (uc *ClusterUsecase) StartCluster(ctx context.Context, clusterId int64) error {
 	cluster, err := uc.Get(ctx, clusterId)
 	if err != nil {
 		return err
@@ -380,12 +384,6 @@ func (uc *ClusterUsecase) StartCluster(ctx context.Context, clusterId int64, reg
 	}
 	if cluster.Status != ClusterStatus_UNSPECIFIED && cluster.Status != ClusterStatus_STOPPED {
 		return errors.New("cluster is not in stopped state")
-	}
-	if cluster.Type.IsCloud() {
-		if region == "" {
-			return errors.New("region is required")
-		}
-		cluster.SetRegion(region)
 	}
 	cluster.SetStatus(ClusterStatus_STARTING)
 	err = uc.Apply(cluster)
@@ -551,8 +549,6 @@ func (uc *ClusterUsecase) handleEvent(ctx context.Context, cluster *Cluster) (er
 func (uc *ClusterUsecase) handlerClusterNotInstalled(ctx context.Context, cluster *Cluster) error {
 	if len(cluster.NodeGroups) == 0 {
 		cluster.SettingDefaultNodeGroup(uc.conf.Cluster.NodegroupConfig)
-	}
-	if len(cluster.NodeGroups) == 0 {
 		cluster.settingDefatultIngressRules(uc.conf.Cluster.IngressRules)
 	}
 	if cluster.Type.IsCloud() {
@@ -561,6 +557,8 @@ func (uc *ClusterUsecase) handlerClusterNotInstalled(ctx context.Context, cluste
 			return err
 		}
 		cluster.SettingClusterAvailabilityZone(uc.conf.Cluster.Level)
+		clusterStr, _ := json.Marshal(cluster)
+		uc.log.Info(string(clusterStr))
 		err = uc.clusterInfrastructure.CreateCloudBasicResource(ctx, cluster)
 		if err != nil {
 			return err
@@ -569,6 +567,25 @@ func (uc *ClusterUsecase) handlerClusterNotInstalled(ctx context.Context, cluste
 	err := uc.clusterInfrastructure.GetNodesSystemInfo(ctx, cluster)
 	if err != nil {
 		return err
+	}
+	if !cluster.Type.IsCloud() {
+		cluster.SetNodeStatus(NodeStatus_NodeStatus_UNSPECIFIED, NodeStatus_NODE_READY)
+		nodeGroupId := ""
+		for _, nodeGroup := range cluster.NodeGroups {
+			if nodeGroup.Cpu >= uc.conf.Cluster.NodegroupConfig.GetCpu() && nodeGroup.Memory >= uc.conf.Cluster.NodegroupConfig.GetMemory() {
+				nodeGroupId = nodeGroup.Id
+				break
+			}
+		}
+		if nodeGroupId == "" {
+			return errors.New("no node group found")
+		}
+		for _, node := range cluster.Nodes {
+			if node.NodeGroupId == nodeGroupId {
+				node.Status = NodeStatus_NODE_FINDING
+				break
+			}
+		}
 	}
 	cluster.SetNodeStatus(NodeStatus_NODE_FINDING, NodeStatus_NODE_CREATING)
 	if cluster.Type.IsCloud() {

@@ -57,11 +57,7 @@ func NewAuthServer(user *interfaces.UserInterface) func(handler middleware.Handl
 func NewWhiteListMatcher() selector.MatchFunc {
 	whiteList := []string{
 		"/user.v1alpha1.UserInterface/SignIn",
-		"/app.v1alpha1.AppInterface/Ping",
-		"/cluster.v1alpha1.ClusterInterface/Ping",
-		"/cluster.v1alpha1.ClusterInterface/PollingLogs",
-		"/service.v1alpha1.ServiceInterface/Ping",
-		"/clusterautoscaler.cloudprovider.v1.externalgrpc.CloudProvider/",
+		"/cluster.v1alpha1.ClusterInterface/GetLogs",
 	}
 	return func(ctx context.Context, operation string) bool {
 		for _, v := range whiteList {

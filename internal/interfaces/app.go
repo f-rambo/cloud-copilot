@@ -2,6 +2,7 @@ package interfaces
 
 import (
 	"context"
+	"encoding/json"
 	"math"
 
 	v1alpha1 "github.com/f-rambo/cloud-copilot/api/app/v1alpha1"
@@ -336,11 +337,6 @@ func (a *AppInterface) GetAppRelease(ctx context.Context, AppReleaseReq *v1alpha
 }
 
 func (a *AppInterface) AppReleaseList(ctx context.Context, appReleaseReq *v1alpha1.AppReleaseReq) (*v1alpha1.AppReleaseList, error) {
-	appReleaseReqMap := make(map[string]string)
-	err := utils.StructTransform(appReleaseReq, &appReleaseReqMap)
-	if err != nil {
-		return nil, err
-	}
 	if appReleaseReq.Page == 0 {
 		appReleaseReq.Page = 1
 	}
@@ -349,6 +345,15 @@ func (a *AppInterface) AppReleaseList(ctx context.Context, appReleaseReq *v1alph
 	}
 	if appReleaseReq.PageSize > 30 {
 		appReleaseReq.PageSize = 30
+	}
+	appReleaseReqMap := make(map[string]string)
+	appReleaseReqJsonStr, err := json.Marshal(appReleaseReq)
+	if err != nil {
+		return nil, err
+	}
+	err = json.Unmarshal(appReleaseReqJsonStr, &appReleaseReqMap)
+	if err != nil {
+		return nil, err
 	}
 	appReleases, count, err := a.uc.AppReleaseList(ctx, appReleaseReqMap, appReleaseReq.Page, appReleaseReq.PageSize)
 	if err != nil {
@@ -379,9 +384,13 @@ func (a *AppInterface) GetAppReleaseResources(ctx context.Context, appReleaseReq
 	}
 	data := &v1alpha1.AppReleasepResources{}
 	items := make([]*v1alpha1.AppReleaseResource, 0)
-	err = utils.StructTransform(resources, &items)
-	if err != nil {
-		return nil, err
+	for _, resource := range resources {
+		item := &v1alpha1.AppReleaseResource{}
+		err = utils.StructTransform(resource, item)
+		if err != nil {
+			return nil, err
+		}
+		items = append(items, item)
 	}
 	data.Items = items
 	return data, nil
@@ -458,7 +467,7 @@ func (a *AppInterface) bizAppToApp(bizApp *biz.App) (*v1alpha1.App, error) {
 
 func (a *AppInterface) bizAppVersionToAppVersion(bizAppVersion *biz.AppVersion) (*v1alpha1.AppVersion, error) {
 	appVersion := &v1alpha1.AppVersion{}
-	err := utils.StructTransform(bizAppVersion, &appVersion)
+	err := utils.StructTransform(bizAppVersion, appVersion)
 	if err != nil {
 		return nil, err
 	}
@@ -468,7 +477,7 @@ func (a *AppInterface) bizAppVersionToAppVersion(bizAppVersion *biz.AppVersion) 
 
 func (a *AppInterface) appTobizApp(app *v1alpha1.App) (*biz.App, error) {
 	bizApp := &biz.App{}
-	err := utils.StructTransform(app, &bizApp)
+	err := utils.StructTransform(app, bizApp)
 	if err != nil {
 		return nil, err
 	}
@@ -485,7 +494,7 @@ func (a *AppInterface) appTobizApp(app *v1alpha1.App) (*biz.App, error) {
 
 func (a *AppInterface) appVersionToBizAppVersion(appVersion *v1alpha1.AppVersion) (*biz.AppVersion, error) {
 	bizAppVersion := &biz.AppVersion{}
-	err := utils.StructTransform(appVersion, &bizAppVersion)
+	err := utils.StructTransform(appVersion, bizAppVersion)
 	if err != nil {
 		return nil, err
 	}

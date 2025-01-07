@@ -3,9 +3,7 @@ package interfaces
 import (
 	"context"
 	"encoding/json"
-	"strings"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/f-rambo/cloud-copilot/api/common"
 	v1alpha1 "github.com/f-rambo/cloud-copilot/api/service/v1alpha1"
 	"github.com/f-rambo/cloud-copilot/internal/biz"
@@ -103,71 +101,71 @@ func (s *ServicesInterface) GetWorkflow(ctx context.Context, serviceParam *v1alp
 		Templates:   make([]*v1alpha1.WfTemplate, 0),
 		Description: "",
 	}
-	argoWf := wfv1.Workflow{}
-	err = json.Unmarshal([]byte(workflow.Workflow), &argoWf)
-	if err != nil {
-		return nil, err
-	}
-	wfTasks := make(map[string][]*v1alpha1.WfTask) // stepname -> wftasks
-	for _, template := range argoWf.Spec.Templates {
-		if template.Container != nil && template.Container.Image != "" {
-			wfData.Templates = append(wfData.Templates, &v1alpha1.WfTemplate{
-				Name:    template.Name,
-				Image:   template.Container.Image,
-				Command: template.Container.Command,
-				Args:    template.Container.Args,
-			})
-		}
-		if template.Script != nil && template.Script.Image != "" {
-			wfData.Templates = append(wfData.Templates, &v1alpha1.WfTemplate{
-				Name:     template.Name,
-				Image:    template.Script.Image,
-				Command:  template.Script.Command,
-				Source:   template.Script.Source,
-				IsScript: true,
-			})
-		}
-		if template.DAG != nil && len(template.DAG.Tasks) > 0 {
-			for _, task := range template.DAG.Tasks {
-				if task.Template == "" {
-					continue
-				}
-				taskVal := &v1alpha1.WfTask{
-					Name:         task.Name,
-					TemplateName: task.Template,
-				}
-				if strings.Contains(task.Name, "default-") {
-					taskVal.Name = strings.Replace(task.Name, "default-", "", 1)
-					taskVal.Default = true
-				}
-				if _, ok := wfTasks[template.Name]; !ok {
-					wfTasks[template.Name] = make([]*v1alpha1.WfTask, 0)
-				}
-				wfTasks[template.Name] = append(wfTasks[template.Name], taskVal)
-			}
-		}
-	}
-	parallelSteps := make([]wfv1.ParallelSteps, 0)
-	for _, template := range argoWf.Spec.Templates {
-		if len(template.Steps) > 0 {
-			parallelSteps = append(parallelSteps, template.Steps...)
-		}
-	}
-	for _, steps := range parallelSteps {
-		for _, step := range steps.Steps {
-			wfStep := &v1alpha1.WfStep{
-				Name: step.Name,
-			}
-			if strings.Contains(step.Name, "default-") {
-				wfStep.Name = strings.Replace(step.Name, "default-", "", 1)
-				wfStep.Default = true
-			}
-			if wftasks, ok := wfTasks[step.Template]; ok {
-				wfStep.Tasks = wftasks
-			}
-			wfData.Steps = append(wfData.Steps, wfStep)
-		}
-	}
+	// argoWf := wfv1.Workflow{}
+	// err = json.Unmarshal([]byte(workflow.Workflow), &argoWf)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// wfTasks := make(map[string][]*v1alpha1.WfTask) // stepname -> wftasks
+	// for _, template := range argoWf.Spec.Templates {
+	// 	if template.Container != nil && template.Container.Image != "" {
+	// 		wfData.Templates = append(wfData.Templates, &v1alpha1.WfTemplate{
+	// 			Name:    template.Name,
+	// 			Image:   template.Container.Image,
+	// 			Command: template.Container.Command,
+	// 			Args:    template.Container.Args,
+	// 		})
+	// 	}
+	// 	if template.Script != nil && template.Script.Image != "" {
+	// 		wfData.Templates = append(wfData.Templates, &v1alpha1.WfTemplate{
+	// 			Name:     template.Name,
+	// 			Image:    template.Script.Image,
+	// 			Command:  template.Script.Command,
+	// 			Source:   template.Script.Source,
+	// 			IsScript: true,
+	// 		})
+	// 	}
+	// 	if template.DAG != nil && len(template.DAG.Tasks) > 0 {
+	// 		for _, task := range template.DAG.Tasks {
+	// 			if task.Template == "" {
+	// 				continue
+	// 			}
+	// 			taskVal := &v1alpha1.WfTask{
+	// 				Name:         task.Name,
+	// 				TemplateName: task.Template,
+	// 			}
+	// 			if strings.Contains(task.Name, "default-") {
+	// 				taskVal.Name = strings.Replace(task.Name, "default-", "", 1)
+	// 				taskVal.Default = true
+	// 			}
+	// 			if _, ok := wfTasks[template.Name]; !ok {
+	// 				wfTasks[template.Name] = make([]*v1alpha1.WfTask, 0)
+	// 			}
+	// 			wfTasks[template.Name] = append(wfTasks[template.Name], taskVal)
+	// 		}
+	// 	}
+	// }
+	// parallelSteps := make([]wfv1.ParallelSteps, 0)
+	// for _, template := range argoWf.Spec.Templates {
+	// 	if len(template.Steps) > 0 {
+	// 		parallelSteps = append(parallelSteps, template.Steps...)
+	// 	}
+	// }
+	// for _, steps := range parallelSteps {
+	// 	for _, step := range steps.Steps {
+	// 		wfStep := &v1alpha1.WfStep{
+	// 			Name: step.Name,
+	// 		}
+	// 		if strings.Contains(step.Name, "default-") {
+	// 			wfStep.Name = strings.Replace(step.Name, "default-", "", 1)
+	// 			wfStep.Default = true
+	// 		}
+	// 		if wftasks, ok := wfTasks[step.Template]; ok {
+	// 			wfStep.Tasks = wftasks
+	// 		}
+	// 		wfData.Steps = append(wfData.Steps, wfStep)
+	// 	}
+	// }
 	return wfData, nil
 }
 

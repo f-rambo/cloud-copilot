@@ -2,19 +2,12 @@ package interfaces
 
 import (
 	"context"
-	"fmt"
-	"io"
-	"os"
 
 	"github.com/f-rambo/cloud-copilot/api/cluster/v1alpha1"
 	"github.com/f-rambo/cloud-copilot/api/common"
 	"github.com/f-rambo/cloud-copilot/internal/biz"
 	"github.com/f-rambo/cloud-copilot/internal/conf"
-	sidecarCluster "github.com/f-rambo/cloud-copilot/internal/repository/sidecar/api/cluster"
-	"github.com/f-rambo/cloud-copilot/utils"
-	"github.com/fsnotify/fsnotify"
 	"github.com/go-kratos/kratos/v2/log"
-	"github.com/go-kratos/kratos/v2/transport/grpc"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
@@ -143,10 +136,11 @@ func (c *ClusterInterface) Save(ctx context.Context, clusterArgs *v1alpha1.Clust
 	if clusterArgs.Name == "" || clusterArgs.PrivateKey == "" || clusterArgs.Type == 0 || clusterArgs.PublicKey == "" {
 		return nil, errors.New("cluster name, private key, type and public key are required")
 	}
-	if biz.ClusterType(clusterArgs.Type).IsCloud() {
-		if clusterArgs.AccessId == "" || clusterArgs.AccessKey == "" {
-			return nil, errors.New("access key id and secret access key are required")
-		}
+	if biz.ClusterType(clusterArgs.Type).IsCloud() && (clusterArgs.AccessId == "" || clusterArgs.AccessKey == "" || clusterArgs.Region == "") {
+		return nil, errors.New("access key id and secret access key, region are required")
+	}
+	if clusterArgs.Type == int32(biz.ClusterType_LOCAL.Number()) && (clusterArgs.NodeUsername == "" || clusterArgs.NodeStartIp == "" || clusterArgs.NodeEndIp == "") {
+		return nil, errors.New("node username, start ip and end ip are required")
 	}
 	cluster := &biz.Cluster{}
 	if clusterArgs.Id != 0 {
@@ -173,18 +167,10 @@ func (c *ClusterInterface) Save(ctx context.Context, clusterArgs *v1alpha1.Clust
 	cluster.PrivateKey = clusterArgs.PrivateKey
 	cluster.AccessId = clusterArgs.AccessId
 	cluster.AccessKey = clusterArgs.AccessKey
-	if !cluster.Type.IsCloud() {
-		nodeIps := utils.IpRange(clusterArgs.NodeStartIp, clusterArgs.NodeEndIp)
-		if len(nodeIps) == 0 {
-			return nil, errors.New("node start ip and end ip are required")
-		}
-		for _, nodeIp := range nodeIps {
-			cluster.Nodes = append(cluster.Nodes, &biz.Node{
-				Ip:   nodeIp,
-				User: clusterArgs.NodeUsername,
-			})
-		}
-	}
+	cluster.Region = clusterArgs.Region
+	cluster.NodeUser = clusterArgs.NodeUsername
+	cluster.NodeStartIp = clusterArgs.NodeStartIp
+	cluster.NodeEndIp = clusterArgs.NodeEndIp
 	user, err := c.userUc.GetUserInfo(ctx)
 	if err != nil {
 		return nil, err
@@ -197,11 +183,11 @@ func (c *ClusterInterface) Save(ctx context.Context, clusterArgs *v1alpha1.Clust
 	return &v1alpha1.ClusterIdMessge{Id: cluster.Id}, nil
 }
 
-func (c *ClusterInterface) Start(ctx context.Context, clusterArgs *v1alpha1.ClusterStartArgs) (*common.Msg, error) {
-	if clusterArgs.Id == 0 || clusterArgs.Region == "" {
+func (c *ClusterInterface) Start(ctx context.Context, clusterArgs *v1alpha1.ClusterIdMessge) (*common.Msg, error) {
+	if clusterArgs.Id == 0 {
 		return nil, errors.New("cluster id is required")
 	}
-	err := c.clusterUc.StartCluster(ctx, clusterArgs.Id, clusterArgs.Region)
+	err := c.clusterUc.StartCluster(ctx, clusterArgs.Id)
 	if err != nil {
 		return nil, err
 	}
@@ -253,236 +239,23 @@ func (c *ClusterInterface) Delete(ctx context.Context, clusterID *v1alpha1.Clust
 }
 
 // get regions
-func (c *ClusterInterface) GetRegions(ctx context.Context, clusterArgs *v1alpha1.ClusterIdMessge) (*v1alpha1.Regions, error) {
-	if clusterArgs == nil || clusterArgs.Id == 0 {
-		return nil, errors.New("cluster id is required")
+func (c *ClusterInterface) GetRegions(ctx context.Context, clusterArgs *v1alpha1.ClusterRegionArgs) (*v1alpha1.Regions, error) {
+	if clusterArgs == nil || clusterArgs.Type == 0 || clusterArgs.AccessId == "" || clusterArgs.AccessKey == "" {
+		return nil, errors.New("type, access id and access key are required")
 	}
-	cluster, err := c.clusterUc.Get(ctx, clusterArgs.Id)
-	if err != nil {
-		return nil, err
-	}
-	if cluster.Id == 0 {
-		return nil, errors.New("cluster not found")
-	}
-	regionsCloudResources, err := c.clusterUc.GetRegions(ctx, cluster)
+	cluster := &biz.Cluster{Type: biz.ClusterType(clusterArgs.Type), AccessId: clusterArgs.AccessId, AccessKey: clusterArgs.AccessKey}
+	err := c.clusterUc.GetRegions(ctx, cluster)
 	if err != nil {
 		return nil, err
 	}
 	regions := make([]*v1alpha1.Region, 0)
-	for _, v := range regionsCloudResources {
+	for _, v := range cluster.GetCloudResource(biz.ResourceType_REGION) {
 		regions = append(regions, &v1alpha1.Region{
 			Id:   v.RefId,
 			Name: v.Name,
 		})
 	}
 	return &v1alpha1.Regions{Regions: regions}, nil
-}
-
-// polling logs
-func (c *ClusterInterface) PollingLogs(ctx context.Context, req *v1alpha1.ClusterLogsRequest) (*v1alpha1.ClusterLogsResponse, error) {
-	if req.TailLines == 0 || req.TailLines > 30 {
-		req.TailLines = 30
-	}
-
-	clusterLogPath := utils.GetLogFilePath()
-	if ok := utils.IsFileExist(clusterLogPath); !ok {
-		return nil, errors.New("cluster log does not exist")
-	}
-	if req.CurrentLine == 0 {
-		file, err := os.Open(clusterLogPath)
-		if err != nil {
-			return nil, err
-		}
-		defer file.Close()
-		initialLogs, lastLine, err := utils.ReadLastNLines(file, int(req.TailLines))
-		if err != nil {
-			return nil, err
-		}
-		return &v1alpha1.ClusterLogsResponse{Logs: initialLogs, LastLine: int32(lastLine + 1)}, nil
-	}
-	logs, lastLine, err := utils.ReadFileFromLine(clusterLogPath, int64(req.CurrentLine))
-	if err != nil {
-		return nil, err
-	}
-	return &v1alpha1.ClusterLogsResponse{Logs: logs, LastLine: int32(lastLine + 1)}, nil
-}
-
-// get logs
-func (c *ClusterInterface) GetLogs(stream v1alpha1.ClusterInterface_GetLogsServer) error {
-	i := 0
-	for {
-		ctx, cancel := context.WithCancel(stream.Context())
-		defer cancel()
-
-		req, err := stream.Recv()
-		if err == io.EOF {
-			return nil
-		}
-		if err != nil {
-			return err
-		}
-		if i > 0 {
-			c.log.Info("repeat message, don't need to process")
-			continue
-		}
-		i++
-		if req.TailLines == 0 {
-			req.TailLines = 30
-		}
-
-		clusterLogPath := utils.GetLogFilePath()
-		if ok := utils.IsFileExist(clusterLogPath); !ok {
-			return errors.New("cluster log does not exist")
-		}
-
-		file, err := os.Open(clusterLogPath)
-		if err != nil {
-			return err
-		}
-		defer file.Close()
-
-		// Read initial lines if TailLines is specified
-		if req.TailLines > 0 {
-			initialLogs, _, err := utils.ReadLastNLines(file, int(req.TailLines))
-			if err != nil {
-				return err
-			}
-			err = stream.Send(&v1alpha1.ClusterLogsResponse{Logs: initialLogs})
-			if err != nil {
-				return err
-			}
-		}
-
-		// Move to the end of the file
-		_, err = file.Seek(0, io.SeekEnd)
-		if err != nil {
-			return err
-		}
-
-		// Start watching for new logs
-		watcher, err := fsnotify.NewWatcher()
-		if err != nil {
-			return err
-		}
-		defer watcher.Close()
-
-		err = watcher.Add(clusterLogPath)
-		if err != nil {
-			return err
-		}
-
-		sidecarLogContentChan := make(chan string)
-		defer close(sidecarLogContentChan)
-		cluster, err := c.clusterUc.Get(ctx, req.ClusterId)
-		if err != nil {
-			return err
-		}
-		if cluster != nil {
-			for _, node := range cluster.Nodes {
-				err = c.getSidecarLogContent(ctx, sidecarLogContentChan, node.Ip, 22)
-				if err != nil {
-					return err
-				}
-			}
-		}
-
-		go func() {
-			for {
-				select {
-				case event, ok := <-watcher.Events:
-					if !ok {
-						return
-					}
-					if event.Op&fsnotify.Write == fsnotify.Write {
-						newLogs, err := readNewLines(file)
-						if err != nil {
-							return
-						}
-						if newLogs != "" {
-							err = stream.Send(&v1alpha1.ClusterLogsResponse{Logs: newLogs})
-							if err != nil {
-								return
-							}
-						}
-					}
-				case sidecarLogContent, ok := <-sidecarLogContentChan:
-					if !ok {
-						c.log.Info("Sidecar GetLogs stream closed by sidecar content")
-						return
-					}
-					err = stream.Send(&v1alpha1.ClusterLogsResponse{Logs: sidecarLogContent})
-					if err != nil {
-						c.log.Errorf("Error sending sidecar log message: %v", err)
-						return
-					}
-				case err, ok := <-watcher.Errors:
-					if !ok {
-						return
-					}
-					c.log.Errorf("error watching log file: %v", err)
-				case <-ctx.Done():
-					c.log.Info("GetLogs stream closed by client")
-					return
-				}
-			}
-		}()
-	}
-}
-
-func (c *ClusterInterface) getSidecarLogContent(ctx context.Context, contentChan chan string, nodeIp string, nodePort int32) error {
-	conn, err := grpc.DialInsecure(ctx, grpc.WithEndpoint(fmt.Sprintf("%s:%d", nodeIp, nodePort)))
-	if err != nil {
-		return err
-	}
-	client := sidecarCluster.NewClusterInterfaceClient(conn)
-	stream, err := client.GetLogs(ctx)
-	if err != nil {
-		return err
-	}
-
-	go func() {
-		for {
-			msg, err := stream.Recv()
-			if err == io.EOF {
-				return
-			}
-			if err != nil {
-				c.log.Errorf("Error receiving sidecar log message: %v", err)
-				return
-			}
-			contentChan <- msg.Log
-		}
-	}()
-
-	err = stream.Send(&sidecarCluster.LogRequest{
-		TailLines: 30,
-	})
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func readNewLines(file *os.File) (string, error) {
-	currentPos, err := file.Seek(0, io.SeekCurrent)
-	if err != nil {
-		return "", err
-	}
-
-	newContent, err := io.ReadAll(file)
-	if err != nil {
-		return "", err
-	}
-
-	if len(newContent) > 0 {
-		_, err = file.Seek(currentPos+int64(len(newContent)), io.SeekStart)
-		if err != nil {
-			return "", err
-		}
-		return string(newContent), nil
-	}
-
-	return "", nil
 }
 
 func (c *ClusterInterface) bizCLusterToCluster(bizCluster *biz.Cluster) *v1alpha1.Cluster {
@@ -500,6 +273,16 @@ func (c *ClusterInterface) bizCLusterToCluster(bizCluster *biz.Cluster) *v1alpha
 		}
 		nodeGroups = append(nodeGroups, c.bizNodeGroupToNodeGroup(v))
 	}
+	regionName := ""
+	resources := bizCluster.GetCloudResource(biz.ResourceType_REGION)
+	for _, v := range resources {
+		if v.RefId == bizCluster.Region {
+			regionName = v.Name
+		}
+	}
+	if regionName == "" {
+		regionName = bizCluster.Region
+	}
 	return &v1alpha1.Cluster{
 		Id:               bizCluster.Id,
 		Name:             bizCluster.Name,
@@ -510,12 +293,16 @@ func (c *ClusterInterface) bizCLusterToCluster(bizCluster *biz.Cluster) *v1alpha
 		PublicKey:        bizCluster.PublicKey,
 		PrivateKey:       bizCluster.PrivateKey,
 		Region:           bizCluster.Region,
+		RegionName:       regionName,
 		AccessId:         bizCluster.AccessId,
 		AccessKey:        bizCluster.AccessKey,
 		CreateAt:         bizCluster.CreatedAt.Format("2006-01-02 15:04:05"),
 		UpdateAt:         bizCluster.UpdatedAt.Format("2006-01-02 15:04:05"),
 		Nodes:            nodes,
 		NodeGroups:       nodeGroups,
+		NodeUsername:     bizCluster.NodeUser,
+		NodeStartIp:      bizCluster.NodeStartIp,
+		NodeEndIp:        bizCluster.NodeEndIp,
 	}
 }
 

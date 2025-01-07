@@ -47,13 +47,13 @@ type ClusterInterfaceHTTPServer interface {
 	GetNodeGroupTypes(context.Context, *emptypb.Empty) (*NodeGroupTypes, error)
 	GetNodeRoles(context.Context, *emptypb.Empty) (*NodeRoles, error)
 	GetNodeStatuses(context.Context, *emptypb.Empty) (*NodeStatuses, error)
-	GetRegions(context.Context, *ClusterIdMessge) (*Regions, error)
+	GetRegions(context.Context, *ClusterRegionArgs) (*Regions, error)
 	GetResourceTypes(context.Context, *emptypb.Empty) (*ResourceTypes, error)
 	List(context.Context, *emptypb.Empty) (*ClusterList, error)
 	Ping(context.Context, *emptypb.Empty) (*common.Msg, error)
 	PollingLogs(context.Context, *ClusterLogsRequest) (*ClusterLogsResponse, error)
 	Save(context.Context, *ClusterSaveArgs) (*ClusterIdMessge, error)
-	Start(context.Context, *ClusterStartArgs) (*common.Msg, error)
+	Start(context.Context, *ClusterIdMessge) (*common.Msg, error)
 	Stop(context.Context, *ClusterIdMessge) (*common.Msg, error)
 }
 
@@ -310,7 +310,7 @@ func _ClusterInterface_Delete0_HTTP_Handler(srv ClusterInterfaceHTTPServer) func
 
 func _ClusterInterface_Start0_HTTP_Handler(srv ClusterInterfaceHTTPServer) func(ctx http.Context) error {
 	return func(ctx http.Context) error {
-		var in ClusterStartArgs
+		var in ClusterIdMessge
 		if err := ctx.Bind(&in); err != nil {
 			return err
 		}
@@ -319,7 +319,7 @@ func _ClusterInterface_Start0_HTTP_Handler(srv ClusterInterfaceHTTPServer) func(
 		}
 		http.SetOperation(ctx, OperationClusterInterfaceStart)
 		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.Start(ctx, req.(*ClusterStartArgs))
+			return srv.Start(ctx, req.(*ClusterIdMessge))
 		})
 		out, err := h(ctx, &in)
 		if err != nil {
@@ -354,13 +354,13 @@ func _ClusterInterface_Stop0_HTTP_Handler(srv ClusterInterfaceHTTPServer) func(c
 
 func _ClusterInterface_GetRegions0_HTTP_Handler(srv ClusterInterfaceHTTPServer) func(ctx http.Context) error {
 	return func(ctx http.Context) error {
-		var in ClusterIdMessge
+		var in ClusterRegionArgs
 		if err := ctx.BindQuery(&in); err != nil {
 			return err
 		}
 		http.SetOperation(ctx, OperationClusterInterfaceGetRegions)
 		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.GetRegions(ctx, req.(*ClusterIdMessge))
+			return srv.GetRegions(ctx, req.(*ClusterRegionArgs))
 		})
 		out, err := h(ctx, &in)
 		if err != nil {
@@ -402,13 +402,13 @@ type ClusterInterfaceHTTPClient interface {
 	GetNodeGroupTypes(ctx context.Context, req *emptypb.Empty, opts ...http.CallOption) (rsp *NodeGroupTypes, err error)
 	GetNodeRoles(ctx context.Context, req *emptypb.Empty, opts ...http.CallOption) (rsp *NodeRoles, err error)
 	GetNodeStatuses(ctx context.Context, req *emptypb.Empty, opts ...http.CallOption) (rsp *NodeStatuses, err error)
-	GetRegions(ctx context.Context, req *ClusterIdMessge, opts ...http.CallOption) (rsp *Regions, err error)
+	GetRegions(ctx context.Context, req *ClusterRegionArgs, opts ...http.CallOption) (rsp *Regions, err error)
 	GetResourceTypes(ctx context.Context, req *emptypb.Empty, opts ...http.CallOption) (rsp *ResourceTypes, err error)
 	List(ctx context.Context, req *emptypb.Empty, opts ...http.CallOption) (rsp *ClusterList, err error)
 	Ping(ctx context.Context, req *emptypb.Empty, opts ...http.CallOption) (rsp *common.Msg, err error)
 	PollingLogs(ctx context.Context, req *ClusterLogsRequest, opts ...http.CallOption) (rsp *ClusterLogsResponse, err error)
 	Save(ctx context.Context, req *ClusterSaveArgs, opts ...http.CallOption) (rsp *ClusterIdMessge, err error)
-	Start(ctx context.Context, req *ClusterStartArgs, opts ...http.CallOption) (rsp *common.Msg, err error)
+	Start(ctx context.Context, req *ClusterIdMessge, opts ...http.CallOption) (rsp *common.Msg, err error)
 	Stop(ctx context.Context, req *ClusterIdMessge, opts ...http.CallOption) (rsp *common.Msg, err error)
 }
 
@@ -524,7 +524,7 @@ func (c *ClusterInterfaceHTTPClientImpl) GetNodeStatuses(ctx context.Context, in
 	return &out, nil
 }
 
-func (c *ClusterInterfaceHTTPClientImpl) GetRegions(ctx context.Context, in *ClusterIdMessge, opts ...http.CallOption) (*Regions, error) {
+func (c *ClusterInterfaceHTTPClientImpl) GetRegions(ctx context.Context, in *ClusterRegionArgs, opts ...http.CallOption) (*Regions, error) {
 	var out Regions
 	pattern := "/api/v1alpha1/cluster/regions"
 	path := binding.EncodeURL(pattern, in, true)
@@ -602,7 +602,7 @@ func (c *ClusterInterfaceHTTPClientImpl) Save(ctx context.Context, in *ClusterSa
 	return &out, nil
 }
 
-func (c *ClusterInterfaceHTTPClientImpl) Start(ctx context.Context, in *ClusterStartArgs, opts ...http.CallOption) (*common.Msg, error) {
+func (c *ClusterInterfaceHTTPClientImpl) Start(ctx context.Context, in *ClusterIdMessge, opts ...http.CallOption) (*common.Msg, error) {
 	var out common.Msg
 	pattern := "/api/v1alpha1/cluster/start"
 	path := binding.EncodeURL(pattern, in, false)

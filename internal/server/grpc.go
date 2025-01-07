@@ -4,7 +4,6 @@ import (
 	"time"
 
 	appv1alpha1 "github.com/f-rambo/cloud-copilot/api/app/v1alpha1"
-	autoscalerpb "github.com/f-rambo/cloud-copilot/api/autoscaler"
 	clusterv1alpha1 "github.com/f-rambo/cloud-copilot/api/cluster/v1alpha1"
 	projectv1alpha1 "github.com/f-rambo/cloud-copilot/api/project/v1alpha1"
 	servicev1alpha1 "github.com/f-rambo/cloud-copilot/api/service/v1alpha1"
@@ -19,7 +18,7 @@ import (
 )
 
 // NewGRPCServer new a gRPC server.
-func NewGRPCServer(c *conf.Bootstrap, cluster *interfaces.ClusterInterface, app *interfaces.AppInterface, services *interfaces.ServicesInterface, user *interfaces.UserInterface, project *interfaces.ProjectInterface, autoscaler *interfaces.Autoscaler, logger log.Logger) *grpc.Server {
+func NewGRPCServer(c *conf.Bootstrap, cluster *interfaces.ClusterInterface, app *interfaces.AppInterface, services *interfaces.ServicesInterface, user *interfaces.UserInterface, project *interfaces.ProjectInterface, logger log.Logger) *grpc.Server {
 	var opts = []grpc.ServerOption{
 		grpc.Middleware(
 			selector.Server(NewAuthServer(user)).Match(NewWhiteListMatcher()).Build(),
@@ -46,6 +45,5 @@ func NewGRPCServer(c *conf.Bootstrap, cluster *interfaces.ClusterInterface, app 
 	servicev1alpha1.RegisterServiceInterfaceServer(srv, services)
 	userv1alpha1.RegisterUserInterfaceServer(srv, user)
 	projectv1alpha1.RegisterProjectServiceServer(srv, project)
-	autoscalerpb.RegisterCloudProviderServer(srv, autoscaler)
 	return srv
 }
