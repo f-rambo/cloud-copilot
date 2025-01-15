@@ -63,21 +63,3 @@ func (c *ClusterRuntimeCluster) HandlerNodes(ctx context.Context, cluster *biz.C
 	}
 	return nil
 }
-
-func (c *ClusterRuntimeCluster) StartCluster(ctx context.Context, cluster *biz.Cluster) error {
-	// Todo data migration
-	grpconn, err := connGrpc(ctx, c.conf)
-	if err != nil {
-		return err
-	}
-	defer grpconn.Close()
-	clusterRes, err := clusterApi.NewClusterInterfaceClient(grpconn.Conn).StartCluster(ctx, cluster)
-	if err != nil {
-		return err
-	}
-	err = utils.StructTransform(clusterRes, cluster)
-	if err != nil {
-		return err
-	}
-	return nil
-}

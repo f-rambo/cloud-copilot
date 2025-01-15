@@ -21,25 +21,86 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type BasicComponentAppType int32
+
+const (
+	BasicComponentAppType_BasicComponentAppType_UNSPECIFIED BasicComponentAppType = 0
+	BasicComponentAppType_NETWORKING                        BasicComponentAppType = 1
+	BasicComponentAppType_DATABASE                          BasicComponentAppType = 2
+	BasicComponentAppType_TOOKIT                            BasicComponentAppType = 3
+	BasicComponentAppType_MONITORING                        BasicComponentAppType = 4
+	BasicComponentAppType_STORAGE                           BasicComponentAppType = 5
+)
+
+// Enum value maps for BasicComponentAppType.
+var (
+	BasicComponentAppType_name = map[int32]string{
+		0: "BasicComponentAppType_UNSPECIFIED",
+		1: "NETWORKING",
+		2: "DATABASE",
+		3: "TOOKIT",
+		4: "MONITORING",
+		5: "STORAGE",
+	}
+	BasicComponentAppType_value = map[string]int32{
+		"BasicComponentAppType_UNSPECIFIED": 0,
+		"NETWORKING":                        1,
+		"DATABASE":                          2,
+		"TOOKIT":                            3,
+		"MONITORING":                        4,
+		"STORAGE":                           5,
+	}
+)
+
+func (x BasicComponentAppType) Enum() *BasicComponentAppType {
+	p := new(BasicComponentAppType)
+	*p = x
+	return p
+}
+
+func (x BasicComponentAppType) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (BasicComponentAppType) Descriptor() protoreflect.EnumDescriptor {
+	return file_internal_biz_app_proto_enumTypes[0].Descriptor()
+}
+
+func (BasicComponentAppType) Type() protoreflect.EnumType {
+	return &file_internal_biz_app_proto_enumTypes[0]
+}
+
+func (x BasicComponentAppType) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use BasicComponentAppType.Descriptor instead.
+func (BasicComponentAppType) EnumDescriptor() ([]byte, []int) {
+	return file_internal_biz_app_proto_rawDescGZIP(), []int{0}
+}
+
 type AppReleaseSatus int32
 
 const (
-	AppReleaseSatus_APP_RELEASE_PENDING AppReleaseSatus = 0
-	AppReleaseSatus_APP_RELEASE_RUNNING AppReleaseSatus = 1
-	AppReleaseSatus_APP_RELEASE_FAILED  AppReleaseSatus = 2
+	AppReleaseSatus_BAppReleaseSatus_UNSPECIFIED AppReleaseSatus = 0
+	AppReleaseSatus_PENDING                      AppReleaseSatus = 1
+	AppReleaseSatus_RUNNING                      AppReleaseSatus = 2
+	AppReleaseSatus_FAILED                       AppReleaseSatus = 3
 )
 
 // Enum value maps for AppReleaseSatus.
 var (
 	AppReleaseSatus_name = map[int32]string{
-		0: "APP_RELEASE_PENDING",
-		1: "APP_RELEASE_RUNNING",
-		2: "APP_RELEASE_FAILED",
+		0: "BAppReleaseSatus_UNSPECIFIED",
+		1: "PENDING",
+		2: "RUNNING",
+		3: "FAILED",
 	}
 	AppReleaseSatus_value = map[string]int32{
-		"APP_RELEASE_PENDING": 0,
-		"APP_RELEASE_RUNNING": 1,
-		"APP_RELEASE_FAILED":  2,
+		"BAppReleaseSatus_UNSPECIFIED": 0,
+		"PENDING":                      1,
+		"RUNNING":                      2,
+		"FAILED":                       3,
 	}
 )
 
@@ -54,11 +115,11 @@ func (x AppReleaseSatus) String() string {
 }
 
 func (AppReleaseSatus) Descriptor() protoreflect.EnumDescriptor {
-	return file_internal_biz_app_proto_enumTypes[0].Descriptor()
+	return file_internal_biz_app_proto_enumTypes[1].Descriptor()
 }
 
 func (AppReleaseSatus) Type() protoreflect.EnumType {
-	return &file_internal_biz_app_proto_enumTypes[0]
+	return &file_internal_biz_app_proto_enumTypes[1]
 }
 
 func (x AppReleaseSatus) Number() protoreflect.EnumNumber {
@@ -67,7 +128,7 @@ func (x AppReleaseSatus) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use AppReleaseSatus.Descriptor instead.
 func (AppReleaseSatus) EnumDescriptor() ([]byte, []int) {
-	return file_internal_biz_app_proto_rawDescGZIP(), []int{0}
+	return file_internal_biz_app_proto_rawDescGZIP(), []int{1}
 }
 
 type AppType struct {
@@ -79,7 +140,7 @@ type AppType struct {
 	// @gofield: gorm.Model
 	Id          int64  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT"`                       // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
 	Name        string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty" gorm:"column:name; default:''; NOT NULL"`                      // @gotags: gorm:"column:name; default:''; NOT NULL"
-	Description string `gorm:"column:description; default:''; NOT NULL" protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"` // @gotags: gorm:"column:description; default:''; NOT NULL"
+	Description string `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty" gorm:"column:description; default:''; NOT NULL"` // @gotags: gorm:"column:description; default:''; NOT NULL"
 	gorm.Model
 }
 
@@ -143,11 +204,11 @@ type AppRepo struct {
 
 	// @goimport: "gorm.io/gorm"
 	// @gofield: gorm.Model
-	Id          int64  `gorm:"column:id;primaryKey;AUTO_INCREMENT" protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`                                   // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
+	Id          int64  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT"`                                   // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
 	Name        string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty" gorm:"column:name; default:''; NOT NULL"`                                  // @gotags: gorm:"column:name; default:''; NOT NULL"
 	Url         string `protobuf:"bytes,3,opt,name=url,proto3" json:"url,omitempty" gorm:"column:url; default:''; NOT NULL"`                                     // @gotags: gorm:"column:url; default:''; NOT NULL"
 	IndexPath   string `protobuf:"bytes,4,opt,name=index_path,json=indexPath,proto3" json:"index_path,omitempty" gorm:"column:index_path; default:''; NOT NULL"` // @gotags: gorm:"column:index_path; default:''; NOT NULL"
-	Description string `protobuf:"bytes,5,opt,name=description,proto3" json:"description,omitempty" gorm:"column:description; default:''; NOT NULL"`             // @gotags: gorm:"column:description; default:''; NOT NULL"
+	Description string `json:"description,omitempty" gorm:"column:description; default:''; NOT NULL" protobuf:"bytes,5,opt,name=description,proto3"`             // @gotags: gorm:"column:description; default:''; NOT NULL"
 	gorm.Model
 }
 
@@ -226,9 +287,9 @@ type AppVersion struct {
 	// @goimport: "gorm.io/gorm"
 	// @gofield: gorm.Model
 	Id            int64  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT"`                                                   // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
-	AppId         int64  `protobuf:"varint,2,opt,name=app_id,json=appId,proto3" json:"app_id,omitempty" gorm:"column:app_id; default:0; NOT NULL; index"`                          // @gotags: gorm:"column:app_id; default:0; NOT NULL; index"
+	AppId         int64  `gorm:"column:app_id; default:0; NOT NULL; index" protobuf:"varint,2,opt,name=app_id,json=appId,proto3" json:"app_id,omitempty"`                          // @gotags: gorm:"column:app_id; default:0; NOT NULL; index"
 	Name          string `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty" gorm:"column:name; default:''; NOT NULL"`                                                  // @gotags: gorm:"column:name; default:''; NOT NULL"
-	Chart         string `gorm:"column:chart; default:''; NOT NULL" protobuf:"bytes,4,opt,name=chart,proto3" json:"chart,omitempty"`                                               // @gotags: gorm:"column:chart; default:''; NOT NULL" // as file path
+	Chart         string `protobuf:"bytes,4,opt,name=chart,proto3" json:"chart,omitempty" gorm:"column:chart; default:''; NOT NULL"`                                               // @gotags: gorm:"column:chart; default:''; NOT NULL" // as file path
 	Version       string `protobuf:"bytes,5,opt,name=version,proto3" json:"version,omitempty" gorm:"column:version; default:''; NOT NULL; index"`                                  // @gotags: gorm:"column:version; default:''; NOT NULL; index"
 	DefaultConfig string `json:"default_config,omitempty" gorm:"column:default_config; default:''; NOT NULL" protobuf:"bytes,6,opt,name=default_config,json=defaultConfig,proto3"` // @gotags: gorm:"column:default_config; default:''; NOT NULL"
 	gorm.Model
@@ -315,14 +376,14 @@ type App struct {
 
 	// @goimport: "gorm.io/gorm"
 	// @gofield: gorm.Model
-	Id          int64         `json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT" protobuf:"varint,1,opt,name=id,proto3"`                                      // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
-	Name        string        `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty" gorm:"column:name; default:''; NOT NULL; index"`                              // @gotags: gorm:"column:name; default:''; NOT NULL; index"
+	Id          int64         `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT"`                                      // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
+	Name        string        `gorm:"column:name; default:''; NOT NULL; index" protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`                              // @gotags: gorm:"column:name; default:''; NOT NULL; index"
 	Icon        string        `protobuf:"bytes,3,opt,name=icon,proto3" json:"icon,omitempty" gorm:"column:icon; default:''; NOT NULL"`                                     // @gotags: gorm:"column:icon; default:''; NOT NULL"
 	AppTypeId   int64         `protobuf:"varint,4,opt,name=app_type_id,json=appTypeId,proto3" json:"app_type_id,omitempty" gorm:"column:app_type_id; default:0; NOT NULL"` // @gotags: gorm:"column:app_type_id; default:0; NOT NULL"
 	AppRepoId   int64         `protobuf:"varint,5,opt,name=app_repo_id,json=appRepoId,proto3" json:"app_repo_id,omitempty" gorm:"column:app_repo_id; default:0; NOT NULL"` // @gotags: gorm:"column:app_repo_id; default:0; NOT NULL"
-	Description string        `gorm:"column:description; default:''; NOT NULL" protobuf:"bytes,6,opt,name=description,proto3" json:"description,omitempty"`                // @gotags: gorm:"column:description; default:''; NOT NULL"
+	Description string        `protobuf:"bytes,6,opt,name=description,proto3" json:"description,omitempty" gorm:"column:description; default:''; NOT NULL"`                // @gotags: gorm:"column:description; default:''; NOT NULL"
 	Versions    []*AppVersion `protobuf:"bytes,7,rep,name=versions,proto3" json:"versions,omitempty" gorm:"-"`                                                             // @gotags: gorm:"-"
-	Readme      string        `json:"readme,omitempty" gorm:"-" protobuf:"bytes,8,opt,name=readme,proto3"`                                                                 // @gotags: gorm:"-"
+	Readme      string        `protobuf:"bytes,8,opt,name=readme,proto3" json:"readme,omitempty" gorm:"-"`                                                                 // @gotags: gorm:"-"
 	Metadata    []byte        `protobuf:"bytes,9,opt,name=metadata,proto3" json:"metadata,omitempty" gorm:"-"`
 	gorm.Model                // @gotags: gorm:"-"
 }
@@ -431,12 +492,12 @@ type AppReleaseResource struct {
 	// @gofield: gorm.Model
 	Id         int64    `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT"`                                          // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
 	ReleaseId  int64    `protobuf:"varint,2,opt,name=release_id,json=releaseId,proto3" json:"release_id,omitempty" gorm:"column:release_id; default:0; NOT NULL; index"` // @gotags: gorm:"column:release_id; default:0; NOT NULL; index"
-	Name       string   `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty" gorm:"column:name; default:''; NOT NULL"`                                         // @gotags: gorm:"column:name; default:''; NOT NULL"
+	Name       string   `gorm:"column:name; default:''; NOT NULL" protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`                                         // @gotags: gorm:"column:name; default:''; NOT NULL"
 	Kind       string   `protobuf:"bytes,4,opt,name=kind,proto3" json:"kind,omitempty" gorm:"column:kind; default:''; NOT NULL"`                                         // @gotags: gorm:"column:kind; default:''; NOT NULL"
 	Manifest   string   `protobuf:"bytes,5,opt,name=manifest,proto3" json:"manifest,omitempty" gorm:"column:manifest; default:''; NOT NULL"`                             // @gotags: gorm:"column:manifest; default:''; NOT NULL"
-	StartedAt  string   `protobuf:"bytes,6,opt,name=started_at,json=startedAt,proto3" json:"started_at,omitempty" gorm:"column:started_at; default:''; NOT NULL"`        // @gotags: gorm:"column:started_at; default:''; NOT NULL"
+	StartedAt  string   `json:"started_at,omitempty" gorm:"column:started_at; default:''; NOT NULL" protobuf:"bytes,6,opt,name=started_at,json=startedAt,proto3"`        // @gotags: gorm:"column:started_at; default:''; NOT NULL"
 	Events     []string `gorm:"-" protobuf:"bytes,7,rep,name=events,proto3" json:"events,omitempty"`                                                                     // @gotags: gorm:"-"
-	Status     []string `json:"status,omitempty" gorm:"-" protobuf:"bytes,8,rep,name=status,proto3"`
+	Status     []string `protobuf:"bytes,8,rep,name=status,proto3" json:"status,omitempty" gorm:"-"`
 	gorm.Model          // @gotags: gorm:"-"
 }
 
@@ -535,23 +596,23 @@ type AppRelease struct {
 
 	// @goimport: "gorm.io/gorm"
 	// @gofield: gorm.Model
-	Id          int64                 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT"`                                           // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
+	Id          int64                 `gorm:"column:id;primaryKey;AUTO_INCREMENT" protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`                                           // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
 	ReleaseName string                `protobuf:"bytes,2,opt,name=release_name,json=releaseName,proto3" json:"release_name,omitempty" gorm:"column:release_name; default:''; NOT NULL"` // @gotags: gorm:"column:release_name; default:''; NOT NULL"
-	AppId       int64                 `protobuf:"varint,3,opt,name=app_id,json=appId,proto3" json:"app_id,omitempty" gorm:"column:app_id; default:0; NOT NULL; index"`                  // @gotags: gorm:"column:app_id; default:0; NOT NULL; index"
+	AppId       int64                 `json:"app_id,omitempty" gorm:"column:app_id; default:0; NOT NULL; index" protobuf:"varint,3,opt,name=app_id,json=appId,proto3"`                  // @gotags: gorm:"column:app_id; default:0; NOT NULL; index"
 	VersionId   int64                 `protobuf:"varint,4,opt,name=version_id,json=versionId,proto3" json:"version_id,omitempty" gorm:"column:version_id; default:0; NOT NULL; index"`  // @gotags: gorm:"column:version_id; default:0; NOT NULL; index"
 	ClusterId   int64                 `protobuf:"varint,5,opt,name=cluster_id,json=clusterId,proto3" json:"cluster_id,omitempty" gorm:"column:cluster_id; default:0; NOT NULL; index"`  // @gotags: gorm:"column:cluster_id; default:0; NOT NULL; index"
 	ProjectId   int64                 `protobuf:"varint,6,opt,name=project_id,json=projectId,proto3" json:"project_id,omitempty" gorm:"column:project_id; default:0; NOT NULL; index"`  // @gotags: gorm:"column:project_id; default:0; NOT NULL; index"
-	UserId      int64                 `json:"user_id,omitempty" gorm:"column:user_id; default:0; NOT NULL; index" protobuf:"varint,7,opt,name=user_id,json=userId,proto3"`              // @gotags: gorm:"column:user_id; default:0; NOT NULL; index"
-	Namespace   string                `protobuf:"bytes,8,opt,name=namespace,proto3" json:"namespace,omitempty" gorm:"column:namespace; default:''; NOT NULL"`                           // @gotags: gorm:"column:namespace; default:''; NOT NULL"
-	Config      string                `protobuf:"bytes,9,opt,name=config,proto3" json:"config,omitempty" gorm:"column:config; default:''; NOT NULL"`                                    // @gotags: gorm:"column:config; default:''; NOT NULL"
+	UserId      int64                 `protobuf:"varint,7,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty" gorm:"column:user_id; default:0; NOT NULL; index"`              // @gotags: gorm:"column:user_id; default:0; NOT NULL; index"
+	Namespace   string                `gorm:"column:namespace; default:''; NOT NULL" protobuf:"bytes,8,opt,name=namespace,proto3" json:"namespace,omitempty"`                           // @gotags: gorm:"column:namespace; default:''; NOT NULL"
+	Config      string                `gorm:"column:config; default:''; NOT NULL" protobuf:"bytes,9,opt,name=config,proto3" json:"config,omitempty"`                                    // @gotags: gorm:"column:config; default:''; NOT NULL"
 	Status      AppReleaseSatus       `protobuf:"varint,10,opt,name=status,proto3,enum=biz.app.AppReleaseSatus" json:"status,omitempty" gorm:"column:status; default:0; NOT NULL"`      // @gotags: gorm:"column:status; default:0; NOT NULL"
-	Manifest    string                `json:"manifest,omitempty" gorm:"column:manifest; default:''; NOT NULL" protobuf:"bytes,11,opt,name=manifest,proto3"`                             // @gotags: gorm:"column:manifest; default:''; NOT NULL"
-	Notes       string                `json:"notes,omitempty" gorm:"column:notes; default:''; NOT NULL" protobuf:"bytes,12,opt,name=notes,proto3"`                                      // @gotags: gorm:"column:notes; default:''; NOT NULL"
-	Logs        string                `gorm:"column:logs; default:''; NOT NULL" protobuf:"bytes,13,opt,name=logs,proto3" json:"logs,omitempty"`                                         // @gotags: gorm:"column:logs; default:''; NOT NULL"
-	Dryrun      bool                  `protobuf:"varint,14,opt,name=dryrun,proto3" json:"dryrun,omitempty" gorm:"column:dryrun; default:false; NOT NULL"`                               // @gotags: gorm:"column:dryrun; default:false; NOT NULL"
-	Atomic      bool                  `protobuf:"varint,15,opt,name=atomic,proto3" json:"atomic,omitempty" gorm:"column:atomic; default:false; NOT NULL"`                               // @gotags: gorm:"column:atomic; default:false; NOT NULL"
+	Manifest    string                `protobuf:"bytes,11,opt,name=manifest,proto3" json:"manifest,omitempty" gorm:"column:manifest; default:''; NOT NULL"`                             // @gotags: gorm:"column:manifest; default:''; NOT NULL"
+	Notes       string                `gorm:"column:notes; default:''; NOT NULL" protobuf:"bytes,12,opt,name=notes,proto3" json:"notes,omitempty"`                                      // @gotags: gorm:"column:notes; default:''; NOT NULL"
+	Logs        string                `protobuf:"bytes,13,opt,name=logs,proto3" json:"logs,omitempty" gorm:"column:logs; default:''; NOT NULL"`                                         // @gotags: gorm:"column:logs; default:''; NOT NULL"
+	Dryrun      bool                  `json:"dryrun,omitempty" gorm:"column:dryrun; default:false; NOT NULL" protobuf:"varint,14,opt,name=dryrun,proto3"`                               // @gotags: gorm:"column:dryrun; default:false; NOT NULL"
+	Atomic      bool                  `json:"atomic,omitempty" gorm:"column:atomic; default:false; NOT NULL" protobuf:"varint,15,opt,name=atomic,proto3"`                               // @gotags: gorm:"column:atomic; default:false; NOT NULL"
 	Wait        bool                  `protobuf:"varint,16,opt,name=wait,proto3" json:"wait,omitempty" gorm:"column:wait; default:false; NOT NULL"`                                     // @gotags: gorm:"column:wait; default:false; NOT NULL"
-	Resources   []*AppReleaseResource `protobuf:"bytes,17,rep,name=resources,proto3" json:"resources,omitempty" gorm:"-"`
+	Resources   []*AppReleaseResource `json:"resources,omitempty" gorm:"-" protobuf:"bytes,17,rep,name=resources,proto3"`
 	gorm.Model                        // @gotags: gorm:"-"
 }
 
@@ -654,7 +715,7 @@ func (x *AppRelease) GetStatus() AppReleaseSatus {
 	if x != nil {
 		return x.Status
 	}
-	return AppReleaseSatus_APP_RELEASE_PENDING
+	return AppReleaseSatus_BAppReleaseSatus_UNSPECIFIED
 }
 
 func (x *AppRelease) GetManifest() string {
@@ -796,16 +857,24 @@ var file_internal_biz_app_proto_rawDesc = []byte{
 	0x72, 0x63, 0x65, 0x73, 0x18, 0x11, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x1b, 0x2e, 0x62, 0x69, 0x7a,
 	0x2e, 0x61, 0x70, 0x70, 0x2e, 0x41, 0x70, 0x70, 0x52, 0x65, 0x6c, 0x65, 0x61, 0x73, 0x65, 0x52,
 	0x65, 0x73, 0x6f, 0x75, 0x72, 0x63, 0x65, 0x52, 0x09, 0x72, 0x65, 0x73, 0x6f, 0x75, 0x72, 0x63,
-	0x65, 0x73, 0x2a, 0x5b, 0x0a, 0x0f, 0x41, 0x70, 0x70, 0x52, 0x65, 0x6c, 0x65, 0x61, 0x73, 0x65,
-	0x53, 0x61, 0x74, 0x75, 0x73, 0x12, 0x17, 0x0a, 0x13, 0x41, 0x50, 0x50, 0x5f, 0x52, 0x45, 0x4c,
-	0x45, 0x41, 0x53, 0x45, 0x5f, 0x50, 0x45, 0x4e, 0x44, 0x49, 0x4e, 0x47, 0x10, 0x00, 0x12, 0x17,
-	0x0a, 0x13, 0x41, 0x50, 0x50, 0x5f, 0x52, 0x45, 0x4c, 0x45, 0x41, 0x53, 0x45, 0x5f, 0x52, 0x55,
-	0x4e, 0x4e, 0x49, 0x4e, 0x47, 0x10, 0x01, 0x12, 0x16, 0x0a, 0x12, 0x41, 0x50, 0x50, 0x5f, 0x52,
-	0x45, 0x4c, 0x45, 0x41, 0x53, 0x45, 0x5f, 0x46, 0x41, 0x49, 0x4c, 0x45, 0x44, 0x10, 0x02, 0x42,
-	0x30, 0x5a, 0x2e, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x66, 0x2d,
-	0x72, 0x61, 0x6d, 0x62, 0x6f, 0x2f, 0x63, 0x6c, 0x6f, 0x75, 0x64, 0x2d, 0x63, 0x6f, 0x70, 0x69,
-	0x6c, 0x6f, 0x74, 0x2f, 0x69, 0x6e, 0x74, 0x65, 0x72, 0x6e, 0x61, 0x6c, 0x2f, 0x62, 0x69, 0x7a,
-	0x3b, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x65, 0x73, 0x2a, 0x85, 0x01, 0x0a, 0x15, 0x42, 0x61, 0x73, 0x69, 0x63, 0x43, 0x6f, 0x6d, 0x70,
+	0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x41, 0x70, 0x70, 0x54, 0x79, 0x70, 0x65, 0x12, 0x25, 0x0a, 0x21,
+	0x42, 0x61, 0x73, 0x69, 0x63, 0x43, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x41, 0x70,
+	0x70, 0x54, 0x79, 0x70, 0x65, 0x5f, 0x55, 0x4e, 0x53, 0x50, 0x45, 0x43, 0x49, 0x46, 0x49, 0x45,
+	0x44, 0x10, 0x00, 0x12, 0x0e, 0x0a, 0x0a, 0x4e, 0x45, 0x54, 0x57, 0x4f, 0x52, 0x4b, 0x49, 0x4e,
+	0x47, 0x10, 0x01, 0x12, 0x0c, 0x0a, 0x08, 0x44, 0x41, 0x54, 0x41, 0x42, 0x41, 0x53, 0x45, 0x10,
+	0x02, 0x12, 0x0a, 0x0a, 0x06, 0x54, 0x4f, 0x4f, 0x4b, 0x49, 0x54, 0x10, 0x03, 0x12, 0x0e, 0x0a,
+	0x0a, 0x4d, 0x4f, 0x4e, 0x49, 0x54, 0x4f, 0x52, 0x49, 0x4e, 0x47, 0x10, 0x04, 0x12, 0x0b, 0x0a,
+	0x07, 0x53, 0x54, 0x4f, 0x52, 0x41, 0x47, 0x45, 0x10, 0x05, 0x2a, 0x59, 0x0a, 0x0f, 0x41, 0x70,
+	0x70, 0x52, 0x65, 0x6c, 0x65, 0x61, 0x73, 0x65, 0x53, 0x61, 0x74, 0x75, 0x73, 0x12, 0x20, 0x0a,
+	0x1c, 0x42, 0x41, 0x70, 0x70, 0x52, 0x65, 0x6c, 0x65, 0x61, 0x73, 0x65, 0x53, 0x61, 0x74, 0x75,
+	0x73, 0x5f, 0x55, 0x4e, 0x53, 0x50, 0x45, 0x43, 0x49, 0x46, 0x49, 0x45, 0x44, 0x10, 0x00, 0x12,
+	0x0b, 0x0a, 0x07, 0x50, 0x45, 0x4e, 0x44, 0x49, 0x4e, 0x47, 0x10, 0x01, 0x12, 0x0b, 0x0a, 0x07,
+	0x52, 0x55, 0x4e, 0x4e, 0x49, 0x4e, 0x47, 0x10, 0x02, 0x12, 0x0a, 0x0a, 0x06, 0x46, 0x41, 0x49,
+	0x4c, 0x45, 0x44, 0x10, 0x03, 0x42, 0x30, 0x5a, 0x2e, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e,
+	0x63, 0x6f, 0x6d, 0x2f, 0x66, 0x2d, 0x72, 0x61, 0x6d, 0x62, 0x6f, 0x2f, 0x63, 0x6c, 0x6f, 0x75,
+	0x64, 0x2d, 0x63, 0x6f, 0x70, 0x69, 0x6c, 0x6f, 0x74, 0x2f, 0x69, 0x6e, 0x74, 0x65, 0x72, 0x6e,
+	0x61, 0x6c, 0x2f, 0x62, 0x69, 0x7a, 0x3b, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -820,21 +889,22 @@ func file_internal_biz_app_proto_rawDescGZIP() []byte {
 	return file_internal_biz_app_proto_rawDescData
 }
 
-var file_internal_biz_app_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_internal_biz_app_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
 var file_internal_biz_app_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_internal_biz_app_proto_goTypes = []any{
-	(AppReleaseSatus)(0),       // 0: biz.app.AppReleaseSatus
-	(*AppType)(nil),            // 1: biz.app.AppType
-	(*AppRepo)(nil),            // 2: biz.app.AppRepo
-	(*AppVersion)(nil),         // 3: biz.app.AppVersion
-	(*App)(nil),                // 4: biz.app.App
-	(*AppReleaseResource)(nil), // 5: biz.app.AppReleaseResource
-	(*AppRelease)(nil),         // 6: biz.app.AppRelease
+	(BasicComponentAppType)(0), // 0: biz.app.BasicComponentAppType
+	(AppReleaseSatus)(0),       // 1: biz.app.AppReleaseSatus
+	(*AppType)(nil),            // 2: biz.app.AppType
+	(*AppRepo)(nil),            // 3: biz.app.AppRepo
+	(*AppVersion)(nil),         // 4: biz.app.AppVersion
+	(*App)(nil),                // 5: biz.app.App
+	(*AppReleaseResource)(nil), // 6: biz.app.AppReleaseResource
+	(*AppRelease)(nil),         // 7: biz.app.AppRelease
 }
 var file_internal_biz_app_proto_depIdxs = []int32{
-	3, // 0: biz.app.App.versions:type_name -> biz.app.AppVersion
-	0, // 1: biz.app.AppRelease.status:type_name -> biz.app.AppReleaseSatus
-	5, // 2: biz.app.AppRelease.resources:type_name -> biz.app.AppReleaseResource
+	4, // 0: biz.app.App.versions:type_name -> biz.app.AppVersion
+	1, // 1: biz.app.AppRelease.status:type_name -> biz.app.AppReleaseSatus
+	6, // 2: biz.app.AppRelease.resources:type_name -> biz.app.AppReleaseResource
 	3, // [3:3] is the sub-list for method output_type
 	3, // [3:3] is the sub-list for method input_type
 	3, // [3:3] is the sub-list for extension type_name
@@ -926,7 +996,7 @@ func file_internal_biz_app_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_internal_biz_app_proto_rawDesc,
-			NumEnums:      1,
+			NumEnums:      2,
 			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   0,

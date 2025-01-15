@@ -27,38 +27,30 @@ func NewInfrastructureCluster(conf *conf.Bootstrap, logger log.Logger) biz.Clust
 	}
 }
 
-func (i *InfrastructureCluster) GetRegions(ctx context.Context, cluster *biz.Cluster) error {
+func (i *InfrastructureCluster) GetRegions(ctx context.Context, cluster *biz.Cluster) ([]*biz.CloudResource, error) {
 	grpconn, err := coonGrpc(ctx, i.conf)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer grpconn.Close()
 	res, err := clusterApi.NewClusterInterfaceClient(grpconn.Conn).GetRegions(ctx, cluster)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	cluster.DeleteCloudResource(biz.ResourceType_REGION)
-	for _, v := range res.Resources {
-		cluster.AddCloudResource(v)
-	}
-	return nil
+	return res.Resources, nil
 }
 
-func (i *InfrastructureCluster) GetZones(ctx context.Context, cluster *biz.Cluster) error {
+func (i *InfrastructureCluster) GetZones(ctx context.Context, cluster *biz.Cluster) ([]*biz.CloudResource, error) {
 	grpconn, err := coonGrpc(ctx, i.conf)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer grpconn.Close()
 	res, err := clusterApi.NewClusterInterfaceClient(grpconn.Conn).GetZones(ctx, cluster)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	cluster.DeleteCloudResource(biz.ResourceType_AVAILABILITY_ZONES)
-	for _, v := range res.Resources {
-		cluster.AddCloudResource(v)
-	}
-	return nil
+	return res.Resources, nil
 }
 
 func (i *InfrastructureCluster) CreateCloudBasicResource(ctx context.Context, cluster *biz.Cluster) error {

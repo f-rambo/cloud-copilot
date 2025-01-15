@@ -160,6 +160,9 @@ func (c *ClusterInterface) Save(ctx context.Context, clusterArgs *v1alpha1.Clust
 		if cluster.Id != 0 {
 			return nil, errors.New("cluster already exists")
 		}
+		cluster.Version = c.c.Cluster.GetKubernetesVersion()
+		cluster.ContainerdVersion = c.c.Cluster.GetContainerdVersion()
+		cluster.RuncVersion = c.c.Cluster.GetRuncVersion()
 	}
 	cluster.Name = clusterArgs.Name
 	cluster.Type = biz.ClusterType(clusterArgs.Type)
@@ -244,18 +247,18 @@ func (c *ClusterInterface) GetRegions(ctx context.Context, clusterArgs *v1alpha1
 		return nil, errors.New("type, access id and access key are required")
 	}
 	cluster := &biz.Cluster{Type: biz.ClusterType(clusterArgs.Type), AccessId: clusterArgs.AccessId, AccessKey: clusterArgs.AccessKey}
-	err := c.clusterUc.GetRegions(ctx, cluster)
+	regions, err := c.clusterUc.GetRegions(ctx, cluster)
 	if err != nil {
 		return nil, err
 	}
-	regions := make([]*v1alpha1.Region, 0)
-	for _, v := range cluster.GetCloudResource(biz.ResourceType_REGION) {
-		regions = append(regions, &v1alpha1.Region{
+	data := make([]*v1alpha1.Region, 0)
+	for _, v := range regions {
+		data = append(data, &v1alpha1.Region{
 			Id:   v.RefId,
 			Name: v.Name,
 		})
 	}
-	return &v1alpha1.Regions{Regions: regions}, nil
+	return &v1alpha1.Regions{Regions: data}, nil
 }
 
 func (c *ClusterInterface) bizCLusterToCluster(bizCluster *biz.Cluster) *v1alpha1.Cluster {
@@ -273,16 +276,6 @@ func (c *ClusterInterface) bizCLusterToCluster(bizCluster *biz.Cluster) *v1alpha
 		}
 		nodeGroups = append(nodeGroups, c.bizNodeGroupToNodeGroup(v))
 	}
-	regionName := ""
-	resources := bizCluster.GetCloudResource(biz.ResourceType_REGION)
-	for _, v := range resources {
-		if v.RefId == bizCluster.Region {
-			regionName = v.Name
-		}
-	}
-	if regionName == "" {
-		regionName = bizCluster.Region
-	}
 	return &v1alpha1.Cluster{
 		Id:               bizCluster.Id,
 		Name:             bizCluster.Name,
@@ -293,7 +286,7 @@ func (c *ClusterInterface) bizCLusterToCluster(bizCluster *biz.Cluster) *v1alpha
 		PublicKey:        bizCluster.PublicKey,
 		PrivateKey:       bizCluster.PrivateKey,
 		Region:           bizCluster.Region,
-		RegionName:       regionName,
+		RegionName:       bizCluster.Region,
 		AccessId:         bizCluster.AccessId,
 		AccessKey:        bizCluster.AccessKey,
 		CreateAt:         bizCluster.CreatedAt.Format("2006-01-02 15:04:05"),

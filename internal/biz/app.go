@@ -290,7 +290,7 @@ func (uc *AppUsecase) CreateAppRelease(ctx context.Context, appRelease *AppRelea
 	if err != nil {
 		return err
 	}
-	appRelease.Status = AppReleaseSatus_APP_RELEASE_PENDING
+	appRelease.Status = AppReleaseSatus_PENDING
 	uc.apply(appRelease)
 	return nil
 }

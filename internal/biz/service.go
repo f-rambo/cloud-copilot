@@ -36,10 +36,6 @@ func NewServicesUseCase(serviceData ServicesData, wfRuntime WorkflowRuntime, log
 	return &ServicesUseCase{serviceData: serviceData, workflowRuntime: wfRuntime, log: log.NewHelper(logger)}
 }
 
-func (uc *ServicesUseCase) Init(ctx context.Context) error {
-	return nil
-}
-
 func (uc *ServicesUseCase) List(ctx context.Context, serviceParam *Service, page, pageSize int) ([]*Service, int64, error) {
 	return uc.serviceData.List(ctx, serviceParam, page, pageSize)
 }

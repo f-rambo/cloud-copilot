@@ -35,18 +35,6 @@ func NewProjectUseCase(projectData ProjectData, ProjectTime ProjectRuntime, logg
 	return &ProjectUsecase{projectData: projectData, ProjectRuntime: ProjectTime, log: log.NewHelper(logger), conf: conf}
 }
 
-// project init
-func (uc *ProjectUsecase) Init(ctx context.Context) error {
-	project, err := uc.projectData.GetByName(ctx, uc.conf.Server.Name)
-	if err != nil {
-		return err
-	}
-	if project == nil || project.ID == 0 {
-		return uc.Save(ctx, &Project{Name: uc.conf.Server.Name, Status: ProjectStatus_PROJECT_INIT})
-	}
-	return nil
-}
-
 func (uc *ProjectUsecase) Save(ctx context.Context, project *Project) error {
 	return uc.projectData.Save(ctx, project)
 }

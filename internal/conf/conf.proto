@@ -42,9 +42,12 @@ message NodeGroupConfig {
 message ClusterConfig {
   Env env = 1;
   string name = 2;
-  repeated IngressRule ingress_rules = 3;
-  Level level = 4;
-  NodeGroupConfig nodegroup_config = 5;
+  string kubernetes_version = 3;
+  string containerd_version = 4;
+  string runc_version = 5;
+  repeated IngressRule ingress_rules = 6;
+  Level level = 7;
+  NodeGroupConfig nodegroup_config = 8;
 }
 
 message HTTPServer {

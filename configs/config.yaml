@@ -43,6 +43,9 @@ auth:
 cluster:
   name: "cloud-copilot"
   env: local
+  kubernetes_version: "v1.31.2"
+  containerd_version: "v2.0.0"
+  runc_version: "v1.2.1"
   level:
     basic: 50
     advanced: 100

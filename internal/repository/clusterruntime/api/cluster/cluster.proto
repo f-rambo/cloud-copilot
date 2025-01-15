@@ -13,6 +13,4 @@ service ClusterInterface {
       rpc CurrentCluster(biz.cluster.Cluster) returns (biz.cluster.Cluster);
 
       rpc HandlerNodes(biz.cluster.Cluster) returns (biz.cluster.Cluster);
-      
-      rpc StartCluster(biz.cluster.Cluster) returns (biz.cluster.Cluster);
 }

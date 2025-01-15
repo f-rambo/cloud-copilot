@@ -23,7 +23,6 @@ const (
 	ClusterInterface_CheckClusterInstalled_FullMethodName = "/clusterruntime.api.cluster.ClusterInterface/CheckClusterInstalled"
 	ClusterInterface_CurrentCluster_FullMethodName        = "/clusterruntime.api.cluster.ClusterInterface/CurrentCluster"
 	ClusterInterface_HandlerNodes_FullMethodName          = "/clusterruntime.api.cluster.ClusterInterface/HandlerNodes"
-	ClusterInterface_StartCluster_FullMethodName          = "/clusterruntime.api.cluster.ClusterInterface/StartCluster"
 )
 
 // ClusterInterfaceClient is the client API for ClusterInterface service.
@@ -33,7 +32,6 @@ type ClusterInterfaceClient interface {
 	CheckClusterInstalled(ctx context.Context, in *biz.Cluster, opts ...grpc.CallOption) (*ClusterInstalled, error)
 	CurrentCluster(ctx context.Context, in *biz.Cluster, opts ...grpc.CallOption) (*biz.Cluster, error)
 	HandlerNodes(ctx context.Context, in *biz.Cluster, opts ...grpc.CallOption) (*biz.Cluster, error)
-	StartCluster(ctx context.Context, in *biz.Cluster, opts ...grpc.CallOption) (*biz.Cluster, error)
 }
 
 type clusterInterfaceClient struct {
@@ -74,16 +72,6 @@ func (c *clusterInterfaceClient) HandlerNodes(ctx context.Context, in *biz.Clust
 	return out, nil
 }
 
-func (c *clusterInterfaceClient) StartCluster(ctx context.Context, in *biz.Cluster, opts ...grpc.CallOption) (*biz.Cluster, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(biz.Cluster)
-	err := c.cc.Invoke(ctx, ClusterInterface_StartCluster_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // ClusterInterfaceServer is the server API for ClusterInterface service.
 // All implementations must embed UnimplementedClusterInterfaceServer
 // for forward compatibility.
@@ -91,7 +79,6 @@ type ClusterInterfaceServer interface {
 	CheckClusterInstalled(context.Context, *biz.Cluster) (*ClusterInstalled, error)
 	CurrentCluster(context.Context, *biz.Cluster) (*biz.Cluster, error)
 	HandlerNodes(context.Context, *biz.Cluster) (*biz.Cluster, error)
-	StartCluster(context.Context, *biz.Cluster) (*biz.Cluster, error)
 	mustEmbedUnimplementedClusterInterfaceServer()
 }
 
@@ -110,9 +97,6 @@ func (UnimplementedClusterInterfaceServer) CurrentCluster(context.Context, *biz.
 }
 func (UnimplementedClusterInterfaceServer) HandlerNodes(context.Context, *biz.Cluster) (*biz.Cluster, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method HandlerNodes not implemented")
-}
-func (UnimplementedClusterInterfaceServer) StartCluster(context.Context, *biz.Cluster) (*biz.Cluster, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method StartCluster not implemented")
 }
 func (UnimplementedClusterInterfaceServer) mustEmbedUnimplementedClusterInterfaceServer() {}
 func (UnimplementedClusterInterfaceServer) testEmbeddedByValue()                          {}
@@ -189,24 +173,6 @@ func _ClusterInterface_HandlerNodes_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ClusterInterface_StartCluster_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(biz.Cluster)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ClusterInterfaceServer).StartCluster(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ClusterInterface_StartCluster_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ClusterInterfaceServer).StartCluster(ctx, req.(*biz.Cluster))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 // ClusterInterface_ServiceDesc is the grpc.ServiceDesc for ClusterInterface service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -225,10 +191,6 @@ var ClusterInterface_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "HandlerNodes",
 			Handler:    _ClusterInterface_HandlerNodes_Handler,
-		},
-		{
-			MethodName: "StartCluster",
-			Handler:    _ClusterInterface_StartCluster_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

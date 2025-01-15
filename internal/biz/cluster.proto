@@ -12,7 +12,7 @@ enum ClusterType {
 }
 
 enum ClusterStatus {
-      UNSPECIFIED = 0;
+      ClusterStatus_UNSPECIFIED = 0;
       STARTING = 1;
       RUNNING = 2;
       STOPPING = 3;
@@ -118,27 +118,30 @@ message Cluster {
       string name = 2; // @gotags: gorm:"column:name; default:''; NOT NULL"
       string version = 3; // @gotags: gorm:"column:version; default:''; NOT NULL"
       string api_server_address = 4; // @gotags: gorm:"column:api_server_address; default:''; NOT NULL"
-      string config = 5; // @gotags: gorm:"column:config; default:''; NOT NULL"
-      ClusterStatus status = 6; // @gotags: gorm:"column:status; default:0; NOT NULL"
-      ClusterType type = 7; // @gotags: gorm:"column:type; default:0; NOT NULL"
-      ClusterLevel level = 8; // @gotags: gorm:"column:level; default:0; NOT NULL"
-      string public_key = 9; // @gotags: gorm:"column:public_key; default:''; NOT NULL"
-      string private_key = 10; // @gotags: gorm:"column:private_key; default:''; NOT NULL"
-      string region = 11; // @gotags: gorm:"column:region; default:''; NOT NULL"
-      int64 user_id = 12; // @gotags: gorm:"column:user_id; default:0; NOT NULL"
-      string access_id = 13; // @gotags: gorm:"column:access_id; default:''; NOT NULL"
-      string access_key = 14; // @gotags: gorm:"column:access_key; default:''; NOT NULL"
-      string token = 15; // @gotags: gorm:"column:token; default:''; NOT NULL"
-      string ca_data = 16; // @gotags: gorm:"column:ca_data; default:''; NOT NULL"
-      string cert_data = 17; // @gotags: gorm:"column:cert_data; default:''; NOT NULL"
-      string key_data = 18; // @gotags: gorm:"column:key_data; default:''; NOT NULL"
-      string node_user = 19; // @gotags: gorm:"column:node_user; default:''; NOT NULL"
-      string node_start_ip = 20; // @gotags: gorm:"column:node_start_ip; default:''; NOT NULL"
-      string node_end_ip = 21; // @gotags: gorm:"column:node_end_ip; default:''; NOT NULL"
-      repeated NodeGroup node_groups = 22; // @gotags: gorm:"-"
-      repeated Node nodes = 23; // @gotags: gorm:"-"
-      repeated CloudResource cloud_resources = 24; // @gotags: gorm:"-"
-      repeated IngressControllerRule ingress_controller_rules = 25; // @gotags: gorm:"-"
+      string image_repo = 5; // @gotags: gorm:"column:image_repo; default:''; NOT NULL"
+      string config = 6; // @gotags: gorm:"column:config; default:''; NOT NULL"
+      ClusterStatus status = 7; // @gotags: gorm:"column:status; default:0; NOT NULL"
+      ClusterType type = 8; // @gotags: gorm:"column:type; default:0; NOT NULL"
+      ClusterLevel level = 9; // @gotags: gorm:"column:level; default:0; NOT NULL"
+      string public_key = 10; // @gotags: gorm:"column:public_key; default:''; NOT NULL"
+      string private_key = 11; // @gotags: gorm:"column:private_key; default:''; NOT NULL"
+      string region = 12; // @gotags: gorm:"column:region; default:''; NOT NULL"
+      int64 user_id = 13; // @gotags: gorm:"column:user_id; default:0; NOT NULL"
+      string access_id = 14; // @gotags: gorm:"column:access_id; default:''; NOT NULL"
+      string access_key = 15; // @gotags: gorm:"column:access_key; default:''; NOT NULL"
+      string token = 16; // @gotags: gorm:"column:token; default:''; NOT NULL"
+      string ca_data = 17; // @gotags: gorm:"column:ca_data; default:''; NOT NULL"
+      string cert_data = 18; // @gotags: gorm:"column:cert_data; default:''; NOT NULL"
+      string key_data = 19; // @gotags: gorm:"column:key_data; default:''; NOT NULL"
+      string node_user = 20; // @gotags: gorm:"column:node_user; default:''; NOT NULL"
+      string node_start_ip = 21; // @gotags: gorm:"column:node_start_ip; default:''; NOT NULL"
+      string node_end_ip = 22; // @gotags: gorm:"column:node_end_ip; default:''; NOT NULL"
+      string containerd_version = 23;
+      string runc_version = 24;
+      repeated NodeGroup node_groups = 25; // @gotags: gorm:"-"
+      repeated Node nodes = 26; // @gotags: gorm:"-"
+      repeated CloudResource cloud_resources = 27; // @gotags: gorm:"-"
+      repeated IngressControllerRule ingress_controller_rules = 28; // @gotags: gorm:"-"
 }
 
 message NodeGroup {

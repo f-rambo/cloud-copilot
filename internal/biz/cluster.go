@@ -2,10 +2,8 @@ package biz
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"math"
-	"sort"
 	"sync"
 
 	confPkg "github.com/f-rambo/cloud-copilot/internal/conf"
@@ -30,8 +28,8 @@ type ClusterData interface {
 }
 
 type ClusterInfrastructure interface {
-	GetRegions(context.Context, *Cluster) error
-	GetZones(context.Context, *Cluster) error
+	GetRegions(context.Context, *Cluster) ([]*CloudResource, error)
+	GetZones(context.Context, *Cluster) ([]*CloudResource, error)
 	CreateCloudBasicResource(context.Context, *Cluster) error
 	DeleteCloudBasicResource(context.Context, *Cluster) error
 	ManageNodeResource(context.Context, *Cluster) error
@@ -44,7 +42,6 @@ type ClusterInfrastructure interface {
 type ClusterRuntime interface {
 	CurrentCluster(context.Context, *Cluster) error
 	HandlerNodes(context.Context, *Cluster) error
-	StartCluster(context.Context, *Cluster) error
 }
 
 type ClusterAgent interface {
@@ -71,20 +68,6 @@ func NewClusterUseCase(conf *confPkg.Bootstrap, clusterData ClusterData, cluster
 		locks:                 make(map[int64]*sync.Mutex),
 		eventChan:             make(chan *Cluster, ClusterPoolNumber),
 	}
-}
-
-type CloudResources []*CloudResource
-
-func (c CloudResources) Len() int {
-	return len(c)
-}
-
-func (c CloudResources) Less(i, j int) bool {
-	return c[i].Name < c[j].Name
-}
-
-func (c CloudResources) Swap(i, j int) {
-	c[i], c[j] = c[j], c[i]
 }
 
 func (c *Cluster) GetCloudResource(resourceType ResourceType) []*CloudResource {
@@ -120,7 +103,7 @@ func (c *Cluster) DeleteCloudResource(resourceType ResourceType) {
 	c.CloudResources = cloudResources
 }
 
-func (c *Cluster) SettingClusterAvailabilityZone(clusterLevel *confPkg.Level) {
+func (c *Cluster) SettingClusterLevel(clusterLevel *confPkg.Level) {
 	var maxNodeNumber int32 = 0
 	for _, nodeGroup := range c.NodeGroups {
 		maxNodeNumber += nodeGroup.TargetSize
@@ -138,12 +121,9 @@ func (c *Cluster) SettingClusterAvailabilityZone(clusterLevel *confPkg.Level) {
 	if c.Level != setClusterLevel && setClusterLevel != ClusterLevel_ClusterLevel_UNSPECIFIED {
 		c.Level = setClusterLevel
 	}
-	zones := c.GetCloudResource(ResourceType_AVAILABILITY_ZONES)
-	if len(zones) == 0 {
-		return
-	}
-	sort.Sort(CloudResources(zones))
-	c.DeleteCloudResource(ResourceType_AVAILABILITY_ZONES)
+}
+
+func (c *Cluster) SettingClusterAvailabilityZone(zones []*CloudResource) {
 	zoneNumber := len(zones)
 	if c.Level == ClusterLevel_BASIC {
 		zoneNumber = 1
@@ -151,8 +131,21 @@ func (c *Cluster) SettingClusterAvailabilityZone(clusterLevel *confPkg.Level) {
 	if c.Level == ClusterLevel_STANDARD {
 		zoneNumber = int(math.Ceil(float64(zoneNumber) / 2))
 	}
-	for _, zone := range zones[:zoneNumber] {
-		c.AddCloudResource(zone)
+	if zoneNumber <= len(c.GetCloudResource(ResourceType_AVAILABILITY_ZONES)) {
+		return
+	}
+	needNewZoneNumber := zoneNumber - len(c.GetCloudResource(ResourceType_AVAILABILITY_ZONES))
+	for _, zone := range zones {
+		ok := false
+		for _, v := range c.GetCloudResource(ResourceType_AVAILABILITY_ZONES) {
+			if v.RefId == zone.RefId {
+				ok = true
+			}
+		}
+		if !ok && needNewZoneNumber > 0 {
+			c.AddCloudResource(zone)
+			needNewZoneNumber--
+		}
 	}
 }
 
@@ -258,10 +251,36 @@ func (n *Node) SetNodeStatus(status NodeStatus) {
 	n.Status = status
 }
 
+func (uc *ClusterUsecase) ClusterOnCloudInit(ctx context.Context) error {
+	clusters, err := uc.clusterData.List(ctx, nil)
+	if err != nil {
+		return err
+	}
+	cluster := &Cluster{}
+	err = uc.clusterRuntime.CurrentCluster(ctx, cluster)
+	if errors.Is(err, ErrClusterNotFound) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	clusterExits := false
+	for _, v := range clusters {
+		if v.Name == cluster.Name {
+			clusterExits = true
+			break
+		}
+	}
+	if clusterExits {
+		return nil
+	}
+	return uc.Save(ctx, cluster)
+}
+
 func (uc *ClusterUsecase) GetClusterStatus() []ClusterStatus {
 	clusterStatus := make([]ClusterStatus, 0)
 	for _, v := range ClusterStatus_value {
-		if ClusterStatus(v) == ClusterStatus_UNSPECIFIED {
+		if ClusterStatus(v) == ClusterStatus_ClusterStatus_UNSPECIFIED {
 			continue
 		}
 		clusterStatus = append(clusterStatus, ClusterStatus(v))
@@ -363,15 +382,11 @@ func (uc *ClusterUsecase) Save(ctx context.Context, cluster *Cluster) error {
 	return uc.clusterData.Save(ctx, cluster)
 }
 
-func (uc *ClusterUsecase) GetRegions(ctx context.Context, cluster *Cluster) error {
+func (uc *ClusterUsecase) GetRegions(ctx context.Context, cluster *Cluster) ([]*CloudResource, error) {
 	if cluster.Type == ClusterType_LOCAL {
-		return nil
+		return []*CloudResource{}, nil
 	}
-	err := uc.clusterInfrastructure.GetRegions(ctx, cluster)
-	if err != nil {
-		return err
-	}
-	return nil
+	return uc.clusterInfrastructure.GetRegions(ctx, cluster)
 }
 
 func (uc *ClusterUsecase) StartCluster(ctx context.Context, clusterId int64) error {
@@ -382,7 +397,7 @@ func (uc *ClusterUsecase) StartCluster(ctx context.Context, clusterId int64) err
 	if cluster == nil || cluster.Id == 0 {
 		return ErrClusterNotFound
 	}
-	if cluster.Status != ClusterStatus_UNSPECIFIED && cluster.Status != ClusterStatus_STOPPED {
+	if cluster.Status != ClusterStatus_ClusterStatus_UNSPECIFIED && cluster.Status != ClusterStatus_STOPPED {
 		return errors.New("cluster is not in stopped state")
 	}
 	cluster.SetStatus(ClusterStatus_STARTING)
@@ -401,7 +416,7 @@ func (uc *ClusterUsecase) StopCluster(ctx context.Context, clusterId int64) erro
 	if cluster == nil || cluster.Id == 0 {
 		return errors.New("cluster not found")
 	}
-	if cluster.Status != ClusterStatus_UNSPECIFIED && cluster.Status != ClusterStatus_RUNNING {
+	if cluster.Status != ClusterStatus_ClusterStatus_UNSPECIFIED && cluster.Status != ClusterStatus_RUNNING {
 		return errors.New("cluster is not in running state")
 	}
 	cluster.SetStatus(ClusterStatus_STOPPING)
@@ -517,6 +532,14 @@ func (uc *ClusterUsecase) handleEvent(ctx context.Context, cluster *Cluster) (er
 	if err != nil {
 		return err
 	}
+	cluster.SettingClusterLevel(uc.conf.Cluster.Level)
+	if cluster.Type.IsCloud() {
+		zones, err := uc.clusterInfrastructure.GetZones(ctx, cluster)
+		if err != nil {
+			return err
+		}
+		cluster.SettingClusterAvailabilityZone(zones)
+	}
 	err = uc.clusterInfrastructure.GetNodesSystemInfo(ctx, cluster)
 	if err != nil {
 		return err
@@ -530,9 +553,11 @@ func (uc *ClusterUsecase) handleEvent(ctx context.Context, cluster *Cluster) (er
 	if err != nil {
 		return err
 	}
-	err = uc.clusterInfrastructure.ManageNodeResource(ctx, cluster)
-	if err != nil {
-		return err
+	if cluster.Type.IsCloud() {
+		err = uc.clusterInfrastructure.ManageNodeResource(ctx, cluster)
+		if err != nil {
+			return err
+		}
 	}
 	err = uc.clusterInfrastructure.HandlerNodes(ctx, cluster)
 	if err != nil {
@@ -551,14 +576,13 @@ func (uc *ClusterUsecase) handlerClusterNotInstalled(ctx context.Context, cluste
 		cluster.SettingDefaultNodeGroup(uc.conf.Cluster.NodegroupConfig)
 		cluster.settingDefatultIngressRules(uc.conf.Cluster.IngressRules)
 	}
+	cluster.SettingClusterLevel(uc.conf.Cluster.Level)
 	if cluster.Type.IsCloud() {
-		err := uc.clusterInfrastructure.GetZones(ctx, cluster)
+		zones, err := uc.clusterInfrastructure.GetZones(ctx, cluster)
 		if err != nil {
 			return err
 		}
-		cluster.SettingClusterAvailabilityZone(uc.conf.Cluster.Level)
-		clusterStr, _ := json.Marshal(cluster)
-		uc.log.Info(string(clusterStr))
+		cluster.SettingClusterAvailabilityZone(zones)
 		err = uc.clusterInfrastructure.CreateCloudBasicResource(ctx, cluster)
 		if err != nil {
 			return err
@@ -600,9 +624,5 @@ func (uc *ClusterUsecase) handlerClusterNotInstalled(ctx context.Context, cluste
 		return err
 	}
 	cluster.SetNodeStatus(NodeStatus_NODE_PENDING, NodeStatus_NODE_RUNNING)
-	err = uc.clusterRuntime.StartCluster(ctx, cluster)
-	if err != nil {
-		return err
-	}
 	return nil
 }

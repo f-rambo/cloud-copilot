@@ -10,9 +10,9 @@ import (
 )
 
 const (
-	TokenKey     UserKey = "token"
-	SignType     UserKey = "sign_type"
-	UserEmailKey UserKey = "user_email"
+	TokenKey     = "token"
+	SignType     = "sign_type"
+	UserEmailKey = "user_email"
 )
 
 type UserData interface {
