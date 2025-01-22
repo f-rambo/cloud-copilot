@@ -2,14 +2,18 @@ package biz
 
 import (
 	"context"
+	"errors"
+	"time"
 
 	"github.com/f-rambo/cloud-copilot/internal/conf"
 	"github.com/f-rambo/cloud-copilot/utils"
 	"github.com/go-kratos/kratos/v2/log"
+	jwtv5 "github.com/golang-jwt/jwt/v5"
 	"github.com/spf13/cast"
 )
 
 const (
+	AdminName    = "admin"
 	TokenKey     = "token"
 	SignType     = "sign_type"
 	UserEmailKey = "user_email"
@@ -17,12 +21,11 @@ const (
 
 type UserData interface {
 	GetUserInfoByEmail(ctx context.Context, email string) (*User, error)
-	GetUserByID(ctx context.Context, id int64) (*User, error)
+	GetUser(ctx context.Context, id int64) (*User, error)
 	Save(ctx context.Context, user *User) error
 	GetUserByBatchID(ctx context.Context, ids []int64) ([]*User, error)
 	GetUsers(ctx context.Context, username, email string, pageNum, pageSize int) (users []*User, total int64, err error)
 	DeleteUser(ctx context.Context, id int64) error
-	SignIn(context.Context, *User) error
 	GetUserEmail(ctx context.Context, token string) (string, error)
 }
 
@@ -72,7 +75,8 @@ func (u *UserUseCase) GetUsers(ctx context.Context, name, email string, pageNum,
 	return u.userData.GetUsers(ctx, name, email, pageNum, pageSize)
 }
 
-func (u *UserUseCase) SignIn(ctx context.Context, user *User) error {
+func (u *UserUseCase) Register(ctx context.Context, user *User) error {
+	user.SignType = UserSignType_CREDENTIALS
 	if user.AccessToken != "" {
 		email, err := u.thirdparty.GetUserEmail(ctx, user.AccessToken)
 		if err != nil {
@@ -80,17 +84,46 @@ func (u *UserUseCase) SignIn(ctx context.Context, user *User) error {
 		}
 		user.Email = email
 		user.SignType = UserSignType_GITHUB
-	} else {
-		err := u.userData.SignIn(ctx, user)
+	}
+	return u.Save(ctx, user)
+}
+
+func (u *UserUseCase) Enable(ctx context.Context, id int64) error {
+	user, err := u.userData.GetUser(ctx, id)
+	if err != nil {
+		return err
+	}
+	user.Status = UserStatus_USER_ENABLE
+	return u.Save(ctx, user)
+}
+
+func (u *UserUseCase) Disable(ctx context.Context, id int64) error {
+	user, err := u.userData.GetUser(ctx, id)
+	if err != nil {
+		return err
+	}
+	user.Status = UserStatus_USER_DISABLE
+	return u.Save(ctx, user)
+}
+
+func (u *UserUseCase) SignIn(ctx context.Context, user *User) error {
+	if user.Email == u.conf.Auth.AdminEmail && user.Password == utils.Md5(u.conf.Auth.AdminPassword) {
+		return nil
+	}
+	user.SignType = UserSignType_CREDENTIALS
+	if user.AccessToken != "" {
+		email, err := u.thirdparty.GetUserEmail(ctx, user.AccessToken)
 		if err != nil {
 			return err
 		}
-		user.SignType = UserSignType_CREDENTIALS
+		user.Email = email
+		user.SignType = UserSignType_GITHUB
 	}
-	user.Status = UserStatus_USER_ENABLE
-	err := u.Save(ctx, user)
-	if err != nil {
-		return err
+	if user.Email == "" {
+		return errors.New("email or password error")
+	}
+	if user.Status != UserStatus_USER_ENABLE {
+		return errors.New("user is not enable")
 	}
 	return nil
 }
@@ -100,8 +133,8 @@ func (u *UserUseCase) GetUserInfo(ctx context.Context) (*User, error) {
 	return u.userData.GetUserInfoByEmail(ctx, cast.ToString(userEmail))
 }
 
-func (u *UserUseCase) GetUserByID(ctx context.Context, id int64) (*User, error) {
-	return u.userData.GetUserByID(ctx, id)
+func (u *UserUseCase) GetUser(ctx context.Context, id int64) (*User, error) {
+	return u.userData.GetUser(ctx, id)
 }
 
 func (u *UserUseCase) GetUserByBatchID(ctx context.Context, ids []int64) ([]*User, error) {
@@ -117,4 +150,15 @@ func (u *UserUseCase) GetUserByBatchID(ctx context.Context, ids []int64) ([]*Use
 
 func (u *UserUseCase) DeleteUser(ctx context.Context, id int64) error {
 	return u.userData.DeleteUser(ctx, id)
+}
+
+func (u *UserUseCase) encodeToken(user *User) (token string, err error) {
+	claims := jwtv5.MapClaims{
+		"id":     user.Id,
+		"email":  user.Email,
+		"name":   user.Name,
+		"status": user.Status,
+		"exp":    time.Now().Add(time.Hour * time.Duration(u.conf.Auth.Exp)).Unix(),
+	}
+	return jwtv5.NewWithClaims(jwtv5.SigningMethodHS256, claims).SignedString([]byte(u.conf.Auth.Key))
 }

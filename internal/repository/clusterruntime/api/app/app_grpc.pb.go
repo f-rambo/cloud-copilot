@@ -22,18 +22,18 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	AppInterface_UploadApp_FullMethodName            = "/clusterruntime.api.app.AppInterface/UploadApp"
-	AppInterface_CheckCluster_FullMethodName         = "/clusterruntime.api.app.AppInterface/CheckCluster"
-	AppInterface_Init_FullMethodName                 = "/clusterruntime.api.app.AppInterface/Init"
-	AppInterface_GetClusterResources_FullMethodName  = "/clusterruntime.api.app.AppInterface/GetClusterResources"
-	AppInterface_DeleteApp_FullMethodName            = "/clusterruntime.api.app.AppInterface/DeleteApp"
-	AppInterface_DeleteAppVersion_FullMethodName     = "/clusterruntime.api.app.AppInterface/DeleteAppVersion"
-	AppInterface_GetAppAndVersionInfo_FullMethodName = "/clusterruntime.api.app.AppInterface/GetAppAndVersionInfo"
-	AppInterface_AppRelease_FullMethodName           = "/clusterruntime.api.app.AppInterface/AppRelease"
-	AppInterface_DeleteAppRelease_FullMethodName     = "/clusterruntime.api.app.AppInterface/DeleteAppRelease"
-	AppInterface_AddAppRepo_FullMethodName           = "/clusterruntime.api.app.AppInterface/AddAppRepo"
-	AppInterface_GetAppsByRepo_FullMethodName        = "/clusterruntime.api.app.AppInterface/GetAppsByRepo"
-	AppInterface_GetAppDetailByRepo_FullMethodName   = "/clusterruntime.api.app.AppInterface/GetAppDetailByRepo"
+	AppInterface_UploadApp_FullMethodName             = "/clusterruntime.api.app.AppInterface/UploadApp"
+	AppInterface_CheckCluster_FullMethodName          = "/clusterruntime.api.app.AppInterface/CheckCluster"
+	AppInterface_InstallBasicComponent_FullMethodName = "/clusterruntime.api.app.AppInterface/InstallBasicComponent"
+	AppInterface_GetClusterResources_FullMethodName   = "/clusterruntime.api.app.AppInterface/GetClusterResources"
+	AppInterface_DeleteApp_FullMethodName             = "/clusterruntime.api.app.AppInterface/DeleteApp"
+	AppInterface_DeleteAppVersion_FullMethodName      = "/clusterruntime.api.app.AppInterface/DeleteAppVersion"
+	AppInterface_GetAppAndVersionInfo_FullMethodName  = "/clusterruntime.api.app.AppInterface/GetAppAndVersionInfo"
+	AppInterface_AppRelease_FullMethodName            = "/clusterruntime.api.app.AppInterface/AppRelease"
+	AppInterface_DeleteAppRelease_FullMethodName      = "/clusterruntime.api.app.AppInterface/DeleteAppRelease"
+	AppInterface_AddAppRepo_FullMethodName            = "/clusterruntime.api.app.AppInterface/AddAppRepo"
+	AppInterface_GetAppsByRepo_FullMethodName         = "/clusterruntime.api.app.AppInterface/GetAppsByRepo"
+	AppInterface_GetAppDetailByRepo_FullMethodName    = "/clusterruntime.api.app.AppInterface/GetAppDetailByRepo"
 )
 
 // AppInterfaceClient is the client API for AppInterface service.
@@ -42,7 +42,7 @@ const (
 type AppInterfaceClient interface {
 	UploadApp(ctx context.Context, in *FileUploadRequest, opts ...grpc.CallOption) (*GetAppAndVersionInfo, error)
 	CheckCluster(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*CheckClusterResponse, error)
-	Init(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*InitResponse, error)
+	InstallBasicComponent(ctx context.Context, in *InstallBasicComponentReq, opts ...grpc.CallOption) (*InstallBasicComponentResponse, error)
 	GetClusterResources(ctx context.Context, in *biz.AppRelease, opts ...grpc.CallOption) (*AppReleaseResourceItems, error)
 	DeleteApp(ctx context.Context, in *biz.App, opts ...grpc.CallOption) (*common.Msg, error)
 	DeleteAppVersion(ctx context.Context, in *DeleteAppVersionReq, opts ...grpc.CallOption) (*common.Msg, error)
@@ -82,10 +82,10 @@ func (c *appInterfaceClient) CheckCluster(ctx context.Context, in *emptypb.Empty
 	return out, nil
 }
 
-func (c *appInterfaceClient) Init(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*InitResponse, error) {
+func (c *appInterfaceClient) InstallBasicComponent(ctx context.Context, in *InstallBasicComponentReq, opts ...grpc.CallOption) (*InstallBasicComponentResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(InitResponse)
-	err := c.cc.Invoke(ctx, AppInterface_Init_FullMethodName, in, out, cOpts...)
+	out := new(InstallBasicComponentResponse)
+	err := c.cc.Invoke(ctx, AppInterface_InstallBasicComponent_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -188,7 +188,7 @@ func (c *appInterfaceClient) GetAppDetailByRepo(ctx context.Context, in *GetAppD
 type AppInterfaceServer interface {
 	UploadApp(context.Context, *FileUploadRequest) (*GetAppAndVersionInfo, error)
 	CheckCluster(context.Context, *emptypb.Empty) (*CheckClusterResponse, error)
-	Init(context.Context, *emptypb.Empty) (*InitResponse, error)
+	InstallBasicComponent(context.Context, *InstallBasicComponentReq) (*InstallBasicComponentResponse, error)
 	GetClusterResources(context.Context, *biz.AppRelease) (*AppReleaseResourceItems, error)
 	DeleteApp(context.Context, *biz.App) (*common.Msg, error)
 	DeleteAppVersion(context.Context, *DeleteAppVersionReq) (*common.Msg, error)
@@ -214,8 +214,8 @@ func (UnimplementedAppInterfaceServer) UploadApp(context.Context, *FileUploadReq
 func (UnimplementedAppInterfaceServer) CheckCluster(context.Context, *emptypb.Empty) (*CheckClusterResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CheckCluster not implemented")
 }
-func (UnimplementedAppInterfaceServer) Init(context.Context, *emptypb.Empty) (*InitResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Init not implemented")
+func (UnimplementedAppInterfaceServer) InstallBasicComponent(context.Context, *InstallBasicComponentReq) (*InstallBasicComponentResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method InstallBasicComponent not implemented")
 }
 func (UnimplementedAppInterfaceServer) GetClusterResources(context.Context, *biz.AppRelease) (*AppReleaseResourceItems, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetClusterResources not implemented")
@@ -301,20 +301,20 @@ func _AppInterface_CheckCluster_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AppInterface_Init_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(emptypb.Empty)
+func _AppInterface_InstallBasicComponent_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(InstallBasicComponentReq)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AppInterfaceServer).Init(ctx, in)
+		return srv.(AppInterfaceServer).InstallBasicComponent(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: AppInterface_Init_FullMethodName,
+		FullMethod: AppInterface_InstallBasicComponent_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AppInterfaceServer).Init(ctx, req.(*emptypb.Empty))
+		return srv.(AppInterfaceServer).InstallBasicComponent(ctx, req.(*InstallBasicComponentReq))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -497,8 +497,8 @@ var AppInterface_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AppInterface_CheckCluster_Handler,
 		},
 		{
-			MethodName: "Init",
-			Handler:    _AppInterface_Init_Handler,
+			MethodName: "InstallBasicComponent",
+			Handler:    _AppInterface_InstallBasicComponent_Handler,
 		},
 		{
 			MethodName: "GetClusterResources",

@@ -326,7 +326,7 @@ func (a *AppInterface) GetAppRelease(ctx context.Context, AppReleaseReq *v1alpha
 		return nil, err
 	}
 	appRelease.Id = appReleaseRes.Id
-	user, err := a.user.GetUserByID(ctx, appRelease.UserId)
+	user, err := a.user.GetUser(ctx, appRelease.UserId)
 	if err != nil {
 		return nil, err
 	}

@@ -15,7 +15,7 @@ service AppInterface {
 
       rpc CheckCluster(google.protobuf.Empty) returns(app.CheckClusterResponse);
 
-      rpc Init(google.protobuf.Empty) returns(app.InitResponse);
+      rpc InstallBasicComponent(app.InstallBasicComponentReq) returns(app.InstallBasicComponentResponse);
 
       rpc GetClusterResources(biz.app.AppRelease) returns(AppReleaseResourceItems); // GetPodResources GetNetResouces GetAppsReouces
 

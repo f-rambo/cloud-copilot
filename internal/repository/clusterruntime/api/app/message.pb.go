@@ -540,6 +540,108 @@ func (x *DeleteAppVersionReq) GetVersion() *biz.AppVersion {
 	return nil
 }
 
+type InstallBasicComponentReq struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	BasicComponentAppType biz.BasicComponentAppType `protobuf:"varint,1,opt,name=basic_component_app_type,json=basicComponentAppType,proto3,enum=biz.app.BasicComponentAppType" json:"basic_component_app_type,omitempty"`
+}
+
+func (x *InstallBasicComponentReq) Reset() {
+	*x = InstallBasicComponentReq{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_internal_repository_clusterruntime_api_app_message_proto_msgTypes[9]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *InstallBasicComponentReq) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*InstallBasicComponentReq) ProtoMessage() {}
+
+func (x *InstallBasicComponentReq) ProtoReflect() protoreflect.Message {
+	mi := &file_internal_repository_clusterruntime_api_app_message_proto_msgTypes[9]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use InstallBasicComponentReq.ProtoReflect.Descriptor instead.
+func (*InstallBasicComponentReq) Descriptor() ([]byte, []int) {
+	return file_internal_repository_clusterruntime_api_app_message_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *InstallBasicComponentReq) GetBasicComponentAppType() biz.BasicComponentAppType {
+	if x != nil {
+		return x.BasicComponentAppType
+	}
+	return biz.BasicComponentAppType(0)
+}
+
+type InstallBasicComponentResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Apps     []*biz.App        `protobuf:"bytes,1,rep,name=apps,proto3" json:"apps,omitempty"`
+	Releases []*biz.AppRelease `protobuf:"bytes,2,rep,name=releases,proto3" json:"releases,omitempty"`
+}
+
+func (x *InstallBasicComponentResponse) Reset() {
+	*x = InstallBasicComponentResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_internal_repository_clusterruntime_api_app_message_proto_msgTypes[10]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *InstallBasicComponentResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*InstallBasicComponentResponse) ProtoMessage() {}
+
+func (x *InstallBasicComponentResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_internal_repository_clusterruntime_api_app_message_proto_msgTypes[10]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use InstallBasicComponentResponse.ProtoReflect.Descriptor instead.
+func (*InstallBasicComponentResponse) Descriptor() ([]byte, []int) {
+	return file_internal_repository_clusterruntime_api_app_message_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *InstallBasicComponentResponse) GetApps() []*biz.App {
+	if x != nil {
+		return x.Apps
+	}
+	return nil
+}
+
+func (x *InstallBasicComponentResponse) GetReleases() []*biz.AppRelease {
+	if x != nil {
+		return x.Releases
+	}
+	return nil
+}
+
 var File_internal_repository_clusterruntime_api_app_message_proto protoreflect.FileDescriptor
 
 var file_internal_repository_clusterruntime_api_app_message_proto_rawDesc = []byte{
@@ -606,13 +708,27 @@ var file_internal_repository_clusterruntime_api_app_message_proto_rawDesc = []by
 	0x7a, 0x2e, 0x61, 0x70, 0x70, 0x2e, 0x41, 0x70, 0x70, 0x52, 0x03, 0x61, 0x70, 0x70, 0x12, 0x2d,
 	0x0a, 0x07, 0x76, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32,
 	0x13, 0x2e, 0x62, 0x69, 0x7a, 0x2e, 0x61, 0x70, 0x70, 0x2e, 0x41, 0x70, 0x70, 0x56, 0x65, 0x72,
-	0x73, 0x69, 0x6f, 0x6e, 0x52, 0x07, 0x76, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x42, 0x4e, 0x5a,
-	0x4c, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x66, 0x2d, 0x72, 0x61,
-	0x6d, 0x62, 0x6f, 0x2f, 0x63, 0x6c, 0x6f, 0x75, 0x64, 0x2d, 0x63, 0x6f, 0x70, 0x69, 0x6c, 0x6f,
-	0x74, 0x2f, 0x69, 0x6e, 0x74, 0x65, 0x72, 0x6e, 0x61, 0x6c, 0x2f, 0x72, 0x65, 0x70, 0x6f, 0x73,
-	0x69, 0x74, 0x6f, 0x72, 0x79, 0x2f, 0x63, 0x6c, 0x75, 0x73, 0x74, 0x65, 0x72, 0x72, 0x75, 0x6e,
-	0x74, 0x69, 0x6d, 0x65, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x61, 0x70, 0x70, 0x3b, 0x62, 0x06, 0x70,
-	0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x73, 0x69, 0x6f, 0x6e, 0x52, 0x07, 0x76, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x22, 0x73, 0x0a,
+	0x18, 0x49, 0x6e, 0x73, 0x74, 0x61, 0x6c, 0x6c, 0x42, 0x61, 0x73, 0x69, 0x63, 0x43, 0x6f, 0x6d,
+	0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x52, 0x65, 0x71, 0x12, 0x57, 0x0a, 0x18, 0x62, 0x61, 0x73,
+	0x69, 0x63, 0x5f, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x5f, 0x61, 0x70, 0x70,
+	0x5f, 0x74, 0x79, 0x70, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0e, 0x32, 0x1e, 0x2e, 0x62, 0x69,
+	0x7a, 0x2e, 0x61, 0x70, 0x70, 0x2e, 0x42, 0x61, 0x73, 0x69, 0x63, 0x43, 0x6f, 0x6d, 0x70, 0x6f,
+	0x6e, 0x65, 0x6e, 0x74, 0x41, 0x70, 0x70, 0x54, 0x79, 0x70, 0x65, 0x52, 0x15, 0x62, 0x61, 0x73,
+	0x69, 0x63, 0x43, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x41, 0x70, 0x70, 0x54, 0x79,
+	0x70, 0x65, 0x22, 0x72, 0x0a, 0x1d, 0x49, 0x6e, 0x73, 0x74, 0x61, 0x6c, 0x6c, 0x42, 0x61, 0x73,
+	0x69, 0x63, 0x43, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f,
+	0x6e, 0x73, 0x65, 0x12, 0x20, 0x0a, 0x04, 0x61, 0x70, 0x70, 0x73, 0x18, 0x01, 0x20, 0x03, 0x28,
+	0x0b, 0x32, 0x0c, 0x2e, 0x62, 0x69, 0x7a, 0x2e, 0x61, 0x70, 0x70, 0x2e, 0x41, 0x70, 0x70, 0x52,
+	0x04, 0x61, 0x70, 0x70, 0x73, 0x12, 0x2f, 0x0a, 0x08, 0x72, 0x65, 0x6c, 0x65, 0x61, 0x73, 0x65,
+	0x73, 0x18, 0x02, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x13, 0x2e, 0x62, 0x69, 0x7a, 0x2e, 0x61, 0x70,
+	0x70, 0x2e, 0x41, 0x70, 0x70, 0x52, 0x65, 0x6c, 0x65, 0x61, 0x73, 0x65, 0x52, 0x08, 0x72, 0x65,
+	0x6c, 0x65, 0x61, 0x73, 0x65, 0x73, 0x42, 0x4e, 0x5a, 0x4c, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62,
+	0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x66, 0x2d, 0x72, 0x61, 0x6d, 0x62, 0x6f, 0x2f, 0x63, 0x6c, 0x6f,
+	0x75, 0x64, 0x2d, 0x63, 0x6f, 0x70, 0x69, 0x6c, 0x6f, 0x74, 0x2f, 0x69, 0x6e, 0x74, 0x65, 0x72,
+	0x6e, 0x61, 0x6c, 0x2f, 0x72, 0x65, 0x70, 0x6f, 0x73, 0x69, 0x74, 0x6f, 0x72, 0x79, 0x2f, 0x63,
+	0x6c, 0x75, 0x73, 0x74, 0x65, 0x72, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2f, 0x61, 0x70,
+	0x69, 0x2f, 0x61, 0x70, 0x70, 0x3b, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -627,42 +743,48 @@ func file_internal_repository_clusterruntime_api_app_message_proto_rawDescGZIP()
 	return file_internal_repository_clusterruntime_api_app_message_proto_rawDescData
 }
 
-var file_internal_repository_clusterruntime_api_app_message_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
+var file_internal_repository_clusterruntime_api_app_message_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
 var file_internal_repository_clusterruntime_api_app_message_proto_goTypes = []any{
-	(*FileUploadRequest)(nil),       // 0: clusterruntime.api.app.FileUploadRequest
-	(*CheckClusterResponse)(nil),    // 1: clusterruntime.api.app.CheckClusterResponse
-	(*InitResponse)(nil),            // 2: clusterruntime.api.app.InitResponse
-	(*AppReleaseResourceItems)(nil), // 3: clusterruntime.api.app.AppReleaseResourceItems
-	(*AppReleaseReq)(nil),           // 4: clusterruntime.api.app.AppReleaseReq
-	(*GetAppDetailByRepoReq)(nil),   // 5: clusterruntime.api.app.GetAppDetailByRepoReq
-	(*AppItems)(nil),                // 6: clusterruntime.api.app.AppItems
-	(*GetAppAndVersionInfo)(nil),    // 7: clusterruntime.api.app.GetAppAndVersionInfo
-	(*DeleteAppVersionReq)(nil),     // 8: clusterruntime.api.app.DeleteAppVersionReq
-	(*biz.App)(nil),                 // 9: biz.app.App
-	(*biz.AppRelease)(nil),          // 10: biz.app.AppRelease
-	(*biz.AppReleaseResource)(nil),  // 11: biz.app.AppReleaseResource
-	(*biz.AppVersion)(nil),          // 12: biz.app.AppVersion
-	(*biz.AppRepo)(nil),             // 13: biz.app.AppRepo
+	(*FileUploadRequest)(nil),             // 0: clusterruntime.api.app.FileUploadRequest
+	(*CheckClusterResponse)(nil),          // 1: clusterruntime.api.app.CheckClusterResponse
+	(*InitResponse)(nil),                  // 2: clusterruntime.api.app.InitResponse
+	(*AppReleaseResourceItems)(nil),       // 3: clusterruntime.api.app.AppReleaseResourceItems
+	(*AppReleaseReq)(nil),                 // 4: clusterruntime.api.app.AppReleaseReq
+	(*GetAppDetailByRepoReq)(nil),         // 5: clusterruntime.api.app.GetAppDetailByRepoReq
+	(*AppItems)(nil),                      // 6: clusterruntime.api.app.AppItems
+	(*GetAppAndVersionInfo)(nil),          // 7: clusterruntime.api.app.GetAppAndVersionInfo
+	(*DeleteAppVersionReq)(nil),           // 8: clusterruntime.api.app.DeleteAppVersionReq
+	(*InstallBasicComponentReq)(nil),      // 9: clusterruntime.api.app.InstallBasicComponentReq
+	(*InstallBasicComponentResponse)(nil), // 10: clusterruntime.api.app.InstallBasicComponentResponse
+	(*biz.App)(nil),                       // 11: biz.app.App
+	(*biz.AppRelease)(nil),                // 12: biz.app.AppRelease
+	(*biz.AppReleaseResource)(nil),        // 13: biz.app.AppReleaseResource
+	(*biz.AppVersion)(nil),                // 14: biz.app.AppVersion
+	(*biz.AppRepo)(nil),                   // 15: biz.app.AppRepo
+	(biz.BasicComponentAppType)(0),        // 16: biz.app.BasicComponentAppType
 }
 var file_internal_repository_clusterruntime_api_app_message_proto_depIdxs = []int32{
-	9,  // 0: clusterruntime.api.app.InitResponse.apps:type_name -> biz.app.App
-	10, // 1: clusterruntime.api.app.InitResponse.releases:type_name -> biz.app.AppRelease
-	11, // 2: clusterruntime.api.app.AppReleaseResourceItems.resources:type_name -> biz.app.AppReleaseResource
-	9,  // 3: clusterruntime.api.app.AppReleaseReq.app:type_name -> biz.app.App
-	12, // 4: clusterruntime.api.app.AppReleaseReq.version:type_name -> biz.app.AppVersion
-	10, // 5: clusterruntime.api.app.AppReleaseReq.release:type_name -> biz.app.AppRelease
-	13, // 6: clusterruntime.api.app.AppReleaseReq.repo:type_name -> biz.app.AppRepo
-	13, // 7: clusterruntime.api.app.GetAppDetailByRepoReq.repo:type_name -> biz.app.AppRepo
-	9,  // 8: clusterruntime.api.app.AppItems.apps:type_name -> biz.app.App
-	9,  // 9: clusterruntime.api.app.GetAppAndVersionInfo.app:type_name -> biz.app.App
-	12, // 10: clusterruntime.api.app.GetAppAndVersionInfo.version:type_name -> biz.app.AppVersion
-	9,  // 11: clusterruntime.api.app.DeleteAppVersionReq.app:type_name -> biz.app.App
-	12, // 12: clusterruntime.api.app.DeleteAppVersionReq.version:type_name -> biz.app.AppVersion
-	13, // [13:13] is the sub-list for method output_type
-	13, // [13:13] is the sub-list for method input_type
-	13, // [13:13] is the sub-list for extension type_name
-	13, // [13:13] is the sub-list for extension extendee
-	0,  // [0:13] is the sub-list for field type_name
+	11, // 0: clusterruntime.api.app.InitResponse.apps:type_name -> biz.app.App
+	12, // 1: clusterruntime.api.app.InitResponse.releases:type_name -> biz.app.AppRelease
+	13, // 2: clusterruntime.api.app.AppReleaseResourceItems.resources:type_name -> biz.app.AppReleaseResource
+	11, // 3: clusterruntime.api.app.AppReleaseReq.app:type_name -> biz.app.App
+	14, // 4: clusterruntime.api.app.AppReleaseReq.version:type_name -> biz.app.AppVersion
+	12, // 5: clusterruntime.api.app.AppReleaseReq.release:type_name -> biz.app.AppRelease
+	15, // 6: clusterruntime.api.app.AppReleaseReq.repo:type_name -> biz.app.AppRepo
+	15, // 7: clusterruntime.api.app.GetAppDetailByRepoReq.repo:type_name -> biz.app.AppRepo
+	11, // 8: clusterruntime.api.app.AppItems.apps:type_name -> biz.app.App
+	11, // 9: clusterruntime.api.app.GetAppAndVersionInfo.app:type_name -> biz.app.App
+	14, // 10: clusterruntime.api.app.GetAppAndVersionInfo.version:type_name -> biz.app.AppVersion
+	11, // 11: clusterruntime.api.app.DeleteAppVersionReq.app:type_name -> biz.app.App
+	14, // 12: clusterruntime.api.app.DeleteAppVersionReq.version:type_name -> biz.app.AppVersion
+	16, // 13: clusterruntime.api.app.InstallBasicComponentReq.basic_component_app_type:type_name -> biz.app.BasicComponentAppType
+	11, // 14: clusterruntime.api.app.InstallBasicComponentResponse.apps:type_name -> biz.app.App
+	12, // 15: clusterruntime.api.app.InstallBasicComponentResponse.releases:type_name -> biz.app.AppRelease
+	16, // [16:16] is the sub-list for method output_type
+	16, // [16:16] is the sub-list for method input_type
+	16, // [16:16] is the sub-list for extension type_name
+	16, // [16:16] is the sub-list for extension extendee
+	0,  // [0:16] is the sub-list for field type_name
 }
 
 func init() { file_internal_repository_clusterruntime_api_app_message_proto_init() }
@@ -779,6 +901,30 @@ func file_internal_repository_clusterruntime_api_app_message_proto_init() {
 				return nil
 			}
 		}
+		file_internal_repository_clusterruntime_api_app_message_proto_msgTypes[9].Exporter = func(v any, i int) any {
+			switch v := v.(*InstallBasicComponentReq); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_internal_repository_clusterruntime_api_app_message_proto_msgTypes[10].Exporter = func(v any, i int) any {
+			switch v := v.(*InstallBasicComponentResponse); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -786,7 +932,7 @@ func file_internal_repository_clusterruntime_api_app_message_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_internal_repository_clusterruntime_api_app_message_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   9,
+			NumMessages:   11,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

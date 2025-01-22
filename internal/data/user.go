@@ -41,7 +41,7 @@ func (u *UserRepo) Save(ctx context.Context, user *biz.User) error {
 	return u.data.db.Save(user).Error
 }
 
-func (u *UserRepo) GetUserByID(ctx context.Context, id int64) (*biz.User, error) {
+func (u *UserRepo) GetUser(ctx context.Context, id int64) (*biz.User, error) {
 	user := &biz.User{}
 	err := u.data.db.Where("id = ?", id).First(user).Error
 	if err != nil && err != gorm.ErrRecordNotFound {
@@ -81,36 +81,6 @@ func (u *UserRepo) GetUsers(ctx context.Context, name, email string, pageNum, pa
 
 func (u *UserRepo) DeleteUser(ctx context.Context, id int64) error {
 	return u.data.db.Delete(&biz.User{}, "id = ?", id).Error
-}
-
-func (u *UserRepo) SignIn(ctx context.Context, userParam *biz.User) error {
-	user, err := u.GetUserInfoByEmail(ctx, userParam.Email)
-	if err != nil {
-		return err
-	}
-	if user == nil || user.Id == 0 {
-		return errors.New("user not exist")
-	}
-	userParam.Id = user.Id
-	if userParam.Password != user.Password {
-		return errors.New("password error")
-	}
-	userParam.AccessToken, err = u.encodeToken(userParam)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (u *UserRepo) encodeToken(user *biz.User) (token string, err error) {
-	claims := jwtv5.MapClaims{
-		"id":     user.Id,
-		"email":  user.Email,
-		"name":   user.Name,
-		"status": user.Status,
-		"exp":    time.Now().Add(time.Hour * time.Duration(u.c.Auth.Exp)).Unix(),
-	}
-	return jwtv5.NewWithClaims(jwtv5.SigningMethodHS256, claims).SignedString([]byte(u.c.Auth.Key))
 }
 
 func (u *UserRepo) GetUserEmail(ctx context.Context, token string) (string, error) {

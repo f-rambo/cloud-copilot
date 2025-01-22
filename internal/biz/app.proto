@@ -8,9 +8,11 @@ enum BasicComponentAppType {
       BasicComponentAppType_UNSPECIFIED = 0;
       NETWORKING = 1;
       DATABASE = 2;
-      TOOKIT = 3;
+      BUILDING = 3;
       MONITORING = 4;
       STORAGE = 5;
+      COMPUTING = 6;
+      SCHEDULING = 7;
 }
 
 enum AppReleaseSatus {

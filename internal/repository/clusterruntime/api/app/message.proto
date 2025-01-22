@@ -54,3 +54,12 @@ message DeleteAppVersionReq {
       biz.app.App app = 1;
       biz.app.AppVersion version = 2;
 }
+
+message InstallBasicComponentReq {
+      biz.app.BasicComponentAppType basic_component_app_type = 1;
+}
+
+message InstallBasicComponentResponse {
+      repeated biz.app.App apps = 1;
+      repeated biz.app.AppRelease releases = 2;
+}

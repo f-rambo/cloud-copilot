@@ -42,6 +42,7 @@ type ClusterInfrastructure interface {
 type ClusterRuntime interface {
 	CurrentCluster(context.Context, *Cluster) error
 	HandlerNodes(context.Context, *Cluster) error
+	InstallBasicComponent(context.Context, BasicComponentAppType) ([]*App, []*AppRelease, error)
 }
 
 type ClusterAgent interface {
@@ -49,6 +50,7 @@ type ClusterAgent interface {
 
 type ClusterUsecase struct {
 	clusterData           ClusterData
+	appData               AppData
 	clusterInfrastructure ClusterInfrastructure
 	clusterRuntime        ClusterRuntime
 	locks                 map[int64]*sync.Mutex
@@ -624,5 +626,28 @@ func (uc *ClusterUsecase) handlerClusterNotInstalled(ctx context.Context, cluste
 		return err
 	}
 	cluster.SetNodeStatus(NodeStatus_NODE_PENDING, NodeStatus_NODE_RUNNING)
+	preInstallationAppTypes := []BasicComponentAppType{
+		BasicComponentAppType_NETWORKING,
+		BasicComponentAppType_BUILDING,
+		BasicComponentAppType_MONITORING,
+	}
+	for _, preInstallationAppType := range preInstallationAppTypes {
+		apps, appReleases, err := uc.clusterRuntime.InstallBasicComponent(ctx, preInstallationAppType)
+		if err != nil {
+			return err
+		}
+		for _, v := range apps {
+			err = uc.appData.Save(ctx, v)
+			if err != nil {
+				return err
+			}
+		}
+		for _, v := range appReleases {
+			err = uc.appData.SaveAppRelease(ctx, v)
+			if err != nil {
+				return err
+			}
+		}
+	}
 	return nil
 }

@@ -42,19 +42,6 @@ func (c *ClusterRuntimeApp) CheckCluster(ctx context.Context) bool {
 	return false
 }
 
-func (c *ClusterRuntimeApp) Init(ctx context.Context) ([]*biz.App, []*biz.AppRelease, error) {
-	grpconn, err := connGrpc(ctx, c.conf)
-	if err != nil {
-		return nil, nil, err
-	}
-	defer grpconn.Close()
-	res, err := appApi.NewAppInterfaceClient(grpconn.Conn).Init(ctx, &emptypb.Empty{})
-	if err != nil {
-		return nil, nil, err
-	}
-	return res.Apps, res.Releases, nil
-}
-
 func (c *ClusterRuntimeApp) GetClusterResources(ctx context.Context, appRelease *biz.AppRelease) ([]*biz.AppReleaseResource, error) {
 	grpconn, err := connGrpc(ctx, c.conf)
 	if err != nil {

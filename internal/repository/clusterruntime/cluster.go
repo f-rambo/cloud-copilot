@@ -5,6 +5,7 @@ import (
 
 	"github.com/f-rambo/cloud-copilot/internal/biz"
 	"github.com/f-rambo/cloud-copilot/internal/conf"
+	appApi "github.com/f-rambo/cloud-copilot/internal/repository/clusterruntime/api/app"
 	clusterApi "github.com/f-rambo/cloud-copilot/internal/repository/clusterruntime/api/cluster"
 	"github.com/f-rambo/cloud-copilot/utils"
 	"github.com/go-kratos/kratos/v2/log"
@@ -62,4 +63,19 @@ func (c *ClusterRuntimeCluster) HandlerNodes(ctx context.Context, cluster *biz.C
 		return err
 	}
 	return nil
+}
+
+func (c *ClusterRuntimeCluster) InstallBasicComponent(ctx context.Context, basicComponent biz.BasicComponentAppType) ([]*biz.App, []*biz.AppRelease, error) {
+	grpconn, err := connGrpc(ctx, c.conf)
+	if err != nil {
+		return nil, nil, err
+	}
+	defer grpconn.Close()
+	res, err := appApi.NewAppInterfaceClient(grpconn.Conn).InstallBasicComponent(ctx, &appApi.InstallBasicComponentReq{
+		BasicComponentAppType: basicComponent,
+	})
+	if err != nil {
+		return nil, nil, err
+	}
+	return res.Apps, res.Releases, nil
 }

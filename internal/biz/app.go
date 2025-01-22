@@ -35,7 +35,6 @@ type AppData interface {
 
 type AppRuntime interface {
 	CheckCluster(context.Context) bool
-	Init(context.Context) ([]*App, []*AppRelease, error)
 	GetClusterResources(context.Context, *AppRelease) ([]*AppReleaseResource, error)
 	DeleteApp(ctx context.Context, app *App) error
 	DeleteAppVersion(ctx context.Context, app *App, appVersion *AppVersion) error
@@ -97,30 +96,6 @@ func (a *App) DeleteVersion(version string) {
 			return
 		}
 	}
-}
-
-func (uc *AppUsecase) Init(ctx context.Context) error {
-	if !uc.appRuntime.CheckCluster(ctx) {
-		return nil
-	}
-	apps, releases, err := uc.appRuntime.Init(ctx)
-	if err != nil {
-		return err
-	}
-	for _, app := range apps {
-		err = uc.appData.Save(ctx, app)
-		if err != nil {
-			return err
-		}
-	}
-	for _, release := range releases {
-		err = uc.appData.SaveAppRelease(ctx, release)
-		if err != nil {
-			return err
-		}
-		uc.apply(release)
-	}
-	return nil
 }
 
 func (uc *AppUsecase) GetAppVersionInfoByLocalFile(ctx context.Context, app *App, appVersion *AppVersion) error {

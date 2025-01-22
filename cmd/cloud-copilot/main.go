@@ -56,7 +56,6 @@ func newApp(logger log.Logger, gs *grpc.Server, hs *http.Server, b *biz.Biz) *kr
 		}),
 		kratos.Logger(logger),
 		kratos.Server(servers...),
-		kratos.BeforeStart(b.Initialize),
 	)
 }
 

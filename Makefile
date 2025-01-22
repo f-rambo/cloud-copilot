@@ -7,9 +7,8 @@ GO_FILES := $(filter-out $(wildcard $(PACKAGE_PATH)/*biz*.go), $(GO_FILES))
 GOPATH:=$(shell go env GOPATH)
 VERSION=v0.0.1
 SERVER_NAME=cloud-copilot
-AUTHOR=frambos
+AUTHOR=frambo9
 IMG=$(AUTHOR)/$(SERVER_NAME):$(VERSION)
-PLATFORMS = linux/arm64 linux/amd64
 
 INTERNAL_PROTO_FILES=$(shell find internal -name *.proto)
 INTERNAL_BIZ_PBGO_FILES=$(shell find internal/biz -name *.pb.go)
@@ -71,24 +70,13 @@ docker-stop:
 docker-push:
 	docker push $(IMG)
 
+.PHONY: docker-save
+docker-save:
+	docker save -o $(IMG).tar $(IMG)
+
 .PHONY: run
 run:
-	go run ./cmd/${SERVER_NAME} -conf ./configs/config.yaml
-
-.PHONY: multi-platform-build
-multi-platform-build:
-	@mkdir -p ./built/
-	@for platform in $(PLATFORMS); do \
-		image_name=$$platform/$(IMG); \
-		docker build --platform=$$platform -f Dockerfile.multi_platform_build -t $$image_name --load . ; \
-		platform_formated=$$(echo $$platform | tr '[:upper:]' '[:lower:]' | tr '/' '-'); \
-		container_name=$$platform_formated-$(SERVER_NAME)-$(VERSION); \
-		docker run -it -d --rm --name $$container_name $$image_name; \
-		sleep 5; \
-		docker cp $$container_name:/app.tar.gz ./built/$$container_name.tar.gz; \
-		cd ./built && sha256sum $$container_name.tar.gz > $$container_name.tar.gz.sha256sum && cd - ; \
-		sleep 5; \
-	done
+	go run ./cmd/${SERVER_NAME} -conf ./configs
 
 .PHONY: all
 all:
