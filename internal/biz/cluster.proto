@@ -104,11 +104,10 @@ enum IngressControllerRuleAccess {
       PUBLIC = 2;
 }
 
-enum NodeError {
-      NodeError_UNSPECIFIED = 0;
-      INSUFFICIENT_INVENTORY = 1;
-      CREATE_FAILURE = 2;
-      START_TIMEOUT = 3;
+enum NodeErrorType {
+      NodeErrorType_UNSPECIFIED = 0;
+      INFRASTRUCTURE_ERROR = 1;
+      CLUSTER_ERROR = 2;
 }
 
 message Cluster {
@@ -187,7 +186,8 @@ message Node {
       string data_disk_name = 15; // @gotags: gorm:"column:data_disk_name; default:''; NOT NULL"
       int64 cluster_id = 16; // @gotags: gorm:"column:cluster_id; default:0; NOT NULL"
       string node_group_id = 17; // @gotags: gorm:"column:node_group_id; default:''; NOT NULL"
-      NodeError error_info = 18; // @gotags: gorm:"column:error_info; default:0; NOT NULL"
+      NodeErrorType error_type = 18; // @gotags: gorm:"column:error_type; default:0; NOT NULL"
+      string error_message = 19; // @gotags: gorm:"column:error_message; default:''; NOT NULL"
 }
 
 message CloudResource {

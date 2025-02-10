@@ -35,7 +35,7 @@ type AppData interface {
 
 type AppRuntime interface {
 	CheckCluster(context.Context) bool
-	GetClusterResources(context.Context, *AppRelease) ([]*AppReleaseResource, error)
+	GetAppReleaseResources(context.Context, *AppRelease) error
 	DeleteApp(ctx context.Context, app *App) error
 	DeleteAppVersion(ctx context.Context, app *App, appVersion *AppVersion) error
 	GetAppAndVersionInfo(context.Context, *App, *AppVersion) error
@@ -68,6 +68,15 @@ func NewAppUsecase(appData AppData, appRuntime AppRuntime, logger log.Logger, co
 		locks:      make(map[int64]*sync.Mutex),
 		eventChan:  make(chan *AppRelease, AppPoolNumber),
 	}
+}
+
+func GetAppById(apps []*App, id int64) *App {
+	for _, v := range apps {
+		if v.Id == id {
+			return v
+		}
+	}
+	return nil
 }
 
 func (a *App) AddVersion(version *AppVersion) {
@@ -253,11 +262,11 @@ func (uc *AppUsecase) GetAppReleaseResourcesInCluster(ctx context.Context, appRe
 	if err != nil {
 		return nil, err
 	}
-	resources, err := uc.appRuntime.GetClusterResources(ctx, appRelease)
+	err = uc.appRuntime.GetAppReleaseResources(ctx, appRelease)
 	if err != nil {
 		return nil, err
 	}
-	return resources, nil
+	return appRelease.Resources, nil
 }
 
 func (uc *AppUsecase) CreateAppRelease(ctx context.Context, appRelease *AppRelease) error {

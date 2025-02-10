@@ -34,6 +34,10 @@ message AppReleaseReq {
       biz.app.AppRepo repo = 4;
 }
 
+message ReloadAppReleaseReq {
+      string AppReleaseName = 1;
+}
+
 message GetAppDetailByRepoReq {
       biz.app.AppRepo repo = 1;
       string app_name = 2;

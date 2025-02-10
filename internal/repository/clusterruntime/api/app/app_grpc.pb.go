@@ -22,18 +22,19 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	AppInterface_UploadApp_FullMethodName             = "/clusterruntime.api.app.AppInterface/UploadApp"
-	AppInterface_CheckCluster_FullMethodName          = "/clusterruntime.api.app.AppInterface/CheckCluster"
-	AppInterface_InstallBasicComponent_FullMethodName = "/clusterruntime.api.app.AppInterface/InstallBasicComponent"
-	AppInterface_GetClusterResources_FullMethodName   = "/clusterruntime.api.app.AppInterface/GetClusterResources"
-	AppInterface_DeleteApp_FullMethodName             = "/clusterruntime.api.app.AppInterface/DeleteApp"
-	AppInterface_DeleteAppVersion_FullMethodName      = "/clusterruntime.api.app.AppInterface/DeleteAppVersion"
-	AppInterface_GetAppAndVersionInfo_FullMethodName  = "/clusterruntime.api.app.AppInterface/GetAppAndVersionInfo"
-	AppInterface_AppRelease_FullMethodName            = "/clusterruntime.api.app.AppInterface/AppRelease"
-	AppInterface_DeleteAppRelease_FullMethodName      = "/clusterruntime.api.app.AppInterface/DeleteAppRelease"
-	AppInterface_AddAppRepo_FullMethodName            = "/clusterruntime.api.app.AppInterface/AddAppRepo"
-	AppInterface_GetAppsByRepo_FullMethodName         = "/clusterruntime.api.app.AppInterface/GetAppsByRepo"
-	AppInterface_GetAppDetailByRepo_FullMethodName    = "/clusterruntime.api.app.AppInterface/GetAppDetailByRepo"
+	AppInterface_UploadApp_FullMethodName                = "/clusterruntime.api.app.AppInterface/UploadApp"
+	AppInterface_CheckCluster_FullMethodName             = "/clusterruntime.api.app.AppInterface/CheckCluster"
+	AppInterface_InstallBasicComponent_FullMethodName    = "/clusterruntime.api.app.AppInterface/InstallBasicComponent"
+	AppInterface_GetAppReleaseResources_FullMethodName   = "/clusterruntime.api.app.AppInterface/GetAppReleaseResources"
+	AppInterface_DeleteApp_FullMethodName                = "/clusterruntime.api.app.AppInterface/DeleteApp"
+	AppInterface_DeleteAppVersion_FullMethodName         = "/clusterruntime.api.app.AppInterface/DeleteAppVersion"
+	AppInterface_GetAppAndVersionInfo_FullMethodName     = "/clusterruntime.api.app.AppInterface/GetAppAndVersionInfo"
+	AppInterface_AppRelease_FullMethodName               = "/clusterruntime.api.app.AppInterface/AppRelease"
+	AppInterface_ReloadAppReleaseResource_FullMethodName = "/clusterruntime.api.app.AppInterface/ReloadAppReleaseResource"
+	AppInterface_DeleteAppRelease_FullMethodName         = "/clusterruntime.api.app.AppInterface/DeleteAppRelease"
+	AppInterface_AddAppRepo_FullMethodName               = "/clusterruntime.api.app.AppInterface/AddAppRepo"
+	AppInterface_GetAppsByRepo_FullMethodName            = "/clusterruntime.api.app.AppInterface/GetAppsByRepo"
+	AppInterface_GetAppDetailByRepo_FullMethodName       = "/clusterruntime.api.app.AppInterface/GetAppDetailByRepo"
 )
 
 // AppInterfaceClient is the client API for AppInterface service.
@@ -43,12 +44,13 @@ type AppInterfaceClient interface {
 	UploadApp(ctx context.Context, in *FileUploadRequest, opts ...grpc.CallOption) (*GetAppAndVersionInfo, error)
 	CheckCluster(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*CheckClusterResponse, error)
 	InstallBasicComponent(ctx context.Context, in *InstallBasicComponentReq, opts ...grpc.CallOption) (*InstallBasicComponentResponse, error)
-	GetClusterResources(ctx context.Context, in *biz.AppRelease, opts ...grpc.CallOption) (*AppReleaseResourceItems, error)
+	GetAppReleaseResources(ctx context.Context, in *biz.AppRelease, opts ...grpc.CallOption) (*AppReleaseResourceItems, error)
 	DeleteApp(ctx context.Context, in *biz.App, opts ...grpc.CallOption) (*common.Msg, error)
 	DeleteAppVersion(ctx context.Context, in *DeleteAppVersionReq, opts ...grpc.CallOption) (*common.Msg, error)
 	GetAppAndVersionInfo(ctx context.Context, in *GetAppAndVersionInfo, opts ...grpc.CallOption) (*GetAppAndVersionInfo, error)
 	AppRelease(ctx context.Context, in *AppReleaseReq, opts ...grpc.CallOption) (*biz.AppRelease, error)
-	DeleteAppRelease(ctx context.Context, in *biz.AppRelease, opts ...grpc.CallOption) (*biz.AppRelease, error)
+	ReloadAppReleaseResource(ctx context.Context, in *biz.AppReleaseResource, opts ...grpc.CallOption) (*common.Msg, error)
+	DeleteAppRelease(ctx context.Context, in *biz.AppRelease, opts ...grpc.CallOption) (*common.Msg, error)
 	AddAppRepo(ctx context.Context, in *biz.AppRepo, opts ...grpc.CallOption) (*biz.AppRepo, error)
 	GetAppsByRepo(ctx context.Context, in *biz.AppRepo, opts ...grpc.CallOption) (*AppItems, error)
 	GetAppDetailByRepo(ctx context.Context, in *GetAppDetailByRepoReq, opts ...grpc.CallOption) (*biz.App, error)
@@ -92,10 +94,10 @@ func (c *appInterfaceClient) InstallBasicComponent(ctx context.Context, in *Inst
 	return out, nil
 }
 
-func (c *appInterfaceClient) GetClusterResources(ctx context.Context, in *biz.AppRelease, opts ...grpc.CallOption) (*AppReleaseResourceItems, error) {
+func (c *appInterfaceClient) GetAppReleaseResources(ctx context.Context, in *biz.AppRelease, opts ...grpc.CallOption) (*AppReleaseResourceItems, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(AppReleaseResourceItems)
-	err := c.cc.Invoke(ctx, AppInterface_GetClusterResources_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, AppInterface_GetAppReleaseResources_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -142,9 +144,19 @@ func (c *appInterfaceClient) AppRelease(ctx context.Context, in *AppReleaseReq, 
 	return out, nil
 }
 
-func (c *appInterfaceClient) DeleteAppRelease(ctx context.Context, in *biz.AppRelease, opts ...grpc.CallOption) (*biz.AppRelease, error) {
+func (c *appInterfaceClient) ReloadAppReleaseResource(ctx context.Context, in *biz.AppReleaseResource, opts ...grpc.CallOption) (*common.Msg, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(biz.AppRelease)
+	out := new(common.Msg)
+	err := c.cc.Invoke(ctx, AppInterface_ReloadAppReleaseResource_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *appInterfaceClient) DeleteAppRelease(ctx context.Context, in *biz.AppRelease, opts ...grpc.CallOption) (*common.Msg, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(common.Msg)
 	err := c.cc.Invoke(ctx, AppInterface_DeleteAppRelease_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -189,12 +201,13 @@ type AppInterfaceServer interface {
 	UploadApp(context.Context, *FileUploadRequest) (*GetAppAndVersionInfo, error)
 	CheckCluster(context.Context, *emptypb.Empty) (*CheckClusterResponse, error)
 	InstallBasicComponent(context.Context, *InstallBasicComponentReq) (*InstallBasicComponentResponse, error)
-	GetClusterResources(context.Context, *biz.AppRelease) (*AppReleaseResourceItems, error)
+	GetAppReleaseResources(context.Context, *biz.AppRelease) (*AppReleaseResourceItems, error)
 	DeleteApp(context.Context, *biz.App) (*common.Msg, error)
 	DeleteAppVersion(context.Context, *DeleteAppVersionReq) (*common.Msg, error)
 	GetAppAndVersionInfo(context.Context, *GetAppAndVersionInfo) (*GetAppAndVersionInfo, error)
 	AppRelease(context.Context, *AppReleaseReq) (*biz.AppRelease, error)
-	DeleteAppRelease(context.Context, *biz.AppRelease) (*biz.AppRelease, error)
+	ReloadAppReleaseResource(context.Context, *biz.AppReleaseResource) (*common.Msg, error)
+	DeleteAppRelease(context.Context, *biz.AppRelease) (*common.Msg, error)
 	AddAppRepo(context.Context, *biz.AppRepo) (*biz.AppRepo, error)
 	GetAppsByRepo(context.Context, *biz.AppRepo) (*AppItems, error)
 	GetAppDetailByRepo(context.Context, *GetAppDetailByRepoReq) (*biz.App, error)
@@ -217,8 +230,8 @@ func (UnimplementedAppInterfaceServer) CheckCluster(context.Context, *emptypb.Em
 func (UnimplementedAppInterfaceServer) InstallBasicComponent(context.Context, *InstallBasicComponentReq) (*InstallBasicComponentResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method InstallBasicComponent not implemented")
 }
-func (UnimplementedAppInterfaceServer) GetClusterResources(context.Context, *biz.AppRelease) (*AppReleaseResourceItems, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetClusterResources not implemented")
+func (UnimplementedAppInterfaceServer) GetAppReleaseResources(context.Context, *biz.AppRelease) (*AppReleaseResourceItems, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetAppReleaseResources not implemented")
 }
 func (UnimplementedAppInterfaceServer) DeleteApp(context.Context, *biz.App) (*common.Msg, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteApp not implemented")
@@ -232,7 +245,10 @@ func (UnimplementedAppInterfaceServer) GetAppAndVersionInfo(context.Context, *Ge
 func (UnimplementedAppInterfaceServer) AppRelease(context.Context, *AppReleaseReq) (*biz.AppRelease, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AppRelease not implemented")
 }
-func (UnimplementedAppInterfaceServer) DeleteAppRelease(context.Context, *biz.AppRelease) (*biz.AppRelease, error) {
+func (UnimplementedAppInterfaceServer) ReloadAppReleaseResource(context.Context, *biz.AppReleaseResource) (*common.Msg, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ReloadAppReleaseResource not implemented")
+}
+func (UnimplementedAppInterfaceServer) DeleteAppRelease(context.Context, *biz.AppRelease) (*common.Msg, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteAppRelease not implemented")
 }
 func (UnimplementedAppInterfaceServer) AddAppRepo(context.Context, *biz.AppRepo) (*biz.AppRepo, error) {
@@ -319,20 +335,20 @@ func _AppInterface_InstallBasicComponent_Handler(srv interface{}, ctx context.Co
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AppInterface_GetClusterResources_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _AppInterface_GetAppReleaseResources_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(biz.AppRelease)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AppInterfaceServer).GetClusterResources(ctx, in)
+		return srv.(AppInterfaceServer).GetAppReleaseResources(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: AppInterface_GetClusterResources_FullMethodName,
+		FullMethod: AppInterface_GetAppReleaseResources_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AppInterfaceServer).GetClusterResources(ctx, req.(*biz.AppRelease))
+		return srv.(AppInterfaceServer).GetAppReleaseResources(ctx, req.(*biz.AppRelease))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -405,6 +421,24 @@ func _AppInterface_AppRelease_Handler(srv interface{}, ctx context.Context, dec 
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AppInterfaceServer).AppRelease(ctx, req.(*AppReleaseReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AppInterface_ReloadAppReleaseResource_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(biz.AppReleaseResource)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AppInterfaceServer).ReloadAppReleaseResource(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AppInterface_ReloadAppReleaseResource_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AppInterfaceServer).ReloadAppReleaseResource(ctx, req.(*biz.AppReleaseResource))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -501,8 +535,8 @@ var AppInterface_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AppInterface_InstallBasicComponent_Handler,
 		},
 		{
-			MethodName: "GetClusterResources",
-			Handler:    _AppInterface_GetClusterResources_Handler,
+			MethodName: "GetAppReleaseResources",
+			Handler:    _AppInterface_GetAppReleaseResources_Handler,
 		},
 		{
 			MethodName: "DeleteApp",
@@ -519,6 +553,10 @@ var AppInterface_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "AppRelease",
 			Handler:    _AppInterface_AppRelease_Handler,
+		},
+		{
+			MethodName: "ReloadAppReleaseResource",
+			Handler:    _AppInterface_ReloadAppReleaseResource_Handler,
 		},
 		{
 			MethodName: "DeleteAppRelease",

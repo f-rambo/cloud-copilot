@@ -106,7 +106,7 @@ func (u *UserUseCase) Disable(ctx context.Context, id int64) error {
 	return u.Save(ctx, user)
 }
 
-func (u *UserUseCase) SignIn(ctx context.Context, user *User) error {
+func (u *UserUseCase) SignIn(ctx context.Context, user *User) (err error) {
 	if user.Email == u.conf.Auth.AdminEmail && user.Password == utils.Md5(u.conf.Auth.AdminPassword) {
 		return nil
 	}
@@ -124,6 +124,10 @@ func (u *UserUseCase) SignIn(ctx context.Context, user *User) error {
 	}
 	if user.Status != UserStatus_USER_ENABLE {
 		return errors.New("user is not enable")
+	}
+	user.AccessToken, err = u.encodeToken(user)
+	if err != nil {
+		return err
 	}
 	return nil
 }

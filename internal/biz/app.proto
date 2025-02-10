@@ -22,6 +22,12 @@ enum AppReleaseSatus {
       FAILED = 3;
 }
 
+enum AppReleaseResourceStatus {
+      AppReleaseResourceStatus_UNSPECIFIED = 0;
+      SUCCESSFUL = 1;
+      UNHEALTHY = 2;
+}
+
 message AppType {
       // @goimport: "gorm.io/gorm"
       // @gofield: gorm.Model
@@ -65,18 +71,19 @@ message App {
       bytes metadata = 9; // @gotags: gorm:"-"
 }
 
-
 message AppReleaseResource {
       // @goimport: "gorm.io/gorm"
       // @gofield: gorm.Model
-      int64 id = 1; // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
+      string id = 1; // @gotags: gorm:"column:id;primaryKey; NOT NULL"
       int64 release_id = 2; // @gotags: gorm:"column:release_id; default:0; NOT NULL; index"
       string name = 3; // @gotags: gorm:"column:name; default:''; NOT NULL"
-      string kind = 4; // @gotags: gorm:"column:kind; default:''; NOT NULL"
-      string manifest = 5; // @gotags: gorm:"column:manifest; default:''; NOT NULL"
-      string started_at = 6; // @gotags: gorm:"column:started_at; default:''; NOT NULL"
-      repeated string events = 7; // @gotags: gorm:"-"
-      repeated string status = 8; // @gotags: gorm:"-"
+      string namespace = 4; // @gotags: gorm:"column:namespace; default:''; NOT NULL"
+      string kind = 5; // @gotags: gorm:"column:kind; default:''; NOT NULL"
+      string lables = 6; // @gotags: gorm:"column:lables; default:''; NOT NULL"
+      string manifest = 7; // @gotags: gorm:"column:manifest; default:''; NOT NULL"
+      string started_at = 8; // @gotags: gorm:"column:started_at; default:''; NOT NULL"
+      AppReleaseResourceStatus status = 9; // @gotags: gorm:"column:status; default:0; NOT NULL"
+      string events = 10; // @gotags: gorm:"column:events; default:''; NOT NULL"
 }
 
 message AppRelease {
@@ -91,8 +98,8 @@ message AppRelease {
       int64 user_id = 7; // @gotags: gorm:"column:user_id; default:0; NOT NULL; index"
       string namespace = 8; // @gotags: gorm:"column:namespace; default:''; NOT NULL"
       string config = 9; // @gotags: gorm:"column:config; default:''; NOT NULL"
-      AppReleaseSatus status = 10; // @gotags: gorm:"column:status; default:0; NOT NULL"
-      string manifest = 11; // @gotags: gorm:"column:manifest; default:''; NOT NULL"
+      string config_file = 10; // @gotags: gorm:"column:config_file; default:''; NOT NULL"
+      AppReleaseSatus status = 11; // @gotags: gorm:"column:status; default:0; NOT NULL"
       string notes = 12; // @gotags: gorm:"column:notes; default:''; NOT NULL"
       string logs = 13; // @gotags: gorm:"column:logs; default:''; NOT NULL"
       bool dryrun = 14; // @gotags: gorm:"column:dryrun; default:false; NOT NULL"

@@ -79,3 +79,39 @@ func (c *ClusterRuntimeCluster) InstallBasicComponent(ctx context.Context, basic
 	}
 	return res.Apps, res.Releases, nil
 }
+
+func (c *ClusterRuntimeCluster) AppRelease(ctx context.Context, app *biz.App, version *biz.AppVersion, appRelease *biz.AppRelease) (*biz.AppRelease, error) {
+	grpconn, err := connGrpc(ctx, c.conf)
+	if err != nil {
+		return nil, err
+	}
+	defer grpconn.Close()
+	return appApi.NewAppInterfaceClient(grpconn.Conn).AppRelease(ctx, &appApi.AppReleaseReq{App: app, Version: version, Release: appRelease})
+}
+
+func (c *ClusterRuntimeCluster) ReloadAppReleaseResource(ctx context.Context, appReleaseResource *biz.AppReleaseResource) error {
+	grpconn, err := connGrpc(ctx, c.conf)
+	if err != nil {
+		return err
+	}
+	defer grpconn.Close()
+	_, err = appApi.NewAppInterfaceClient(grpconn.Conn).ReloadAppReleaseResource(ctx, appReleaseResource)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *ClusterRuntimeCluster) GetAppReleaseResources(ctx context.Context, appRelease *biz.AppRelease) error {
+	grpconn, err := connGrpc(ctx, c.conf)
+	if err != nil {
+		return err
+	}
+	defer grpconn.Close()
+	res, err := appApi.NewAppInterfaceClient(grpconn.Conn).GetAppReleaseResources(ctx, appRelease)
+	if err != nil {
+		return err
+	}
+	appRelease.Resources = res.Resources
+	return nil
+}

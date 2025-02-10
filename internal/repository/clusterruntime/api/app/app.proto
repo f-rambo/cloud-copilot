@@ -17,7 +17,7 @@ service AppInterface {
 
       rpc InstallBasicComponent(app.InstallBasicComponentReq) returns(app.InstallBasicComponentResponse);
 
-      rpc GetClusterResources(biz.app.AppRelease) returns(AppReleaseResourceItems); // GetPodResources GetNetResouces GetAppsReouces
+      rpc GetAppReleaseResources(biz.app.AppRelease) returns(AppReleaseResourceItems);
 
       rpc DeleteApp(biz.app.App) returns (common.Msg);
 
@@ -27,7 +27,9 @@ service AppInterface {
 
       rpc AppRelease(app.AppReleaseReq) returns (biz.app.AppRelease);
 
-      rpc DeleteAppRelease(biz.app.AppRelease) returns (biz.app.AppRelease);
+      rpc ReloadAppReleaseResource(biz.app.AppReleaseResource) returns (common.Msg);
+
+      rpc DeleteAppRelease(biz.app.AppRelease) returns (common.Msg);
 
       rpc AddAppRepo(biz.app.AppRepo) returns (biz.app.AppRepo);
       

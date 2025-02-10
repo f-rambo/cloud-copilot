@@ -42,19 +42,6 @@ func (c *ClusterRuntimeApp) CheckCluster(ctx context.Context) bool {
 	return false
 }
 
-func (c *ClusterRuntimeApp) GetClusterResources(ctx context.Context, appRelease *biz.AppRelease) ([]*biz.AppReleaseResource, error) {
-	grpconn, err := connGrpc(ctx, c.conf)
-	if err != nil {
-		return nil, err
-	}
-	defer grpconn.Close()
-	res, err := appApi.NewAppInterfaceClient(grpconn.Conn).GetClusterResources(ctx, appRelease)
-	if err != nil {
-		return nil, err
-	}
-	return res.Resources, nil
-}
-
 func (c *ClusterRuntimeApp) DeleteApp(ctx context.Context, app *biz.App) error {
 	grpconn, err := connGrpc(ctx, c.conf)
 	if err != nil {
@@ -135,11 +122,10 @@ func (c *ClusterRuntimeApp) DeleteAppRelease(ctx context.Context, appRelease *bi
 		return err
 	}
 	defer grpconn.Close()
-	res, err := appApi.NewAppInterfaceClient(grpconn.Conn).DeleteAppRelease(ctx, appRelease)
+	_, err = appApi.NewAppInterfaceClient(grpconn.Conn).DeleteAppRelease(ctx, appRelease)
 	if err != nil {
 		return err
 	}
-	appRelease.Status = res.Status
 	return nil
 }
 
@@ -190,4 +176,31 @@ func (c *ClusterRuntimeApp) GetAppDetailByRepo(ctx context.Context, apprepo *biz
 		return res, nil
 	}
 	return nil, nil
+}
+
+func (c *ClusterRuntimeApp) ReloadAppReleaseResource(ctx context.Context, appReleaseResource *biz.AppReleaseResource) error {
+	grpconn, err := connGrpc(ctx, c.conf)
+	if err != nil {
+		return err
+	}
+	defer grpconn.Close()
+	_, err = appApi.NewAppInterfaceClient(grpconn.Conn).ReloadAppReleaseResource(ctx, appReleaseResource)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *ClusterRuntimeApp) GetAppReleaseResources(ctx context.Context, appRelease *biz.AppRelease) error {
+	grpconn, err := connGrpc(ctx, c.conf)
+	if err != nil {
+		return err
+	}
+	defer grpconn.Close()
+	res, err := appApi.NewAppInterfaceClient(grpconn.Conn).GetAppReleaseResources(ctx, appRelease)
+	if err != nil {
+		return err
+	}
+	appRelease.Resources = res.Resources
+	return nil
 }

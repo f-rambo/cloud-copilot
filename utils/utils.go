@@ -16,6 +16,15 @@ func Contains(slice []string, item string) bool {
 	return false
 }
 
+func ArrContains(a, b []string) bool {
+	for _, v := range a {
+		if Contains(b, v) {
+			return true
+		}
+	}
+	return false
+}
+
 func Md5(str string) string {
 	h := md5.New()
 	h.Write([]byte(str))
