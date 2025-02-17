@@ -2,6 +2,7 @@ package interfaces
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/f-rambo/cloud-copilot/api/cluster/v1alpha1"
 	"github.com/f-rambo/cloud-copilot/api/common"
@@ -30,7 +31,13 @@ func NewClusterInterface(clusterUc *biz.ClusterUsecase, userUc *biz.UserUseCase,
 }
 
 func (c *ClusterInterface) Ping(ctx context.Context, _ *emptypb.Empty) (*common.Msg, error) {
+	cluster := biz.GetCluster(ctx)
+	fmt.Println(cluster)
 	return common.Response(), nil
+}
+
+func (c *ClusterInterface) GetCluster(ctx context.Context, clusterId int64) (*biz.Cluster, error) {
+	return c.clusterUc.Get(ctx, clusterId)
 }
 
 func (c *ClusterInterface) GetClusterTypes(ctx context.Context, _ *emptypb.Empty) (*v1alpha1.ClusterTypes, error) {

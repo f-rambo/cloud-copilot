@@ -13,6 +13,8 @@ message ServiceRequest {
       Worklfow workflow = 9 [json_name = "workflow"];
       int32 wfType = 10 [json_name = "wf_type"];
       int64 workflowId = 11 [json_name = "workflow_id"];
+      int64 workspaceId = 12 [json_name = "workspace_id"];
+      int64 clusterId = 13 [json_name = "cluster_id"];
 }
 
 message Services {

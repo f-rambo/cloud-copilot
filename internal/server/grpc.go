@@ -8,6 +8,7 @@ import (
 	projectv1alpha1 "github.com/f-rambo/cloud-copilot/api/project/v1alpha1"
 	servicev1alpha1 "github.com/f-rambo/cloud-copilot/api/service/v1alpha1"
 	userv1alpha1 "github.com/f-rambo/cloud-copilot/api/user/v1alpha1"
+	workspacev1alpha1 "github.com/f-rambo/cloud-copilot/api/workspace/v1alpha1"
 	"github.com/f-rambo/cloud-copilot/internal/conf"
 	"github.com/f-rambo/cloud-copilot/internal/interfaces"
 	"github.com/go-kratos/kratos/v2/log"
@@ -18,10 +19,10 @@ import (
 )
 
 // NewGRPCServer new a gRPC server.
-func NewGRPCServer(c *conf.Bootstrap, cluster *interfaces.ClusterInterface, app *interfaces.AppInterface, services *interfaces.ServicesInterface, user *interfaces.UserInterface, project *interfaces.ProjectInterface, logger log.Logger) *grpc.Server {
+func NewGRPCServer(c *conf.Bootstrap, cluster *interfaces.ClusterInterface, app *interfaces.AppInterface, services *interfaces.ServicesInterface, user *interfaces.UserInterface, workspace *interfaces.WorkspaceInterface, project *interfaces.ProjectInterface, logger log.Logger) *grpc.Server {
 	var opts = []grpc.ServerOption{
 		grpc.Middleware(
-			selector.Server(NewAuthServer(user)).Match(NewWhiteListMatcher()).Build(),
+			selector.Server(NewAuthServer(user), BizContext(cluster, project, workspace)).Match(NewWhiteListMatcher()).Build(),
 			recovery.Recovery(),
 			metadata.Server(),
 		),
@@ -44,6 +45,7 @@ func NewGRPCServer(c *conf.Bootstrap, cluster *interfaces.ClusterInterface, app 
 	appv1alpha1.RegisterAppInterfaceServer(srv, app)
 	servicev1alpha1.RegisterServiceInterfaceServer(srv, services)
 	userv1alpha1.RegisterUserInterfaceServer(srv, user)
+	workspacev1alpha1.RegisterWorkspaceInterfaceServer(srv, workspace)
 	projectv1alpha1.RegisterProjectServiceServer(srv, project)
 	return srv
 }

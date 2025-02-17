@@ -7,6 +7,10 @@ import (
 	"github.com/go-kratos/kratos/v2/log"
 )
 
+const (
+	ProjectKey ContextKey = "project"
+)
+
 type ProjectData interface {
 	Save(context.Context, *Project) error
 	Get(context.Context, int64) (*Project, error)
@@ -33,6 +37,18 @@ type ProjectUsecase struct {
 
 func NewProjectUseCase(projectData ProjectData, ProjectTime ProjectRuntime, logger log.Logger, conf *conf.Bootstrap) *ProjectUsecase {
 	return &ProjectUsecase{projectData: projectData, ProjectRuntime: ProjectTime, log: log.NewHelper(logger), conf: conf}
+}
+
+func GetProject(ctx context.Context) *Project {
+	v, ok := ctx.Value(ProjectKey).(*Project)
+	if !ok {
+		return nil
+	}
+	return v
+}
+
+func WithProject(ctx context.Context, p *Project) context.Context {
+	return context.WithValue(ctx, ProjectKey, p)
 }
 
 func (uc *ProjectUsecase) Save(ctx context.Context, project *Project) error {

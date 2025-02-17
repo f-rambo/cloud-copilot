@@ -28,6 +28,10 @@ func (p *ProjectInterface) Ping(ctx context.Context, _ *emptypb.Empty) (*common.
 	return common.Response(), nil
 }
 
+func (p *ProjectInterface) GetProject(ctx context.Context, projectId int64) (*biz.Project, error) {
+	return p.projectUc.Get(ctx, projectId)
+}
+
 func (p *ProjectInterface) Save(ctx context.Context, project *v1alpha1.Project) (*common.Msg, error) {
 	if project.Name == "" {
 		return nil, errors.New("project name is required")
@@ -121,13 +125,6 @@ func (p *ProjectInterface) bizProjectToProject(bizProject *biz.Project) (*v1alph
 		return nil, err
 	}
 	businessTechnologyMap := make(map[string][]string)
-	for _, v := range bizProject.Business {
-		technologyTypeArr := make([]string, 0)
-		for _, v2 := range v.Technologys {
-			technologyTypeArr = append(technologyTypeArr, v2.Name)
-		}
-		businessTechnologyMap[v.Name] = technologyTypeArr
-	}
 	businessTechnology := ""
 	for name, technologyTypes := range businessTechnologyMap {
 		businessTechnology += name + ":"

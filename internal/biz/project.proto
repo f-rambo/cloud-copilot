@@ -4,29 +4,6 @@ package biz.project;
 
 option go_package = "github.com/f-rambo/cloud-copilot/internal/biz;";
 
-enum ProjectStatus {
-      PROJECT_INIT = 0;
-      PROJECT_RUNNING = 1;
-      PROJECT_STOPPED = 2;
-}
-
-message Technology {
-      // @goimport: "gorm.io/gorm"
-      // @gofield: gorm.Model
-      int64 id = 1; // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
-      string name = 2; // @gotags: gorm:"column:name; default:''; NOT NULL"
-      int64 business_id = 3; // @gotags: gorm:"column:business_id; default:0; NOT NULL"
-}
-
-message Business {
-      // @goimport: "gorm.io/gorm"
-      // @gofield: gorm.Model
-      int64 id = 1; // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
-      string name = 2; // @gotags: gorm:"column:name; default:''; NOT NULL"
-      int64 project_id = 3; // @gotags: gorm:"column:project_id; default:0; NOT NULL"
-      repeated Technology technologys = 4; // @gotags: gorm:"-"
-}
-
 message Project {
       // @goimport: "gorm.io/gorm"
       // @gofield: gorm.Model
@@ -34,8 +11,10 @@ message Project {
       string name = 2; // @gotags: gorm:"column:name; default:''; NOT NULL"
       string description = 3; // @gotags: gorm:"column:namespace; default:''; NOT NULL"
       int64 cluster_id = 4; // @gotags: gorm:"column:cluster_id; default:0; NOT NULL"
-      string namespace = 5; // @gotags: gorm:"column:namespace; default:''; NOT NULL"
-      ProjectStatus status = 6; // @gotags: gorm:"column:status; default:0; NOT NULL"
-      repeated Business business = 7; // @gotags: gorm:"-"
-      string business_technology = 8; // @gotags: gorm:"column:business_technology; default:''; NOT NULL"
+      int64 user_id = 5; // @gotags: gorm:"column:user_id; default:0; NOT NULL"
+      int64 workspace_id = 6; // @gotags: gorm:"column:workspace_id; default:0; NOT NULL"
+      float limit_cpu = 7; // @gotags: gorm:"column:limit_cpu; default:0; NOT NULL"
+      float limit_gpu = 8; // @gotags: gorm:"column:limit_gpu; default:0; NOT NULL"
+      float limit_memory = 9; // @gotags: gorm:"column:limit_memory; default:0; NOT NULL"
+      float limit_disk = 10; // @gotags: gorm:"column:limit_disk; default:0; NOT NULL"
 }

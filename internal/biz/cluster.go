@@ -15,6 +15,8 @@ import (
 
 const (
 	ClusterPoolNumber = 10
+
+	ClusterKey ContextKey = "cluster"
 )
 
 var ErrClusterNotFound error = errors.New("cluster not found")
@@ -90,6 +92,18 @@ func (c *Cluster) GetCloudResource(resourceType ResourceType) []*CloudResource {
 		}
 	}
 	return cloudResources
+}
+
+func GetCluster(ctx context.Context) *Cluster {
+	cluster, ok := ctx.Value(ClusterKey).(*Cluster)
+	if !ok {
+		return nil
+	}
+	return cluster
+}
+
+func WithCluster(ctx context.Context, cluster *Cluster) context.Context {
+	return context.WithValue(ctx, ClusterKey, cluster)
 }
 
 func (c *Cluster) AddCloudResource(resource *CloudResource) {
@@ -253,6 +267,38 @@ func (c *Cluster) SetNodeStatus(fromStatus, toStatus NodeStatus) {
 			node.SetNodeStatus(toStatus)
 		}
 	}
+}
+
+func (c *Cluster) GetCpuCount() int32 {
+	var cpuCount int32 = 0
+	for _, nodeGroup := range c.NodeGroups {
+		cpuCount += nodeGroup.Cpu
+	}
+	return cpuCount
+}
+
+func (c *Cluster) GetGpuCount() int32 {
+	var gpuCount int32 = 0
+	for _, nodeGroup := range c.NodeGroups {
+		gpuCount += nodeGroup.Gpu
+	}
+	return gpuCount
+}
+
+func (c *Cluster) GetMemoryCount() int32 {
+	var memoryCount int32 = 0
+	for _, nodeGroup := range c.NodeGroups {
+		memoryCount += nodeGroup.Memory
+	}
+	return memoryCount
+}
+
+func (c *Cluster) GetDiskSizeCount() int32 {
+	var diskSizeCount int32 = 0
+	for _, node := range c.Nodes {
+		diskSizeCount += node.DataDiskSize + node.SystemDiskSize
+	}
+	return diskSizeCount
 }
 
 func (ng *NodeGroup) SetTargetSize(size int32) {
@@ -504,6 +550,7 @@ func (uc *ClusterUsecase) handleEvent(ctx context.Context, cluster *Cluster) (er
 		if err != nil {
 			uc.log.Errorf("cluster save error: %v", err)
 		}
+		cluster.SetStatus(ClusterStatus_RUNNING)
 	}()
 	if cluster.DeletedAt.Valid {
 		for _, node := range cluster.Nodes {
@@ -580,18 +627,6 @@ func (uc *ClusterUsecase) handleEvent(ctx context.Context, cluster *Cluster) (er
 			node.SetNodeStatus(NodeStatus_NODE_RUNNING)
 		}
 	}
-	clusterReady := true
-	// nodes
-	err = uc.clusterRuntime.CurrentCluster(ctx, cluster)
-	if err != nil {
-		return err
-	}
-	for _, node := range cluster.Nodes {
-		if node.Status != NodeStatus_NODE_RUNNING {
-			clusterReady = false
-		}
-	}
-	// basic component
 	for _, preInstallationAppType := range PreInstallationAppTypes {
 		_, appReleases, err := uc.clusterRuntime.InstallBasicComponent(ctx, preInstallationAppType)
 		if err != nil {
@@ -608,7 +643,6 @@ func (uc *ClusterUsecase) handleEvent(ctx context.Context, cluster *Cluster) (er
 			}
 			for _, appReleaseResource := range appRelease.Resources {
 				if appReleaseResource.Status == AppReleaseResourceStatus_UNHEALTHY {
-					clusterReady = false
 					err = uc.clusterRuntime.ReloadAppReleaseResource(ctx, appReleaseResource)
 					if err != nil {
 						return err
@@ -616,9 +650,6 @@ func (uc *ClusterUsecase) handleEvent(ctx context.Context, cluster *Cluster) (er
 				}
 			}
 		}
-	}
-	if clusterReady {
-		cluster.SetStatus(ClusterStatus_RUNNING)
 	}
 	return
 }

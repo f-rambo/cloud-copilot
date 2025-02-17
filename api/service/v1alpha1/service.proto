@@ -3,19 +3,12 @@ syntax = "proto3";
 package service.v1alpha1;
 
 import "google/api/annotations.proto";
-import "google/protobuf/empty.proto";
 import "api/common/error_reason.proto";
 import "api/service/v1alpha1/message.proto";
 
 option go_package = "api/service/v1alpha1;v1alpha1";
 
 service ServiceInterface {
-      rpc Ping(google.protobuf.Empty) returns (common.Msg) {
-            option (google.api.http) = {
-              get: "/api/v1alpha1/service/ping"
-            };
-      }
-
       rpc List(service.v1alpha1.ServiceRequest) returns (service.v1alpha1.Services) {
             option (google.api.http) = {
               get: "/api/v1alpha1/service/list"

@@ -32,3 +32,9 @@ func (b *Biz) BizRunners() []transport.Server {
 		b.appUc,
 	}
 }
+
+type ContextKey string
+
+func (c ContextKey) String() string {
+	return string(c)
+}

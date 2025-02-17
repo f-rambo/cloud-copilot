@@ -13,10 +13,10 @@ import (
 )
 
 const (
-	AdminName    = "admin"
-	TokenKey     = "token"
-	SignType     = "sign_type"
-	UserEmailKey = "user_email"
+	AdminName    ContextKey = "admin"
+	TokenKey     ContextKey = "token"
+	SignType     ContextKey = "sign_type"
+	UserEmailKey ContextKey = "user_email"
 )
 
 type UserData interface {
@@ -107,10 +107,15 @@ func (u *UserUseCase) Disable(ctx context.Context, id int64) error {
 }
 
 func (u *UserUseCase) SignIn(ctx context.Context, user *User) (err error) {
+	user.SignType = UserSignType_CREDENTIALS
 	if user.Email == u.conf.Auth.AdminEmail && user.Password == utils.Md5(u.conf.Auth.AdminPassword) {
+		user.AccessToken, err = u.encodeToken(user)
+		if err != nil {
+			return err
+		}
+		user.Status = UserStatus_USER_ENABLE
 		return nil
 	}
-	user.SignType = UserSignType_CREDENTIALS
 	if user.AccessToken != "" {
 		email, err := u.thirdparty.GetUserEmail(ctx, user.AccessToken)
 		if err != nil {

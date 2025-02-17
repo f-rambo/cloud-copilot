@@ -12,7 +12,6 @@ import (
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -21,7 +20,6 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	ServiceInterface_Ping_FullMethodName           = "/service.v1alpha1.ServiceInterface/Ping"
 	ServiceInterface_List_FullMethodName           = "/service.v1alpha1.ServiceInterface/List"
 	ServiceInterface_Save_FullMethodName           = "/service.v1alpha1.ServiceInterface/Save"
 	ServiceInterface_Get_FullMethodName            = "/service.v1alpha1.ServiceInterface/Get"
@@ -36,7 +34,6 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ServiceInterfaceClient interface {
-	Ping(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*common.Msg, error)
 	List(ctx context.Context, in *ServiceRequest, opts ...grpc.CallOption) (*Services, error)
 	Save(ctx context.Context, in *Service, opts ...grpc.CallOption) (*common.Msg, error)
 	Get(ctx context.Context, in *ServiceRequest, opts ...grpc.CallOption) (*Service, error)
@@ -53,16 +50,6 @@ type serviceInterfaceClient struct {
 
 func NewServiceInterfaceClient(cc grpc.ClientConnInterface) ServiceInterfaceClient {
 	return &serviceInterfaceClient{cc}
-}
-
-func (c *serviceInterfaceClient) Ping(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*common.Msg, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(common.Msg)
-	err := c.cc.Invoke(ctx, ServiceInterface_Ping_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
 }
 
 func (c *serviceInterfaceClient) List(ctx context.Context, in *ServiceRequest, opts ...grpc.CallOption) (*Services, error) {
@@ -149,7 +136,6 @@ func (c *serviceInterfaceClient) GetServiceCis(ctx context.Context, in *CIsReque
 // All implementations must embed UnimplementedServiceInterfaceServer
 // for forward compatibility.
 type ServiceInterfaceServer interface {
-	Ping(context.Context, *emptypb.Empty) (*common.Msg, error)
 	List(context.Context, *ServiceRequest) (*Services, error)
 	Save(context.Context, *Service) (*common.Msg, error)
 	Get(context.Context, *ServiceRequest) (*Service, error)
@@ -168,9 +154,6 @@ type ServiceInterfaceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedServiceInterfaceServer struct{}
 
-func (UnimplementedServiceInterfaceServer) Ping(context.Context, *emptypb.Empty) (*common.Msg, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Ping not implemented")
-}
 func (UnimplementedServiceInterfaceServer) List(context.Context, *ServiceRequest) (*Services, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method List not implemented")
 }
@@ -214,24 +197,6 @@ func RegisterServiceInterfaceServer(s grpc.ServiceRegistrar, srv ServiceInterfac
 		t.testEmbeddedByValue()
 	}
 	s.RegisterService(&ServiceInterface_ServiceDesc, srv)
-}
-
-func _ServiceInterface_Ping_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(emptypb.Empty)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ServiceInterfaceServer).Ping(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ServiceInterface_Ping_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ServiceInterfaceServer).Ping(ctx, req.(*emptypb.Empty))
-	}
-	return interceptor(ctx, in, info, handler)
 }
 
 func _ServiceInterface_List_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -385,10 +350,6 @@ var ServiceInterface_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "service.v1alpha1.ServiceInterface",
 	HandlerType: (*ServiceInterfaceServer)(nil),
 	Methods: []grpc.MethodDesc{
-		{
-			MethodName: "Ping",
-			Handler:    _ServiceInterface_Ping_Handler,
-		},
 		{
 			MethodName: "List",
 			Handler:    _ServiceInterface_List_Handler,

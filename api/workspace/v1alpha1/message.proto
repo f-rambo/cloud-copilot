@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package workspace.v1alpha1;
+
+option go_package = "api/workspace/v1alpha1;v1alpha1";
+
+message WorkspaceParam {
+      int64 id = 1;
+}
+
+message Workspace {
+      int64 id = 1;
+      string name = 2;
+      string description = 3;
+      int64 cluster_id = 4;
+      string user_name = 5;
+      int32 cpu_rate = 6;
+      int32 gpu_rate = 7;
+      int32 memory_rate = 8;
+      int32 disk_rate = 9;
+}

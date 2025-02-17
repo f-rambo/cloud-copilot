@@ -263,8 +263,6 @@ func (s *ServicesInterface) bizToInterface(service *biz.Service) *v1alpha1.Servi
 		Disk:        service.Disk,
 		LimitDisk:   service.LimitDisk,
 		ProjectID:   service.ProjectId,
-		Business:    service.Business,
-		Technology:  service.Technology,
 		Ports:       make([]*v1alpha1.Port, 0),
 	}
 	for _, port := range service.Ports {
@@ -303,13 +301,11 @@ func (s *ServicesInterface) interfaceToBiz(service *v1alpha1.Service) *biz.Servi
 		Disk:        service.Disk,
 		LimitDisk:   service.LimitDisk,
 		ProjectId:   service.ProjectID,
-		Business:    service.Business,
-		Technology:  service.Technology,
 		Ports:       ports,
 	}
 }
 
-func (s *ServicesInterface) bizCiTointerface(ci *biz.CI) *v1alpha1.CI {
+func (s *ServicesInterface) bizCiTointerface(ci *biz.ContinuousIntegration) *v1alpha1.CI {
 	ciInterface := &v1alpha1.CI{
 		ID:          ci.Id,
 		Version:     ci.Version,

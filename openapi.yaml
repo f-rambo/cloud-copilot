@@ -1069,6 +1069,14 @@ paths:
                   in: query
                   schema:
                     type: string
+                - name: workspace_id
+                  in: query
+                  schema:
+                    type: string
+                - name: cluster_id
+                  in: query
+                  schema:
+                    type: string
             responses:
                 "200":
                     description: OK
@@ -1120,6 +1128,14 @@ paths:
                     type: integer
                     format: int32
                 - name: workflow_id
+                  in: query
+                  schema:
+                    type: string
+                - name: workspace_id
+                  in: query
+                  schema:
+                    type: string
+                - name: cluster_id
                   in: query
                   schema:
                     type: string
@@ -1177,6 +1193,14 @@ paths:
                   in: query
                   schema:
                     type: string
+                - name: workspace_id
+                  in: query
+                  schema:
+                    type: string
+                - name: cluster_id
+                  in: query
+                  schema:
+                    type: string
             responses:
                 "200":
                     description: OK
@@ -1184,18 +1208,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/service.v1alpha1.Services'
-    /api/v1alpha1/service/ping:
-        get:
-            tags:
-                - ServiceInterface
-            operationId: ServiceInterface_Ping
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/common.Msg'
     /api/v1alpha1/service/save:
         post:
             tags:
@@ -1258,6 +1270,14 @@ paths:
                     type: integer
                     format: int32
                 - name: workflow_id
+                  in: query
+                  schema:
+                    type: string
+                - name: workspace_id
+                  in: query
+                  schema:
+                    type: string
+                - name: cluster_id
                   in: query
                   schema:
                     type: string
@@ -1403,6 +1423,41 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/user.v1alpha1.Users'
+    /api/v1alpha1/workspace/get:
+        get:
+            tags:
+                - WorkspaceInterface
+            operationId: WorkspaceInterface_Get
+            parameters:
+                - name: id
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/workspace.v1alpha1.Workspace'
+    /api/v1alpha1/workspace/save:
+        post:
+            tags:
+                - WorkspaceInterface
+            operationId: WorkspaceInterface_Save
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/workspace.v1alpha1.Workspace'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/common.Msg'
 components:
     schemas:
         app.v1alpha1.App:
@@ -2156,6 +2211,10 @@ components:
                     format: int32
                 workflow_id:
                     type: string
+                workspace_id:
+                    type: string
+                cluster_id:
+                    type: string
         service.v1alpha1.Services:
             type: object
             properties:
@@ -2257,9 +2316,35 @@ components:
                 total_count:
                     type: integer
                     format: int32
+        workspace.v1alpha1.Workspace:
+            type: object
+            properties:
+                id:
+                    type: string
+                name:
+                    type: string
+                description:
+                    type: string
+                clusterId:
+                    type: string
+                userName:
+                    type: string
+                cpuRate:
+                    type: integer
+                    format: int32
+                gpuRate:
+                    type: integer
+                    format: int32
+                memoryRate:
+                    type: integer
+                    format: int32
+                diskRate:
+                    type: integer
+                    format: int32
 tags:
     - name: AppInterface
     - name: ClusterInterface
     - name: ProjectService
     - name: ServiceInterface
     - name: UserInterface
+    - name: WorkspaceInterface

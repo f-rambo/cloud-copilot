@@ -2,7 +2,6 @@ package biz
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/go-kratos/kratos/v2/log"
 )
@@ -15,7 +14,7 @@ type ServicesData interface {
 	GetWorkflow(ctx context.Context, id int64) (*Workflow, error)
 	SaveWrkflow(ctx context.Context, workflow *Workflow) error
 	DeleteWrkflow(ctx context.Context, id int64) error
-	GetServiceCis(ctx context.Context, serviceId int64, page, pageSize int32) ([]*CI, int64, error)
+	GetServiceCis(ctx context.Context, serviceId int64, page, pageSize int32) ([]*ContinuousIntegration, int64, error)
 }
 
 type WorkflowRuntime interface {
@@ -77,12 +76,6 @@ func (uc *ServicesUseCase) GetWorkflow(ctx context.Context, id int64, wfType Wor
 	if err != nil {
 		return nil, err
 	}
-	if wfType == WorkflowType_ContinuousDeployment {
-		wf, err = uc.serviceData.GetWorkflow(ctx, service.CdWorkflowId)
-		if err != nil {
-			return nil, err
-		}
-	}
 	return wf, nil
 }
 
@@ -91,39 +84,17 @@ func (uc *ServicesUseCase) SaveWorkflow(ctx context.Context, serviceId int64, wf
 	if err != nil {
 		return err
 	}
-	if wfType == WorkflowType_ContinuousIntegration && service.CiWorkflowId != 0 {
-		wf.Id = service.CiWorkflowId
-	}
-	if wfType == WorkflowType_ContinuousDeployment && service.CdWorkflowId != 0 {
-		wf.Id = service.CdWorkflowId
-	}
-	err = uc.serviceData.SaveWrkflow(ctx, wf)
-	if err != nil {
-		return err
-	}
-	if wfType == WorkflowType_ContinuousIntegration {
-		service.CiWorkflowId = wf.Id
-	}
-	if wfType == WorkflowType_ContinuousDeployment {
-		service.CdWorkflowId = wf.Id
-	}
 	return uc.serviceData.Save(ctx, service)
 }
 
 func (uc *ServicesUseCase) CommitWorklfow(ctx context.Context, project *Project, service *Service, wfType WorkflowType, workflowsId int64) error {
-	if wfType == WorkflowType_ContinuousIntegration && service.CiWorkflowId != workflowsId {
-		return fmt.Errorf("ci workflow not match")
-	}
-	if wfType == WorkflowType_ContinuousDeployment && service.CdWorkflowId != workflowsId {
-		return fmt.Errorf("cd workflow not match")
-	}
 	wf, err := uc.serviceData.GetWorkflow(ctx, workflowsId)
 	if err != nil {
 		return err
 	}
-	return uc.workflowRuntime.Create(ctx, project.Namespace, wf)
+	return uc.workflowRuntime.Create(ctx, project.Name, wf)
 }
 
-func (uc *ServicesUseCase) GetServiceCis(ctx context.Context, serviceId int64, page, pageSize int32) ([]*CI, int64, error) {
+func (uc *ServicesUseCase) GetServiceCis(ctx context.Context, serviceId int64, page, pageSize int32) ([]*ContinuousIntegration, int64, error) {
 	return uc.serviceData.GetServiceCis(ctx, serviceId, page, pageSize)
 }

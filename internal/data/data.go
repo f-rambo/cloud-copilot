@@ -16,16 +16,8 @@ import (
 	"gorm.io/gorm/schema"
 )
 
-// docker run -d \
-//     --name postgres \
-//     -e POSTGRES_PASSWORD=123456 \
-//     -e POSTGRES_USER=postgres \
-//     -e POSTGRES_DB=cloud-copilot \
-//     -p 5432:5432 \
-//     postgres:latest
-
 // ProviderSet is data providers.
-var ProviderSet = wire.NewSet(NewData, NewClusterRepo, NewAppRepo, NewServicesRepo, NewUserRepo, NewProjectRepo)
+var ProviderSet = wire.NewSet(NewData, NewClusterRepo, NewAppRepo, NewServicesRepo, NewUserRepo, NewProjectRepo, NewWorkspaceRepo)
 
 type Data struct {
 	conf          *conf.Bootstrap
@@ -69,15 +61,17 @@ func NewData(c *conf.Bootstrap, logger log.Logger) (*Data, func(), error) {
 		&biz.NodeGroup{},
 		&biz.CloudResource{},
 		&biz.IngressControllerRule{},
-		&biz.Technology{},
-		&biz.Business{},
 		&biz.Project{},
 		&biz.Workflow{},
-		&biz.CI{},
-		&biz.CD{},
+		&biz.WorkflowStep{},
+		&biz.WorkflowTask{},
+		&biz.ContinuousIntegration{},
+		&biz.ContinuousDeployment{},
 		&biz.Port{},
 		&biz.Service{},
 		&biz.User{},
+		&biz.Role{},
+		&biz.Workspace{},
 	)
 	if err != nil {
 		return data, cleanup, err

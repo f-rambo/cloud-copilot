@@ -77,10 +77,10 @@ func (s *servicesRepo) DeleteWrkflow(ctx context.Context, id int64) error {
 	return s.data.db.Delete(&biz.Workflow{}, id).Error
 }
 
-func (s *servicesRepo) GetServiceCis(ctx context.Context, serviceId int64, page, pageSize int32) ([]*biz.CI, int64, error) {
+func (s *servicesRepo) GetServiceCis(ctx context.Context, serviceId int64, page, pageSize int32) ([]*biz.ContinuousIntegration, int64, error) {
 	var itemCount int64 = 0
-	cis := make([]*biz.CI, 0)
-	ciModel := s.data.db.Model(&biz.CI{})
+	cis := make([]*biz.ContinuousIntegration, 0)
+	ciModel := s.data.db.Model(&biz.ContinuousIntegration{})
 	ciModel = ciModel.Where("service_id = ?", serviceId)
 	err := ciModel.Count(&itemCount).Error
 	if err != nil {

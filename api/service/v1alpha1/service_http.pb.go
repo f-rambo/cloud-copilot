@@ -11,7 +11,6 @@ import (
 	common "github.com/f-rambo/cloud-copilot/api/common"
 	http "github.com/go-kratos/kratos/v2/transport/http"
 	binding "github.com/go-kratos/kratos/v2/transport/http/binding"
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -27,7 +26,6 @@ const OperationServiceInterfaceGet = "/service.v1alpha1.ServiceInterface/Get"
 const OperationServiceInterfaceGetServiceCis = "/service.v1alpha1.ServiceInterface/GetServiceCis"
 const OperationServiceInterfaceGetWorkflow = "/service.v1alpha1.ServiceInterface/GetWorkflow"
 const OperationServiceInterfaceList = "/service.v1alpha1.ServiceInterface/List"
-const OperationServiceInterfacePing = "/service.v1alpha1.ServiceInterface/Ping"
 const OperationServiceInterfaceSave = "/service.v1alpha1.ServiceInterface/Save"
 const OperationServiceInterfaceSaveWorkflow = "/service.v1alpha1.ServiceInterface/SaveWorkflow"
 
@@ -38,41 +36,20 @@ type ServiceInterfaceHTTPServer interface {
 	GetServiceCis(context.Context, *CIsRequest) (*CIsResult, error)
 	GetWorkflow(context.Context, *ServiceRequest) (*Worklfow, error)
 	List(context.Context, *ServiceRequest) (*Services, error)
-	Ping(context.Context, *emptypb.Empty) (*common.Msg, error)
 	Save(context.Context, *Service) (*common.Msg, error)
 	SaveWorkflow(context.Context, *ServiceRequest) (*common.Msg, error)
 }
 
 func RegisterServiceInterfaceHTTPServer(s *http.Server, srv ServiceInterfaceHTTPServer) {
 	r := s.Route("/")
-	r.GET("/api/v1alpha1/service/ping", _ServiceInterface_Ping3_HTTP_Handler(srv))
 	r.GET("/api/v1alpha1/service/list", _ServiceInterface_List3_HTTP_Handler(srv))
-	r.POST("/api/v1alpha1/service/save", _ServiceInterface_Save3_HTTP_Handler(srv))
-	r.GET("/api/v1alpha1/service/get", _ServiceInterface_Get3_HTTP_Handler(srv))
+	r.POST("/api/v1alpha1/service/save", _ServiceInterface_Save4_HTTP_Handler(srv))
+	r.GET("/api/v1alpha1/service/get", _ServiceInterface_Get4_HTTP_Handler(srv))
 	r.DELETE("/api/v1alpha1/service/delete", _ServiceInterface_Delete3_HTTP_Handler(srv))
 	r.GET("/api/v1alpha1/service/workflow", _ServiceInterface_GetWorkflow0_HTTP_Handler(srv))
 	r.POST("/api/v1alpha1/service/workflow", _ServiceInterface_SaveWorkflow0_HTTP_Handler(srv))
 	r.POST("/api/v1alpha1/service/commit", _ServiceInterface_CommitWorklfow0_HTTP_Handler(srv))
 	r.GET("/api/v1alpha1/service/cis", _ServiceInterface_GetServiceCis0_HTTP_Handler(srv))
-}
-
-func _ServiceInterface_Ping3_HTTP_Handler(srv ServiceInterfaceHTTPServer) func(ctx http.Context) error {
-	return func(ctx http.Context) error {
-		var in emptypb.Empty
-		if err := ctx.BindQuery(&in); err != nil {
-			return err
-		}
-		http.SetOperation(ctx, OperationServiceInterfacePing)
-		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.Ping(ctx, req.(*emptypb.Empty))
-		})
-		out, err := h(ctx, &in)
-		if err != nil {
-			return err
-		}
-		reply := out.(*common.Msg)
-		return ctx.Result(200, reply)
-	}
 }
 
 func _ServiceInterface_List3_HTTP_Handler(srv ServiceInterfaceHTTPServer) func(ctx http.Context) error {
@@ -94,7 +71,7 @@ func _ServiceInterface_List3_HTTP_Handler(srv ServiceInterfaceHTTPServer) func(c
 	}
 }
 
-func _ServiceInterface_Save3_HTTP_Handler(srv ServiceInterfaceHTTPServer) func(ctx http.Context) error {
+func _ServiceInterface_Save4_HTTP_Handler(srv ServiceInterfaceHTTPServer) func(ctx http.Context) error {
 	return func(ctx http.Context) error {
 		var in Service
 		if err := ctx.Bind(&in); err != nil {
@@ -116,7 +93,7 @@ func _ServiceInterface_Save3_HTTP_Handler(srv ServiceInterfaceHTTPServer) func(c
 	}
 }
 
-func _ServiceInterface_Get3_HTTP_Handler(srv ServiceInterfaceHTTPServer) func(ctx http.Context) error {
+func _ServiceInterface_Get4_HTTP_Handler(srv ServiceInterfaceHTTPServer) func(ctx http.Context) error {
 	return func(ctx http.Context) error {
 		var in ServiceRequest
 		if err := ctx.BindQuery(&in); err != nil {
@@ -243,7 +220,6 @@ type ServiceInterfaceHTTPClient interface {
 	GetServiceCis(ctx context.Context, req *CIsRequest, opts ...http.CallOption) (rsp *CIsResult, err error)
 	GetWorkflow(ctx context.Context, req *ServiceRequest, opts ...http.CallOption) (rsp *Worklfow, err error)
 	List(ctx context.Context, req *ServiceRequest, opts ...http.CallOption) (rsp *Services, err error)
-	Ping(ctx context.Context, req *emptypb.Empty, opts ...http.CallOption) (rsp *common.Msg, err error)
 	Save(ctx context.Context, req *Service, opts ...http.CallOption) (rsp *common.Msg, err error)
 	SaveWorkflow(ctx context.Context, req *ServiceRequest, opts ...http.CallOption) (rsp *common.Msg, err error)
 }
@@ -326,19 +302,6 @@ func (c *ServiceInterfaceHTTPClientImpl) List(ctx context.Context, in *ServiceRe
 	pattern := "/api/v1alpha1/service/list"
 	path := binding.EncodeURL(pattern, in, true)
 	opts = append(opts, http.Operation(OperationServiceInterfaceList))
-	opts = append(opts, http.PathTemplate(pattern))
-	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return &out, nil
-}
-
-func (c *ServiceInterfaceHTTPClientImpl) Ping(ctx context.Context, in *emptypb.Empty, opts ...http.CallOption) (*common.Msg, error) {
-	var out common.Msg
-	pattern := "/api/v1alpha1/service/ping"
-	path := binding.EncodeURL(pattern, in, true)
-	opts = append(opts, http.Operation(OperationServiceInterfacePing))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
 	if err != nil {

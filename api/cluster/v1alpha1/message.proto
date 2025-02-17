@@ -41,7 +41,6 @@ message NodeStatuses {
     repeated NodeStatus node_statuses = 1 [json_name = "node_statuses"];
 }
 
-
 message NodeGroupType {
     int32 id = 1 [json_name = "id"];
     string name = 2 [json_name = "name"];

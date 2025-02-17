@@ -135,8 +135,8 @@ message Cluster {
       string node_user = 20; // @gotags: gorm:"column:node_user; default:''; NOT NULL"
       string node_start_ip = 21; // @gotags: gorm:"column:node_start_ip; default:''; NOT NULL"
       string node_end_ip = 22; // @gotags: gorm:"column:node_end_ip; default:''; NOT NULL"
-      string containerd_version = 23;
-      string runc_version = 24;
+      string containerd_version = 23; // @gotags: gorm:"column:containerd_version; default:''; NOT NULL"
+      string runc_version = 24; // @gotags: gorm:"column:runc_version; default:''; NOT NULL"
       repeated NodeGroup node_groups = 25; // @gotags: gorm:"-"
       repeated Node nodes = 26; // @gotags: gorm:"-"
       repeated CloudResource cloud_resources = 27; // @gotags: gorm:"-"
@@ -186,8 +186,9 @@ message Node {
       string data_disk_name = 15; // @gotags: gorm:"column:data_disk_name; default:''; NOT NULL"
       int64 cluster_id = 16; // @gotags: gorm:"column:cluster_id; default:0; NOT NULL"
       string node_group_id = 17; // @gotags: gorm:"column:node_group_id; default:''; NOT NULL"
-      NodeErrorType error_type = 18; // @gotags: gorm:"column:error_type; default:0; NOT NULL"
-      string error_message = 19; // @gotags: gorm:"column:error_message; default:''; NOT NULL"
+      string node_info = 18; // @gotags: gorm:"column:node_info; default:''; NOT NULL"
+      NodeErrorType error_type = 19; // @gotags: gorm:"column:error_type; default:0; NOT NULL"
+      string error_message = 20; // @gotags: gorm:"column:error_message; default:''; NOT NULL"
 }
 
 message CloudResource {

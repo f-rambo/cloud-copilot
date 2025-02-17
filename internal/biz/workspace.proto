@@ -3,3 +3,17 @@ syntax = "proto3";
 package biz.workspace;
 
 option go_package = "github.com/f-rambo/cloud-copilot/internal/biz;";
+
+message Workspace{
+      // @goimport: "gorm.io/gorm"
+      // @gofield: gorm.Model
+      int64 id = 1; // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
+      string name = 2; // @gotags: gorm:"column:name; default:''; NOT NULL"
+      string description = 3; // @gotags: gorm:"column:namespace; default:''; NOT NULL"
+      int64 cluster_id = 4; // @gotags: gorm:"column:cluster_id; default:0; NOT NULL"
+      int64 user_id = 5; // @gotags: gorm:"column:user_id; default:0; NOT NULL"
+      int32 cpu_rate = 6; // @gotags: gorm:"column:cpu_rate; default:0; NOT NULL"
+      int32 gpu_rate = 7; // @gotags: gorm:"column:gpu_rate; default:0; NOT NULL"
+      int32 memory_rate = 8; // @gotags: gorm:"column:memory_rate; default:0; NOT NULL"
+      int32 disk_rate = 9; // @gotags: gorm:"column:disk_rate; default:0; NOT NULL"
+}
