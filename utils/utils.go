@@ -3,6 +3,7 @@ package utils
 import (
 	"crypto/md5"
 	"encoding/hex"
+	"math"
 
 	"google.golang.org/protobuf/proto"
 )
@@ -37,4 +38,25 @@ func StructTransform(a, b proto.Message) error {
 		return err
 	}
 	return proto.Unmarshal(protoBuf, b)
+}
+
+func CalculatePercentageInt32(part, total int32) int32 {
+	if total == 0 {
+		return 0
+	}
+	partRate := float64(part) / 100
+	return int32(math.Ceil(float64(total) * partRate))
+}
+
+func RemoveDuplicatesInt64(slice []int64) []int64 {
+	seen := make(map[int64]struct{}, len(slice))
+	j := 0
+	for _, v := range slice {
+		if _, ok := seen[v]; !ok {
+			seen[v] = struct{}{}
+			slice[j] = v
+			j++
+		}
+	}
+	return slice[:j]
 }

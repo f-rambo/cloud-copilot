@@ -5,9 +5,10 @@ package project.v1alpha1;
 option go_package = "api/project/v1alpha1;v1alpha1";
 
 message ProjectReq {
-      string name = 1 [json_name="name"];
-      int64 cluster_id = 3 [json_name="cluster_id"];
-      int64 id = 4 [json_name="id"];
+      int64 id = 1;
+      string name = 2;
+      int64 cluster_id = 3;
+      int64 workspace_id = 4;
 }
 
 message ProjectList {
@@ -15,21 +16,16 @@ message ProjectList {
 }
 
 message Project {
-      int64 id = 1 [json_name="id"];
-      string name = 2 [json_name="name"];
-      string description = 3 [json_name="description"];
-      int64 cluster_id = 4 [json_name="cluster_id"];
-      string namespace = 5 [json_name="namespace"];
-      string state = 6 [json_name="state"];
-      repeated Business business = 7 [json_name="business"];
-      string business_technology = 8 [json_name="business_technology"];
-}
-
-message Business {
-      string name = 2 [json_name="name"];
-      repeated Technology technologys = 3 [json_name="technologys"];
-}
-
-message Technology {
-      string name = 2 [json_name="name"];
+      int64 id = 1;
+      string name = 2;
+      string description = 3;
+      int64 cluster_id = 4;
+      int64 user_id = 5;
+      string user_name = 6;
+      int64 workspace_id = 7;
+      int32 limit_cpu = 8;
+      int32 limit_gpu = 9;
+      int32 limit_memory = 10;
+      int32 limit_disk = 11;
+      string updated_at = 12;
 }

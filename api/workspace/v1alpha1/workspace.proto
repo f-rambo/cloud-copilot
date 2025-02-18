@@ -21,4 +21,10 @@ service WorkspaceInterface {
               get: "/api/v1alpha1/workspace/get"
             };
       }
+      
+      rpc List(workspace.v1alpha1.WorkspaceParam) returns (workspace.v1alpha1.Workspaces) {
+            option (google.api.http) = {
+              get: "/api/v1alpha1/workspace/list"
+            };
+      }
 }

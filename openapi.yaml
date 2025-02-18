@@ -876,15 +876,19 @@ paths:
                 - ProjectService
             operationId: ProjectService_Get
             parameters:
+                - name: id
+                  in: query
+                  schema:
+                    type: string
                 - name: name
                   in: query
                   schema:
                     type: string
-                - name: cluster_id
+                - name: clusterId
                   in: query
                   schema:
                     type: string
-                - name: id
+                - name: workspaceId
                   in: query
                   schema:
                     type: string
@@ -917,15 +921,19 @@ paths:
                 - ProjectService
             operationId: ProjectService_Delete
             parameters:
+                - name: id
+                  in: query
+                  schema:
+                    type: string
                 - name: name
                   in: query
                   schema:
                     type: string
-                - name: cluster_id
+                - name: clusterId
                   in: query
                   schema:
                     type: string
-                - name: id
+                - name: workspaceId
                   in: query
                   schema:
                     type: string
@@ -942,15 +950,19 @@ paths:
                 - ProjectService
             operationId: ProjectService_List
             parameters:
+                - name: id
+                  in: query
+                  schema:
+                    type: string
                 - name: name
                   in: query
                   schema:
                     type: string
-                - name: cluster_id
+                - name: clusterId
                   in: query
                   schema:
                     type: string
-                - name: id
+                - name: workspaceId
                   in: query
                   schema:
                     type: string
@@ -961,18 +973,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/project.v1alpha1.ProjectList'
-    /api/v1alpha1/project/ping:
-        get:
-            tags:
-                - ProjectService
-            operationId: ProjectService_Ping
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/common.Msg'
     /api/v1alpha1/service/cis:
         get:
             tags:
@@ -1433,6 +1433,14 @@ paths:
                   in: query
                   schema:
                     type: string
+                - name: clusterId
+                  in: query
+                  schema:
+                    type: string
+                - name: workspaceName
+                  in: query
+                  schema:
+                    type: string
             responses:
                 "200":
                     description: OK
@@ -1440,6 +1448,31 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/workspace.v1alpha1.Workspace'
+    /api/v1alpha1/workspace/list:
+        get:
+            tags:
+                - WorkspaceInterface
+            operationId: WorkspaceInterface_List
+            parameters:
+                - name: id
+                  in: query
+                  schema:
+                    type: string
+                - name: clusterId
+                  in: query
+                  schema:
+                    type: string
+                - name: workspaceName
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/workspace.v1alpha1.Workspaces'
     /api/v1alpha1/workspace/save:
         post:
             tags:
@@ -1798,6 +1831,8 @@ components:
                     type: string
                 node_end_ip:
                     type: string
+                cluster_resource:
+                    $ref: '#/components/schemas/cluster.v1alpha1.ClusterResource'
         cluster.v1alpha1.ClusterIdMessge:
             type: object
             properties:
@@ -1844,6 +1879,21 @@ components:
                 logs:
                     type: string
                 last_line:
+                    type: integer
+                    format: int32
+        cluster.v1alpha1.ClusterResource:
+            type: object
+            properties:
+                cpu:
+                    type: integer
+                    format: int32
+                memory:
+                    type: integer
+                    format: int32
+                gpu:
+                    type: integer
+                    format: int32
+                disk:
                     type: integer
                     format: int32
         cluster.v1alpha1.ClusterSaveArgs:
@@ -2049,15 +2099,6 @@ components:
                     format: enum
                 Message:
                     type: string
-        project.v1alpha1.Business:
-            type: object
-            properties:
-                name:
-                    type: string
-                technologys:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/project.v1alpha1.Technology'
         project.v1alpha1.Project:
             type: object
             properties:
@@ -2067,17 +2108,27 @@ components:
                     type: string
                 description:
                     type: string
-                cluster_id:
+                clusterId:
                     type: string
-                namespace:
+                userId:
                     type: string
-                state:
+                userName:
                     type: string
-                business:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/project.v1alpha1.Business'
-                business_technology:
+                workspaceId:
+                    type: string
+                limitCpu:
+                    type: integer
+                    format: int32
+                limitGpu:
+                    type: integer
+                    format: int32
+                limitMemory:
+                    type: integer
+                    format: int32
+                limitDisk:
+                    type: integer
+                    format: int32
+                updatedAt:
                     type: string
         project.v1alpha1.ProjectList:
             type: object
@@ -2086,11 +2137,6 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/project.v1alpha1.Project'
-        project.v1alpha1.Technology:
-            type: object
-            properties:
-                name:
-                    type: string
         service.v1alpha1.CI:
             type: object
             properties:
@@ -2341,6 +2387,27 @@ components:
                 diskRate:
                     type: integer
                     format: int32
+                limitCpu:
+                    type: integer
+                    format: int32
+                limitGpu:
+                    type: integer
+                    format: int32
+                limitMemory:
+                    type: integer
+                    format: int32
+                limitDisk:
+                    type: integer
+                    format: int32
+                updatedAt:
+                    type: string
+        workspace.v1alpha1.Workspaces:
+            type: object
+            properties:
+                workspaces:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/workspace.v1alpha1.Workspace'
 tags:
     - name: AppInterface
     - name: ClusterInterface

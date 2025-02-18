@@ -2,7 +2,9 @@ package biz
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"os"
 	"time"
 
 	"github.com/f-rambo/cloud-copilot/internal/conf"
@@ -13,10 +15,13 @@ import (
 )
 
 const (
-	AdminName    ContextKey = "admin"
-	TokenKey     ContextKey = "token"
-	SignType     ContextKey = "sign_type"
-	UserEmailKey ContextKey = "user_email"
+	AdminName ContextKey = "admin"
+
+	TokenKey    ContextKey = "token"
+	SignType    ContextKey = "sign_type"
+	UserInfoKey ContextKey = "user_info"
+	Exp         ContextKey = "exp"
+	AuthKey     ContextKey = "auth"
 )
 
 type UserData interface {
@@ -44,7 +49,21 @@ type UserUseCase struct {
 }
 
 func NewUseUser(userData UserData, thirdparty Thirdparty, logger log.Logger, conf *conf.Bootstrap) *UserUseCase {
+	os.Setenv(Exp.String(), string(conf.Auth.Exp))
+	os.Setenv(AuthKey.String(), conf.Auth.Key)
 	return &UserUseCase{userData: userData, thirdparty: thirdparty, log: log.NewHelper(logger), conf: conf}
+}
+
+func GetUserInfo(ctx context.Context) *User {
+	v, ok := ctx.Value(UserInfoKey).(*User)
+	if !ok {
+		return nil
+	}
+	return v
+}
+
+func WithUser(ctx context.Context, u *User) context.Context {
+	return context.WithValue(ctx, UserInfoKey, u)
 }
 
 func (u *UserUseCase) InitAdminUser(ctx context.Context) error {
@@ -109,7 +128,7 @@ func (u *UserUseCase) Disable(ctx context.Context, id int64) error {
 func (u *UserUseCase) SignIn(ctx context.Context, user *User) (err error) {
 	user.SignType = UserSignType_CREDENTIALS
 	if user.Email == u.conf.Auth.AdminEmail && user.Password == utils.Md5(u.conf.Auth.AdminPassword) {
-		user.AccessToken, err = u.encodeToken(user)
+		user.AccessToken, err = GenerateJWT(user)
 		if err != nil {
 			return err
 		}
@@ -130,16 +149,11 @@ func (u *UserUseCase) SignIn(ctx context.Context, user *User) (err error) {
 	if user.Status != UserStatus_USER_ENABLE {
 		return errors.New("user is not enable")
 	}
-	user.AccessToken, err = u.encodeToken(user)
+	user.AccessToken, err = GenerateJWT(user)
 	if err != nil {
 		return err
 	}
 	return nil
-}
-
-func (u *UserUseCase) GetUserInfo(ctx context.Context) (*User, error) {
-	userEmail := ctx.Value(UserEmailKey)
-	return u.userData.GetUserInfoByEmail(ctx, cast.ToString(userEmail))
 }
 
 func (u *UserUseCase) GetUser(ctx context.Context, id int64) (*User, error) {
@@ -161,13 +175,46 @@ func (u *UserUseCase) DeleteUser(ctx context.Context, id int64) error {
 	return u.userData.DeleteUser(ctx, id)
 }
 
-func (u *UserUseCase) encodeToken(user *User) (token string, err error) {
-	claims := jwtv5.MapClaims{
-		"id":     user.Id,
-		"email":  user.Email,
-		"name":   user.Name,
-		"status": user.Status,
-		"exp":    time.Now().Add(time.Hour * time.Duration(u.conf.Auth.Exp)).Unix(),
+func GenerateJWT(user *User) (token string, err error) {
+	exp := os.Getenv(Exp.String())
+	authKey := os.Getenv(AuthKey.String())
+	userJsonString, err := json.Marshal(user)
+	if err != nil {
+		return "", err
 	}
-	return jwtv5.NewWithClaims(jwtv5.SigningMethodHS256, claims).SignedString([]byte(u.conf.Auth.Key))
+	claims := jwtv5.MapClaims{}
+	err = json.Unmarshal(userJsonString, &claims)
+	if err != nil {
+		return "", err
+	}
+	claims["exp"] = time.Now().Add(time.Hour * time.Duration(cast.ToDuration(exp))).Unix()
+	return jwtv5.NewWithClaims(jwtv5.SigningMethodHS256, claims).SignedString([]byte(authKey))
+}
+
+func ValidateJWT(token string) (*User, error) {
+	claims := jwtv5.MapClaims{}
+	authKey := os.Getenv(AuthKey.String())
+	_, err := jwtv5.ParseWithClaims(token, &claims, func(token *jwtv5.Token) (interface{}, error) {
+		return []byte(authKey), nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	exp, ok := claims[Exp.String()]
+	if !ok {
+		return nil, errors.New("invalid expiration time")
+	}
+	if time.Now().Unix() > cast.ToInt64(exp) {
+		return nil, errors.New("token is expired")
+	}
+	user := &User{}
+	claimsJsonString, err := json.Marshal(claims)
+	if err != nil {
+		return nil, err
+	}
+	err = json.Unmarshal(claimsJsonString, user)
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
 }

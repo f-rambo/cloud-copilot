@@ -17,6 +17,8 @@ const (
 	ClusterPoolNumber = 10
 
 	ClusterKey ContextKey = "cluster"
+
+	DefaultClusterId int64 = 1
 )
 
 var ErrClusterNotFound error = errors.New("cluster not found")

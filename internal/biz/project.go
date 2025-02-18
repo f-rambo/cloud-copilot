@@ -52,6 +52,20 @@ func WithProject(ctx context.Context, p *Project) context.Context {
 }
 
 func (uc *ProjectUsecase) Save(ctx context.Context, project *Project) error {
+	workspace := GetWorkspace(ctx)
+	if project.LimitCpu > workspace.LimitCpu {
+		project.LimitCpu = workspace.LimitCpu
+	}
+	if project.LimitGpu > workspace.LimitGpu {
+		project.LimitGpu = workspace.LimitGpu
+	}
+	if project.LimitMemory > workspace.LimitMemory {
+		project.LimitMemory = workspace.LimitMemory
+	}
+	if project.LimitDisk > workspace.LimitDisk {
+		project.LimitDisk = workspace.LimitDisk
+	}
+	project.UserId = GetUserInfo(ctx).Id
 	return uc.projectData.Save(ctx, project)
 }
 
@@ -69,4 +83,8 @@ func (uc *ProjectUsecase) ListByIds(ctx context.Context, ids []int64) ([]*Projec
 
 func (uc *ProjectUsecase) Delete(ctx context.Context, id int64) error {
 	return uc.projectData.Delete(ctx, id)
+}
+
+func (uc *ProjectUsecase) GetByName(ctx context.Context, name string) (*Project, error) {
+	return uc.projectData.GetByName(ctx, name)
 }

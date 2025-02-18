@@ -16,15 +16,13 @@ import (
 type ClusterInterface struct {
 	v1alpha1.UnimplementedClusterInterfaceServer
 	clusterUc *biz.ClusterUsecase
-	userUc    *biz.UserUseCase
 	c         *conf.Bootstrap
 	log       *log.Helper
 }
 
-func NewClusterInterface(clusterUc *biz.ClusterUsecase, userUc *biz.UserUseCase, c *conf.Bootstrap, logger log.Logger) *ClusterInterface {
+func NewClusterInterface(clusterUc *biz.ClusterUsecase, c *conf.Bootstrap, logger log.Logger) *ClusterInterface {
 	return &ClusterInterface{
 		clusterUc: clusterUc,
-		userUc:    userUc,
 		c:         c,
 		log:       log.NewHelper(logger),
 	}
@@ -137,7 +135,14 @@ func (c *ClusterInterface) Get(ctx context.Context, clusterIdArgs *v1alpha1.Clus
 	if cluster == nil {
 		return data, nil
 	}
-	return c.bizCLusterToCluster(cluster), nil
+	data = c.bizCLusterToCluster(cluster)
+	data.ClusterResource = &v1alpha1.ClusterResource{
+		Cpu:    cluster.GetCpuCount(),
+		Gpu:    cluster.GetGpuCount(),
+		Memory: cluster.GetMemoryCount(),
+		Disk:   cluster.GetDiskSizeCount(),
+	}
+	return data, nil
 }
 func (c *ClusterInterface) Save(ctx context.Context, clusterArgs *v1alpha1.ClusterSaveArgs) (msg *v1alpha1.ClusterIdMessge, err error) {
 	if clusterArgs.Name == "" || clusterArgs.PrivateKey == "" || clusterArgs.Type == 0 || clusterArgs.PublicKey == "" {
@@ -181,10 +186,7 @@ func (c *ClusterInterface) Save(ctx context.Context, clusterArgs *v1alpha1.Clust
 	cluster.NodeUser = clusterArgs.NodeUsername
 	cluster.NodeStartIp = clusterArgs.NodeStartIp
 	cluster.NodeEndIp = clusterArgs.NodeEndIp
-	user, err := c.userUc.GetUserInfo(ctx)
-	if err != nil {
-		return nil, err
-	}
+	user := biz.GetUserInfo(ctx)
 	cluster.UserId = user.Id
 	err = c.clusterUc.Save(ctx, cluster)
 	if err != nil {
@@ -225,7 +227,14 @@ func (c *ClusterInterface) List(ctx context.Context, _ *emptypb.Empty) (*v1alpha
 		return data, nil
 	}
 	for _, v := range clusters {
-		data.Clusters = append(data.Clusters, c.bizCLusterToCluster(v))
+		interfaceCluster := c.bizCLusterToCluster(v)
+		interfaceCluster.ClusterResource = &v1alpha1.ClusterResource{
+			Cpu:    v.GetCpuCount(),
+			Gpu:    v.GetGpuCount(),
+			Memory: v.GetMemoryCount(),
+			Disk:   v.GetDiskSizeCount(),
+		}
+		data.Clusters = append(data.Clusters, interfaceCluster)
 	}
 	return data, nil
 }

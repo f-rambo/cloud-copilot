@@ -10,22 +10,18 @@ import (
 	"github.com/f-rambo/cloud-copilot/internal/conf"
 	"github.com/f-rambo/cloud-copilot/utils"
 	"github.com/go-kratos/kratos/v2/log"
-	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 type ProjectInterface struct {
 	v1alpha1.UnimplementedProjectServiceServer
 	projectUc *biz.ProjectUsecase
+	userUc    *biz.UserUseCase
 	c         *conf.Bootstrap
 	log       *log.Helper
 }
 
-func NewProjectInterface(uc *biz.ProjectUsecase, c *conf.Bootstrap, logger log.Logger) *ProjectInterface {
-	return &ProjectInterface{projectUc: uc, c: c, log: log.NewHelper(logger)}
-}
-
-func (p *ProjectInterface) Ping(ctx context.Context, _ *emptypb.Empty) (*common.Msg, error) {
-	return common.Response(), nil
+func NewProjectInterface(uc *biz.ProjectUsecase, userUc *biz.UserUseCase, c *conf.Bootstrap, logger log.Logger) *ProjectInterface {
+	return &ProjectInterface{projectUc: uc, userUc: userUc, c: c, log: log.NewHelper(logger)}
 }
 
 func (p *ProjectInterface) GetProject(ctx context.Context, projectId int64) (*biz.Project, error) {
@@ -36,23 +32,17 @@ func (p *ProjectInterface) Save(ctx context.Context, project *v1alpha1.Project) 
 	if project.Name == "" {
 		return nil, errors.New("project name is required")
 	}
-	if len(project.Business) == 0 {
-		return nil, errors.New("business technology is required")
-	}
-	for _, v := range project.Business {
-		if len(v.Technologys) == 0 {
-			return nil, errors.New("technology type is required")
+	if project.Id == 0 {
+		projectData, err := p.projectUc.GetByName(ctx, project.Name)
+		if err != nil {
+			return nil, err
+		}
+		if projectData != nil && projectData.Id > 0 {
+			return nil, errors.New("project name already exists")
 		}
 	}
-	notProjectNames := []string{"admin", "system", "public", "default", "kube", "kubernetes", "kube-public", "kube-system", "cloud-copilot"}
-	if utils.Contains(notProjectNames, project.Name) {
-		return nil, errors.New("project name is not allowed")
-	}
-	bizProject, err := p.projectTobizProject(project)
-	if err != nil {
-		return nil, err
-	}
-	err = p.projectUc.Save(ctx, bizProject)
+	bizProject := p.projectTobizProject(project)
+	err := p.projectUc.Save(ctx, bizProject)
 	if err != nil {
 		return nil, err
 	}
@@ -70,10 +60,12 @@ func (p *ProjectInterface) Get(ctx context.Context, projectReq *v1alpha1.Project
 	if bizProject == nil {
 		return nil, errors.New("project not found")
 	}
-	project, err := p.bizProjectToProject(bizProject)
+	project := p.bizProjectToProject(bizProject)
+	user, err := p.userUc.GetUser(ctx, bizProject.UserId)
 	if err != nil {
 		return nil, err
 	}
+	project.UserName = user.Name
 	return project, nil
 }
 
@@ -86,13 +78,23 @@ func (p *ProjectInterface) List(ctx context.Context, projectReq *v1alpha1.Projec
 		return nil, err
 	}
 	projects := make([]*v1alpha1.Project, 0)
+	userIds := make([]int64, 0)
 	for _, bizProject := range bizProjects {
-		project, err := p.bizProjectToProject(bizProject)
-		if err != nil {
-			return nil, err
-
-		}
+		project := p.bizProjectToProject(bizProject)
 		projects = append(projects, project)
+		userIds = append(userIds, bizProject.UserId)
+	}
+	userIds = utils.RemoveDuplicatesInt64(userIds)
+	users, err := p.userUc.GetUserByBatchID(ctx, userIds)
+	if err != nil {
+		return nil, err
+	}
+	for _, v := range users {
+		for _, project := range projects {
+			if project.UserId == v.Id {
+				project.UserName = v.Name
+			}
+		}
 	}
 	return &v1alpha1.ProjectList{Projects: projects}, nil
 }
@@ -108,33 +110,33 @@ func (p *ProjectInterface) Delete(ctx context.Context, projectReq *v1alpha1.Proj
 	return common.Response(), nil
 }
 
-func (p *ProjectInterface) projectTobizProject(project *v1alpha1.Project) (*biz.Project, error) {
-	bizProject := &biz.Project{}
-	err := utils.StructTransform(project, bizProject)
-	if err != nil {
-		return nil, err
+func (p *ProjectInterface) projectTobizProject(project *v1alpha1.Project) *biz.Project {
+	return &biz.Project{
+		Id:          project.Id,
+		Name:        project.Name,
+		Description: project.Description,
+		ClusterId:   project.ClusterId,
+		UserId:      project.UserId,
+		WorkspaceId: project.WorkspaceId,
+		LimitCpu:    project.LimitCpu,
+		LimitGpu:    project.LimitGpu,
+		LimitMemory: project.LimitMemory,
+		LimitDisk:   project.LimitDisk,
 	}
-	bizProject.Id = project.Id
-	return bizProject, nil
 }
 
-func (p *ProjectInterface) bizProjectToProject(bizProject *biz.Project) (*v1alpha1.Project, error) {
-	project := &v1alpha1.Project{}
-	err := utils.StructTransform(bizProject, project)
-	if err != nil {
-		return nil, err
+func (p *ProjectInterface) bizProjectToProject(bizProject *biz.Project) *v1alpha1.Project {
+	return &v1alpha1.Project{
+		Id:          bizProject.Id,
+		Name:        bizProject.Name,
+		Description: bizProject.Description,
+		ClusterId:   bizProject.ClusterId,
+		UserId:      bizProject.UserId,
+		WorkspaceId: bizProject.WorkspaceId,
+		LimitCpu:    bizProject.LimitCpu,
+		LimitGpu:    bizProject.LimitGpu,
+		LimitMemory: bizProject.LimitMemory,
+		LimitDisk:   bizProject.LimitDisk,
+		UpdatedAt:   bizProject.UpdatedAt.Format("2006-01-02 15:04:05"),
 	}
-	businessTechnologyMap := make(map[string][]string)
-	businessTechnology := ""
-	for name, technologyTypes := range businessTechnologyMap {
-		businessTechnology += name + ":"
-		for _, technologyType := range technologyTypes {
-			businessTechnology += technologyType + ","
-		}
-		businessTechnology = businessTechnology[:len(businessTechnology)-1]
-		businessTechnology += ";\n"
-	}
-	project.Id = bizProject.Id
-	project.BusinessTechnology = businessTechnology
-	return project, nil
 }

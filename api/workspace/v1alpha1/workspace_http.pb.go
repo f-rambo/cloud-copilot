@@ -21,10 +21,12 @@ var _ = binding.EncodeURL
 const _ = http.SupportPackageIsVersion1
 
 const OperationWorkspaceInterfaceGet = "/workspace.v1alpha1.WorkspaceInterface/Get"
+const OperationWorkspaceInterfaceList = "/workspace.v1alpha1.WorkspaceInterface/List"
 const OperationWorkspaceInterfaceSave = "/workspace.v1alpha1.WorkspaceInterface/Save"
 
 type WorkspaceInterfaceHTTPServer interface {
 	Get(context.Context, *WorkspaceParam) (*Workspace, error)
+	List(context.Context, *WorkspaceParam) (*Workspaces, error)
 	Save(context.Context, *Workspace) (*common.Msg, error)
 }
 
@@ -32,6 +34,7 @@ func RegisterWorkspaceInterfaceHTTPServer(s *http.Server, srv WorkspaceInterface
 	r := s.Route("/")
 	r.POST("/api/v1alpha1/workspace/save", _WorkspaceInterface_Save2_HTTP_Handler(srv))
 	r.GET("/api/v1alpha1/workspace/get", _WorkspaceInterface_Get2_HTTP_Handler(srv))
+	r.GET("/api/v1alpha1/workspace/list", _WorkspaceInterface_List2_HTTP_Handler(srv))
 }
 
 func _WorkspaceInterface_Save2_HTTP_Handler(srv WorkspaceInterfaceHTTPServer) func(ctx http.Context) error {
@@ -75,8 +78,28 @@ func _WorkspaceInterface_Get2_HTTP_Handler(srv WorkspaceInterfaceHTTPServer) fun
 	}
 }
 
+func _WorkspaceInterface_List2_HTTP_Handler(srv WorkspaceInterfaceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in WorkspaceParam
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationWorkspaceInterfaceList)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.List(ctx, req.(*WorkspaceParam))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*Workspaces)
+		return ctx.Result(200, reply)
+	}
+}
+
 type WorkspaceInterfaceHTTPClient interface {
 	Get(ctx context.Context, req *WorkspaceParam, opts ...http.CallOption) (rsp *Workspace, err error)
+	List(ctx context.Context, req *WorkspaceParam, opts ...http.CallOption) (rsp *Workspaces, err error)
 	Save(ctx context.Context, req *Workspace, opts ...http.CallOption) (rsp *common.Msg, err error)
 }
 
@@ -93,6 +116,19 @@ func (c *WorkspaceInterfaceHTTPClientImpl) Get(ctx context.Context, in *Workspac
 	pattern := "/api/v1alpha1/workspace/get"
 	path := binding.EncodeURL(pattern, in, true)
 	opts = append(opts, http.Operation(OperationWorkspaceInterfaceGet))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *WorkspaceInterfaceHTTPClientImpl) List(ctx context.Context, in *WorkspaceParam, opts ...http.CallOption) (*Workspaces, error) {
+	var out Workspaces
+	pattern := "/api/v1alpha1/workspace/list"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationWorkspaceInterfaceList))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
 	if err != nil {

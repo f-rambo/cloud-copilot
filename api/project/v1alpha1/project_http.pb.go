@@ -11,7 +11,6 @@ import (
 	common "github.com/f-rambo/cloud-copilot/api/common"
 	http "github.com/go-kratos/kratos/v2/transport/http"
 	binding "github.com/go-kratos/kratos/v2/transport/http/binding"
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -24,43 +23,21 @@ const _ = http.SupportPackageIsVersion1
 const OperationProjectServiceDelete = "/project.v1alpha1.ProjectService/Delete"
 const OperationProjectServiceGet = "/project.v1alpha1.ProjectService/Get"
 const OperationProjectServiceList = "/project.v1alpha1.ProjectService/List"
-const OperationProjectServicePing = "/project.v1alpha1.ProjectService/Ping"
 const OperationProjectServiceSave = "/project.v1alpha1.ProjectService/Save"
 
 type ProjectServiceHTTPServer interface {
 	Delete(context.Context, *ProjectReq) (*common.Msg, error)
 	Get(context.Context, *ProjectReq) (*Project, error)
 	List(context.Context, *ProjectReq) (*ProjectList, error)
-	Ping(context.Context, *emptypb.Empty) (*common.Msg, error)
 	Save(context.Context, *Project) (*common.Msg, error)
 }
 
 func RegisterProjectServiceHTTPServer(s *http.Server, srv ProjectServiceHTTPServer) {
 	r := s.Route("/")
-	r.GET("/api/v1alpha1/project/ping", _ProjectService_Ping2_HTTP_Handler(srv))
 	r.POST("/api/v1alpha1/project", _ProjectService_Save3_HTTP_Handler(srv))
 	r.GET("/api/v1alpha1/project", _ProjectService_Get3_HTTP_Handler(srv))
-	r.GET("/api/v1alpha1/project/list", _ProjectService_List2_HTTP_Handler(srv))
+	r.GET("/api/v1alpha1/project/list", _ProjectService_List3_HTTP_Handler(srv))
 	r.DELETE("/api/v1alpha1/project", _ProjectService_Delete2_HTTP_Handler(srv))
-}
-
-func _ProjectService_Ping2_HTTP_Handler(srv ProjectServiceHTTPServer) func(ctx http.Context) error {
-	return func(ctx http.Context) error {
-		var in emptypb.Empty
-		if err := ctx.BindQuery(&in); err != nil {
-			return err
-		}
-		http.SetOperation(ctx, OperationProjectServicePing)
-		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.Ping(ctx, req.(*emptypb.Empty))
-		})
-		out, err := h(ctx, &in)
-		if err != nil {
-			return err
-		}
-		reply := out.(*common.Msg)
-		return ctx.Result(200, reply)
-	}
 }
 
 func _ProjectService_Save3_HTTP_Handler(srv ProjectServiceHTTPServer) func(ctx http.Context) error {
@@ -104,7 +81,7 @@ func _ProjectService_Get3_HTTP_Handler(srv ProjectServiceHTTPServer) func(ctx ht
 	}
 }
 
-func _ProjectService_List2_HTTP_Handler(srv ProjectServiceHTTPServer) func(ctx http.Context) error {
+func _ProjectService_List3_HTTP_Handler(srv ProjectServiceHTTPServer) func(ctx http.Context) error {
 	return func(ctx http.Context) error {
 		var in ProjectReq
 		if err := ctx.BindQuery(&in); err != nil {
@@ -146,7 +123,6 @@ type ProjectServiceHTTPClient interface {
 	Delete(ctx context.Context, req *ProjectReq, opts ...http.CallOption) (rsp *common.Msg, err error)
 	Get(ctx context.Context, req *ProjectReq, opts ...http.CallOption) (rsp *Project, err error)
 	List(ctx context.Context, req *ProjectReq, opts ...http.CallOption) (rsp *ProjectList, err error)
-	Ping(ctx context.Context, req *emptypb.Empty, opts ...http.CallOption) (rsp *common.Msg, err error)
 	Save(ctx context.Context, req *Project, opts ...http.CallOption) (rsp *common.Msg, err error)
 }
 
@@ -189,19 +165,6 @@ func (c *ProjectServiceHTTPClientImpl) List(ctx context.Context, in *ProjectReq,
 	pattern := "/api/v1alpha1/project/list"
 	path := binding.EncodeURL(pattern, in, true)
 	opts = append(opts, http.Operation(OperationProjectServiceList))
-	opts = append(opts, http.PathTemplate(pattern))
-	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return &out, nil
-}
-
-func (c *ProjectServiceHTTPClientImpl) Ping(ctx context.Context, in *emptypb.Empty, opts ...http.CallOption) (*common.Msg, error) {
-	var out common.Msg
-	pattern := "/api/v1alpha1/project/ping"
-	path := binding.EncodeURL(pattern, in, true)
-	opts = append(opts, http.Operation(OperationProjectServicePing))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
 	if err != nil {

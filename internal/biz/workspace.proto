@@ -16,4 +16,8 @@ message Workspace{
       int32 gpu_rate = 7; // @gotags: gorm:"column:gpu_rate; default:0; NOT NULL"
       int32 memory_rate = 8; // @gotags: gorm:"column:memory_rate; default:0; NOT NULL"
       int32 disk_rate = 9; // @gotags: gorm:"column:disk_rate; default:0; NOT NULL"
+      int32 limit_cpu = 10; // @gotags: gorm:"-"
+      int32 limit_gpu = 11; // @gotags: gorm:"-"
+      int32 limit_memory = 12; // @gotags: gorm:"-"
+      int32 limit_disk = 13; // @gotags: gorm:"-"
 }

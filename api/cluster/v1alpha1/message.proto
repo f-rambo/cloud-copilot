@@ -125,6 +125,7 @@ message Cluster {
     string node_username = 17 [json_name = "node_username"];
     string node_start_ip = 18 [json_name = "node_start_ip"];
     string node_end_ip = 19 [json_name = "node_end_ip"];
+    ClusterResource cluster_resource = 20 [json_name = "cluster_resource"];
 }
 
 message NodeGroup {
@@ -154,6 +155,13 @@ message Node {
     int32 status = 6 [json_name = "status"];
     string instance_id = 7 [json_name = "instance_id"];
     string update_at = 8 [json_name = "update_at"];
+}
+
+message ClusterResource {
+    int32 cpu = 1 [json_name = "cpu"];
+    int32 memory = 2 [json_name = "memory"];
+    int32 gpu = 3 [json_name = "gpu"];
+    int32 disk = 4 [json_name = "disk"];
 }
 
 message ClusterLogsRequest {

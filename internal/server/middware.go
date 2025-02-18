@@ -23,37 +23,35 @@ func NewAuthServer(user *interfaces.UserInterface) func(handler middleware.Handl
 	return func(handler middleware.Handler) middleware.Handler {
 		return func(ctx context.Context, req interface{}) (reply interface{}, err error) {
 			var authorization string
-			var userEmail string
 			if md, ok := metadata.FromIncomingContext(ctx); ok {
 				authorizations := md.Get(AuthorizationKey.String())
 				for _, v := range authorizations {
 					authorization = v
 					break
 				}
-				userEmails := md.Get(biz.UserEmailKey.String())
-				for _, v := range userEmails {
-					userEmail = v
-					break
-				}
-			} else if header, ok := transport.FromServerContext(ctx); ok {
+			}
+
+			if header, ok := transport.FromServerContext(ctx); ok && authorization == "" {
 				authorization = header.RequestHeader().Get(AuthorizationKey.String())
-				userEmail = header.RequestHeader().Get(biz.UserEmailKey.String())
-			} else {
+			}
+
+			if authorization == "" {
 				return nil, errors.New(AuthorizationKey.String() + " is null")
 			}
+
 			authorizationArr := strings.Split(authorization, " ")
 			if len(authorizationArr) != 2 {
 				return nil, errors.New(AuthorizationKey.String() + " is error")
 			}
-			for index, authorization := range authorizationArr {
-				if index == 0 {
-					ctx = context.WithValue(ctx, biz.SignType, authorization)
-				}
-				if index == 1 {
-					ctx = context.WithValue(ctx, biz.TokenKey, authorization)
-				}
+
+			userInfo, err := biz.ValidateJWT(authorizationArr[1])
+			if err != nil {
+				return nil, err
 			}
-			ctx = context.WithValue(ctx, biz.UserEmailKey, userEmail)
+
+			ctx = context.WithValue(ctx, biz.SignType, authorizationArr[0])
+			ctx = context.WithValue(ctx, biz.TokenKey, authorizationArr[1])
+			ctx = biz.WithUser(ctx, userInfo)
 			return handler(ctx, req)
 		}
 	}
@@ -75,23 +73,32 @@ func BizContext(cluster *interfaces.ClusterInterface, project *interfaces.Projec
 				value := msgReflection.Get(field)
 				switch fieldName {
 				case "cluster_id", "clusterId":
-					cluster, err := cluster.GetCluster(ctx, cast.ToInt64(value.Interface()))
-					if err != nil {
-						return nil, err
+					clusterId := cast.ToInt64(value.Interface())
+					if clusterId > 0 {
+						cluster, err := cluster.GetCluster(ctx, cast.ToInt64(value.Interface()))
+						if err != nil {
+							return nil, err
+						}
+						ctx = biz.WithCluster(ctx, cluster)
 					}
-					ctx = biz.WithCluster(ctx, cluster)
 				case "workspace_id", "workspaceId":
-					workspace, err := workspace.GetWorkspace(ctx, cast.ToInt64(value.Interface()))
-					if err != nil {
-						return nil, err
+					workspaceId := cast.ToInt64(value.Interface())
+					if workspaceId > 0 {
+						workspace, err := workspace.GetWorkspace(ctx, cast.ToInt64(value.Interface()))
+						if err != nil {
+							return nil, err
+						}
+						ctx = biz.WithWorkspace(ctx, workspace)
 					}
-					ctx = biz.WithWorkspace(ctx, workspace)
 				case "project_id", "projectId":
-					project, err := project.GetProject(ctx, cast.ToInt64(value.Interface()))
-					if err != nil {
-						return nil, err
+					projectId := cast.ToInt64(value.Interface())
+					if projectId > 0 {
+						project, err := project.GetProject(ctx, cast.ToInt64(value.Interface()))
+						if err != nil {
+							return nil, err
+						}
+						ctx = biz.WithProject(ctx, project)
 					}
-					ctx = biz.WithProject(ctx, project)
 				default:
 				}
 			}

@@ -42,7 +42,7 @@ type ServiceInterfaceHTTPServer interface {
 
 func RegisterServiceInterfaceHTTPServer(s *http.Server, srv ServiceInterfaceHTTPServer) {
 	r := s.Route("/")
-	r.GET("/api/v1alpha1/service/list", _ServiceInterface_List3_HTTP_Handler(srv))
+	r.GET("/api/v1alpha1/service/list", _ServiceInterface_List4_HTTP_Handler(srv))
 	r.POST("/api/v1alpha1/service/save", _ServiceInterface_Save4_HTTP_Handler(srv))
 	r.GET("/api/v1alpha1/service/get", _ServiceInterface_Get4_HTTP_Handler(srv))
 	r.DELETE("/api/v1alpha1/service/delete", _ServiceInterface_Delete3_HTTP_Handler(srv))
@@ -52,7 +52,7 @@ func RegisterServiceInterfaceHTTPServer(s *http.Server, srv ServiceInterfaceHTTP
 	r.GET("/api/v1alpha1/service/cis", _ServiceInterface_GetServiceCis0_HTTP_Handler(srv))
 }
 
-func _ServiceInterface_List3_HTTP_Handler(srv ServiceInterfaceHTTPServer) func(ctx http.Context) error {
+func _ServiceInterface_List4_HTTP_Handler(srv ServiceInterfaceHTTPServer) func(ctx http.Context) error {
 	return func(ctx http.Context) error {
 		var in ServiceRequest
 		if err := ctx.BindQuery(&in); err != nil {

@@ -43,10 +43,7 @@ func (u *UserInterface) SignIn(ctx context.Context, request *v1alpha1.SignIn) (*
 }
 
 func (u *UserInterface) GetUserInfo(ctx context.Context, _ *emptypb.Empty) (*v1alpha1.User, error) {
-	user, err := u.uc.GetUserInfo(ctx)
-	if err != nil {
-		return nil, err
-	}
+	user := biz.GetUserInfo(ctx)
 	return &v1alpha1.User{
 		Id:             user.Id,
 		Email:          user.Email,

@@ -12,7 +12,6 @@ import (
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -21,7 +20,6 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	ProjectService_Ping_FullMethodName   = "/project.v1alpha1.ProjectService/Ping"
 	ProjectService_Save_FullMethodName   = "/project.v1alpha1.ProjectService/Save"
 	ProjectService_Get_FullMethodName    = "/project.v1alpha1.ProjectService/Get"
 	ProjectService_List_FullMethodName   = "/project.v1alpha1.ProjectService/List"
@@ -32,7 +30,6 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ProjectServiceClient interface {
-	Ping(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*common.Msg, error)
 	Save(ctx context.Context, in *Project, opts ...grpc.CallOption) (*common.Msg, error)
 	Get(ctx context.Context, in *ProjectReq, opts ...grpc.CallOption) (*Project, error)
 	List(ctx context.Context, in *ProjectReq, opts ...grpc.CallOption) (*ProjectList, error)
@@ -45,16 +42,6 @@ type projectServiceClient struct {
 
 func NewProjectServiceClient(cc grpc.ClientConnInterface) ProjectServiceClient {
 	return &projectServiceClient{cc}
-}
-
-func (c *projectServiceClient) Ping(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*common.Msg, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(common.Msg)
-	err := c.cc.Invoke(ctx, ProjectService_Ping_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
 }
 
 func (c *projectServiceClient) Save(ctx context.Context, in *Project, opts ...grpc.CallOption) (*common.Msg, error) {
@@ -101,7 +88,6 @@ func (c *projectServiceClient) Delete(ctx context.Context, in *ProjectReq, opts 
 // All implementations must embed UnimplementedProjectServiceServer
 // for forward compatibility.
 type ProjectServiceServer interface {
-	Ping(context.Context, *emptypb.Empty) (*common.Msg, error)
 	Save(context.Context, *Project) (*common.Msg, error)
 	Get(context.Context, *ProjectReq) (*Project, error)
 	List(context.Context, *ProjectReq) (*ProjectList, error)
@@ -116,9 +102,6 @@ type ProjectServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedProjectServiceServer struct{}
 
-func (UnimplementedProjectServiceServer) Ping(context.Context, *emptypb.Empty) (*common.Msg, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Ping not implemented")
-}
 func (UnimplementedProjectServiceServer) Save(context.Context, *Project) (*common.Msg, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Save not implemented")
 }
@@ -150,24 +133,6 @@ func RegisterProjectServiceServer(s grpc.ServiceRegistrar, srv ProjectServiceSer
 		t.testEmbeddedByValue()
 	}
 	s.RegisterService(&ProjectService_ServiceDesc, srv)
-}
-
-func _ProjectService_Ping_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(emptypb.Empty)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ProjectServiceServer).Ping(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ProjectService_Ping_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProjectServiceServer).Ping(ctx, req.(*emptypb.Empty))
-	}
-	return interceptor(ctx, in, info, handler)
 }
 
 func _ProjectService_Save_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -249,10 +214,6 @@ var ProjectService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "project.v1alpha1.ProjectService",
 	HandlerType: (*ProjectServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
-		{
-			MethodName: "Ping",
-			Handler:    _ProjectService_Ping_Handler,
-		},
 		{
 			MethodName: "Save",
 			Handler:    _ProjectService_Save_Handler,

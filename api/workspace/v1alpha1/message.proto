@@ -6,6 +6,8 @@ option go_package = "api/workspace/v1alpha1;v1alpha1";
 
 message WorkspaceParam {
       int64 id = 1;
+      int64 cluster_id = 2;
+      string workspace_name = 3;
 }
 
 message Workspace {
@@ -18,4 +20,13 @@ message Workspace {
       int32 gpu_rate = 7;
       int32 memory_rate = 8;
       int32 disk_rate = 9;
+      int32 limit_cpu = 10;
+      int32 limit_gpu = 11;
+      int32 limit_memory = 12;
+      int32 limit_disk = 13;
+      string updated_at = 14;
+}
+
+message Workspaces {
+      repeated Workspace workspaces = 1;
 }

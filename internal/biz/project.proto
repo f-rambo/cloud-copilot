@@ -13,8 +13,8 @@ message Project {
       int64 cluster_id = 4; // @gotags: gorm:"column:cluster_id; default:0; NOT NULL"
       int64 user_id = 5; // @gotags: gorm:"column:user_id; default:0; NOT NULL"
       int64 workspace_id = 6; // @gotags: gorm:"column:workspace_id; default:0; NOT NULL"
-      float limit_cpu = 7; // @gotags: gorm:"column:limit_cpu; default:0; NOT NULL"
-      float limit_gpu = 8; // @gotags: gorm:"column:limit_gpu; default:0; NOT NULL"
-      float limit_memory = 9; // @gotags: gorm:"column:limit_memory; default:0; NOT NULL"
-      float limit_disk = 10; // @gotags: gorm:"column:limit_disk; default:0; NOT NULL"
+      int32 limit_cpu = 7; // @gotags: gorm:"column:limit_cpu; default:0; NOT NULL"
+      int32 limit_gpu = 8; // @gotags: gorm:"column:limit_gpu; default:0; NOT NULL"
+      int32 limit_memory = 9; // @gotags: gorm:"column:limit_memory; default:0; NOT NULL"
+      int32 limit_disk = 10; // @gotags: gorm:"column:limit_disk; default:0; NOT NULL"
 }

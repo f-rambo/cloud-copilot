@@ -18,14 +18,14 @@ import (
 
 type AppInterface struct {
 	v1alpha1.UnimplementedAppInterfaceServer
-	uc   *biz.AppUsecase
-	user *biz.UserUseCase
-	c    *conf.Bootstrap
-	log  *log.Helper
+	uc     *biz.AppUsecase
+	userUc *biz.UserUseCase
+	c      *conf.Bootstrap
+	log    *log.Helper
 }
 
 func NewAppInterface(uc *biz.AppUsecase, user *biz.UserUseCase, c *conf.Bootstrap, logger log.Logger) *AppInterface {
-	return &AppInterface{uc: uc, c: c, user: user, log: log.NewHelper(logger)}
+	return &AppInterface{uc: uc, c: c, userUc: user, log: log.NewHelper(logger)}
 }
 
 func (a *AppInterface) Ping(ctx context.Context, _ *emptypb.Empty) (*common.Msg, error) {
@@ -326,7 +326,7 @@ func (a *AppInterface) GetAppRelease(ctx context.Context, AppReleaseReq *v1alpha
 		return nil, err
 	}
 	appRelease.Id = appReleaseRes.Id
-	user, err := a.user.GetUser(ctx, appRelease.UserId)
+	user, err := a.userUc.GetUser(ctx, appRelease.UserId)
 	if err != nil {
 		return nil, err
 	}
@@ -414,10 +414,7 @@ func (a *AppInterface) SaveAppRelease(ctx context.Context, appReleaseReq *v1alph
 	if appVersion == nil {
 		return nil, errors.New("app version not found")
 	}
-	user, err := a.user.GetUserInfo(ctx)
-	if err != nil {
-		return nil, err
-	}
+	user := biz.GetUserInfo(ctx)
 	err = a.uc.CreateAppRelease(ctx, &biz.AppRelease{
 		ReleaseName: appReleaseReq.ReleaseName,
 		AppId:       app.Id,

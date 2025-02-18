@@ -22,6 +22,7 @@ const _ = grpc.SupportPackageIsVersion9
 const (
 	WorkspaceInterface_Save_FullMethodName = "/workspace.v1alpha1.WorkspaceInterface/Save"
 	WorkspaceInterface_Get_FullMethodName  = "/workspace.v1alpha1.WorkspaceInterface/Get"
+	WorkspaceInterface_List_FullMethodName = "/workspace.v1alpha1.WorkspaceInterface/List"
 )
 
 // WorkspaceInterfaceClient is the client API for WorkspaceInterface service.
@@ -30,6 +31,7 @@ const (
 type WorkspaceInterfaceClient interface {
 	Save(ctx context.Context, in *Workspace, opts ...grpc.CallOption) (*common.Msg, error)
 	Get(ctx context.Context, in *WorkspaceParam, opts ...grpc.CallOption) (*Workspace, error)
+	List(ctx context.Context, in *WorkspaceParam, opts ...grpc.CallOption) (*Workspaces, error)
 }
 
 type workspaceInterfaceClient struct {
@@ -60,12 +62,23 @@ func (c *workspaceInterfaceClient) Get(ctx context.Context, in *WorkspaceParam, 
 	return out, nil
 }
 
+func (c *workspaceInterfaceClient) List(ctx context.Context, in *WorkspaceParam, opts ...grpc.CallOption) (*Workspaces, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Workspaces)
+	err := c.cc.Invoke(ctx, WorkspaceInterface_List_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // WorkspaceInterfaceServer is the server API for WorkspaceInterface service.
 // All implementations must embed UnimplementedWorkspaceInterfaceServer
 // for forward compatibility.
 type WorkspaceInterfaceServer interface {
 	Save(context.Context, *Workspace) (*common.Msg, error)
 	Get(context.Context, *WorkspaceParam) (*Workspace, error)
+	List(context.Context, *WorkspaceParam) (*Workspaces, error)
 	mustEmbedUnimplementedWorkspaceInterfaceServer()
 }
 
@@ -81,6 +94,9 @@ func (UnimplementedWorkspaceInterfaceServer) Save(context.Context, *Workspace) (
 }
 func (UnimplementedWorkspaceInterfaceServer) Get(context.Context, *WorkspaceParam) (*Workspace, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Get not implemented")
+}
+func (UnimplementedWorkspaceInterfaceServer) List(context.Context, *WorkspaceParam) (*Workspaces, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method List not implemented")
 }
 func (UnimplementedWorkspaceInterfaceServer) mustEmbedUnimplementedWorkspaceInterfaceServer() {}
 func (UnimplementedWorkspaceInterfaceServer) testEmbeddedByValue()                            {}
@@ -139,6 +155,24 @@ func _WorkspaceInterface_Get_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
+func _WorkspaceInterface_List_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(WorkspaceParam)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(WorkspaceInterfaceServer).List(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: WorkspaceInterface_List_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(WorkspaceInterfaceServer).List(ctx, req.(*WorkspaceParam))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // WorkspaceInterface_ServiceDesc is the grpc.ServiceDesc for WorkspaceInterface service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -153,6 +187,10 @@ var WorkspaceInterface_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Get",
 			Handler:    _WorkspaceInterface_Get_Handler,
+		},
+		{
+			MethodName: "List",
+			Handler:    _WorkspaceInterface_List_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
