@@ -2,321 +2,273 @@ package interfaces
 
 import (
 	"context"
-	"encoding/json"
 
 	"github.com/f-rambo/cloud-copilot/api/common"
 	v1alpha1 "github.com/f-rambo/cloud-copilot/api/service/v1alpha1"
 	"github.com/f-rambo/cloud-copilot/internal/biz"
-	"github.com/pkg/errors"
+	"github.com/f-rambo/cloud-copilot/utils"
 )
 
 type ServicesInterface struct {
 	v1alpha1.UnimplementedServiceInterfaceServer
 	serviceUc *biz.ServicesUseCase
-	projectUc *biz.ProjectUsecase
-	userUc    *biz.UserUseCase
 }
 
-func NewServicesInterface(serviceUc *biz.ServicesUseCase, projectUc *biz.ProjectUsecase) *ServicesInterface {
-	return &ServicesInterface{serviceUc: serviceUc, projectUc: projectUc}
+func NewServicesInterface(serviceUc *biz.ServicesUseCase) *ServicesInterface {
+	return &ServicesInterface{serviceUc: serviceUc}
 }
 
-func (s *ServicesInterface) List(ctx context.Context, serviceParam *v1alpha1.ServiceRequest) (*v1alpha1.Services, error) {
-	services, itemCount, err := s.serviceUc.List(ctx, &biz.Service{
-		Name:      serviceParam.Name,
-		ProjectId: serviceParam.ProjectId,
-	}, int(serviceParam.Page), int(serviceParam.PageSize))
+func (s *ServicesInterface) List(ctx context.Context, serviceReq *v1alpha1.ServiceRequest) (*v1alpha1.Services, error) {
+	if serviceReq.ProjectId == 0 {
+		return nil, common.ResponseError(common.ErrorReason_ErrInvalidArgument)
+	}
+	serviceData, total, err := s.serviceUc.List(ctx, serviceReq.ProjectId, serviceReq.Name, serviceReq.Page, serviceReq.PageSize)
 	if err != nil {
 		return nil, err
 	}
-	projectIds := make([]int64, 0)
-	for _, v := range services {
-		projectIds = append(projectIds, v.ProjectId)
-	}
-	projects, err := s.projectUc.ListByIds(ctx, projectIds)
-	if err != nil {
-		return nil, err
-	}
-	projectMap := make(map[int64]string)
-	for _, v := range projects {
-		projectMap[v.Id] = v.Name
-	}
-	interfaceServices := make([]*v1alpha1.Service, 0)
-	for _, service := range services {
-		interfaceServices = append(interfaceServices, s.bizToInterface(service))
-	}
-	for _, v := range interfaceServices {
-		projectName, ok := projectMap[v.ProjectID]
-		if ok {
-			v.ProjectName = projectName
+	res := &v1alpha1.Services{}
+	res.Total = total
+	for _, v := range serviceData {
+		serviceRes := &v1alpha1.Services{}
+		err = utils.StructTransform(v, serviceRes)
+		if err != nil {
+			return nil, err
 		}
 	}
-	return &v1alpha1.Services{
-		Services: interfaceServices,
-		Total:    itemCount,
-	}, nil
+	return res, nil
 }
 
-func (s *ServicesInterface) Save(ctx context.Context, serviceParam *v1alpha1.Service) (*common.Msg, error) {
-	err := s.serviceUc.Save(ctx, s.interfaceToBiz(serviceParam))
+func (s *ServicesInterface) Save(ctx context.Context, service *v1alpha1.Service) (*common.Msg, error) {
+	if service.ProjectId == 0 || service.Name == "" {
+		return nil, common.ResponseError(common.ErrorReason_ErrInvalidArgument)
+	}
+	bizService := &biz.Service{}
+	err := utils.StructTransform(service, bizService)
+	if err != nil {
+		return nil, err
+	}
+	err = s.serviceUc.Save(ctx, bizService)
 	if err != nil {
 		return nil, err
 	}
 	return common.Response(), nil
 }
 
-func (s *ServicesInterface) Get(ctx context.Context, serviceParam *v1alpha1.ServiceRequest) (*v1alpha1.Service, error) {
-	service, err := s.serviceUc.Get(ctx, serviceParam.Id)
+func (s *ServicesInterface) Get(ctx context.Context, serviceReq *v1alpha1.ServiceRequest) (*v1alpha1.Service, error) {
+	if serviceReq.Id == 0 {
+		return nil, common.ResponseError(common.ErrorReason_ErrInvalidArgument)
+	}
+	serviceData, err := s.serviceUc.Get(ctx, serviceReq.Id)
 	if err != nil {
 		return nil, err
 	}
-	return s.bizToInterface(service), nil
+	serviceRes := &v1alpha1.Service{}
+	err = utils.StructTransform(serviceData, serviceRes)
+	if err != nil {
+		return nil, err
+	}
+	return nil, nil
 }
 
-func (s *ServicesInterface) Delete(ctx context.Context, serviceParam *v1alpha1.ServiceRequest) (*common.Msg, error) {
-	if serviceParam.Id == 0 {
-		return nil, errors.New("id is required")
+func (s *ServicesInterface) Delete(ctx context.Context, serviceReq *v1alpha1.ServiceRequest) (*common.Msg, error) {
+	if serviceReq.Id == 0 {
+		return nil, common.ResponseError(common.ErrorReason_ErrInvalidArgument)
 	}
-
-	err := s.serviceUc.Delete(ctx, serviceParam.Id)
+	err := s.serviceUc.Delete(ctx, serviceReq.Id)
 	if err != nil {
 		return nil, err
 	}
 	return common.Response(), nil
 }
 
-// GetDefaultWorkflow
-func (s *ServicesInterface) GetWorkflow(ctx context.Context, serviceParam *v1alpha1.ServiceRequest) (*v1alpha1.Worklfow, error) {
-	if serviceParam.Id == 0 {
-		return nil, errors.New("id is required")
+func (s *ServicesInterface) GetServiceResource(ctx context.Context, serviceReq *v1alpha1.ServiceRequest) (*v1alpha1.AlreadyResource, error) {
+	if serviceReq.ProjectId == 0 {
+		return nil, common.ResponseError(common.ErrorReason_ErrInvalidArgument)
 	}
-	workflow, err := s.serviceUc.GetWorkflow(ctx, serviceParam.Id, biz.WorkflowType(serviceParam.WfType))
+	serviceResource, err := s.serviceUc.GetServiceResourceByProject(ctx, serviceReq.ProjectId)
 	if err != nil {
 		return nil, err
 	}
-	wfData := &v1alpha1.Worklfow{
-		ID:          workflow.Id,
-		Name:        workflow.Name,
-		Steps:       make([]*v1alpha1.WfStep, 0),
-		Templates:   make([]*v1alpha1.WfTemplate, 0),
-		Description: "",
+	res := &v1alpha1.AlreadyResource{}
+	err = utils.StructTransform(serviceResource, res)
+	if err != nil {
+		return nil, err
 	}
-	// argoWf := wfv1.Workflow{}
-	// err = json.Unmarshal([]byte(workflow.Workflow), &argoWf)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// wfTasks := make(map[string][]*v1alpha1.WfTask) // stepname -> wftasks
-	// for _, template := range argoWf.Spec.Templates {
-	// 	if template.Container != nil && template.Container.Image != "" {
-	// 		wfData.Templates = append(wfData.Templates, &v1alpha1.WfTemplate{
-	// 			Name:    template.Name,
-	// 			Image:   template.Container.Image,
-	// 			Command: template.Container.Command,
-	// 			Args:    template.Container.Args,
-	// 		})
-	// 	}
-	// 	if template.Script != nil && template.Script.Image != "" {
-	// 		wfData.Templates = append(wfData.Templates, &v1alpha1.WfTemplate{
-	// 			Name:     template.Name,
-	// 			Image:    template.Script.Image,
-	// 			Command:  template.Script.Command,
-	// 			Source:   template.Script.Source,
-	// 			IsScript: true,
-	// 		})
-	// 	}
-	// 	if template.DAG != nil && len(template.DAG.Tasks) > 0 {
-	// 		for _, task := range template.DAG.Tasks {
-	// 			if task.Template == "" {
-	// 				continue
-	// 			}
-	// 			taskVal := &v1alpha1.WfTask{
-	// 				Name:         task.Name,
-	// 				TemplateName: task.Template,
-	// 			}
-	// 			if strings.Contains(task.Name, "default-") {
-	// 				taskVal.Name = strings.Replace(task.Name, "default-", "", 1)
-	// 				taskVal.Default = true
-	// 			}
-	// 			if _, ok := wfTasks[template.Name]; !ok {
-	// 				wfTasks[template.Name] = make([]*v1alpha1.WfTask, 0)
-	// 			}
-	// 			wfTasks[template.Name] = append(wfTasks[template.Name], taskVal)
-	// 		}
-	// 	}
-	// }
-	// parallelSteps := make([]wfv1.ParallelSteps, 0)
-	// for _, template := range argoWf.Spec.Templates {
-	// 	if len(template.Steps) > 0 {
-	// 		parallelSteps = append(parallelSteps, template.Steps...)
-	// 	}
-	// }
-	// for _, steps := range parallelSteps {
-	// 	for _, step := range steps.Steps {
-	// 		wfStep := &v1alpha1.WfStep{
-	// 			Name: step.Name,
-	// 		}
-	// 		if strings.Contains(step.Name, "default-") {
-	// 			wfStep.Name = strings.Replace(step.Name, "default-", "", 1)
-	// 			wfStep.Default = true
-	// 		}
-	// 		if wftasks, ok := wfTasks[step.Template]; ok {
-	// 			wfStep.Tasks = wftasks
-	// 		}
-	// 		wfData.Steps = append(wfData.Steps, wfStep)
-	// 	}
-	// }
-	return wfData, nil
+	return res, nil
 }
 
-func (s *ServicesInterface) SaveWorkflow(ctx context.Context, request *v1alpha1.ServiceRequest) (*common.Msg, error) {
-	if request.Id == 0 {
-		return nil, errors.New("service id is required")
+func (s *ServicesInterface) SaveWorkflow(ctx context.Context, wf *v1alpha1.Workflow) (*common.Msg, error) {
+	if wf.ServiceId == 0 || wf.Name == "" {
+		return nil, common.ResponseError(common.ErrorReason_ErrInvalidArgument)
 	}
-	if request.Workflow == nil || len(request.Workflow.Steps) == 0 || len(request.Workflow.Templates) == 0 {
-		return nil, errors.New("workflow is required")
-	}
-	wfData, err := json.Marshal(request.Workflow)
+	bizWf := &biz.Workflow{}
+	err := utils.StructTransform(wf, bizWf)
 	if err != nil {
 		return nil, err
 	}
-	wf := &biz.Workflow{
-		Name:     request.Workflow.Name,
-		Workflow: string(wfData),
-	}
-	err = s.serviceUc.SaveWorkflow(ctx, request.Id, biz.WorkflowType(request.WfType), wf)
+	err = s.serviceUc.SaveWorkflow(ctx, wf.ServiceId, bizWf)
 	if err != nil {
 		return nil, err
 	}
 	return common.Response(), nil
 }
 
-func (s *ServicesInterface) CommitWorklfow(ctx context.Context, request *v1alpha1.ServiceRequest) (*common.Msg, error) {
-	if request.Id == 0 {
-		return nil, errors.New("service id is required")
+func (s *ServicesInterface) GetWorkflow(ctx context.Context, wfReq *v1alpha1.WorkflowRequest) (*v1alpha1.Workflow, error) {
+	if wfReq.ServiceId == 0 || wfReq.WorkflowType == "" {
+		return nil, common.ResponseError(common.ErrorReason_ErrInvalidArgument)
 	}
-	if request.WorkflowId == 0 {
-		return nil, errors.New("workflow id is required")
+	wfType, ok := biz.WorkflowType_value[wfReq.WorkflowType]
+	if !ok {
+		return nil, common.ResponseError(common.ErrorReason_ErrInvalidArgument)
 	}
-	if request.WfType == 0 {
-		return nil, errors.New("workflow type is required")
-	}
-	service, err := s.serviceUc.Get(ctx, request.Id)
+	wfData, err := s.serviceUc.GetWorkflow(ctx, wfReq.ServiceId, biz.WorkflowType(wfType))
 	if err != nil {
 		return nil, err
 	}
-	project, err := s.projectUc.Get(ctx, service.ProjectId)
+	wfRes := &v1alpha1.Workflow{}
+	err = utils.StructTransform(wfData, wfRes)
 	if err != nil {
 		return nil, err
 	}
-	err = s.serviceUc.CommitWorklfow(ctx, project, service, biz.WorkflowType(request.WfType), request.WorkflowId)
+	return wfRes, nil
+}
+
+func (s *ServicesInterface) CreateContinuousIntegration(ctx context.Context, ci *v1alpha1.ContinuousIntegration) (*common.Msg, error) {
+	if ci.ServiceId == 0 {
+		return nil, common.ResponseError(common.ErrorReason_ErrInvalidArgument)
+	}
+	bizCi := &biz.ContinuousIntegration{}
+	err := utils.StructTransform(ci, bizCi)
+	if err != nil {
+		return nil, err
+	}
+	err = s.serviceUc.CreateContinuousIntegration(ctx, bizCi)
 	if err != nil {
 		return nil, err
 	}
 	return common.Response(), nil
 }
 
-func (s *ServicesInterface) GetServiceCis(ctx context.Context, request *v1alpha1.CIsRequest) (*v1alpha1.CIsResult, error) {
-	cis, total, err := s.serviceUc.GetServiceCis(ctx, request.ServiceID, request.Page, request.PageSize)
+func (s *ServicesInterface) GetContinuousIntegration(ctx context.Context, ciReq *v1alpha1.ContinuousIntegrationRequest) (*v1alpha1.ContinuousIntegration, error) {
+	if ciReq.ServiceId == 0 || ciReq.Id == 0 {
+		return nil, common.ResponseError(common.ErrorReason_ErrInvalidArgument)
+	}
+	ciData, wf, err := s.serviceUc.GetContinuousIntegration(ctx, ciReq.Id)
 	if err != nil {
 		return nil, err
 	}
-	cisResult := &v1alpha1.CIsResult{
-		CIs:   make([]*v1alpha1.CI, 0),
-		Total: total,
-	}
-	userIds := make([]int64, 0)
-	for _, v := range cis {
-		userIds = append(userIds, v.UserId)
-	}
-	users, err := s.userUc.GetUserByBatchID(ctx, userIds)
+	wfRes := &v1alpha1.Workflow{}
+	err = utils.StructTransform(wf, wfRes)
 	if err != nil {
 		return nil, err
 	}
-	userMap := make(map[int64]string)
-	for _, v := range users {
-		userMap[v.Id] = v.Name
+	ciRes := &v1alpha1.ContinuousIntegration{}
+	err = utils.StructTransform(ciData, ciRes)
+	if err != nil {
+		return nil, err
 	}
-	for _, ci := range cis {
-		data := s.bizCiTointerface(ci)
-		userName, ok := userMap[data.UserId]
-		if ok {
-			data.Username = userName
+	ciRes.Workflow = wfRes
+	return ciRes, nil
+}
+
+func (s *ServicesInterface) GetContinuousIntegrations(ctx context.Context, ciReq *v1alpha1.ContinuousIntegrationRequest) (*v1alpha1.ContinuousIntegrations, error) {
+	if ciReq.ServiceId == 0 {
+		return nil, common.ResponseError(common.ErrorReason_ErrInvalidArgument)
+	}
+	ciData, total, err := s.serviceUc.GetContinuousIntegrations(ctx, ciReq.ServiceId, ciReq.Page, ciReq.PageSize)
+	if err != nil {
+		return nil, err
+	}
+	ciRes := &v1alpha1.ContinuousIntegrations{}
+	ciRes.Total = total
+	for _, v := range ciData {
+		ciVal := &v1alpha1.ContinuousIntegration{}
+		err = utils.StructTransform(v, ciVal)
+		if err != nil {
+			return nil, err
 		}
-		cisResult.CIs = append(cisResult.CIs, data)
+		ciRes.ContinuousIntegrations = append(ciRes.ContinuousIntegrations, ciVal)
 	}
-	return cisResult, nil
+	return ciRes, nil
 }
 
-func (s *ServicesInterface) bizToInterface(service *biz.Service) *v1alpha1.Service {
-	servicesInterface := &v1alpha1.Service{
-		ID:          service.Id,
-		Name:        service.Name,
-		CodeRepo:    service.CodeRepo,
-		Replicas:    service.Replicas,
-		CPU:         service.Cpu,
-		LimitCpu:    service.LimitCpu,
-		GPU:         service.Gpu,
-		LimitGPU:    service.LimitGpu,
-		Memory:      service.Memory,
-		LimitMemory: service.LimitMemory,
-		Disk:        service.Disk,
-		LimitDisk:   service.LimitDisk,
-		ProjectID:   service.ProjectId,
-		Ports:       make([]*v1alpha1.Port, 0),
+func (s *ServicesInterface) DeleteContinuousIntegration(ctx context.Context, ciReq *v1alpha1.ContinuousIntegrationRequest) (*common.Msg, error) {
+	if ciReq.ServiceId == 0 || ciReq.Id == 0 {
+		return nil, common.ResponseError(common.ErrorReason_ErrInvalidArgument)
 	}
-	for _, port := range service.Ports {
-		port := &v1alpha1.Port{
-			ID:            port.Id,
-			IngressPath:   port.IngressPath,
-			Protocol:      port.Protocol,
-			ContainerPort: port.ContainerPort,
+	err := s.serviceUc.DeleteContinuousIntegration(ctx, ciReq.Id)
+	if err != nil {
+		return nil, err
+	}
+	return common.Response(), nil
+}
+
+func (s *ServicesInterface) CreateContinuousDeployment(ctx context.Context, cd *v1alpha1.ContinuousDeployment) (*common.Msg, error) {
+	if cd.ServiceId == 0 {
+		return nil, common.ResponseError(common.ErrorReason_ErrInvalidArgument)
+	}
+	bizCd := &biz.ContinuousDeployment{}
+	err := utils.StructTransform(cd, bizCd)
+	if err != nil {
+		return nil, err
+	}
+	err = s.serviceUc.CreateContinuousDeployment(ctx, bizCd)
+	if err != nil {
+		return nil, err
+	}
+	return common.Response(), nil
+}
+
+func (s *ServicesInterface) GetContinuousDeployment(ctx context.Context, cdReq *v1alpha1.ContinuousDeploymentRequest) (*v1alpha1.ContinuousDeployment, error) {
+	if cdReq.ServiceId == 0 || cdReq.Id == 0 {
+		return nil, common.ResponseError(common.ErrorReason_ErrInvalidArgument)
+	}
+	cdData, wf, err := s.serviceUc.GetContinuousDeployment(ctx, cdReq.Id)
+	if err != nil {
+		return nil, err
+	}
+	wfRes := &v1alpha1.Workflow{}
+	err = utils.StructTransform(wf, wfRes)
+	if err != nil {
+		return nil, err
+	}
+	cdRes := &v1alpha1.ContinuousDeployment{}
+	err = utils.StructTransform(cdData, cdRes)
+	if err != nil {
+		return nil, err
+	}
+	cdRes.Workflow = wfRes
+	return cdRes, nil
+}
+
+func (s *ServicesInterface) GetContinuousDeployments(ctx context.Context, cdReq *v1alpha1.ContinuousDeploymentRequest) (*v1alpha1.ContinuousDeployments, error) {
+	if cdReq.ServiceId == 0 {
+		return nil, common.ResponseError(common.ErrorReason_ErrInvalidArgument)
+	}
+	cdData, total, err := s.serviceUc.GetContinuousDeployments(ctx, cdReq.ServiceId, cdReq.Page, cdReq.PageSize)
+	if err != nil {
+		return nil, err
+	}
+	cdRes := &v1alpha1.ContinuousDeployments{}
+	cdRes.Total = total
+	for _, v := range cdData {
+		cdVal := &v1alpha1.ContinuousDeployment{}
+		err = utils.StructTransform(v, cdVal)
+		if err != nil {
+			return nil, err
 		}
-		servicesInterface.Ports = append(servicesInterface.Ports, port)
+		cdRes.ContinuousDeployments = append(cdRes.ContinuousDeployments, cdVal)
 	}
-	return servicesInterface
+	return cdRes, nil
 }
 
-func (s *ServicesInterface) interfaceToBiz(service *v1alpha1.Service) *biz.Service {
-	ports := make([]*biz.Port, 0)
-	for _, port := range service.Ports {
-		ports = append(ports, &biz.Port{
-			Id:            port.ID,
-			IngressPath:   port.IngressPath,
-			Protocol:      port.Protocol,
-			ContainerPort: port.ContainerPort,
-		})
+func (s *ServicesInterface) DeleteContinuousDeployment(ctx context.Context, cdReq *v1alpha1.ContinuousDeploymentRequest) (*common.Msg, error) {
+	if cdReq.ServiceId == 0 || cdReq.Id == 0 {
+		return nil, common.ResponseError(common.ErrorReason_ErrInvalidArgument)
 	}
-	return &biz.Service{
-		Id:          service.ID,
-		Name:        service.Name,
-		CodeRepo:    service.CodeRepo,
-		Replicas:    service.Replicas,
-		Cpu:         service.CPU,
-		LimitCpu:    service.LimitCpu,
-		Gpu:         service.GPU,
-		LimitGpu:    service.LimitGPU,
-		Memory:      service.Memory,
-		LimitMemory: service.LimitMemory,
-		Disk:        service.Disk,
-		LimitDisk:   service.LimitDisk,
-		ProjectId:   service.ProjectID,
-		Ports:       ports,
+	err := s.serviceUc.DeleteContinuousDeployment(ctx, cdReq.Id)
+	if err != nil {
+		return nil, err
 	}
-}
-
-func (s *ServicesInterface) bizCiTointerface(ci *biz.ContinuousIntegration) *v1alpha1.CI {
-	ciInterface := &v1alpha1.CI{
-		ID:          ci.Id,
-		Version:     ci.Version,
-		Branch:      ci.Branch,
-		Tag:         ci.Tag,
-		Status:      ci.Status.String(),
-		Description: ci.Description,
-		ServiceID:   ci.ServiceId,
-		UserId:      ci.UserId,
-		Logs:        ci.Logs,
-		CreatedAt:   ci.CreatedAt.Format("2006-01-02 15:04:05"),
-	}
-	return ciInterface
+	return common.Response(), nil
 }

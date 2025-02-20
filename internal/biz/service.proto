@@ -9,7 +9,7 @@ enum WorkflowType {
       ContinuousDeploymentType = 1;
 }
 
-enum CICDStatus {
+enum WorkfloStatus {
       Pending = 0;
       Success = 1;
       Failure = 2;
@@ -20,31 +20,36 @@ message Workflow {
       // @gofield: gorm.Model
       int64 id = 1; // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
       string name = 2; // @gotags: gorm:"column:name; default:''; NOT NULL"
-      WorkflowType type = 3; // @gotags: gorm:"column:type; default:0; NOT NULL"
-      string workflow = 4; // @gotags: gorm:"column:workflow; default:''; NOT NULL"
-      string description = 5; // @gotags: gorm:"column:description; default:''; NOT NULL"
+      string namespace = 3; // @gotags: gorm:"column:namespace; default:''; NOT NULL"
+      WorkflowType type = 4; // @gotags: gorm:"column:type; default:0; NOT NULL"
+      string workflow = 5; // @gotags: gorm:"column:workflow; default:''; NOT NULL"
+      string description = 6; // @gotags: gorm:"column:description; default:''; NOT NULL"
+      int64 service_id = 7; // @gotags: gorm:"column:service_id; default:0; NOT NULL; index:idx_service_id"
+      repeated WorkflowStep workflow_steps = 8; // @gotags: gorm:"-"
 }
 
 message WorkflowStep {
       // @goimport: "gorm.io/gorm"
       // @gofield: gorm.Model
       int64 id = 1; // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
-      int64 workflow_id = 2; // @gotags: gorm:"column:workflow_id; default:0; NOT NULL"
+      int64 workflow_id = 2; // @gotags: gorm:"column:workflow_id; default:0; NOT NULL; index:idx_workflow_id"
       int32 order = 3; // @gotags: gorm:"column:order; default:0; NOT NULL"
       string name = 4; // @gotags: gorm:"column:name; default:''; NOT NULL"
       string description = 5; // @gotags: gorm:"column:description; default:''; NOT NULL"
+      repeated WorkflowTask workflow_tasks = 6; // @gotags: gorm:"-"
 }
 
 message WorkflowTask {
       // @goimport: "gorm.io/gorm"
       // @gofield: gorm.Model
       int64 id = 1; // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
-      int64 workflow_id = 2; // @gotags: gorm:"column:workflow_id; default:0; NOT NULL"
+      int64 workflow_id = 2; // @gotags: gorm:"column:workflow_id; default:0; NOT NULL; index:idx_workflow_id"
       int64 step_id = 3; // @gotags: gorm:"column:step_id; default:0; NOT NULL"
       string name = 4; // @gotags: gorm:"column:name; default:''; NOT NULL"
       int32 order = 5; // @gotags: gorm:"column:order; default:0; NOT NULL"
       string task = 6; // @gotags: gorm:"column:task; default:''; NOT NULL"
       string description = 7; // @gotags: gorm:"column:description; default:''; NOT NULL"
+      WorkfloStatus status = 8; // @gotags: gorm:"column:status; default:0; NOT NULL"
 }
 
 message ContinuousIntegration {
@@ -54,22 +59,24 @@ message ContinuousIntegration {
       string version = 2; // @gotags: gorm:"column:version; default:''; NOT NULL"
       string branch = 3; // @gotags: gorm:"column:branch; default:''; NOT NULL"
       string tag = 4; // @gotags: gorm:"column:tag; default:''; NOT NULL"
-      CICDStatus status = 5; // @gotags: gorm:"column:status; default:0; NOT NULL"
+      WorkfloStatus status = 5; // @gotags: gorm:"column:status; default:0; NOT NULL"
       string description = 6; // @gotags: gorm:"column:description; default:''; NOT NULL"
-      int64 service_id = 7; // @gotags: gorm:"column:service_id; default:0; NOT NULL"
-      int64 user_id = 8; // @gotags: gorm:"column:user_id; default:0; NOT NULL"
-      string logs = 9; // @gotags: gorm:"-"
+      int64 service_id = 7; // @gotags: gorm:"column:service_id; default:0; NOT NULL; index:idx_service_id"
+      int64 user_id = 8; // @gotags: gorm:"column:user_id; default:0; NOT NULL; index:idx_user_id"
+      string workflow_runtime = 9; // @gotags: gorm:"column:workflow_runtime; default:''; NOT NULL"
+      string logs = 10; // @gotags: gorm:"-"
 }
 
 message ContinuousDeployment {
       // @goimport: "gorm.io/gorm"
       // @gofield: gorm.Model
       int64 id = 1; // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
-      int64 ci_id = 2; // @gotags: gorm:"column:ci_id; default:0; NOT NULL"
-      int64 service_id = 3; // @gotags: gorm:"column:service_id; default:0; NOT NULL"
+      int64 ci_id = 2; // @gotags: gorm:"column:ci_id; default:0; NOT NULL; index:idx_ci_id"
+      int64 service_id = 3; // @gotags: gorm:"column:service_id; default:0; NOT NULL; index:idx_service_id"
       int64 user_id = 4; // @gotags: gorm:"column:user_id; default:0; NOT NULL"
-      CICDStatus status = 5; // @gotags: gorm:"column:status; default:0; NOT NULL"
-      string logs = 6; // @gotags: gorm:"-"
+      WorkfloStatus status = 5; // @gotags: gorm:"column:status; default:0; NOT NULL"
+      string workflow_runtime = 6; // @gotags: gorm:"column:workflow_runtime; default:''; NOT NULL"
+      string logs = 7; // @gotags: gorm:"-"
 }
 
 message Port {
@@ -79,7 +86,7 @@ message Port {
       string ingress_path = 2; // @gotags: gorm:"column:ingress_path; default:''; NOT NULL"
       string protocol = 3; // @gotags: gorm:"column:protocol; default:''; NOT NULL"
       int32 container_port = 4; // @gotags: gorm:"column:container_port; default:0; NOT NULL"
-      int64 service_id = 5; // @gotags: gorm:"column:service_id; default:0; NOT NULL"
+      int64 service_id = 5; // @gotags: gorm:"column:service_id; default:0; NOT NULL; index:idx_service_id"
 }
 
 message Service {
@@ -89,17 +96,25 @@ message Service {
       string name = 2; // @gotags: gorm:"column:name; default:''; NOT NULL"
       string code_repo = 3; // @gotags: gorm:"column:code_repo; default:''; NOT NULL"
       int32 replicas = 4; // @gotags: gorm:"column:replicas; default:0; NOT NULL"
-      float cpu = 5; // @gotags: gorm:"column:cpu; default:0; NOT NULL"
-      float limit_cpu = 6; // @gotags: gorm:"column:limit_cpu; default:0; NOT NULL"
-      float gpu = 7; // @gotags: gorm:"column:gpu; default:0; NOT NULL"
-      float limit_gpu = 8; // @gotags: gorm:"column:limit_gpu; default:0; NOT NULL"
-      float memory = 9; // @gotags: gorm:"column:memory; default:0; NOT NULL"
-      float limit_memory = 10; // @gotags: gorm:"column:limit_memory; default:0; NOT NULL"
-      float disk = 11; // @gotags: gorm:"column:disk; default:0; NOT NULL"
-      float limit_disk = 12; // @gotags: gorm:"column:limit_disk; default:0; NOT NULL"
+      int32 cpu = 5; // @gotags: gorm:"column:cpu; default:0; NOT NULL"
+      int32 limit_cpu = 6; // @gotags: gorm:"column:limit_cpu; default:0; NOT NULL"
+      int32 gpu = 7; // @gotags: gorm:"column:gpu; default:0; NOT NULL"
+      int32 limit_gpu = 8; // @gotags: gorm:"column:limit_gpu; default:0; NOT NULL"
+      int32 memory = 9; // @gotags: gorm:"column:memory; default:0; NOT NULL"
+      int32 limit_memory = 10; // @gotags: gorm:"column:limit_memory; default:0; NOT NULL"
+      int32 disk = 11; // @gotags: gorm:"column:disk; default:0; NOT NULL"
+      int32 limit_disk = 12; // @gotags: gorm:"column:limit_disk; default:0; NOT NULL"
       string description = 13; // @gotags: gorm:"column:description; default:''; NOT NULL"
       repeated Port ports = 14; // @gotags: gorm:"-"
-      int64 project_id = 15; // @gotags: gorm:"column:project_id; default:0; NOT NULL"
-      int64 ci_workflow_id = 16; // @gotags: gorm:"column:ci_workflow_id; default:0; NOT NULL"
-      int64 cd_workflow_id = 17; // @gotags: gorm:"column:cd_workflow_id; default:0; NOT NULL"
+      int64 project_id = 15; // @gotags: gorm:"column:project_id; default:0; NOT NULL; index:idx_project_id"
+      int64 workspace_id = 16; // @gotags: gorm:"column:workspace_id; default:0; NOT NULL; index:idx_workspace_id"
+      int64 cluster_id = 17; // @gotags: gorm:"column:cluster_id; default:0; NOT NULL; index:idx_cluster_id"
+      int64 user_id = 18; // @gotags: gorm:"column:user_id; default:0; NOT NULL"
+}
+
+message AlreadyResource {
+      int32 cpu = 1;
+      int32 memory = 2;
+      int32 gpu = 3;
+      int32 disk = 4;
 }

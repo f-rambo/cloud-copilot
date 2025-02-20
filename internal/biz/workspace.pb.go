@@ -33,14 +33,14 @@ type Workspace struct {
 	Description string `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty" gorm:"column:namespace; default:''; NOT NULL"`                   // @gotags: gorm:"column:namespace; default:''; NOT NULL"
 	ClusterId   int64  `protobuf:"varint,4,opt,name=cluster_id,json=clusterId,proto3" json:"cluster_id,omitempty" gorm:"column:cluster_id; default:0; NOT NULL"`     // @gotags: gorm:"column:cluster_id; default:0; NOT NULL"
 	UserId      int64  `protobuf:"varint,5,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty" gorm:"column:user_id; default:0; NOT NULL"`                 // @gotags: gorm:"column:user_id; default:0; NOT NULL"
-	CpuRate     int32  `protobuf:"varint,6,opt,name=cpu_rate,json=cpuRate,proto3" json:"cpu_rate,omitempty" gorm:"column:cpu_rate; default:0; NOT NULL"`             // @gotags: gorm:"column:cpu_rate; default:0; NOT NULL"
+	CpuRate     int32  `gorm:"column:cpu_rate; default:0; NOT NULL" protobuf:"varint,6,opt,name=cpu_rate,json=cpuRate,proto3" json:"cpu_rate,omitempty"`             // @gotags: gorm:"column:cpu_rate; default:0; NOT NULL"
 	GpuRate     int32  `protobuf:"varint,7,opt,name=gpu_rate,json=gpuRate,proto3" json:"gpu_rate,omitempty" gorm:"column:gpu_rate; default:0; NOT NULL"`             // @gotags: gorm:"column:gpu_rate; default:0; NOT NULL"
 	MemoryRate  int32  `protobuf:"varint,8,opt,name=memory_rate,json=memoryRate,proto3" json:"memory_rate,omitempty" gorm:"column:memory_rate; default:0; NOT NULL"` // @gotags: gorm:"column:memory_rate; default:0; NOT NULL"
 	DiskRate    int32  `protobuf:"varint,9,opt,name=disk_rate,json=diskRate,proto3" json:"disk_rate,omitempty" gorm:"column:disk_rate; default:0; NOT NULL"`         // @gotags: gorm:"column:disk_rate; default:0; NOT NULL"
 	LimitCpu    int32  `protobuf:"varint,10,opt,name=limit_cpu,json=limitCpu,proto3" json:"limit_cpu,omitempty" gorm:"-"`                                            // @gotags: gorm:"-"
 	LimitGpu    int32  `protobuf:"varint,11,opt,name=limit_gpu,json=limitGpu,proto3" json:"limit_gpu,omitempty" gorm:"-"`                                            // @gotags: gorm:"-"
 	LimitMemory int32  `protobuf:"varint,12,opt,name=limit_memory,json=limitMemory,proto3" json:"limit_memory,omitempty" gorm:"-"`                                   // @gotags: gorm:"-"
-	LimitDisk   int32  `protobuf:"varint,13,opt,name=limit_disk,json=limitDisk,proto3" json:"limit_disk,omitempty" gorm:"-"`
+	LimitDisk   int32  `gorm:"-" protobuf:"varint,13,opt,name=limit_disk,json=limitDisk,proto3" json:"limit_disk,omitempty"`
 	gorm.Model         // @gotags: gorm:"-"
 }
 

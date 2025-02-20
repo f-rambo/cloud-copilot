@@ -20,14 +20,21 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	ServiceInterface_List_FullMethodName           = "/service.v1alpha1.ServiceInterface/List"
-	ServiceInterface_Save_FullMethodName           = "/service.v1alpha1.ServiceInterface/Save"
-	ServiceInterface_Get_FullMethodName            = "/service.v1alpha1.ServiceInterface/Get"
-	ServiceInterface_Delete_FullMethodName         = "/service.v1alpha1.ServiceInterface/Delete"
-	ServiceInterface_GetWorkflow_FullMethodName    = "/service.v1alpha1.ServiceInterface/GetWorkflow"
-	ServiceInterface_SaveWorkflow_FullMethodName   = "/service.v1alpha1.ServiceInterface/SaveWorkflow"
-	ServiceInterface_CommitWorklfow_FullMethodName = "/service.v1alpha1.ServiceInterface/CommitWorklfow"
-	ServiceInterface_GetServiceCis_FullMethodName  = "/service.v1alpha1.ServiceInterface/GetServiceCis"
+	ServiceInterface_List_FullMethodName                        = "/service.v1alpha1.ServiceInterface/List"
+	ServiceInterface_Save_FullMethodName                        = "/service.v1alpha1.ServiceInterface/Save"
+	ServiceInterface_Get_FullMethodName                         = "/service.v1alpha1.ServiceInterface/Get"
+	ServiceInterface_Delete_FullMethodName                      = "/service.v1alpha1.ServiceInterface/Delete"
+	ServiceInterface_GetServiceResource_FullMethodName          = "/service.v1alpha1.ServiceInterface/GetServiceResource"
+	ServiceInterface_SaveWorkflow_FullMethodName                = "/service.v1alpha1.ServiceInterface/SaveWorkflow"
+	ServiceInterface_GetWorkflow_FullMethodName                 = "/service.v1alpha1.ServiceInterface/GetWorkflow"
+	ServiceInterface_CreateContinuousIntegration_FullMethodName = "/service.v1alpha1.ServiceInterface/CreateContinuousIntegration"
+	ServiceInterface_GetContinuousIntegration_FullMethodName    = "/service.v1alpha1.ServiceInterface/GetContinuousIntegration"
+	ServiceInterface_GetContinuousIntegrations_FullMethodName   = "/service.v1alpha1.ServiceInterface/GetContinuousIntegrations"
+	ServiceInterface_DeleteContinuousIntegration_FullMethodName = "/service.v1alpha1.ServiceInterface/DeleteContinuousIntegration"
+	ServiceInterface_CreateContinuousDeployment_FullMethodName  = "/service.v1alpha1.ServiceInterface/CreateContinuousDeployment"
+	ServiceInterface_GetContinuousDeployment_FullMethodName     = "/service.v1alpha1.ServiceInterface/GetContinuousDeployment"
+	ServiceInterface_GetContinuousDeployments_FullMethodName    = "/service.v1alpha1.ServiceInterface/GetContinuousDeployments"
+	ServiceInterface_DeleteContinuousDeployment_FullMethodName  = "/service.v1alpha1.ServiceInterface/DeleteContinuousDeployment"
 )
 
 // ServiceInterfaceClient is the client API for ServiceInterface service.
@@ -38,10 +45,17 @@ type ServiceInterfaceClient interface {
 	Save(ctx context.Context, in *Service, opts ...grpc.CallOption) (*common.Msg, error)
 	Get(ctx context.Context, in *ServiceRequest, opts ...grpc.CallOption) (*Service, error)
 	Delete(ctx context.Context, in *ServiceRequest, opts ...grpc.CallOption) (*common.Msg, error)
-	GetWorkflow(ctx context.Context, in *ServiceRequest, opts ...grpc.CallOption) (*Worklfow, error)
-	SaveWorkflow(ctx context.Context, in *ServiceRequest, opts ...grpc.CallOption) (*common.Msg, error)
-	CommitWorklfow(ctx context.Context, in *ServiceRequest, opts ...grpc.CallOption) (*common.Msg, error)
-	GetServiceCis(ctx context.Context, in *CIsRequest, opts ...grpc.CallOption) (*CIsResult, error)
+	GetServiceResource(ctx context.Context, in *ServiceRequest, opts ...grpc.CallOption) (*AlreadyResource, error)
+	SaveWorkflow(ctx context.Context, in *Workflow, opts ...grpc.CallOption) (*common.Msg, error)
+	GetWorkflow(ctx context.Context, in *WorkflowRequest, opts ...grpc.CallOption) (*Workflow, error)
+	CreateContinuousIntegration(ctx context.Context, in *ContinuousIntegration, opts ...grpc.CallOption) (*common.Msg, error)
+	GetContinuousIntegration(ctx context.Context, in *ContinuousIntegrationRequest, opts ...grpc.CallOption) (*ContinuousIntegration, error)
+	GetContinuousIntegrations(ctx context.Context, in *ContinuousIntegrationRequest, opts ...grpc.CallOption) (*ContinuousIntegrations, error)
+	DeleteContinuousIntegration(ctx context.Context, in *ContinuousIntegrationRequest, opts ...grpc.CallOption) (*common.Msg, error)
+	CreateContinuousDeployment(ctx context.Context, in *ContinuousDeployment, opts ...grpc.CallOption) (*common.Msg, error)
+	GetContinuousDeployment(ctx context.Context, in *ContinuousDeploymentRequest, opts ...grpc.CallOption) (*ContinuousDeployment, error)
+	GetContinuousDeployments(ctx context.Context, in *ContinuousDeploymentRequest, opts ...grpc.CallOption) (*ContinuousDeployments, error)
+	DeleteContinuousDeployment(ctx context.Context, in *ContinuousDeploymentRequest, opts ...grpc.CallOption) (*common.Msg, error)
 }
 
 type serviceInterfaceClient struct {
@@ -92,17 +106,17 @@ func (c *serviceInterfaceClient) Delete(ctx context.Context, in *ServiceRequest,
 	return out, nil
 }
 
-func (c *serviceInterfaceClient) GetWorkflow(ctx context.Context, in *ServiceRequest, opts ...grpc.CallOption) (*Worklfow, error) {
+func (c *serviceInterfaceClient) GetServiceResource(ctx context.Context, in *ServiceRequest, opts ...grpc.CallOption) (*AlreadyResource, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Worklfow)
-	err := c.cc.Invoke(ctx, ServiceInterface_GetWorkflow_FullMethodName, in, out, cOpts...)
+	out := new(AlreadyResource)
+	err := c.cc.Invoke(ctx, ServiceInterface_GetServiceResource_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *serviceInterfaceClient) SaveWorkflow(ctx context.Context, in *ServiceRequest, opts ...grpc.CallOption) (*common.Msg, error) {
+func (c *serviceInterfaceClient) SaveWorkflow(ctx context.Context, in *Workflow, opts ...grpc.CallOption) (*common.Msg, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(common.Msg)
 	err := c.cc.Invoke(ctx, ServiceInterface_SaveWorkflow_FullMethodName, in, out, cOpts...)
@@ -112,20 +126,90 @@ func (c *serviceInterfaceClient) SaveWorkflow(ctx context.Context, in *ServiceRe
 	return out, nil
 }
 
-func (c *serviceInterfaceClient) CommitWorklfow(ctx context.Context, in *ServiceRequest, opts ...grpc.CallOption) (*common.Msg, error) {
+func (c *serviceInterfaceClient) GetWorkflow(ctx context.Context, in *WorkflowRequest, opts ...grpc.CallOption) (*Workflow, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(common.Msg)
-	err := c.cc.Invoke(ctx, ServiceInterface_CommitWorklfow_FullMethodName, in, out, cOpts...)
+	out := new(Workflow)
+	err := c.cc.Invoke(ctx, ServiceInterface_GetWorkflow_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *serviceInterfaceClient) GetServiceCis(ctx context.Context, in *CIsRequest, opts ...grpc.CallOption) (*CIsResult, error) {
+func (c *serviceInterfaceClient) CreateContinuousIntegration(ctx context.Context, in *ContinuousIntegration, opts ...grpc.CallOption) (*common.Msg, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(CIsResult)
-	err := c.cc.Invoke(ctx, ServiceInterface_GetServiceCis_FullMethodName, in, out, cOpts...)
+	out := new(common.Msg)
+	err := c.cc.Invoke(ctx, ServiceInterface_CreateContinuousIntegration_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *serviceInterfaceClient) GetContinuousIntegration(ctx context.Context, in *ContinuousIntegrationRequest, opts ...grpc.CallOption) (*ContinuousIntegration, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ContinuousIntegration)
+	err := c.cc.Invoke(ctx, ServiceInterface_GetContinuousIntegration_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *serviceInterfaceClient) GetContinuousIntegrations(ctx context.Context, in *ContinuousIntegrationRequest, opts ...grpc.CallOption) (*ContinuousIntegrations, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ContinuousIntegrations)
+	err := c.cc.Invoke(ctx, ServiceInterface_GetContinuousIntegrations_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *serviceInterfaceClient) DeleteContinuousIntegration(ctx context.Context, in *ContinuousIntegrationRequest, opts ...grpc.CallOption) (*common.Msg, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(common.Msg)
+	err := c.cc.Invoke(ctx, ServiceInterface_DeleteContinuousIntegration_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *serviceInterfaceClient) CreateContinuousDeployment(ctx context.Context, in *ContinuousDeployment, opts ...grpc.CallOption) (*common.Msg, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(common.Msg)
+	err := c.cc.Invoke(ctx, ServiceInterface_CreateContinuousDeployment_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *serviceInterfaceClient) GetContinuousDeployment(ctx context.Context, in *ContinuousDeploymentRequest, opts ...grpc.CallOption) (*ContinuousDeployment, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ContinuousDeployment)
+	err := c.cc.Invoke(ctx, ServiceInterface_GetContinuousDeployment_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *serviceInterfaceClient) GetContinuousDeployments(ctx context.Context, in *ContinuousDeploymentRequest, opts ...grpc.CallOption) (*ContinuousDeployments, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ContinuousDeployments)
+	err := c.cc.Invoke(ctx, ServiceInterface_GetContinuousDeployments_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *serviceInterfaceClient) DeleteContinuousDeployment(ctx context.Context, in *ContinuousDeploymentRequest, opts ...grpc.CallOption) (*common.Msg, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(common.Msg)
+	err := c.cc.Invoke(ctx, ServiceInterface_DeleteContinuousDeployment_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -140,10 +224,17 @@ type ServiceInterfaceServer interface {
 	Save(context.Context, *Service) (*common.Msg, error)
 	Get(context.Context, *ServiceRequest) (*Service, error)
 	Delete(context.Context, *ServiceRequest) (*common.Msg, error)
-	GetWorkflow(context.Context, *ServiceRequest) (*Worklfow, error)
-	SaveWorkflow(context.Context, *ServiceRequest) (*common.Msg, error)
-	CommitWorklfow(context.Context, *ServiceRequest) (*common.Msg, error)
-	GetServiceCis(context.Context, *CIsRequest) (*CIsResult, error)
+	GetServiceResource(context.Context, *ServiceRequest) (*AlreadyResource, error)
+	SaveWorkflow(context.Context, *Workflow) (*common.Msg, error)
+	GetWorkflow(context.Context, *WorkflowRequest) (*Workflow, error)
+	CreateContinuousIntegration(context.Context, *ContinuousIntegration) (*common.Msg, error)
+	GetContinuousIntegration(context.Context, *ContinuousIntegrationRequest) (*ContinuousIntegration, error)
+	GetContinuousIntegrations(context.Context, *ContinuousIntegrationRequest) (*ContinuousIntegrations, error)
+	DeleteContinuousIntegration(context.Context, *ContinuousIntegrationRequest) (*common.Msg, error)
+	CreateContinuousDeployment(context.Context, *ContinuousDeployment) (*common.Msg, error)
+	GetContinuousDeployment(context.Context, *ContinuousDeploymentRequest) (*ContinuousDeployment, error)
+	GetContinuousDeployments(context.Context, *ContinuousDeploymentRequest) (*ContinuousDeployments, error)
+	DeleteContinuousDeployment(context.Context, *ContinuousDeploymentRequest) (*common.Msg, error)
 	mustEmbedUnimplementedServiceInterfaceServer()
 }
 
@@ -166,17 +257,38 @@ func (UnimplementedServiceInterfaceServer) Get(context.Context, *ServiceRequest)
 func (UnimplementedServiceInterfaceServer) Delete(context.Context, *ServiceRequest) (*common.Msg, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Delete not implemented")
 }
-func (UnimplementedServiceInterfaceServer) GetWorkflow(context.Context, *ServiceRequest) (*Worklfow, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetWorkflow not implemented")
+func (UnimplementedServiceInterfaceServer) GetServiceResource(context.Context, *ServiceRequest) (*AlreadyResource, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetServiceResource not implemented")
 }
-func (UnimplementedServiceInterfaceServer) SaveWorkflow(context.Context, *ServiceRequest) (*common.Msg, error) {
+func (UnimplementedServiceInterfaceServer) SaveWorkflow(context.Context, *Workflow) (*common.Msg, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SaveWorkflow not implemented")
 }
-func (UnimplementedServiceInterfaceServer) CommitWorklfow(context.Context, *ServiceRequest) (*common.Msg, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method CommitWorklfow not implemented")
+func (UnimplementedServiceInterfaceServer) GetWorkflow(context.Context, *WorkflowRequest) (*Workflow, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetWorkflow not implemented")
 }
-func (UnimplementedServiceInterfaceServer) GetServiceCis(context.Context, *CIsRequest) (*CIsResult, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetServiceCis not implemented")
+func (UnimplementedServiceInterfaceServer) CreateContinuousIntegration(context.Context, *ContinuousIntegration) (*common.Msg, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateContinuousIntegration not implemented")
+}
+func (UnimplementedServiceInterfaceServer) GetContinuousIntegration(context.Context, *ContinuousIntegrationRequest) (*ContinuousIntegration, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetContinuousIntegration not implemented")
+}
+func (UnimplementedServiceInterfaceServer) GetContinuousIntegrations(context.Context, *ContinuousIntegrationRequest) (*ContinuousIntegrations, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetContinuousIntegrations not implemented")
+}
+func (UnimplementedServiceInterfaceServer) DeleteContinuousIntegration(context.Context, *ContinuousIntegrationRequest) (*common.Msg, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteContinuousIntegration not implemented")
+}
+func (UnimplementedServiceInterfaceServer) CreateContinuousDeployment(context.Context, *ContinuousDeployment) (*common.Msg, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateContinuousDeployment not implemented")
+}
+func (UnimplementedServiceInterfaceServer) GetContinuousDeployment(context.Context, *ContinuousDeploymentRequest) (*ContinuousDeployment, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetContinuousDeployment not implemented")
+}
+func (UnimplementedServiceInterfaceServer) GetContinuousDeployments(context.Context, *ContinuousDeploymentRequest) (*ContinuousDeployments, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetContinuousDeployments not implemented")
+}
+func (UnimplementedServiceInterfaceServer) DeleteContinuousDeployment(context.Context, *ContinuousDeploymentRequest) (*common.Msg, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteContinuousDeployment not implemented")
 }
 func (UnimplementedServiceInterfaceServer) mustEmbedUnimplementedServiceInterfaceServer() {}
 func (UnimplementedServiceInterfaceServer) testEmbeddedByValue()                          {}
@@ -271,26 +383,26 @@ func _ServiceInterface_Delete_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ServiceInterface_GetWorkflow_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _ServiceInterface_GetServiceResource_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ServiceRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ServiceInterfaceServer).GetWorkflow(ctx, in)
+		return srv.(ServiceInterfaceServer).GetServiceResource(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: ServiceInterface_GetWorkflow_FullMethodName,
+		FullMethod: ServiceInterface_GetServiceResource_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ServiceInterfaceServer).GetWorkflow(ctx, req.(*ServiceRequest))
+		return srv.(ServiceInterfaceServer).GetServiceResource(ctx, req.(*ServiceRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _ServiceInterface_SaveWorkflow_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ServiceRequest)
+	in := new(Workflow)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -302,43 +414,169 @@ func _ServiceInterface_SaveWorkflow_Handler(srv interface{}, ctx context.Context
 		FullMethod: ServiceInterface_SaveWorkflow_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ServiceInterfaceServer).SaveWorkflow(ctx, req.(*ServiceRequest))
+		return srv.(ServiceInterfaceServer).SaveWorkflow(ctx, req.(*Workflow))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ServiceInterface_CommitWorklfow_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ServiceRequest)
+func _ServiceInterface_GetWorkflow_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(WorkflowRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ServiceInterfaceServer).CommitWorklfow(ctx, in)
+		return srv.(ServiceInterfaceServer).GetWorkflow(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: ServiceInterface_CommitWorklfow_FullMethodName,
+		FullMethod: ServiceInterface_GetWorkflow_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ServiceInterfaceServer).CommitWorklfow(ctx, req.(*ServiceRequest))
+		return srv.(ServiceInterfaceServer).GetWorkflow(ctx, req.(*WorkflowRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ServiceInterface_GetServiceCis_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CIsRequest)
+func _ServiceInterface_CreateContinuousIntegration_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ContinuousIntegration)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ServiceInterfaceServer).GetServiceCis(ctx, in)
+		return srv.(ServiceInterfaceServer).CreateContinuousIntegration(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: ServiceInterface_GetServiceCis_FullMethodName,
+		FullMethod: ServiceInterface_CreateContinuousIntegration_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ServiceInterfaceServer).GetServiceCis(ctx, req.(*CIsRequest))
+		return srv.(ServiceInterfaceServer).CreateContinuousIntegration(ctx, req.(*ContinuousIntegration))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ServiceInterface_GetContinuousIntegration_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ContinuousIntegrationRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ServiceInterfaceServer).GetContinuousIntegration(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ServiceInterface_GetContinuousIntegration_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ServiceInterfaceServer).GetContinuousIntegration(ctx, req.(*ContinuousIntegrationRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ServiceInterface_GetContinuousIntegrations_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ContinuousIntegrationRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ServiceInterfaceServer).GetContinuousIntegrations(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ServiceInterface_GetContinuousIntegrations_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ServiceInterfaceServer).GetContinuousIntegrations(ctx, req.(*ContinuousIntegrationRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ServiceInterface_DeleteContinuousIntegration_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ContinuousIntegrationRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ServiceInterfaceServer).DeleteContinuousIntegration(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ServiceInterface_DeleteContinuousIntegration_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ServiceInterfaceServer).DeleteContinuousIntegration(ctx, req.(*ContinuousIntegrationRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ServiceInterface_CreateContinuousDeployment_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ContinuousDeployment)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ServiceInterfaceServer).CreateContinuousDeployment(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ServiceInterface_CreateContinuousDeployment_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ServiceInterfaceServer).CreateContinuousDeployment(ctx, req.(*ContinuousDeployment))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ServiceInterface_GetContinuousDeployment_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ContinuousDeploymentRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ServiceInterfaceServer).GetContinuousDeployment(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ServiceInterface_GetContinuousDeployment_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ServiceInterfaceServer).GetContinuousDeployment(ctx, req.(*ContinuousDeploymentRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ServiceInterface_GetContinuousDeployments_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ContinuousDeploymentRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ServiceInterfaceServer).GetContinuousDeployments(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ServiceInterface_GetContinuousDeployments_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ServiceInterfaceServer).GetContinuousDeployments(ctx, req.(*ContinuousDeploymentRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ServiceInterface_DeleteContinuousDeployment_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ContinuousDeploymentRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ServiceInterfaceServer).DeleteContinuousDeployment(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ServiceInterface_DeleteContinuousDeployment_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ServiceInterfaceServer).DeleteContinuousDeployment(ctx, req.(*ContinuousDeploymentRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -367,20 +605,48 @@ var ServiceInterface_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _ServiceInterface_Delete_Handler,
 		},
 		{
-			MethodName: "GetWorkflow",
-			Handler:    _ServiceInterface_GetWorkflow_Handler,
+			MethodName: "GetServiceResource",
+			Handler:    _ServiceInterface_GetServiceResource_Handler,
 		},
 		{
 			MethodName: "SaveWorkflow",
 			Handler:    _ServiceInterface_SaveWorkflow_Handler,
 		},
 		{
-			MethodName: "CommitWorklfow",
-			Handler:    _ServiceInterface_CommitWorklfow_Handler,
+			MethodName: "GetWorkflow",
+			Handler:    _ServiceInterface_GetWorkflow_Handler,
 		},
 		{
-			MethodName: "GetServiceCis",
-			Handler:    _ServiceInterface_GetServiceCis_Handler,
+			MethodName: "CreateContinuousIntegration",
+			Handler:    _ServiceInterface_CreateContinuousIntegration_Handler,
+		},
+		{
+			MethodName: "GetContinuousIntegration",
+			Handler:    _ServiceInterface_GetContinuousIntegration_Handler,
+		},
+		{
+			MethodName: "GetContinuousIntegrations",
+			Handler:    _ServiceInterface_GetContinuousIntegrations_Handler,
+		},
+		{
+			MethodName: "DeleteContinuousIntegration",
+			Handler:    _ServiceInterface_DeleteContinuousIntegration_Handler,
+		},
+		{
+			MethodName: "CreateContinuousDeployment",
+			Handler:    _ServiceInterface_CreateContinuousDeployment_Handler,
+		},
+		{
+			MethodName: "GetContinuousDeployment",
+			Handler:    _ServiceInterface_GetContinuousDeployment_Handler,
+		},
+		{
+			MethodName: "GetContinuousDeployments",
+			Handler:    _ServiceInterface_GetContinuousDeployments_Handler,
+		},
+		{
+			MethodName: "DeleteContinuousDeployment",
+			Handler:    _ServiceInterface_DeleteContinuousDeployment_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

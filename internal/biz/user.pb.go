@@ -126,7 +126,7 @@ type User struct {
 
 	// @goimport: "gorm.io/gorm"
 	// @gofield: gorm.Model
-	Id          int64        `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT"`                                                          // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
+	Id          int64        `json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT" protobuf:"varint,1,opt,name=id,proto3"`                                                          // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
 	Name        string       `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty" gorm:"column:name; default:''; NOT NULL"`                                                         // @gotags: gorm:"column:name; default:''; NOT NULL"
 	Email       string       `json:"email,omitempty" gorm:"column:email; default:''; NOT NULL" protobuf:"bytes,3,opt,name=email,proto3"`                                                      // @gotags: gorm:"column:email; default:''; NOT NULL"
 	Password    string       `protobuf:"bytes,4,opt,name=password,proto3" json:"password,omitempty" gorm:"column:password; default:''; NOT NULL"`                                             // @gotags: gorm:"column:password; default:''; NOT NULL"

@@ -5,110 +5,141 @@ package service.v1alpha1;
 option go_package = "api/service/v1alpha1;v1alpha1";
 
 message ServiceRequest {
-      string Name = 1 [json_name = "name"];
-      int64 page = 2 [json_name = "page"];
-      int64 pageSize = 3 [json_name = "page_size"];
-      int64 projectId = 4 [json_name = "project_id"];
-      int64 id = 5 [json_name = "id"];
-      Worklfow workflow = 9 [json_name = "workflow"];
-      int32 wfType = 10 [json_name = "wf_type"];
-      int64 workflowId = 11 [json_name = "workflow_id"];
-      int64 workspaceId = 12 [json_name = "workspace_id"];
-      int64 clusterId = 13 [json_name = "cluster_id"];
+      int64 id = 1;
+      string name = 2;
+      int32 page = 3;
+      int32 page_size = 4;
+      int64 project_id = 5;
+      int64 workspace_id = 6;
+      int64 cluster_id = 7;
+      int64 user_id = 8;
 }
 
 message Services {
-      repeated Service Services = 1 [json_name = "services"];
-      int64 Total = 2 [json_name = "total"];
-}
-
-message Service {
-      int64 ID = 1 [json_name = "id"];
-      string Name = 2 [json_name = "name"];
-      string CodeRepo = 3 [json_name = "code_repo"];
-      int32 Replicas = 7 [json_name = "replicas"];
-      float CPU = 8 [json_name = "cpu"];
-      float LimitCpu = 9 [json_name = "limit_cpu"];
-      float GPU = 10 [json_name = "gpu"];
-      float LimitGPU = 11 [json_name = "limit_gpu"];
-      float Memory = 12 [json_name = "memory"];
-      float LimitMemory = 13 [json_name = "limit_memory"];
-      float Disk = 14 [json_name = "disk"];
-      float LimitDisk = 15 [json_name = "limit_disk"];
-      int64 WorkflowID = 16 [json_name = "workflow_id"];
-      repeated Port Ports = 17 [json_name = "ports"];
-      int64 ProjectID = 20 [json_name = "project_id"];
-      string Business = 21 [json_name = "business"];
-      string Technology = 22 [json_name = "technology"];
-      string project_name = 23 [json_name = "project_name"];
+      repeated Service services = 1;
+      int64 total = 2;
 }
 
 message Port {
-      int64 ID = 1 [json_name = "id"];
-      string IngressPath = 2 [json_name = "ingress_path"];
-      int32 ContainerPort = 3 [json_name = "container_port"];
-      string Protocol = 4 [json_name = "protocol"];
+      int64 id = 1;
+      string ingress_path = 2;
+      string protocol = 3;
+      int32 container_port = 4;
 }
 
-message CIsRequest {
-      int64 ServiceID = 1 [json_name = "service_id"];
-      string version = 2 [json_name = "version"];
-      int32 page = 3 [json_name = "page"];
-      int32 pageSize = 4 [json_name = "page_size"];
+message Service {
+      int64 id = 1;
+      string name = 2;
+      string code_repo = 3;
+      int32 replicas = 4;
+      int32 cpu = 5;
+      int32 limit_cpu = 6;
+      int32 gpu = 7;
+      int32 limit_gpu = 8;
+      int32 memory = 9;
+      int32 limit_memory = 10;
+      int32 disk = 11;
+      int32 limit_disk = 12;
+      string description = 13;
+      repeated Port ports = 14;
+      int64 project_id = 15;
+      int64 workspace_id = 16;
+      int64 cluster_id = 17;
+      int64 user_id = 18;
+      string username = 19;
 }
 
-message CIsResult {
-      repeated CI CIs = 1 [json_name = "cis"];
-      int64 Total = 2 [json_name = "total"];
+message AlreadyResource {
+      int32 cpu = 1;
+      int32 memory = 2;
+      int32 gpu = 3;
+      int32 disk = 4;
 }
 
-message CI {
-      int64 ID = 1 [json_name = "id"];
-      string Version = 2 [json_name = "version"];
-      string Branch = 3 [json_name = "branch"];
-      string Tag = 4 [json_name = "tag"];
-      string Args = 5 [json_name = "args"];
-      string Description = 6 [json_name = "description"];
-      string WorkflowName = 7 [json_name = "workflow_name"];
-      int64 ServiceID = 8 [json_name = "service_id"];
-      string Status = 9 [json_name = "status"];
-      string CreatedAt = 10 [json_name = "created_at"];
-      string Username = 11 [json_name = "username"];
-      int64 UserId = 12 [json_name = "user_id"];
-      string Logs = 13 [json_name = "logs"];
+
+message WorkflowRequest {
+      int64 id = 1;
+      string name = 2;
+      int64 service_id = 3;
+      string workflow_type = 4;
 }
 
-message CD {
-      int64 ID = 1 [json_name = "id"];
-      int64 ServiceID = 2 [json_name = "service_id"];
+message Workflow {
+      int64 id = 1;
+      string name = 2;
+      string namespace = 3;
+      string workflow_type = 4;
+      string workflow = 5;
+      string description = 6;
+      int64 service_id = 7;
+      repeated WorkflowStep workflow_steps = 8;
 }
 
-message Worklfow {
-      int64 ID = 1 [json_name = "id"];
-      string Name = 2 [json_name = "name"];
-      string Description = 3 [json_name = "description"];
-      repeated WfStep Steps = 4 [json_name = "steps"];
-      repeated WfTemplate Templates = 5 [json_name = "templates"];
+message WorkflowStep {
+      int64 id = 1;
+      int64 workflow_id = 2;
+      int32 order = 3;
+      string name = 4;
+      string description = 5;
+      repeated WorkflowTask workflow_tasks = 6;
 }
 
-message WfStep {
-      string name = 1 [json_name = "name"];
-      repeated WfTask Tasks = 2 [json_name = "tasks"];
-      bool default = 3 [json_name = "default"];
+message WorkflowTask {
+      int64 id = 1;
+      int64 workflow_id = 2;
+      int64 step_id = 3;
+      string name = 4;
+      int32 order = 5;
+      string task = 6;
+      string description = 7;
+      string status = 8;
 }
 
-message WfTask {
-      string name = 1 [json_name = "name"];
-      string templateName = 2 [json_name = "template_name"];
-      bool default = 3 [json_name = "default"];
+message ContinuousIntegrationRequest {
+      int64 id = 1;
+      int64 service_id = 2;
+      int32 page = 3;
+      int32 page_size = 4;
 }
 
-message WfTemplate {
-      string name = 1;
-      string image = 2;
-      repeated string command = 3;
-      repeated string args = 4;
-      string source = 5;
-      bool IsScript = 6 [json_name = "is_script"];
+message ContinuousIntegrations {
+      repeated ContinuousIntegration continuous_integrations = 1;
+      int64 total = 2;
 }
 
+message ContinuousIntegration {
+      int64 id = 1;
+      string version = 2;
+      string branch = 3;
+      string tag = 4;
+      string status = 5;
+      string description = 6;
+      int64 service_id = 7;
+      int64 user_id = 8;
+      string workflow_runtime = 9;
+      Workflow workflow = 10;
+      string logs = 11;
+}
+
+message ContinuousDeploymentRequest {
+      int64 id = 1;
+      int64 service_id = 2;
+      int32 page = 3;
+      int32 page_size = 4;
+}
+
+message ContinuousDeployments {
+      repeated ContinuousDeployment continuous_deployments = 1;
+      int64 total = 2;
+}
+
+message ContinuousDeployment {
+      int64 id = 1;
+      int64 ci_id = 2;
+      int64 service_id = 3;
+      int64 user_id = 4;
+      string status = 5;
+      string workflow_runtime = 6;
+      Workflow workflow = 7;
+      string logs = 8;
+}
