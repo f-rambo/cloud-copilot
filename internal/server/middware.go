@@ -57,13 +57,16 @@ func NewAuthServer(user *interfaces.UserInterface) func(handler middleware.Handl
 	}
 }
 
-func BizContext(cluster *interfaces.ClusterInterface, project *interfaces.ProjectInterface, workspace *interfaces.WorkspaceInterface) func(handler middleware.Handler) middleware.Handler {
+func BizContext(clusterApi *interfaces.ClusterInterface, projectApi *interfaces.ProjectInterface, workspaceApi *interfaces.WorkspaceInterface) func(handler middleware.Handler) middleware.Handler {
 	return func(handler middleware.Handler) middleware.Handler {
 		return func(ctx context.Context, req interface{}) (reply interface{}, err error) {
 			param, ok := req.(proto.Message)
 			if !ok {
 				return handler(ctx, req)
 			}
+			var cluster *biz.Cluster
+			var workspace *biz.Workspace
+			var project *biz.Project
 			msgReflection := param.ProtoReflect()
 			descriptor := msgReflection.Descriptor()
 			fields := descriptor.Fields()
@@ -75,7 +78,7 @@ func BizContext(cluster *interfaces.ClusterInterface, project *interfaces.Projec
 				case "cluster_id", "clusterId":
 					clusterId := cast.ToInt64(value.Interface())
 					if clusterId > 0 {
-						cluster, err := cluster.GetCluster(ctx, cast.ToInt64(value.Interface()))
+						cluster, err = clusterApi.GetCluster(ctx, cast.ToInt64(value.Interface()))
 						if err != nil {
 							return nil, err
 						}
@@ -84,20 +87,41 @@ func BizContext(cluster *interfaces.ClusterInterface, project *interfaces.Projec
 				case "workspace_id", "workspaceId":
 					workspaceId := cast.ToInt64(value.Interface())
 					if workspaceId > 0 {
-						workspace, err := workspace.GetWorkspace(ctx, cast.ToInt64(value.Interface()))
+						workspace, err = workspaceApi.GetWorkspace(ctx, cast.ToInt64(value.Interface()))
 						if err != nil {
 							return nil, err
 						}
 						ctx = biz.WithWorkspace(ctx, workspace)
+						if cluster == nil && workspace.ClusterId > 0 {
+							cluster, err = clusterApi.GetCluster(ctx, workspace.ClusterId)
+							if err != nil {
+								return nil, err
+							}
+							ctx = biz.WithCluster(ctx, cluster)
+						}
 					}
 				case "project_id", "projectId":
 					projectId := cast.ToInt64(value.Interface())
 					if projectId > 0 {
-						project, err := project.GetProject(ctx, cast.ToInt64(value.Interface()))
+						project, err = projectApi.GetProject(ctx, cast.ToInt64(value.Interface()))
 						if err != nil {
 							return nil, err
 						}
 						ctx = biz.WithProject(ctx, project)
+						if workspace == nil && project.WorkspaceId > 0 {
+							workspace, err = workspaceApi.GetWorkspace(ctx, project.WorkspaceId)
+							if err != nil {
+								return nil, err
+							}
+							ctx = biz.WithWorkspace(ctx, workspace)
+							if cluster == nil && workspace.ClusterId > 0 {
+								cluster, err = clusterApi.GetCluster(ctx, workspace.ClusterId)
+								if err != nil {
+									return nil, err
+								}
+								ctx = biz.WithCluster(ctx, cluster)
+							}
+						}
 					}
 				default:
 				}

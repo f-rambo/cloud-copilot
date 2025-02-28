@@ -13,6 +13,9 @@ message ServiceRequest {
       int64 workspace_id = 6;
       int64 cluster_id = 7;
       int64 user_id = 8;
+      string workflow_type = 9;
+      int64 ci_id = 10;
+      int64 cd_id = 11;
 }
 
 message Services {
@@ -69,10 +72,9 @@ message Workflow {
       string name = 2;
       string namespace = 3;
       string workflow_type = 4;
-      string workflow = 5;
-      string description = 6;
-      int64 service_id = 7;
-      repeated WorkflowStep workflow_steps = 8;
+      string description = 5;
+      int64 service_id = 6;
+      repeated WorkflowStep workflow_steps = 7;
 }
 
 message WorkflowStep {
@@ -124,8 +126,9 @@ message ContinuousIntegration {
 message ContinuousDeploymentRequest {
       int64 id = 1;
       int64 service_id = 2;
-      int32 page = 3;
-      int32 page_size = 4;
+      int64 ci_id = 3;
+      int32 page = 4;
+      int32 page_size = 5;
 }
 
 message ContinuousDeployments {

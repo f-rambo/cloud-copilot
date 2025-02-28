@@ -3,9 +3,12 @@ package biz
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
+	"github.com/f-rambo/cloud-copilot/utils"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/pkg/errors"
+	"github.com/spf13/cast"
 )
 
 type ServicesData interface {
@@ -27,8 +30,10 @@ type ServicesData interface {
 	GetContinuousDeployments(ctx context.Context, serviceId int64, page, pageSize int32) ([]*ContinuousDeployment, int64, error)
 }
 
-type WorkflowRuntime interface {
-	CommitWorklfow(context.Context, *Workflow) error
+type ServiceRuntime interface {
+	ApplyService(context.Context, *Service, *ContinuousDeployment) error
+	GetService(context.Context, *Service) error
+	CommitWorkflow(context.Context, *Workflow) error
 	GetWorkflow(context.Context, *Workflow) error
 }
 
@@ -36,21 +41,157 @@ type ServiceAgent interface {
 }
 
 type ServicesUseCase struct {
-	serviceData     ServicesData
-	workflowRuntime WorkflowRuntime
-	log             *log.Helper
+	serviceData    ServicesData
+	serviceRuntime ServiceRuntime
+	log            *log.Helper
 }
 
-func NewServicesUseCase(serviceData ServicesData, wfRuntime WorkflowRuntime, logger log.Logger) *ServicesUseCase {
-	return &ServicesUseCase{serviceData: serviceData, workflowRuntime: wfRuntime, log: log.NewHelper(logger)}
+func NewServicesUseCase(serviceData ServicesData, serviceRuntime ServiceRuntime, logger log.Logger) *ServicesUseCase {
+	return &ServicesUseCase{serviceData: serviceData, serviceRuntime: serviceRuntime, log: log.NewHelper(logger)}
 }
 
-func (w *Workflow) SettingContinuousIntegration(service *Service, ci *ContinuousIntegration) error {
+func (w WorkflowStepType) Image() string {
+	if w == WorkflowStepType_CodePull {
+		return "alpine/git:latest"
+	}
+	if w == WorkflowStepType_Build {
+		return "moby/buildkit:latest"
+	}
+	if w == WorkflowStepType_Deploy {
+		return "curlimages/curl:latest"
+	}
+	return ""
+}
+
+func (s *Service) GetWorkflow(wfType WorkflowType) *Workflow {
+	workflow := &Workflow{Name: fmt.Sprintf("%s-%s", s.Name, wfType.String()), Type: wfType, Namespace: s.Name, ServiceId: s.Id}
+	workflow.Description = "These are the environment variables that can be used\n"
+	for _, v := range ServiceEnv_name {
+		workflow.Description += fmt.Sprintf("{%s} ", v)
+	}
+	workflow.Description += fmt.Sprintf("\n\n Example: if %s = git_repo_url 'git clone {%s}', You get 'git clone git_repo_url' like this",
+		ServiceEnv_GIT_REPO.String(), ServiceEnv_GIT_REPO.String())
+	workflow.WorkflowSteps = make([]*WorkflowStep, 0)
+	var order int32 = 1
+	var taskCommamd string
+	for name, v := range WorkflowStepType_value {
+		if WorkflowStepType(v) == WorkflowStepType_Customizable {
+			continue
+		}
+		if wfType == WorkflowType_ContinuousIntegrationType && v >= int32(WorkflowStepType_Build) {
+			continue
+		}
+		if wfType == WorkflowType_ContinuousDeploymentType && v < int32(WorkflowStepType_Build) {
+			continue
+		}
+		if WorkflowStepType(v) == WorkflowStepType_CodePull {
+			taskCommamd = "Git pull code handler... (This is the default and cannot be changed)"
+		}
+		if WorkflowStepType(v) == WorkflowStepType_Build {
+			taskCommamd = "Build image handler... (This is the default and cannot be changed)"
+		}
+		if WorkflowStepType(v) == WorkflowStepType_Deploy {
+			taskCommamd = "Deploy handler... (This is the default and cannot be changed)"
+		}
+		workflow.WorkflowSteps = append(workflow.WorkflowSteps, &WorkflowStep{
+			Name:             name,
+			Order:            order,
+			Description:      name,
+			WorkflowStepType: WorkflowStepType(v),
+			Image:            WorkflowStepType(v).Image(),
+			WorkflowTasks: []*WorkflowTask{
+				{
+					Name:        name,
+					Order:       order,
+					Description: name,
+					TaskCommand: taskCommamd,
+				},
+			},
+		})
+		order += 1
+	}
+	return workflow
+}
+
+func (w *Workflow) SettingServiceEnv(project *Project, s *Service, ci *ContinuousIntegration) map[string]string {
+	serviceEnv := make(map[string]string)
+	for _, val := range ServiceEnv_value {
+		switch ServiceEnv(val) {
+		case ServiceEnv_SERVICE_NAME:
+			serviceEnv[ServiceEnv_SERVICE_NAME.String()] = s.Name
+		case ServiceEnv_VERSION:
+			serviceEnv[ServiceEnv_VERSION.String()] = cast.ToString(ci.Version)
+		case ServiceEnv_BRANCH:
+			serviceEnv[ServiceEnv_BRANCH.String()] = ci.Branch
+		case ServiceEnv_TAG:
+			serviceEnv[ServiceEnv_TAG.String()] = ci.Tag
+		case ServiceEnv_COMMIT_ID:
+			serviceEnv[ServiceEnv_COMMIT_ID.String()] = ci.CommitId
+		case ServiceEnv_SERVICE_ID:
+			serviceEnv[ServiceEnv_SERVICE_ID.String()] = cast.ToString(s.Id)
+		case ServiceEnv_IMAGE:
+			serviceEnv[ServiceEnv_IMAGE.String()] = ci.GetImage(s)
+		case ServiceEnv_GIT_REPO:
+			serviceEnv[ServiceEnv_GIT_REPO.String()] = project.GitRepository
+		case ServiceEnv_IMAGE_REPO:
+			serviceEnv[ServiceEnv_IMAGE_REPO.String()] = project.ImageRepository
+		}
+	}
+	return serviceEnv
+}
+
+func (w *Workflow) SettingContinuousIntegration(ctx context.Context, service *Service, ci *ContinuousIntegration) {
+	project := GetProject(ctx)
+	user := GetUserInfo(ctx)
+	serviceEnv := w.SettingServiceEnv(project, service, ci)
+	for _, step := range w.WorkflowSteps {
+		for _, task := range step.WorkflowTasks {
+			wfType, ok := WorkflowStepType_value[task.Name]
+			if !ok {
+				task.TaskCommand = utils.DecodeString(task.TaskCommand, serviceEnv)
+				continue
+			}
+			switch WorkflowStepType(wfType) {
+			case WorkflowStepType_CodePull:
+				task.TaskCommand = fmt.Sprintf("echo %s > ~/.ssh/id_rsa.pub && chmod 600 ~/.ssh/id_rsa.pub && ", user.PublicKey)
+				if ci.Branch != "" && ci.CommitId != "" {
+					task.TaskCommand += fmt.Sprintf("git clone --depth 1 %s && cd %s && git checkout %s && git checkout %s",
+						project.GitRepository, service.Name, ci.Branch, ci.CommitId)
+				}
+				if ci.Tag != "" {
+					task.TaskCommand += fmt.Sprintf("git clone --depth 1 %s && cd %s && git checkout tags/%s",
+						project.GitRepository, service.Name, ci.Tag)
+				}
+			case WorkflowStepType_Build:
+				imageName := fmt.Sprintf("%s:%s", service.Name, ci.Version)
+				task.TaskCommand = fmt.Sprintf("echo '%s' | docker login --username '%s' --password-stdin && ", user.ImageRepositoryToken, user.Name)
+				task.TaskCommand += fmt.Sprintf("buildctl build  --frontend dockerfile.v0 --local context=. --local dockerfile=Dockerfile --output type=image,name=%s,push=true", imageName)
+			}
+		}
+	}
+}
+
+func (w *Workflow) SettingContinuousDeployment(ctx context.Context, service *Service, ci *ContinuousIntegration, cd *ContinuousDeployment) error {
+	project := GetProject(ctx)
+	serviceEnv := w.SettingServiceEnv(project, service, ci)
+	for _, step := range w.WorkflowSteps {
+		for _, task := range step.WorkflowTasks {
+			wfType, ok := WorkflowStepType_value[task.Name]
+			if !ok {
+				task.TaskCommand = utils.DecodeString(task.TaskCommand, serviceEnv)
+				continue
+			}
+			if WorkflowStepType_Deploy == WorkflowStepType(wfType) {
+				task.TaskCommand = fmt.Sprintf("curl -X POST -H 'Content-Type: application/json' -d '{\"id\":\"%d\",\"ci_id\":\"%d\",\"cd_id\":\"%d\"}' %s",
+					service.Id, ci.Id, cd.Id, "deployment_url")
+			}
+		}
+	}
 	return nil
 }
 
-func (w *Workflow) SettingContinuousDeployment(service *Service, ci *ContinuousIntegration, cd *ContinuousDeployment) error {
-	return nil
+func (ci *ContinuousIntegration) GetImage(s *Service) string {
+	return fmt.Sprintf("%s:%s", s.Name, ci.Version)
 }
 
 func (ci *ContinuousIntegration) SetWorkflow(wf *Workflow) error {
@@ -109,7 +250,15 @@ func (uc *ServicesUseCase) Save(ctx context.Context, service *Service) error {
 }
 
 func (uc *ServicesUseCase) Get(ctx context.Context, id int64) (*Service, error) {
-	return uc.serviceData.Get(ctx, id)
+	service, err := uc.serviceData.Get(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	err = uc.serviceRuntime.GetService(ctx, service)
+	if err != nil {
+		return nil, err
+	}
+	return service, nil
 }
 
 func (uc *ServicesUseCase) List(ctx context.Context, projectId int64, serviceName string, page, pageSize int32) ([]*Service, int64, error) {
@@ -127,6 +276,15 @@ func (uc *ServicesUseCase) GetServiceResourceByProject(ctx context.Context, proj
 		return nil, err
 	}
 	return alreadyResource, nil
+}
+
+func (uc *ServicesUseCase) GetDefaultWorkflow(ctx context.Context, serviceId int64, wfType WorkflowType) (*Workflow, error) {
+	service, err := uc.serviceData.Get(ctx, serviceId)
+	if err != nil {
+		return nil, err
+	}
+	wf := service.GetWorkflow(wfType)
+	return wf, nil
 }
 
 func (uc *ServicesUseCase) SaveWorkflow(ctx context.Context, serviceId int64, wf *Workflow) error {
@@ -192,11 +350,8 @@ func (uc *ServicesUseCase) CreateContinuousIntegration(ctx context.Context, ci *
 	if workflow == nil {
 		return errors.New("workflow not found")
 	}
-	err = workflow.SettingContinuousIntegration(service, ci)
-	if err != nil {
-		return err
-	}
-	err = uc.workflowRuntime.CommitWorklfow(ctx, workflow)
+	workflow.SettingContinuousIntegration(ctx, service, ci)
+	err = uc.serviceRuntime.CommitWorkflow(ctx, workflow)
 	if err != nil {
 		return err
 	}
@@ -217,7 +372,7 @@ func (uc *ServicesUseCase) GetContinuousIntegration(ctx context.Context, ciId in
 	if err != nil {
 		return nil, nil, err
 	}
-	err = uc.workflowRuntime.GetWorkflow(ctx, workflow)
+	err = uc.serviceRuntime.GetWorkflow(ctx, workflow)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -278,8 +433,8 @@ func (uc *ServicesUseCase) CreateContinuousDeployment(ctx context.Context, cd *C
 		return err
 	}
 	workflow := workflows.GetWorkflowByType(WorkflowType_ContinuousDeploymentType)
-	workflow.SettingContinuousDeployment(service, ci, cd)
-	err = uc.workflowRuntime.CommitWorklfow(ctx, workflow)
+	workflow.SettingContinuousDeployment(ctx, service, ci, cd)
+	err = uc.serviceRuntime.CommitWorkflow(ctx, workflow)
 	if err != nil {
 		return err
 	}
@@ -300,7 +455,7 @@ func (uc *ServicesUseCase) GetContinuousDeployment(ctx context.Context, cdId int
 	if err != nil {
 		return nil, nil, err
 	}
-	err = uc.workflowRuntime.GetWorkflow(ctx, workflow)
+	err = uc.serviceRuntime.GetWorkflow(ctx, workflow)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -344,4 +499,21 @@ func (uc *ServicesUseCase) GetContinuousDeployments(ctx context.Context, service
 
 func (uc *ServicesUseCase) DeleteContinuousDeployment(ctx context.Context, cdId int64) error {
 	return uc.serviceData.DeleteContinuousDeployment(ctx, cdId)
+}
+
+func (uc *ServicesUseCase) ApplyService(ctx context.Context, serviceId, ciId, cdId int64) error {
+	service, err := uc.Get(ctx, serviceId)
+	if err != nil {
+		return err
+	}
+	cd, err := uc.serviceData.GetContinuousDeployment(ctx, cdId)
+	if err != nil {
+		return err
+	}
+	service.Status = ServiceStatus_Starting
+	err = uc.serviceRuntime.ApplyService(ctx, service, cd)
+	if err != nil {
+		return err
+	}
+	return nil
 }

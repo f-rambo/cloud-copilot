@@ -4,6 +4,7 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"math"
+	"strings"
 
 	"google.golang.org/protobuf/proto"
 )
@@ -59,4 +60,15 @@ func RemoveDuplicatesInt64(slice []int64) []int64 {
 		}
 	}
 	return slice[:j]
+}
+
+func DecodeString(content string, keyVal map[string]string) string {
+	if content == "" {
+		return ""
+	}
+	for key, val := range keyVal {
+		placeholder := "{" + key + "}"
+		content = strings.ReplaceAll(content, placeholder, val)
+	}
+	return content
 }

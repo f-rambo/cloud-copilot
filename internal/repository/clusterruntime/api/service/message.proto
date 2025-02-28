@@ -6,12 +6,7 @@ import "internal/biz/service.proto";
 
 option go_package = "github.com/f-rambo/cloud-copilot/internal/repository/clusterruntime/api/service;";
 
-message GenerateCIWorkflowResponse {
-      biz.service.Workflow ci_workflow = 1;
-      biz.service.Workflow cd_workflow = 2;
-}
-
-message CreateReq {
-      string namespace = 1;
-      biz.service.Workflow workflow = 2;
+message ApplyServiceRequest {
+      biz.service.Service service = 1;
+      biz.service.ContinuousDeployment cd = 2;
 }

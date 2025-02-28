@@ -26,6 +26,9 @@ message User {
       UserStatus status = 5; // @gotags: gorm:"column:status; default:0; NOT NULL"
       string access_token = 6; // @gotags: gorm:"-"`
       UserSignType sign_type = 7; // @gotags: gorm:"column:sign_type; default:0; NOT NULL"
+      string public_key = 8; // @gotags: gorm:"column:public_key; default:''; NOT NULL"
+      int64 workspace_id = 9; // @gotags: gorm:"column:workspace_id; default:0; NOT NULL"
+      string image_repository_token = 10; // @gotags: gorm:"column:imagerepository_token; default:''; NOT NULL"
 }
 
 message Role {
@@ -34,4 +37,21 @@ message Role {
       int64 id = 1; // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
       string name = 2; // @gotags: gorm:"column:name; default:''; NOT NULL"
       string description = 3; // @gotags: gorm:"column:description; default:''; NOT NULL"
+}
+
+message UserRole {
+      // @goimport: "gorm.io/gorm"
+      // @gofield: gorm.Model
+      int64 id = 1; // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
+      int64 user_id = 2; // @gotags: gorm:"column:user_id; default:0; NOT NULL"
+      int64 role_id = 3; // @gotags: gorm:"column:role_id; default:0; NOT NULL"
+}
+
+message ResourcePermissions {
+      // @goimport: "gorm.io/gorm"
+      // @gofield: gorm.Model
+      int64 id = 1; // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
+      string verbs = 2; // @gotags: gorm:"column:verbs; default:''; NOT NULL"
+      string resources = 3; // @gotags: gorm:"column:resources; default:''; NOT NULL"
+      string Permissions = 4; // @gotags: gorm:"column:permissions; default:''; NOT NULL"
 }

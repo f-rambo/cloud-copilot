@@ -28,16 +28,18 @@ type Project struct {
 
 	// @goimport: "gorm.io/gorm"
 	// @gofield: gorm.Model
-	Id          int64  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT"`                                           // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
-	Name        string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty" gorm:"column:name; default:''; NOT NULL"`                                          // @gotags: gorm:"column:name; default:''; NOT NULL"
-	Description string `gorm:"column:namespace; default:''; NOT NULL" protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`                       // @gotags: gorm:"column:namespace; default:''; NOT NULL"
-	ClusterId   int64  `protobuf:"varint,4,opt,name=cluster_id,json=clusterId,proto3" json:"cluster_id,omitempty" gorm:"column:cluster_id; default:0; NOT NULL"`         // @gotags: gorm:"column:cluster_id; default:0; NOT NULL"
-	UserId      int64  `protobuf:"varint,5,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty" gorm:"column:user_id; default:0; NOT NULL"`                     // @gotags: gorm:"column:user_id; default:0; NOT NULL"
-	WorkspaceId int64  `protobuf:"varint,6,opt,name=workspace_id,json=workspaceId,proto3" json:"workspace_id,omitempty" gorm:"column:workspace_id; default:0; NOT NULL"` // @gotags: gorm:"column:workspace_id; default:0; NOT NULL"
-	LimitCpu    int32  `gorm:"column:limit_cpu; default:0; NOT NULL" protobuf:"varint,7,opt,name=limit_cpu,json=limitCpu,proto3" json:"limit_cpu,omitempty"`             // @gotags: gorm:"column:limit_cpu; default:0; NOT NULL"
-	LimitGpu    int32  `protobuf:"varint,8,opt,name=limit_gpu,json=limitGpu,proto3" json:"limit_gpu,omitempty" gorm:"column:limit_gpu; default:0; NOT NULL"`             // @gotags: gorm:"column:limit_gpu; default:0; NOT NULL"
-	LimitMemory int32  `json:"limit_memory,omitempty" gorm:"column:limit_memory; default:0; NOT NULL" protobuf:"varint,9,opt,name=limit_memory,json=limitMemory,proto3"` // @gotags: gorm:"column:limit_memory; default:0; NOT NULL"
-	LimitDisk   int32  `json:"limit_disk,omitempty" gorm:"column:limit_disk; default:0; NOT NULL" protobuf:"varint,10,opt,name=limit_disk,json=limitDisk,proto3"`        // @gotags: gorm:"column:limit_disk; default:0; NOT NULL"
+	Id              int64  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT"`                                                            // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
+	Name            string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty" gorm:"column:name; default:''; NOT NULL"`                                                           // @gotags: gorm:"column:name; default:''; NOT NULL"
+	Description     string `json:"description,omitempty" gorm:"column:namespace; default:''; NOT NULL" protobuf:"bytes,3,opt,name=description,proto3"`                                        // @gotags: gorm:"column:namespace; default:''; NOT NULL"
+	ClusterId       int64  `protobuf:"varint,4,opt,name=cluster_id,json=clusterId,proto3" json:"cluster_id,omitempty" gorm:"column:cluster_id; default:0; NOT NULL"`                          // @gotags: gorm:"column:cluster_id; default:0; NOT NULL"
+	UserId          int64  `protobuf:"varint,5,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty" gorm:"column:user_id; default:0; NOT NULL"`                                      // @gotags: gorm:"column:user_id; default:0; NOT NULL"
+	WorkspaceId     int64  `protobuf:"varint,6,opt,name=workspace_id,json=workspaceId,proto3" json:"workspace_id,omitempty" gorm:"column:workspace_id; default:0; NOT NULL"`                  // @gotags: gorm:"column:workspace_id; default:0; NOT NULL"
+	LimitCpu        int32  `protobuf:"varint,7,opt,name=limit_cpu,json=limitCpu,proto3" json:"limit_cpu,omitempty" gorm:"column:limit_cpu; default:0; NOT NULL"`                              // @gotags: gorm:"column:limit_cpu; default:0; NOT NULL"
+	LimitGpu        int32  `json:"limit_gpu,omitempty" gorm:"column:limit_gpu; default:0; NOT NULL" protobuf:"varint,8,opt,name=limit_gpu,json=limitGpu,proto3"`                              // @gotags: gorm:"column:limit_gpu; default:0; NOT NULL"
+	LimitMemory     int32  `protobuf:"varint,9,opt,name=limit_memory,json=limitMemory,proto3" json:"limit_memory,omitempty" gorm:"column:limit_memory; default:0; NOT NULL"`                  // @gotags: gorm:"column:limit_memory; default:0; NOT NULL"
+	LimitDisk       int32  `gorm:"column:limit_disk; default:0; NOT NULL" protobuf:"varint,10,opt,name=limit_disk,json=limitDisk,proto3" json:"limit_disk,omitempty"`                         // @gotags: gorm:"column:limit_disk; default:0; NOT NULL"
+	GitRepository   string `protobuf:"bytes,11,opt,name=git_repository,json=gitRepository,proto3" json:"git_repository,omitempty" gorm:"column:git_repository; default:''; NOT NULL"`         // @gotags: gorm:"column:git_repository; default:''; NOT NULL"
+	ImageRepository string `protobuf:"bytes,12,opt,name=image_repository,json=imageRepository,proto3" json:"image_repository,omitempty" gorm:"column:image_repository; default:''; NOT NULL"` // @gotags: gorm:"column:image_repository; default:''; NOT NULL"
 	gorm.Model
 }
 
@@ -143,12 +145,26 @@ func (x *Project) GetLimitDisk() int32 {
 	return 0
 }
 
+func (x *Project) GetGitRepository() string {
+	if x != nil {
+		return x.GitRepository
+	}
+	return ""
+}
+
+func (x *Project) GetImageRepository() string {
+	if x != nil {
+		return x.ImageRepository
+	}
+	return ""
+}
+
 var File_internal_biz_project_proto protoreflect.FileDescriptor
 
 var file_internal_biz_project_proto_rawDesc = []byte{
 	0x0a, 0x1a, 0x69, 0x6e, 0x74, 0x65, 0x72, 0x6e, 0x61, 0x6c, 0x2f, 0x62, 0x69, 0x7a, 0x2f, 0x70,
 	0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x12, 0x0b, 0x62, 0x69,
-	0x7a, 0x2e, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x22, 0xa6, 0x02, 0x0a, 0x07, 0x50, 0x72,
+	0x7a, 0x2e, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x22, 0xf8, 0x02, 0x0a, 0x07, 0x50, 0x72,
 	0x6f, 0x6a, 0x65, 0x63, 0x74, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28,
 	0x03, 0x52, 0x02, 0x69, 0x64, 0x12, 0x12, 0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x02, 0x20,
 	0x01, 0x28, 0x09, 0x52, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x12, 0x20, 0x0a, 0x0b, 0x64, 0x65, 0x73,
@@ -167,10 +183,15 @@ var file_internal_biz_project_proto_rawDesc = []byte{
 	0x18, 0x09, 0x20, 0x01, 0x28, 0x05, 0x52, 0x0b, 0x6c, 0x69, 0x6d, 0x69, 0x74, 0x4d, 0x65, 0x6d,
 	0x6f, 0x72, 0x79, 0x12, 0x1d, 0x0a, 0x0a, 0x6c, 0x69, 0x6d, 0x69, 0x74, 0x5f, 0x64, 0x69, 0x73,
 	0x6b, 0x18, 0x0a, 0x20, 0x01, 0x28, 0x05, 0x52, 0x09, 0x6c, 0x69, 0x6d, 0x69, 0x74, 0x44, 0x69,
-	0x73, 0x6b, 0x42, 0x30, 0x5a, 0x2e, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d,
-	0x2f, 0x66, 0x2d, 0x72, 0x61, 0x6d, 0x62, 0x6f, 0x2f, 0x63, 0x6c, 0x6f, 0x75, 0x64, 0x2d, 0x63,
-	0x6f, 0x70, 0x69, 0x6c, 0x6f, 0x74, 0x2f, 0x69, 0x6e, 0x74, 0x65, 0x72, 0x6e, 0x61, 0x6c, 0x2f,
-	0x62, 0x69, 0x7a, 0x3b, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x73, 0x6b, 0x12, 0x25, 0x0a, 0x0e, 0x67, 0x69, 0x74, 0x5f, 0x72, 0x65, 0x70, 0x6f, 0x73, 0x69,
+	0x74, 0x6f, 0x72, 0x79, 0x18, 0x0b, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0d, 0x67, 0x69, 0x74, 0x52,
+	0x65, 0x70, 0x6f, 0x73, 0x69, 0x74, 0x6f, 0x72, 0x79, 0x12, 0x29, 0x0a, 0x10, 0x69, 0x6d, 0x61,
+	0x67, 0x65, 0x5f, 0x72, 0x65, 0x70, 0x6f, 0x73, 0x69, 0x74, 0x6f, 0x72, 0x79, 0x18, 0x0c, 0x20,
+	0x01, 0x28, 0x09, 0x52, 0x0f, 0x69, 0x6d, 0x61, 0x67, 0x65, 0x52, 0x65, 0x70, 0x6f, 0x73, 0x69,
+	0x74, 0x6f, 0x72, 0x79, 0x42, 0x30, 0x5a, 0x2e, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63,
+	0x6f, 0x6d, 0x2f, 0x66, 0x2d, 0x72, 0x61, 0x6d, 0x62, 0x6f, 0x2f, 0x63, 0x6c, 0x6f, 0x75, 0x64,
+	0x2d, 0x63, 0x6f, 0x70, 0x69, 0x6c, 0x6f, 0x74, 0x2f, 0x69, 0x6e, 0x74, 0x65, 0x72, 0x6e, 0x61,
+	0x6c, 0x2f, 0x62, 0x69, 0x7a, 0x3b, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (

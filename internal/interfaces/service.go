@@ -97,6 +97,26 @@ func (s *ServicesInterface) GetServiceResource(ctx context.Context, serviceReq *
 	return res, nil
 }
 
+func (s *ServicesInterface) GetDefaultWorkflow(ctx context.Context, serviceReq *v1alpha1.ServiceRequest) (*v1alpha1.Workflow, error) {
+	if serviceReq.Id == 0 || serviceReq.WorkflowType == "" {
+		return nil, common.ResponseError(common.ErrorReason_ErrInvalidArgument)
+	}
+	wfType, ok := biz.WorkflowType_value[serviceReq.WorkflowType]
+	if !ok {
+		return nil, common.ResponseError(common.ErrorReason_ErrInvalidArgument)
+	}
+	defaultWorkflow, err := s.serviceUc.GetDefaultWorkflow(ctx, serviceReq.Id, biz.WorkflowType(wfType))
+	if err != nil {
+		return nil, err
+	}
+	wf := &v1alpha1.Workflow{}
+	err = utils.StructTransform(defaultWorkflow, wf)
+	if err != nil {
+		return nil, err
+	}
+	return wf, nil
+}
+
 func (s *ServicesInterface) SaveWorkflow(ctx context.Context, wf *v1alpha1.Workflow) (*common.Msg, error) {
 	if wf.ServiceId == 0 || wf.Name == "" {
 		return nil, common.ResponseError(common.ErrorReason_ErrInvalidArgument)
@@ -267,6 +287,17 @@ func (s *ServicesInterface) DeleteContinuousDeployment(ctx context.Context, cdRe
 		return nil, common.ResponseError(common.ErrorReason_ErrInvalidArgument)
 	}
 	err := s.serviceUc.DeleteContinuousDeployment(ctx, cdReq.Id)
+	if err != nil {
+		return nil, err
+	}
+	return common.Response(), nil
+}
+
+func (s *ServicesInterface) ApplyService(ctx context.Context, serviceReq *v1alpha1.ServiceRequest) (*common.Msg, error) {
+	if serviceReq.Id == 0 || serviceReq.CiId == 0 || serviceReq.CdId == 0 {
+		return nil, common.ResponseError(common.ErrorReason_ErrInvalidArgument)
+	}
+	err := s.serviceUc.ApplyService(ctx, serviceReq.Id, serviceReq.CiId, serviceReq.CdId)
 	if err != nil {
 		return nil, err
 	}

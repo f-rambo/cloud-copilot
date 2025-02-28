@@ -10,9 +10,37 @@ enum WorkflowType {
 }
 
 enum WorkfloStatus {
-      Pending = 0;
-      Success = 1;
-      Failure = 2;
+      WorkfloStatus_UNSPECIFIED = 0;
+      Pending = 1;
+      Success = 2;
+      Failure = 3;
+}
+
+enum WorkflowStepType {
+      Customizable = 0;
+      CodePull = 1;
+      Build = 2;
+      Deploy = 3;
+}
+
+enum ServiceEnv {
+      SERVICE_ENV_UNSPECIFIED = 0;
+      SERVICE_NAME = 1;
+      VERSION = 2;
+      BRANCH = 3;
+      TAG = 4;
+      COMMIT_ID = 5;
+      SERVICE_ID = 6;
+      IMAGE = 7;
+      GIT_REPO = 8;
+      IMAGE_REPO = 9;
+}
+
+enum ServiceStatus {
+      SERVICE_STATUS_UNSPECIFIED = 0;
+      Starting = 1;
+      Running = 2;
+      Terminated = 3;
 }
 
 message Workflow {
@@ -21,11 +49,12 @@ message Workflow {
       int64 id = 1; // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
       string name = 2; // @gotags: gorm:"column:name; default:''; NOT NULL"
       string namespace = 3; // @gotags: gorm:"column:namespace; default:''; NOT NULL"
-      WorkflowType type = 4; // @gotags: gorm:"column:type; default:0; NOT NULL"
-      string workflow = 5; // @gotags: gorm:"column:workflow; default:''; NOT NULL"
-      string description = 6; // @gotags: gorm:"column:description; default:''; NOT NULL"
-      int64 service_id = 7; // @gotags: gorm:"column:service_id; default:0; NOT NULL; index:idx_service_id"
-      repeated WorkflowStep workflow_steps = 8; // @gotags: gorm:"-"
+      string runtime_name = 4; // @gotags: gorm:"column:runtime_name; default:''; NOT NULL"
+      string lables = 5; // @gotags: gorm:"column:lables; default:''; NOT NULL"
+      WorkflowType type = 6; // @gotags: gorm:"column:type; default:0; NOT NULL"
+      string description = 7; // @gotags: gorm:"column:description; default:''; NOT NULL"
+      int64 service_id = 8; // @gotags: gorm:"column:service_id; default:0; NOT NULL; index:idx_service_id"
+      repeated WorkflowStep workflow_steps = 9; // @gotags: gorm:"-"
 }
 
 message WorkflowStep {
@@ -36,7 +65,9 @@ message WorkflowStep {
       int32 order = 3; // @gotags: gorm:"column:order; default:0; NOT NULL"
       string name = 4; // @gotags: gorm:"column:name; default:''; NOT NULL"
       string description = 5; // @gotags: gorm:"column:description; default:''; NOT NULL"
-      repeated WorkflowTask workflow_tasks = 6; // @gotags: gorm:"-"
+      string image = 6; // @gotags: gorm:"column:image; default:''; NOT NULL"
+      WorkflowStepType workflow_step_type = 7; // @gotags: gorm:"column:workflow_step_type; default:0; NOT NULL"
+      repeated WorkflowTask workflow_tasks = 8; // @gotags: gorm:"-"
 }
 
 message WorkflowTask {
@@ -47,9 +78,10 @@ message WorkflowTask {
       int64 step_id = 3; // @gotags: gorm:"column:step_id; default:0; NOT NULL"
       string name = 4; // @gotags: gorm:"column:name; default:''; NOT NULL"
       int32 order = 5; // @gotags: gorm:"column:order; default:0; NOT NULL"
-      string task = 6; // @gotags: gorm:"column:task; default:''; NOT NULL"
+      string task_command = 6; // @gotags: gorm:"column:task_command; default:''; NOT NULL"
       string description = 7; // @gotags: gorm:"column:description; default:''; NOT NULL"
       WorkfloStatus status = 8; // @gotags: gorm:"column:status; default:0; NOT NULL"
+      string log = 9; // @gotags: gorm:"-"
 }
 
 message ContinuousIntegration {
@@ -58,13 +90,14 @@ message ContinuousIntegration {
       int64 id = 1; // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
       string version = 2; // @gotags: gorm:"column:version; default:''; NOT NULL"
       string branch = 3; // @gotags: gorm:"column:branch; default:''; NOT NULL"
-      string tag = 4; // @gotags: gorm:"column:tag; default:''; NOT NULL"
-      WorkfloStatus status = 5; // @gotags: gorm:"column:status; default:0; NOT NULL"
-      string description = 6; // @gotags: gorm:"column:description; default:''; NOT NULL"
-      int64 service_id = 7; // @gotags: gorm:"column:service_id; default:0; NOT NULL; index:idx_service_id"
-      int64 user_id = 8; // @gotags: gorm:"column:user_id; default:0; NOT NULL; index:idx_user_id"
-      string workflow_runtime = 9; // @gotags: gorm:"column:workflow_runtime; default:''; NOT NULL"
-      string logs = 10; // @gotags: gorm:"-"
+      string commit_id = 4; // @gotags: gorm:"column:commit_id; default:''; NOT NULL"
+      string tag = 5; // @gotags: gorm:"column:tag; default:''; NOT NULL"
+      WorkfloStatus status = 6; // @gotags: gorm:"column:status; default:0; NOT NULL"
+      string description = 7; // @gotags: gorm:"column:description; default:''; NOT NULL"
+      int64 service_id = 8; // @gotags: gorm:"column:service_id; default:0; NOT NULL; index:idx_service_id"
+      int64 user_id = 9; // @gotags: gorm:"column:user_id; default:0; NOT NULL; index:idx_user_id"
+      string workflow_runtime = 10; // @gotags: gorm:"column:workflow_runtime; default:''; NOT NULL"
+      string logs = 11; // @gotags: gorm:"-"
 }
 
 message ContinuousDeployment {
@@ -75,18 +108,33 @@ message ContinuousDeployment {
       int64 service_id = 3; // @gotags: gorm:"column:service_id; default:0; NOT NULL; index:idx_service_id"
       int64 user_id = 4; // @gotags: gorm:"column:user_id; default:0; NOT NULL"
       WorkfloStatus status = 5; // @gotags: gorm:"column:status; default:0; NOT NULL"
-      string workflow_runtime = 6; // @gotags: gorm:"column:workflow_runtime; default:''; NOT NULL"
-      string logs = 7; // @gotags: gorm:"-"
+      string image = 6; // @gotags: gorm:"column:image; default:''; NOT NULL"
+      string workflow_runtime = 7; // @gotags: gorm:"column:workflow_runtime; default:''; NOT NULL"
+      string config_path = 8; // @gotags: gorm:"column:config_path; default:''; NOT NULL"
+      string config = 9; // @gotags: gorm:"column:config; default:''; NOT NULL"
+      string logs = 10; // @gotags: gorm:"-"
 }
 
 message Port {
       // @goimport: "gorm.io/gorm"
       // @gofield: gorm.Model
       int64 id = 1; // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
-      string ingress_path = 2; // @gotags: gorm:"column:ingress_path; default:''; NOT NULL"
-      string protocol = 3; // @gotags: gorm:"column:protocol; default:''; NOT NULL"
-      int32 container_port = 4; // @gotags: gorm:"column:container_port; default:0; NOT NULL"
-      int64 service_id = 5; // @gotags: gorm:"column:service_id; default:0; NOT NULL; index:idx_service_id"
+      string name = 2; // @gotags: gorm:"column:name; default:''; NOT NULL"
+      string ingress_path = 3; // @gotags: gorm:"column:ingress_path; default:''; NOT NULL"
+      string protocol = 4; // @gotags: gorm:"column:protocol; default:''; NOT NULL"
+      int32 container_port = 5; // @gotags: gorm:"column:container_port; default:0; NOT NULL"
+      int64 service_id = 6; // @gotags: gorm:"column:service_id; default:0; NOT NULL; index:idx_service_id"
+}
+
+message Volume {
+      // @goimport: "gorm.io/gorm"
+      // @gofield: gorm.Model
+      int64 id = 1; // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
+      string name = 2; // @gotags: gorm:"column:name; default:''; NOT NULL"
+      string mount_path = 3; // @gotags: gorm:"column:mount_path; default:''; NOT NULL"
+      int32 storage = 4; // @gotags: gorm:"column:storage; default:0; NOT NULL" 
+      string storage_class = 5; // @gotags: gorm:"column:storage_class; default:''; NOT NULL" 
+      int64 service_id = 6; // @gotags: gorm:"column:service_id; default:0; NOT NULL; index:idx_service_id"
 }
 
 message Service {
@@ -94,27 +142,22 @@ message Service {
       // @gofield: gorm.Model
       int64 id = 1; // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
       string name = 2; // @gotags: gorm:"column:name; default:''; NOT NULL"
-      string code_repo = 3; // @gotags: gorm:"column:code_repo; default:''; NOT NULL"
-      int32 replicas = 4; // @gotags: gorm:"column:replicas; default:0; NOT NULL"
-      int32 cpu = 5; // @gotags: gorm:"column:cpu; default:0; NOT NULL"
-      int32 limit_cpu = 6; // @gotags: gorm:"column:limit_cpu; default:0; NOT NULL"
-      int32 gpu = 7; // @gotags: gorm:"column:gpu; default:0; NOT NULL"
-      int32 limit_gpu = 8; // @gotags: gorm:"column:limit_gpu; default:0; NOT NULL"
-      int32 memory = 9; // @gotags: gorm:"column:memory; default:0; NOT NULL"
-      int32 limit_memory = 10; // @gotags: gorm:"column:limit_memory; default:0; NOT NULL"
-      int32 disk = 11; // @gotags: gorm:"column:disk; default:0; NOT NULL"
-      int32 limit_disk = 12; // @gotags: gorm:"column:limit_disk; default:0; NOT NULL"
+      string namespace = 3; // @gotags: gorm:"column:namespace; default:''; NOT NULL"
+      string lables = 4; // @gotags: gorm:"column:lables; default:''; NOT NULL"
+      int32 replicas = 5; // @gotags: gorm:"column:replicas; default:0; NOT NULL"
+      int32 request_cpu = 6; // @gotags: gorm:"column:request_cpu; default:0; NOT NULL"
+      int32 limit_cpu = 7; // @gotags: gorm:"column:limit_cpu; default:0; NOT NULL"
+      int32 request_gpu = 8; // @gotags: gorm:"column:request_gpu; default:0; NOT NULL"
+      int32 limit_gpu = 9; // @gotags: gorm:"column:limit_gpu; default:0; NOT NULL"
+      int32 request_memory = 10; // @gotags: gorm:"column:request_memory; default:0; NOT NULL"
+      int32 limit_memory = 11; // @gotags: gorm:"column:limit_memory; default:0; NOT NULL"
+      repeated Volume volumes = 12; // @gotags: gorm:"-"
       string description = 13; // @gotags: gorm:"column:description; default:''; NOT NULL"
       repeated Port ports = 14; // @gotags: gorm:"-"
       int64 project_id = 15; // @gotags: gorm:"column:project_id; default:0; NOT NULL; index:idx_project_id"
       int64 workspace_id = 16; // @gotags: gorm:"column:workspace_id; default:0; NOT NULL; index:idx_workspace_id"
       int64 cluster_id = 17; // @gotags: gorm:"column:cluster_id; default:0; NOT NULL; index:idx_cluster_id"
-      int64 user_id = 18; // @gotags: gorm:"column:user_id; default:0; NOT NULL"
-}
-
-message AlreadyResource {
-      int32 cpu = 1;
-      int32 memory = 2;
-      int32 gpu = 3;
-      int32 disk = 4;
+      int64 user_id = 18; // @gotags: gorm:"column:user_id; default:0; NOT NULL; index:idx_user_id"
+      ServiceStatus status = 19; // @gotags: gorm:"column:status; default:0; NOT NULL"
+      string log = 20; // @gotags: gorm:"-"
 }

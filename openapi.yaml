@@ -973,6 +973,24 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/project.v1alpha1.ProjectList'
+    /api/v1alpha1/service/apply:
+        post:
+            tags:
+                - ServiceInterface
+            operationId: ServiceInterface_ApplyService
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/service.v1alpha1.ServiceRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/common.Msg'
     /api/v1alpha1/service/continuousdeployment:
         get:
             tags:
@@ -984,6 +1002,10 @@ paths:
                   schema:
                     type: string
                 - name: serviceId
+                  in: query
+                  schema:
+                    type: string
+                - name: ciId
                   in: query
                   schema:
                     type: string
@@ -1034,6 +1056,10 @@ paths:
                   in: query
                   schema:
                     type: string
+                - name: ciId
+                  in: query
+                  schema:
+                    type: string
                 - name: page
                   in: query
                   schema:
@@ -1062,6 +1088,10 @@ paths:
                   schema:
                     type: string
                 - name: serviceId
+                  in: query
+                  schema:
+                    type: string
+                - name: ciId
                   in: query
                   schema:
                     type: string
@@ -1231,6 +1261,18 @@ paths:
                   in: query
                   schema:
                     type: string
+                - name: workflowType
+                  in: query
+                  schema:
+                    type: string
+                - name: ciId
+                  in: query
+                  schema:
+                    type: string
+                - name: cdId
+                  in: query
+                  schema:
+                    type: string
             responses:
                 "200":
                     description: OK
@@ -1275,6 +1317,18 @@ paths:
                   schema:
                     type: string
                 - name: userId
+                  in: query
+                  schema:
+                    type: string
+                - name: workflowType
+                  in: query
+                  schema:
+                    type: string
+                - name: ciId
+                  in: query
+                  schema:
+                    type: string
+                - name: cdId
                   in: query
                   schema:
                     type: string
@@ -1325,6 +1379,18 @@ paths:
                   in: query
                   schema:
                     type: string
+                - name: workflowType
+                  in: query
+                  schema:
+                    type: string
+                - name: ciId
+                  in: query
+                  schema:
+                    type: string
+                - name: cdId
+                  in: query
+                  schema:
+                    type: string
             responses:
                 "200":
                     description: OK
@@ -1369,6 +1435,18 @@ paths:
                   schema:
                     type: string
                 - name: userId
+                  in: query
+                  schema:
+                    type: string
+                - name: workflowType
+                  in: query
+                  schema:
+                    type: string
+                - name: ciId
+                  in: query
+                  schema:
+                    type: string
+                - name: cdId
                   in: query
                   schema:
                     type: string
@@ -1443,6 +1521,65 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/common.Msg'
+    /api/v1alpha1/service/workflow/default:
+        get:
+            tags:
+                - ServiceInterface
+            operationId: ServiceInterface_GetDefaultWorkflow
+            parameters:
+                - name: id
+                  in: query
+                  schema:
+                    type: string
+                - name: name
+                  in: query
+                  schema:
+                    type: string
+                - name: page
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: pageSize
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: projectId
+                  in: query
+                  schema:
+                    type: string
+                - name: workspaceId
+                  in: query
+                  schema:
+                    type: string
+                - name: clusterId
+                  in: query
+                  schema:
+                    type: string
+                - name: userId
+                  in: query
+                  schema:
+                    type: string
+                - name: workflowType
+                  in: query
+                  schema:
+                    type: string
+                - name: ciId
+                  in: query
+                  schema:
+                    type: string
+                - name: cdId
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/service.v1alpha1.Workflow'
     /api/v1alpha1/user:
         get:
             tags:
@@ -2416,6 +2553,33 @@ components:
                     type: string
                 username:
                     type: string
+        service.v1alpha1.ServiceRequest:
+            type: object
+            properties:
+                id:
+                    type: string
+                name:
+                    type: string
+                page:
+                    type: integer
+                    format: int32
+                pageSize:
+                    type: integer
+                    format: int32
+                projectId:
+                    type: string
+                workspaceId:
+                    type: string
+                clusterId:
+                    type: string
+                userId:
+                    type: string
+                workflowType:
+                    type: string
+                ciId:
+                    type: string
+                cdId:
+                    type: string
         service.v1alpha1.Services:
             type: object
             properties:
@@ -2435,8 +2599,6 @@ components:
                 namespace:
                     type: string
                 workflowType:
-                    type: string
-                workflow:
                     type: string
                 description:
                     type: string

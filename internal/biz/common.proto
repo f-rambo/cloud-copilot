@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package biz.common;
+
+option go_package = "github.com/f-rambo/cloud-copilot/internal/biz;";
+
+message AlreadyResource {
+      int32 cpu = 1;
+      int32 memory = 2;
+      int32 gpu = 3;
+      int32 storage = 4;
+}

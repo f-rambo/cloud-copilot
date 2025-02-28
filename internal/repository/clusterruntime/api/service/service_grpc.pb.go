@@ -21,16 +21,20 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	ServiceInterface_Create_FullMethodName             = "/clusterruntime.api.service.ServiceInterface/Create"
-	ServiceInterface_GenerateCIWorkflow_FullMethodName = "/clusterruntime.api.service.ServiceInterface/GenerateCIWorkflow"
+	ServiceInterface_ApplyService_FullMethodName   = "/clusterruntime.api.service.ServiceInterface/ApplyService"
+	ServiceInterface_GetService_FullMethodName     = "/clusterruntime.api.service.ServiceInterface/GetService"
+	ServiceInterface_CommitWorkflow_FullMethodName = "/clusterruntime.api.service.ServiceInterface/CommitWorkflow"
+	ServiceInterface_GetWorkflow_FullMethodName    = "/clusterruntime.api.service.ServiceInterface/GetWorkflow"
 )
 
 // ServiceInterfaceClient is the client API for ServiceInterface service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ServiceInterfaceClient interface {
-	Create(ctx context.Context, in *CreateReq, opts ...grpc.CallOption) (*common.Msg, error)
-	GenerateCIWorkflow(ctx context.Context, in *biz.Service, opts ...grpc.CallOption) (*GenerateCIWorkflowResponse, error)
+	ApplyService(ctx context.Context, in *ApplyServiceRequest, opts ...grpc.CallOption) (*common.Msg, error)
+	GetService(ctx context.Context, in *biz.Service, opts ...grpc.CallOption) (*biz.Service, error)
+	CommitWorkflow(ctx context.Context, in *biz.Workflow, opts ...grpc.CallOption) (*common.Msg, error)
+	GetWorkflow(ctx context.Context, in *biz.Workflow, opts ...grpc.CallOption) (*biz.Workflow, error)
 }
 
 type serviceInterfaceClient struct {
@@ -41,20 +45,40 @@ func NewServiceInterfaceClient(cc grpc.ClientConnInterface) ServiceInterfaceClie
 	return &serviceInterfaceClient{cc}
 }
 
-func (c *serviceInterfaceClient) Create(ctx context.Context, in *CreateReq, opts ...grpc.CallOption) (*common.Msg, error) {
+func (c *serviceInterfaceClient) ApplyService(ctx context.Context, in *ApplyServiceRequest, opts ...grpc.CallOption) (*common.Msg, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(common.Msg)
-	err := c.cc.Invoke(ctx, ServiceInterface_Create_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, ServiceInterface_ApplyService_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *serviceInterfaceClient) GenerateCIWorkflow(ctx context.Context, in *biz.Service, opts ...grpc.CallOption) (*GenerateCIWorkflowResponse, error) {
+func (c *serviceInterfaceClient) GetService(ctx context.Context, in *biz.Service, opts ...grpc.CallOption) (*biz.Service, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GenerateCIWorkflowResponse)
-	err := c.cc.Invoke(ctx, ServiceInterface_GenerateCIWorkflow_FullMethodName, in, out, cOpts...)
+	out := new(biz.Service)
+	err := c.cc.Invoke(ctx, ServiceInterface_GetService_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *serviceInterfaceClient) CommitWorkflow(ctx context.Context, in *biz.Workflow, opts ...grpc.CallOption) (*common.Msg, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(common.Msg)
+	err := c.cc.Invoke(ctx, ServiceInterface_CommitWorkflow_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *serviceInterfaceClient) GetWorkflow(ctx context.Context, in *biz.Workflow, opts ...grpc.CallOption) (*biz.Workflow, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(biz.Workflow)
+	err := c.cc.Invoke(ctx, ServiceInterface_GetWorkflow_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -65,8 +89,10 @@ func (c *serviceInterfaceClient) GenerateCIWorkflow(ctx context.Context, in *biz
 // All implementations must embed UnimplementedServiceInterfaceServer
 // for forward compatibility.
 type ServiceInterfaceServer interface {
-	Create(context.Context, *CreateReq) (*common.Msg, error)
-	GenerateCIWorkflow(context.Context, *biz.Service) (*GenerateCIWorkflowResponse, error)
+	ApplyService(context.Context, *ApplyServiceRequest) (*common.Msg, error)
+	GetService(context.Context, *biz.Service) (*biz.Service, error)
+	CommitWorkflow(context.Context, *biz.Workflow) (*common.Msg, error)
+	GetWorkflow(context.Context, *biz.Workflow) (*biz.Workflow, error)
 	mustEmbedUnimplementedServiceInterfaceServer()
 }
 
@@ -77,11 +103,17 @@ type ServiceInterfaceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedServiceInterfaceServer struct{}
 
-func (UnimplementedServiceInterfaceServer) Create(context.Context, *CreateReq) (*common.Msg, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Create not implemented")
+func (UnimplementedServiceInterfaceServer) ApplyService(context.Context, *ApplyServiceRequest) (*common.Msg, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ApplyService not implemented")
 }
-func (UnimplementedServiceInterfaceServer) GenerateCIWorkflow(context.Context, *biz.Service) (*GenerateCIWorkflowResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GenerateCIWorkflow not implemented")
+func (UnimplementedServiceInterfaceServer) GetService(context.Context, *biz.Service) (*biz.Service, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetService not implemented")
+}
+func (UnimplementedServiceInterfaceServer) CommitWorkflow(context.Context, *biz.Workflow) (*common.Msg, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CommitWorkflow not implemented")
+}
+func (UnimplementedServiceInterfaceServer) GetWorkflow(context.Context, *biz.Workflow) (*biz.Workflow, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetWorkflow not implemented")
 }
 func (UnimplementedServiceInterfaceServer) mustEmbedUnimplementedServiceInterfaceServer() {}
 func (UnimplementedServiceInterfaceServer) testEmbeddedByValue()                          {}
@@ -104,38 +136,74 @@ func RegisterServiceInterfaceServer(s grpc.ServiceRegistrar, srv ServiceInterfac
 	s.RegisterService(&ServiceInterface_ServiceDesc, srv)
 }
 
-func _ServiceInterface_Create_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CreateReq)
+func _ServiceInterface_ApplyService_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ApplyServiceRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ServiceInterfaceServer).Create(ctx, in)
+		return srv.(ServiceInterfaceServer).ApplyService(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: ServiceInterface_Create_FullMethodName,
+		FullMethod: ServiceInterface_ApplyService_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ServiceInterfaceServer).Create(ctx, req.(*CreateReq))
+		return srv.(ServiceInterfaceServer).ApplyService(ctx, req.(*ApplyServiceRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ServiceInterface_GenerateCIWorkflow_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _ServiceInterface_GetService_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(biz.Service)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ServiceInterfaceServer).GenerateCIWorkflow(ctx, in)
+		return srv.(ServiceInterfaceServer).GetService(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: ServiceInterface_GenerateCIWorkflow_FullMethodName,
+		FullMethod: ServiceInterface_GetService_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ServiceInterfaceServer).GenerateCIWorkflow(ctx, req.(*biz.Service))
+		return srv.(ServiceInterfaceServer).GetService(ctx, req.(*biz.Service))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ServiceInterface_CommitWorkflow_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(biz.Workflow)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ServiceInterfaceServer).CommitWorkflow(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ServiceInterface_CommitWorkflow_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ServiceInterfaceServer).CommitWorkflow(ctx, req.(*biz.Workflow))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ServiceInterface_GetWorkflow_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(biz.Workflow)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ServiceInterfaceServer).GetWorkflow(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ServiceInterface_GetWorkflow_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ServiceInterfaceServer).GetWorkflow(ctx, req.(*biz.Workflow))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -148,12 +216,20 @@ var ServiceInterface_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*ServiceInterfaceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "Create",
-			Handler:    _ServiceInterface_Create_Handler,
+			MethodName: "ApplyService",
+			Handler:    _ServiceInterface_ApplyService_Handler,
 		},
 		{
-			MethodName: "GenerateCIWorkflow",
-			Handler:    _ServiceInterface_GenerateCIWorkflow_Handler,
+			MethodName: "GetService",
+			Handler:    _ServiceInterface_GetService_Handler,
+		},
+		{
+			MethodName: "CommitWorkflow",
+			Handler:    _ServiceInterface_CommitWorkflow_Handler,
+		},
+		{
+			MethodName: "GetWorkflow",
+			Handler:    _ServiceInterface_GetWorkflow_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -40,6 +40,12 @@ service ServiceInterface {
             };
       }
 
+      rpc GetDefaultWorkflow(service.v1alpha1.ServiceRequest) returns(service.v1alpha1.Workflow) {
+            option (google.api.http) = {
+              get: "/api/v1alpha1/service/workflow/default"
+            };
+      }
+
       rpc SaveWorkflow(service.v1alpha1.Workflow) returns(common.Msg) {
             option (google.api.http) = {
               post: "/api/v1alpha1/service/workflow"
@@ -100,6 +106,13 @@ service ServiceInterface {
       rpc DeleteContinuousDeployment(service.v1alpha1.ContinuousDeploymentRequest) returns(common.Msg) {
             option (google.api.http) = {
               delete: "/api/v1alpha1/service/continuousdeployment"
+            };
+      }
+
+      rpc ApplyService(service.v1alpha1.ServiceRequest) returns(common.Msg) {
+            option (google.api.http) = {
+              post: "/api/v1alpha1/service/apply"
+              body: "*"
             };
       }
 }

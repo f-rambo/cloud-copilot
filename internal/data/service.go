@@ -63,8 +63,9 @@ func (s *servicesRepo) Delete(ctx context.Context, id int64) error {
 
 func (s *servicesRepo) GetServiceResourceByProject(ctx context.Context, projectId int64, alreadyResource *biz.AlreadyResource) error {
 	return s.data.db.Model(&biz.Service{}).
-		Select("SUM(limit_cpu) as cpu,SUM(limit_memory) as memory,SUM(limit_gpu) as gpu,SUM(limit_disk) as disk").
-		Where("project_id = ?", projectId).Scan(alreadyResource).Error
+		Select("SUM(replicas * limit_cpu) as cpu, SUM(replicas * limit_memory) as memory, SUM(replicas * limit_gpu) as gpu, SUM(replicas * storage) as storage").
+		Where("project_id = ?", projectId).
+		Scan(alreadyResource).Error
 }
 
 func (s *servicesRepo) GetByName(ctx context.Context, projectId int64, name string) (*biz.Service, error) {

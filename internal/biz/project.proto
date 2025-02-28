@@ -17,4 +17,6 @@ message Project {
       int32 limit_gpu = 8; // @gotags: gorm:"column:limit_gpu; default:0; NOT NULL"
       int32 limit_memory = 9; // @gotags: gorm:"column:limit_memory; default:0; NOT NULL"
       int32 limit_disk = 10; // @gotags: gorm:"column:limit_disk; default:0; NOT NULL"
+      string git_repository = 11; // @gotags: gorm:"column:git_repository; default:''; NOT NULL"
+      string image_repository = 12; // @gotags: gorm:"column:image_repository; default:''; NOT NULL"
 }

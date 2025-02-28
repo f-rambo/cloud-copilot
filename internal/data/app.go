@@ -221,3 +221,9 @@ func (a *appRepo) GetRepoByName(ctx context.Context, repoName string) (*biz.AppR
 	}
 	return repo, nil
 }
+
+func (a *appRepo) GetAppReleaseResourceByProject(ctx context.Context, projectId int64, alreadyResource *biz.AlreadyResource) error {
+	return a.data.db.Model(&biz.AppRelease{}).
+		Select("SUM(replicas * limit_cpu) as cpu, SUM(replicas * limit_memory) as memory, SUM(replicas * limit_gpu) as gpu, SUM(replicas * storage) as storage").
+		Where("project_id = ?", projectId).Scan(alreadyResource).Error
+}
