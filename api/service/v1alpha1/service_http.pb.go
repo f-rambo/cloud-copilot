@@ -31,7 +31,6 @@ const OperationServiceInterfaceGetContinuousDeployment = "/service.v1alpha1.Serv
 const OperationServiceInterfaceGetContinuousDeployments = "/service.v1alpha1.ServiceInterface/GetContinuousDeployments"
 const OperationServiceInterfaceGetContinuousIntegration = "/service.v1alpha1.ServiceInterface/GetContinuousIntegration"
 const OperationServiceInterfaceGetContinuousIntegrations = "/service.v1alpha1.ServiceInterface/GetContinuousIntegrations"
-const OperationServiceInterfaceGetDefaultWorkflow = "/service.v1alpha1.ServiceInterface/GetDefaultWorkflow"
 const OperationServiceInterfaceGetServiceResource = "/service.v1alpha1.ServiceInterface/GetServiceResource"
 const OperationServiceInterfaceGetWorkflow = "/service.v1alpha1.ServiceInterface/GetWorkflow"
 const OperationServiceInterfaceList = "/service.v1alpha1.ServiceInterface/List"
@@ -50,7 +49,6 @@ type ServiceInterfaceHTTPServer interface {
 	GetContinuousDeployments(context.Context, *ContinuousDeploymentRequest) (*ContinuousDeployments, error)
 	GetContinuousIntegration(context.Context, *ContinuousIntegrationRequest) (*ContinuousIntegration, error)
 	GetContinuousIntegrations(context.Context, *ContinuousIntegrationRequest) (*ContinuousIntegrations, error)
-	GetDefaultWorkflow(context.Context, *ServiceRequest) (*Workflow, error)
 	GetServiceResource(context.Context, *ServiceRequest) (*AlreadyResource, error)
 	GetWorkflow(context.Context, *WorkflowRequest) (*Workflow, error)
 	List(context.Context, *ServiceRequest) (*Services, error)
@@ -65,7 +63,6 @@ func RegisterServiceInterfaceHTTPServer(s *http.Server, srv ServiceInterfaceHTTP
 	r.GET("/api/v1alpha1/service/get", _ServiceInterface_Get4_HTTP_Handler(srv))
 	r.DELETE("/api/v1alpha1/service/delete", _ServiceInterface_Delete3_HTTP_Handler(srv))
 	r.GET("/api/v1alpha1/service/resource", _ServiceInterface_GetServiceResource0_HTTP_Handler(srv))
-	r.GET("/api/v1alpha1/service/workflow/default", _ServiceInterface_GetDefaultWorkflow0_HTTP_Handler(srv))
 	r.POST("/api/v1alpha1/service/workflow", _ServiceInterface_SaveWorkflow0_HTTP_Handler(srv))
 	r.GET("/api/v1alpha1/service/workflow", _ServiceInterface_GetWorkflow0_HTTP_Handler(srv))
 	r.POST("/api/v1alpha1/service/continuousintegration", _ServiceInterface_CreateContinuousIntegration0_HTTP_Handler(srv))
@@ -173,25 +170,6 @@ func _ServiceInterface_GetServiceResource0_HTTP_Handler(srv ServiceInterfaceHTTP
 			return err
 		}
 		reply := out.(*AlreadyResource)
-		return ctx.Result(200, reply)
-	}
-}
-
-func _ServiceInterface_GetDefaultWorkflow0_HTTP_Handler(srv ServiceInterfaceHTTPServer) func(ctx http.Context) error {
-	return func(ctx http.Context) error {
-		var in ServiceRequest
-		if err := ctx.BindQuery(&in); err != nil {
-			return err
-		}
-		http.SetOperation(ctx, OperationServiceInterfaceGetDefaultWorkflow)
-		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.GetDefaultWorkflow(ctx, req.(*ServiceRequest))
-		})
-		out, err := h(ctx, &in)
-		if err != nil {
-			return err
-		}
-		reply := out.(*Workflow)
 		return ctx.Result(200, reply)
 	}
 }
@@ -429,7 +407,6 @@ type ServiceInterfaceHTTPClient interface {
 	GetContinuousDeployments(ctx context.Context, req *ContinuousDeploymentRequest, opts ...http.CallOption) (rsp *ContinuousDeployments, err error)
 	GetContinuousIntegration(ctx context.Context, req *ContinuousIntegrationRequest, opts ...http.CallOption) (rsp *ContinuousIntegration, err error)
 	GetContinuousIntegrations(ctx context.Context, req *ContinuousIntegrationRequest, opts ...http.CallOption) (rsp *ContinuousIntegrations, err error)
-	GetDefaultWorkflow(ctx context.Context, req *ServiceRequest, opts ...http.CallOption) (rsp *Workflow, err error)
 	GetServiceResource(ctx context.Context, req *ServiceRequest, opts ...http.CallOption) (rsp *AlreadyResource, err error)
 	GetWorkflow(ctx context.Context, req *WorkflowRequest, opts ...http.CallOption) (rsp *Workflow, err error)
 	List(ctx context.Context, req *ServiceRequest, opts ...http.CallOption) (rsp *Services, err error)
@@ -580,19 +557,6 @@ func (c *ServiceInterfaceHTTPClientImpl) GetContinuousIntegrations(ctx context.C
 	pattern := "/api/v1alpha1/service/continuousintegrations"
 	path := binding.EncodeURL(pattern, in, true)
 	opts = append(opts, http.Operation(OperationServiceInterfaceGetContinuousIntegrations))
-	opts = append(opts, http.PathTemplate(pattern))
-	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return &out, nil
-}
-
-func (c *ServiceInterfaceHTTPClientImpl) GetDefaultWorkflow(ctx context.Context, in *ServiceRequest, opts ...http.CallOption) (*Workflow, error) {
-	var out Workflow
-	pattern := "/api/v1alpha1/service/workflow/default"
-	path := binding.EncodeURL(pattern, in, true)
-	opts = append(opts, http.Operation(OperationServiceInterfaceGetDefaultWorkflow))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
 	if err != nil {

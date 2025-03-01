@@ -25,7 +25,6 @@ const (
 	ServiceInterface_Get_FullMethodName                         = "/service.v1alpha1.ServiceInterface/Get"
 	ServiceInterface_Delete_FullMethodName                      = "/service.v1alpha1.ServiceInterface/Delete"
 	ServiceInterface_GetServiceResource_FullMethodName          = "/service.v1alpha1.ServiceInterface/GetServiceResource"
-	ServiceInterface_GetDefaultWorkflow_FullMethodName          = "/service.v1alpha1.ServiceInterface/GetDefaultWorkflow"
 	ServiceInterface_SaveWorkflow_FullMethodName                = "/service.v1alpha1.ServiceInterface/SaveWorkflow"
 	ServiceInterface_GetWorkflow_FullMethodName                 = "/service.v1alpha1.ServiceInterface/GetWorkflow"
 	ServiceInterface_CreateContinuousIntegration_FullMethodName = "/service.v1alpha1.ServiceInterface/CreateContinuousIntegration"
@@ -48,7 +47,6 @@ type ServiceInterfaceClient interface {
 	Get(ctx context.Context, in *ServiceRequest, opts ...grpc.CallOption) (*Service, error)
 	Delete(ctx context.Context, in *ServiceRequest, opts ...grpc.CallOption) (*common.Msg, error)
 	GetServiceResource(ctx context.Context, in *ServiceRequest, opts ...grpc.CallOption) (*AlreadyResource, error)
-	GetDefaultWorkflow(ctx context.Context, in *ServiceRequest, opts ...grpc.CallOption) (*Workflow, error)
 	SaveWorkflow(ctx context.Context, in *Workflow, opts ...grpc.CallOption) (*common.Msg, error)
 	GetWorkflow(ctx context.Context, in *WorkflowRequest, opts ...grpc.CallOption) (*Workflow, error)
 	CreateContinuousIntegration(ctx context.Context, in *ContinuousIntegration, opts ...grpc.CallOption) (*common.Msg, error)
@@ -114,16 +112,6 @@ func (c *serviceInterfaceClient) GetServiceResource(ctx context.Context, in *Ser
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(AlreadyResource)
 	err := c.cc.Invoke(ctx, ServiceInterface_GetServiceResource_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *serviceInterfaceClient) GetDefaultWorkflow(ctx context.Context, in *ServiceRequest, opts ...grpc.CallOption) (*Workflow, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Workflow)
-	err := c.cc.Invoke(ctx, ServiceInterface_GetDefaultWorkflow_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -249,7 +237,6 @@ type ServiceInterfaceServer interface {
 	Get(context.Context, *ServiceRequest) (*Service, error)
 	Delete(context.Context, *ServiceRequest) (*common.Msg, error)
 	GetServiceResource(context.Context, *ServiceRequest) (*AlreadyResource, error)
-	GetDefaultWorkflow(context.Context, *ServiceRequest) (*Workflow, error)
 	SaveWorkflow(context.Context, *Workflow) (*common.Msg, error)
 	GetWorkflow(context.Context, *WorkflowRequest) (*Workflow, error)
 	CreateContinuousIntegration(context.Context, *ContinuousIntegration) (*common.Msg, error)
@@ -285,9 +272,6 @@ func (UnimplementedServiceInterfaceServer) Delete(context.Context, *ServiceReque
 }
 func (UnimplementedServiceInterfaceServer) GetServiceResource(context.Context, *ServiceRequest) (*AlreadyResource, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetServiceResource not implemented")
-}
-func (UnimplementedServiceInterfaceServer) GetDefaultWorkflow(context.Context, *ServiceRequest) (*Workflow, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetDefaultWorkflow not implemented")
 }
 func (UnimplementedServiceInterfaceServer) SaveWorkflow(context.Context, *Workflow) (*common.Msg, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SaveWorkflow not implemented")
@@ -429,24 +413,6 @@ func _ServiceInterface_GetServiceResource_Handler(srv interface{}, ctx context.C
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ServiceInterfaceServer).GetServiceResource(ctx, req.(*ServiceRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _ServiceInterface_GetDefaultWorkflow_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ServiceRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ServiceInterfaceServer).GetDefaultWorkflow(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ServiceInterface_GetDefaultWorkflow_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ServiceInterfaceServer).GetDefaultWorkflow(ctx, req.(*ServiceRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -675,10 +641,6 @@ var ServiceInterface_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetServiceResource",
 			Handler:    _ServiceInterface_GetServiceResource_Handler,
-		},
-		{
-			MethodName: "GetDefaultWorkflow",
-			Handler:    _ServiceInterface_GetDefaultWorkflow_Handler,
 		},
 		{
 			MethodName: "SaveWorkflow",

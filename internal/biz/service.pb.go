@@ -301,14 +301,14 @@ type Workflow struct {
 	// @goimport: "gorm.io/gorm"
 	// @gofield: gorm.Model
 	Id            int64           `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT"`                                                         // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
-	Name          string          `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty" gorm:"column:name; default:''; NOT NULL"`                                                        // @gotags: gorm:"column:name; default:''; NOT NULL"
-	Namespace     string          `json:"namespace,omitempty" gorm:"column:namespace; default:''; NOT NULL" protobuf:"bytes,3,opt,name=namespace,proto3"`                                         // @gotags: gorm:"column:namespace; default:''; NOT NULL"
-	RuntimeName   string          `json:"runtime_name,omitempty" gorm:"column:runtime_name; default:''; NOT NULL" protobuf:"bytes,4,opt,name=runtime_name,json=runtimeName,proto3"`               // @gotags: gorm:"column:runtime_name; default:''; NOT NULL"
-	Lables        string          `gorm:"column:lables; default:''; NOT NULL" protobuf:"bytes,5,opt,name=lables,proto3" json:"lables,omitempty"`                                                  // @gotags: gorm:"column:lables; default:''; NOT NULL"
+	Name          string          `gorm:"column:name; default:''; NOT NULL" protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`                                                        // @gotags: gorm:"column:name; default:''; NOT NULL"
+	Namespace     string          `protobuf:"bytes,3,opt,name=namespace,proto3" json:"namespace,omitempty" gorm:"column:namespace; default:''; NOT NULL"`                                         // @gotags: gorm:"column:namespace; default:''; NOT NULL"
+	RuntimeName   string          `protobuf:"bytes,4,opt,name=runtime_name,json=runtimeName,proto3" json:"runtime_name,omitempty" gorm:"column:runtime_name; default:''; NOT NULL"`               // @gotags: gorm:"column:runtime_name; default:''; NOT NULL"
+	Lables        string          `protobuf:"bytes,5,opt,name=lables,proto3" json:"lables,omitempty" gorm:"column:lables; default:''; NOT NULL"`                                                  // @gotags: gorm:"column:lables; default:''; NOT NULL"
 	Type          WorkflowType    `protobuf:"varint,6,opt,name=type,proto3,enum=biz.service.WorkflowType" json:"type,omitempty" gorm:"column:type; default:0; NOT NULL"`                          // @gotags: gorm:"column:type; default:0; NOT NULL"
 	Description   string          `protobuf:"bytes,7,opt,name=description,proto3" json:"description,omitempty" gorm:"column:description; default:''; NOT NULL"`                                   // @gotags: gorm:"column:description; default:''; NOT NULL"
-	ServiceId     int64           `protobuf:"varint,8,opt,name=service_id,json=serviceId,proto3" json:"service_id,omitempty" gorm:"column:service_id; default:0; NOT NULL; index:idx_service_id"` // @gotags: gorm:"column:service_id; default:0; NOT NULL; index:idx_service_id"
-	WorkflowSteps []*WorkflowStep `protobuf:"bytes,9,rep,name=workflow_steps,json=workflowSteps,proto3" json:"workflow_steps,omitempty" gorm:"-"`                                                 // @gotags: gorm:"-"
+	ServiceId     int64           `gorm:"column:service_id; default:0; NOT NULL; index:idx_service_id" protobuf:"varint,8,opt,name=service_id,json=serviceId,proto3" json:"service_id,omitempty"` // @gotags: gorm:"column:service_id; default:0; NOT NULL; index:idx_service_id"
+	WorkflowSteps []*WorkflowStep `json:"workflow_steps,omitempty" gorm:"-" protobuf:"bytes,9,rep,name=workflow_steps,json=workflowSteps,proto3"`                                                 // @gotags: gorm:"-"
 	gorm.Model
 }
 
@@ -417,11 +417,11 @@ type WorkflowStep struct {
 	Id               int64            `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT"`                                                                                                    // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
 	WorkflowId       int64            `protobuf:"varint,2,opt,name=workflow_id,json=workflowId,proto3" json:"workflow_id,omitempty" gorm:"column:workflow_id; default:0; NOT NULL; index:idx_workflow_id"`                                       // @gotags: gorm:"column:workflow_id; default:0; NOT NULL; index:idx_workflow_id"
 	Order            int32            `protobuf:"varint,3,opt,name=order,proto3" json:"order,omitempty" gorm:"column:order; default:0; NOT NULL"`                                                                                                // @gotags: gorm:"column:order; default:0; NOT NULL"
-	Name             string           `json:"name,omitempty" gorm:"column:name; default:''; NOT NULL" protobuf:"bytes,4,opt,name=name,proto3"`                                                                                                   // @gotags: gorm:"column:name; default:''; NOT NULL"
-	Description      string           `protobuf:"bytes,5,opt,name=description,proto3" json:"description,omitempty" gorm:"column:description; default:''; NOT NULL"`                                                                              // @gotags: gorm:"column:description; default:''; NOT NULL"
+	Name             string           `protobuf:"bytes,4,opt,name=name,proto3" json:"name,omitempty" gorm:"column:name; default:''; NOT NULL"`                                                                                                   // @gotags: gorm:"column:name; default:''; NOT NULL"
+	Description      string           `json:"description,omitempty" gorm:"column:description; default:''; NOT NULL" protobuf:"bytes,5,opt,name=description,proto3"`                                                                              // @gotags: gorm:"column:description; default:''; NOT NULL"
 	Image            string           `protobuf:"bytes,6,opt,name=image,proto3" json:"image,omitempty" gorm:"column:image; default:''; NOT NULL"`                                                                                                // @gotags: gorm:"column:image; default:''; NOT NULL"
 	WorkflowStepType WorkflowStepType `protobuf:"varint,7,opt,name=workflow_step_type,json=workflowStepType,proto3,enum=biz.service.WorkflowStepType" json:"workflow_step_type,omitempty" gorm:"column:workflow_step_type; default:0; NOT NULL"` // @gotags: gorm:"column:workflow_step_type; default:0; NOT NULL"
-	WorkflowTasks    []*WorkflowTask  `json:"workflow_tasks,omitempty" gorm:"-" protobuf:"bytes,8,rep,name=workflow_tasks,json=workflowTasks,proto3"`
+	WorkflowTasks    []*WorkflowTask  `protobuf:"bytes,8,rep,name=workflow_tasks,json=workflowTasks,proto3" json:"workflow_tasks,omitempty" gorm:"-"`
 	gorm.Model                        // @gotags: gorm:"-"
 }
 
@@ -522,13 +522,13 @@ type WorkflowTask struct {
 	// @gofield: gorm.Model
 	Id          int64         `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT"`                                                              // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
 	WorkflowId  int64         `protobuf:"varint,2,opt,name=workflow_id,json=workflowId,proto3" json:"workflow_id,omitempty" gorm:"column:workflow_id; default:0; NOT NULL; index:idx_workflow_id"` // @gotags: gorm:"column:workflow_id; default:0; NOT NULL; index:idx_workflow_id"
-	StepId      int64         `json:"step_id,omitempty" gorm:"column:step_id; default:0; NOT NULL" protobuf:"varint,3,opt,name=step_id,json=stepId,proto3"`                                        // @gotags: gorm:"column:step_id; default:0; NOT NULL"
-	Name        string        `json:"name,omitempty" gorm:"column:name; default:''; NOT NULL" protobuf:"bytes,4,opt,name=name,proto3"`                                                             // @gotags: gorm:"column:name; default:''; NOT NULL"
+	StepId      int64         `gorm:"column:step_id; default:0; NOT NULL" protobuf:"varint,3,opt,name=step_id,json=stepId,proto3" json:"step_id,omitempty"`                                        // @gotags: gorm:"column:step_id; default:0; NOT NULL"
+	Name        string        `gorm:"column:name; default:''; NOT NULL" protobuf:"bytes,4,opt,name=name,proto3" json:"name,omitempty"`                                                             // @gotags: gorm:"column:name; default:''; NOT NULL"
 	Order       int32         `protobuf:"varint,5,opt,name=order,proto3" json:"order,omitempty" gorm:"column:order; default:0; NOT NULL"`                                                          // @gotags: gorm:"column:order; default:0; NOT NULL"
-	TaskCommand string        `protobuf:"bytes,6,opt,name=task_command,json=taskCommand,proto3" json:"task_command,omitempty" gorm:"column:task_command; default:''; NOT NULL"`                    // @gotags: gorm:"column:task_command; default:''; NOT NULL"
-	Description string        `gorm:"column:description; default:''; NOT NULL" protobuf:"bytes,7,opt,name=description,proto3" json:"description,omitempty"`                                        // @gotags: gorm:"column:description; default:''; NOT NULL"
-	Status      WorkfloStatus `json:"status,omitempty" gorm:"column:status; default:0; NOT NULL" protobuf:"varint,8,opt,name=status,proto3,enum=biz.service.WorkfloStatus"`                        // @gotags: gorm:"column:status; default:0; NOT NULL"
-	Log         string        `gorm:"-" protobuf:"bytes,9,opt,name=log,proto3" json:"log,omitempty"`
+	TaskCommand string        `gorm:"column:task_command; default:''; NOT NULL" protobuf:"bytes,6,opt,name=task_command,json=taskCommand,proto3" json:"task_command,omitempty"`                    // @gotags: gorm:"column:task_command; default:''; NOT NULL"
+	Description string        `json:"description,omitempty" gorm:"column:description; default:''; NOT NULL" protobuf:"bytes,7,opt,name=description,proto3"`                                        // @gotags: gorm:"column:description; default:''; NOT NULL"
+	Status      WorkfloStatus `gorm:"column:status; default:0; NOT NULL" protobuf:"varint,8,opt,name=status,proto3,enum=biz.service.WorkfloStatus" json:"status,omitempty"`                        // @gotags: gorm:"column:status; default:0; NOT NULL"
+	Log         string        `protobuf:"bytes,9,opt,name=log,proto3" json:"log,omitempty" gorm:"-"`
 	gorm.Model                // @gotags: gorm:"-"
 }
 
@@ -637,10 +637,10 @@ type ContinuousIntegration struct {
 	Id              int64         `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT"`                                                            // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
 	Version         string        `protobuf:"bytes,2,opt,name=version,proto3" json:"version,omitempty" gorm:"column:version; default:''; NOT NULL"`                                                  // @gotags: gorm:"column:version; default:''; NOT NULL"
 	Branch          string        `protobuf:"bytes,3,opt,name=branch,proto3" json:"branch,omitempty" gorm:"column:branch; default:''; NOT NULL"`                                                     // @gotags: gorm:"column:branch; default:''; NOT NULL"
-	CommitId        string        `json:"commit_id,omitempty" gorm:"column:commit_id; default:''; NOT NULL" protobuf:"bytes,4,opt,name=commit_id,json=commitId,proto3"`                              // @gotags: gorm:"column:commit_id; default:''; NOT NULL"
-	Tag             string        `protobuf:"bytes,5,opt,name=tag,proto3" json:"tag,omitempty" gorm:"column:tag; default:''; NOT NULL"`                                                              // @gotags: gorm:"column:tag; default:''; NOT NULL"
+	CommitId        string        `protobuf:"bytes,4,opt,name=commit_id,json=commitId,proto3" json:"commit_id,omitempty" gorm:"column:commit_id; default:''; NOT NULL"`                              // @gotags: gorm:"column:commit_id; default:''; NOT NULL"
+	Tag             string        `gorm:"column:tag; default:''; NOT NULL" protobuf:"bytes,5,opt,name=tag,proto3" json:"tag,omitempty"`                                                              // @gotags: gorm:"column:tag; default:''; NOT NULL"
 	Status          WorkfloStatus `protobuf:"varint,6,opt,name=status,proto3,enum=biz.service.WorkfloStatus" json:"status,omitempty" gorm:"column:status; default:0; NOT NULL"`                      // @gotags: gorm:"column:status; default:0; NOT NULL"
-	Description     string        `protobuf:"bytes,7,opt,name=description,proto3" json:"description,omitempty" gorm:"column:description; default:''; NOT NULL"`                                      // @gotags: gorm:"column:description; default:''; NOT NULL"
+	Description     string        `json:"description,omitempty" gorm:"column:description; default:''; NOT NULL" protobuf:"bytes,7,opt,name=description,proto3"`                                      // @gotags: gorm:"column:description; default:''; NOT NULL"
 	ServiceId       int64         `protobuf:"varint,8,opt,name=service_id,json=serviceId,proto3" json:"service_id,omitempty" gorm:"column:service_id; default:0; NOT NULL; index:idx_service_id"`    // @gotags: gorm:"column:service_id; default:0; NOT NULL; index:idx_service_id"
 	UserId          int64         `protobuf:"varint,9,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty" gorm:"column:user_id; default:0; NOT NULL; index:idx_user_id"`                   // @gotags: gorm:"column:user_id; default:0; NOT NULL; index:idx_user_id"
 	WorkflowRuntime string        `protobuf:"bytes,10,opt,name=workflow_runtime,json=workflowRuntime,proto3" json:"workflow_runtime,omitempty" gorm:"column:workflow_runtime; default:''; NOT NULL"` // @gotags: gorm:"column:workflow_runtime; default:''; NOT NULL"
@@ -764,16 +764,16 @@ type ContinuousDeployment struct {
 
 	// @goimport: "gorm.io/gorm"
 	// @gofield: gorm.Model
-	Id              int64         `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT"`                                                           // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
-	CiId            int64         `gorm:"column:ci_id; default:0; NOT NULL; index:idx_ci_id" protobuf:"varint,2,opt,name=ci_id,json=ciId,proto3" json:"ci_id,omitempty"`                            // @gotags: gorm:"column:ci_id; default:0; NOT NULL; index:idx_ci_id"
+	Id              int64         `json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT" protobuf:"varint,1,opt,name=id,proto3"`                                                           // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
+	CiId            int64         `protobuf:"varint,2,opt,name=ci_id,json=ciId,proto3" json:"ci_id,omitempty" gorm:"column:ci_id; default:0; NOT NULL; index:idx_ci_id"`                            // @gotags: gorm:"column:ci_id; default:0; NOT NULL; index:idx_ci_id"
 	ServiceId       int64         `protobuf:"varint,3,opt,name=service_id,json=serviceId,proto3" json:"service_id,omitempty" gorm:"column:service_id; default:0; NOT NULL; index:idx_service_id"`   // @gotags: gorm:"column:service_id; default:0; NOT NULL; index:idx_service_id"
-	UserId          int64         `protobuf:"varint,4,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty" gorm:"column:user_id; default:0; NOT NULL"`                                     // @gotags: gorm:"column:user_id; default:0; NOT NULL"
-	Status          WorkfloStatus `protobuf:"varint,5,opt,name=status,proto3,enum=biz.service.WorkfloStatus" json:"status,omitempty" gorm:"column:status; default:0; NOT NULL"`                     // @gotags: gorm:"column:status; default:0; NOT NULL"
-	Image           string        `gorm:"column:image; default:''; NOT NULL" protobuf:"bytes,6,opt,name=image,proto3" json:"image,omitempty"`                                                       // @gotags: gorm:"column:image; default:''; NOT NULL"
+	UserId          int64         `gorm:"column:user_id; default:0; NOT NULL" protobuf:"varint,4,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`                                     // @gotags: gorm:"column:user_id; default:0; NOT NULL"
+	Status          WorkfloStatus `gorm:"column:status; default:0; NOT NULL" protobuf:"varint,5,opt,name=status,proto3,enum=biz.service.WorkfloStatus" json:"status,omitempty"`                     // @gotags: gorm:"column:status; default:0; NOT NULL"
+	Image           string        `protobuf:"bytes,6,opt,name=image,proto3" json:"image,omitempty" gorm:"column:image; default:''; NOT NULL"`                                                       // @gotags: gorm:"column:image; default:''; NOT NULL"
 	WorkflowRuntime string        `protobuf:"bytes,7,opt,name=workflow_runtime,json=workflowRuntime,proto3" json:"workflow_runtime,omitempty" gorm:"column:workflow_runtime; default:''; NOT NULL"` // @gotags: gorm:"column:workflow_runtime; default:''; NOT NULL"
 	ConfigPath      string        `protobuf:"bytes,8,opt,name=config_path,json=configPath,proto3" json:"config_path,omitempty" gorm:"column:config_path; default:''; NOT NULL"`                     // @gotags: gorm:"column:config_path; default:''; NOT NULL"
 	Config          string        `protobuf:"bytes,9,opt,name=config,proto3" json:"config,omitempty" gorm:"column:config; default:''; NOT NULL"`                                                    // @gotags: gorm:"column:config; default:''; NOT NULL"
-	Logs            string        `protobuf:"bytes,10,opt,name=logs,proto3" json:"logs,omitempty" gorm:"-"`
+	Logs            string        `json:"logs,omitempty" gorm:"-" protobuf:"bytes,10,opt,name=logs,proto3"`
 	gorm.Model                    // @gotags: gorm:"-"
 }
 
@@ -886,11 +886,11 @@ type Port struct {
 
 	// @goimport: "gorm.io/gorm"
 	// @gofield: gorm.Model
-	Id            int64  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT"`                                                         // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
-	Name          string `json:"name,omitempty" gorm:"column:name; default:''; NOT NULL" protobuf:"bytes,2,opt,name=name,proto3"`                                                        // @gotags: gorm:"column:name; default:''; NOT NULL"
+	Id            int64  `json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT" protobuf:"varint,1,opt,name=id,proto3"`                                                         // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
+	Name          string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty" gorm:"column:name; default:''; NOT NULL"`                                                        // @gotags: gorm:"column:name; default:''; NOT NULL"
 	IngressPath   string `protobuf:"bytes,3,opt,name=ingress_path,json=ingressPath,proto3" json:"ingress_path,omitempty" gorm:"column:ingress_path; default:''; NOT NULL"`               // @gotags: gorm:"column:ingress_path; default:''; NOT NULL"
-	Protocol      string `json:"protocol,omitempty" gorm:"column:protocol; default:''; NOT NULL" protobuf:"bytes,4,opt,name=protocol,proto3"`                                            // @gotags: gorm:"column:protocol; default:''; NOT NULL"
-	ContainerPort int32  `gorm:"column:container_port; default:0; NOT NULL" protobuf:"varint,5,opt,name=container_port,json=containerPort,proto3" json:"container_port,omitempty"`       // @gotags: gorm:"column:container_port; default:0; NOT NULL"
+	Protocol      string `protobuf:"bytes,4,opt,name=protocol,proto3" json:"protocol,omitempty" gorm:"column:protocol; default:''; NOT NULL"`                                            // @gotags: gorm:"column:protocol; default:''; NOT NULL"
+	ContainerPort int32  `protobuf:"varint,5,opt,name=container_port,json=containerPort,proto3" json:"container_port,omitempty" gorm:"column:container_port; default:0; NOT NULL"`       // @gotags: gorm:"column:container_port; default:0; NOT NULL"
 	ServiceId     int64  `protobuf:"varint,6,opt,name=service_id,json=serviceId,proto3" json:"service_id,omitempty" gorm:"column:service_id; default:0; NOT NULL; index:idx_service_id"` // @gotags: gorm:"column:service_id; default:0; NOT NULL; index:idx_service_id"
 	gorm.Model
 }
@@ -976,11 +976,11 @@ type Volume struct {
 
 	// @goimport: "gorm.io/gorm"
 	// @gofield: gorm.Model
-	Id           int64  `gorm:"column:id;primaryKey;AUTO_INCREMENT" protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`                                                         // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
+	Id           int64  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT"`                                                         // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
 	Name         string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty" gorm:"column:name; default:''; NOT NULL"`                                                        // @gotags: gorm:"column:name; default:''; NOT NULL"
 	MountPath    string `protobuf:"bytes,3,opt,name=mount_path,json=mountPath,proto3" json:"mount_path,omitempty" gorm:"column:mount_path; default:''; NOT NULL"`                       // @gotags: gorm:"column:mount_path; default:''; NOT NULL"
-	Storage      int32  `gorm:"column:storage; default:0; NOT NULL" protobuf:"varint,4,opt,name=storage,proto3" json:"storage,omitempty"`                                               // @gotags: gorm:"column:storage; default:0; NOT NULL"
-	StorageClass string `protobuf:"bytes,5,opt,name=storage_class,json=storageClass,proto3" json:"storage_class,omitempty" gorm:"column:storage_class; default:''; NOT NULL"`           // @gotags: gorm:"column:storage_class; default:''; NOT NULL"
+	Storage      int32  `json:"storage,omitempty" gorm:"column:storage; default:0; NOT NULL" protobuf:"varint,4,opt,name=storage,proto3"`                                               // @gotags: gorm:"column:storage; default:0; NOT NULL"
+	StorageClass string `gorm:"column:storage_class; default:''; NOT NULL" protobuf:"bytes,5,opt,name=storage_class,json=storageClass,proto3" json:"storage_class,omitempty"`           // @gotags: gorm:"column:storage_class; default:''; NOT NULL"
 	ServiceId    int64  `protobuf:"varint,6,opt,name=service_id,json=serviceId,proto3" json:"service_id,omitempty" gorm:"column:service_id; default:0; NOT NULL; index:idx_service_id"` // @gotags: gorm:"column:service_id; default:0; NOT NULL; index:idx_service_id"
 	gorm.Model
 }
@@ -1068,24 +1068,24 @@ type Service struct {
 	// @gofield: gorm.Model
 	Id            int64         `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT"`                                                                    // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
 	Name          string        `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty" gorm:"column:name; default:''; NOT NULL"`                                                                   // @gotags: gorm:"column:name; default:''; NOT NULL"
-	Namespace     string        `protobuf:"bytes,3,opt,name=namespace,proto3" json:"namespace,omitempty" gorm:"column:namespace; default:''; NOT NULL"`                                                    // @gotags: gorm:"column:namespace; default:''; NOT NULL"
+	Namespace     string        `gorm:"column:namespace; default:''; NOT NULL" protobuf:"bytes,3,opt,name=namespace,proto3" json:"namespace,omitempty"`                                                    // @gotags: gorm:"column:namespace; default:''; NOT NULL"
 	Lables        string        `protobuf:"bytes,4,opt,name=lables,proto3" json:"lables,omitempty" gorm:"column:lables; default:''; NOT NULL"`                                                             // @gotags: gorm:"column:lables; default:''; NOT NULL"
 	Replicas      int32         `protobuf:"varint,5,opt,name=replicas,proto3" json:"replicas,omitempty" gorm:"column:replicas; default:0; NOT NULL"`                                                       // @gotags: gorm:"column:replicas; default:0; NOT NULL"
 	RequestCpu    int32         `protobuf:"varint,6,opt,name=request_cpu,json=requestCpu,proto3" json:"request_cpu,omitempty" gorm:"column:request_cpu; default:0; NOT NULL"`                              // @gotags: gorm:"column:request_cpu; default:0; NOT NULL"
 	LimitCpu      int32         `protobuf:"varint,7,opt,name=limit_cpu,json=limitCpu,proto3" json:"limit_cpu,omitempty" gorm:"column:limit_cpu; default:0; NOT NULL"`                                      // @gotags: gorm:"column:limit_cpu; default:0; NOT NULL"
 	RequestGpu    int32         `protobuf:"varint,8,opt,name=request_gpu,json=requestGpu,proto3" json:"request_gpu,omitempty" gorm:"column:request_gpu; default:0; NOT NULL"`                              // @gotags: gorm:"column:request_gpu; default:0; NOT NULL"
 	LimitGpu      int32         `protobuf:"varint,9,opt,name=limit_gpu,json=limitGpu,proto3" json:"limit_gpu,omitempty" gorm:"column:limit_gpu; default:0; NOT NULL"`                                      // @gotags: gorm:"column:limit_gpu; default:0; NOT NULL"
-	RequestMemory int32         `json:"request_memory,omitempty" gorm:"column:request_memory; default:0; NOT NULL" protobuf:"varint,10,opt,name=request_memory,json=requestMemory,proto3"`                 // @gotags: gorm:"column:request_memory; default:0; NOT NULL"
+	RequestMemory int32         `protobuf:"varint,10,opt,name=request_memory,json=requestMemory,proto3" json:"request_memory,omitempty" gorm:"column:request_memory; default:0; NOT NULL"`                 // @gotags: gorm:"column:request_memory; default:0; NOT NULL"
 	LimitMemory   int32         `protobuf:"varint,11,opt,name=limit_memory,json=limitMemory,proto3" json:"limit_memory,omitempty" gorm:"column:limit_memory; default:0; NOT NULL"`                         // @gotags: gorm:"column:limit_memory; default:0; NOT NULL"
 	Volumes       []*Volume     `protobuf:"bytes,12,rep,name=volumes,proto3" json:"volumes,omitempty" gorm:"-"`                                                                                            // @gotags: gorm:"-"
 	Description   string        `protobuf:"bytes,13,opt,name=description,proto3" json:"description,omitempty" gorm:"column:description; default:''; NOT NULL"`                                             // @gotags: gorm:"column:description; default:''; NOT NULL"
-	Ports         []*Port       `protobuf:"bytes,14,rep,name=ports,proto3" json:"ports,omitempty" gorm:"-"`                                                                                                // @gotags: gorm:"-"
-	ProjectId     int64         `protobuf:"varint,15,opt,name=project_id,json=projectId,proto3" json:"project_id,omitempty" gorm:"column:project_id; default:0; NOT NULL; index:idx_project_id"`           // @gotags: gorm:"column:project_id; default:0; NOT NULL; index:idx_project_id"
+	Ports         []*Port       `gorm:"-" protobuf:"bytes,14,rep,name=ports,proto3" json:"ports,omitempty"`                                                                                                // @gotags: gorm:"-"
+	ProjectId     int64         `json:"project_id,omitempty" gorm:"column:project_id; default:0; NOT NULL; index:idx_project_id" protobuf:"varint,15,opt,name=project_id,json=projectId,proto3"`           // @gotags: gorm:"column:project_id; default:0; NOT NULL; index:idx_project_id"
 	WorkspaceId   int64         `protobuf:"varint,16,opt,name=workspace_id,json=workspaceId,proto3" json:"workspace_id,omitempty" gorm:"column:workspace_id; default:0; NOT NULL; index:idx_workspace_id"` // @gotags: gorm:"column:workspace_id; default:0; NOT NULL; index:idx_workspace_id"
 	ClusterId     int64         `protobuf:"varint,17,opt,name=cluster_id,json=clusterId,proto3" json:"cluster_id,omitempty" gorm:"column:cluster_id; default:0; NOT NULL; index:idx_cluster_id"`           // @gotags: gorm:"column:cluster_id; default:0; NOT NULL; index:idx_cluster_id"
 	UserId        int64         `protobuf:"varint,18,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty" gorm:"column:user_id; default:0; NOT NULL; index:idx_user_id"`                          // @gotags: gorm:"column:user_id; default:0; NOT NULL; index:idx_user_id"
-	Status        ServiceStatus `protobuf:"varint,19,opt,name=status,proto3,enum=biz.service.ServiceStatus" json:"status,omitempty" gorm:"column:status; default:0; NOT NULL"`                             // @gotags: gorm:"column:status; default:0; NOT NULL"
-	Log           string        `protobuf:"bytes,20,opt,name=log,proto3" json:"log,omitempty" gorm:"-"`
+	Status        ServiceStatus `gorm:"column:status; default:0; NOT NULL" protobuf:"varint,19,opt,name=status,proto3,enum=biz.service.ServiceStatus" json:"status,omitempty"`                             // @gotags: gorm:"column:status; default:0; NOT NULL"
+	Log           string        `json:"log,omitempty" gorm:"-" protobuf:"bytes,20,opt,name=log,proto3"`
 	gorm.Model                  // @gotags: gorm:"-"
 }
 

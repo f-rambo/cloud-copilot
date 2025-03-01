@@ -28,16 +28,16 @@ type Project struct {
 
 	// @goimport: "gorm.io/gorm"
 	// @gofield: gorm.Model
-	Id              int64  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT"`                                                            // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
-	Name            string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty" gorm:"column:name; default:''; NOT NULL"`                                                           // @gotags: gorm:"column:name; default:''; NOT NULL"
+	Id              int64  `json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT" protobuf:"varint,1,opt,name=id,proto3"`                                                            // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
+	Name            string `gorm:"column:name; default:''; NOT NULL" protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`                                                           // @gotags: gorm:"column:name; default:''; NOT NULL"
 	Description     string `json:"description,omitempty" gorm:"column:namespace; default:''; NOT NULL" protobuf:"bytes,3,opt,name=description,proto3"`                                        // @gotags: gorm:"column:namespace; default:''; NOT NULL"
 	ClusterId       int64  `protobuf:"varint,4,opt,name=cluster_id,json=clusterId,proto3" json:"cluster_id,omitempty" gorm:"column:cluster_id; default:0; NOT NULL"`                          // @gotags: gorm:"column:cluster_id; default:0; NOT NULL"
 	UserId          int64  `protobuf:"varint,5,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty" gorm:"column:user_id; default:0; NOT NULL"`                                      // @gotags: gorm:"column:user_id; default:0; NOT NULL"
 	WorkspaceId     int64  `protobuf:"varint,6,opt,name=workspace_id,json=workspaceId,proto3" json:"workspace_id,omitempty" gorm:"column:workspace_id; default:0; NOT NULL"`                  // @gotags: gorm:"column:workspace_id; default:0; NOT NULL"
 	LimitCpu        int32  `protobuf:"varint,7,opt,name=limit_cpu,json=limitCpu,proto3" json:"limit_cpu,omitempty" gorm:"column:limit_cpu; default:0; NOT NULL"`                              // @gotags: gorm:"column:limit_cpu; default:0; NOT NULL"
-	LimitGpu        int32  `json:"limit_gpu,omitempty" gorm:"column:limit_gpu; default:0; NOT NULL" protobuf:"varint,8,opt,name=limit_gpu,json=limitGpu,proto3"`                              // @gotags: gorm:"column:limit_gpu; default:0; NOT NULL"
+	LimitGpu        int32  `gorm:"column:limit_gpu; default:0; NOT NULL" protobuf:"varint,8,opt,name=limit_gpu,json=limitGpu,proto3" json:"limit_gpu,omitempty"`                              // @gotags: gorm:"column:limit_gpu; default:0; NOT NULL"
 	LimitMemory     int32  `protobuf:"varint,9,opt,name=limit_memory,json=limitMemory,proto3" json:"limit_memory,omitempty" gorm:"column:limit_memory; default:0; NOT NULL"`                  // @gotags: gorm:"column:limit_memory; default:0; NOT NULL"
-	LimitDisk       int32  `gorm:"column:limit_disk; default:0; NOT NULL" protobuf:"varint,10,opt,name=limit_disk,json=limitDisk,proto3" json:"limit_disk,omitempty"`                         // @gotags: gorm:"column:limit_disk; default:0; NOT NULL"
+	LimitDisk       int32  `protobuf:"varint,10,opt,name=limit_disk,json=limitDisk,proto3" json:"limit_disk,omitempty" gorm:"column:limit_disk; default:0; NOT NULL"`                         // @gotags: gorm:"column:limit_disk; default:0; NOT NULL"
 	GitRepository   string `protobuf:"bytes,11,opt,name=git_repository,json=gitRepository,proto3" json:"git_repository,omitempty" gorm:"column:git_repository; default:''; NOT NULL"`         // @gotags: gorm:"column:git_repository; default:''; NOT NULL"
 	ImageRepository string `protobuf:"bytes,12,opt,name=image_repository,json=imageRepository,proto3" json:"image_repository,omitempty" gorm:"column:image_repository; default:''; NOT NULL"` // @gotags: gorm:"column:image_repository; default:''; NOT NULL"
 	gorm.Model

@@ -40,12 +40,6 @@ service ServiceInterface {
             };
       }
 
-      rpc GetDefaultWorkflow(service.v1alpha1.ServiceRequest) returns(service.v1alpha1.Workflow) {
-            option (google.api.http) = {
-              get: "/api/v1alpha1/service/workflow/default"
-            };
-      }
-
       rpc SaveWorkflow(service.v1alpha1.Workflow) returns(common.Msg) {
             option (google.api.http) = {
               post: "/api/v1alpha1/service/workflow"

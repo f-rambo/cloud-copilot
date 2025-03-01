@@ -144,5 +144,7 @@ message ContinuousDeployment {
       string status = 5;
       string workflow_runtime = 6;
       Workflow workflow = 7;
-      string logs = 8;
+      string config_path = 8;
+      string config = 9;
+      string logs = 10;
 }

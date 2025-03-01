@@ -1521,65 +1521,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/common.Msg'
-    /api/v1alpha1/service/workflow/default:
-        get:
-            tags:
-                - ServiceInterface
-            operationId: ServiceInterface_GetDefaultWorkflow
-            parameters:
-                - name: id
-                  in: query
-                  schema:
-                    type: string
-                - name: name
-                  in: query
-                  schema:
-                    type: string
-                - name: page
-                  in: query
-                  schema:
-                    type: integer
-                    format: int32
-                - name: pageSize
-                  in: query
-                  schema:
-                    type: integer
-                    format: int32
-                - name: projectId
-                  in: query
-                  schema:
-                    type: string
-                - name: workspaceId
-                  in: query
-                  schema:
-                    type: string
-                - name: clusterId
-                  in: query
-                  schema:
-                    type: string
-                - name: userId
-                  in: query
-                  schema:
-                    type: string
-                - name: workflowType
-                  in: query
-                  schema:
-                    type: string
-                - name: ciId
-                  in: query
-                  schema:
-                    type: string
-                - name: cdId
-                  in: query
-                  schema:
-                    type: string
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/service.v1alpha1.Workflow'
     /api/v1alpha1/user:
         get:
             tags:
@@ -2444,6 +2385,10 @@ components:
                     type: string
                 workflow:
                     $ref: '#/components/schemas/service.v1alpha1.Workflow'
+                configPath:
+                    type: string
+                config:
+                    type: string
                 logs:
                     type: string
         service.v1alpha1.ContinuousDeployments:

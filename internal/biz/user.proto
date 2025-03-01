@@ -26,8 +26,8 @@ message User {
       UserStatus status = 5; // @gotags: gorm:"column:status; default:0; NOT NULL"
       string access_token = 6; // @gotags: gorm:"-"`
       UserSignType sign_type = 7; // @gotags: gorm:"column:sign_type; default:0; NOT NULL"
-      string public_key = 8; // @gotags: gorm:"column:public_key; default:''; NOT NULL"
-      int64 workspace_id = 9; // @gotags: gorm:"column:workspace_id; default:0; NOT NULL"
+      int64 workspace_id = 8; // @gotags: gorm:"column:workspace_id; default:0; NOT NULL"
+      string git_repository_token = 9; // @gotags: gorm:"column:gitrepository_token; default:''; NOT NULL"
       string image_repository_token = 10; // @gotags: gorm:"column:imagerepository_token; default:''; NOT NULL"
 }
 
