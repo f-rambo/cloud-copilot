@@ -16,4 +16,6 @@ service ServiceInterface {
       rpc CommitWorkflow(biz.service.Workflow) returns (common.Msg);
 
       rpc GetWorkflow(biz.service.Workflow) returns (biz.service.Workflow);
+
+      rpc CleanWorkflow(biz.service.Workflow) returns (common.Msg);
 }

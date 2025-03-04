@@ -19,8 +19,9 @@ enum WorkfloStatus {
 enum WorkflowStepType {
       Customizable = 0;
       CodePull = 1;
-      Build = 2;
-      Deploy = 3;
+      ImageRepoAuth = 2;
+      Build = 3;
+      Deploy = 4;
 }
 
 enum ServiceEnv {
@@ -34,6 +35,10 @@ enum ServiceEnv {
       IMAGE = 7;
       GIT_REPO = 8;
       IMAGE_REPO = 9;
+      GIT_REPO_NAME = 10;
+      IMAGE_REPO_NAME = 11;
+      GIT_REPO_TOKEN = 12;
+      IMAGE_REPO_TOKEN = 13;
 }
 
 enum ServiceStatus {
@@ -49,12 +54,13 @@ message Workflow {
       int64 id = 1; // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
       string name = 2; // @gotags: gorm:"column:name; default:''; NOT NULL"
       string namespace = 3; // @gotags: gorm:"column:namespace; default:''; NOT NULL"
-      string runtime_name = 4; // @gotags: gorm:"column:runtime_name; default:''; NOT NULL"
-      string lables = 5; // @gotags: gorm:"column:lables; default:''; NOT NULL"
-      WorkflowType type = 6; // @gotags: gorm:"column:type; default:0; NOT NULL"
-      string description = 7; // @gotags: gorm:"column:description; default:''; NOT NULL"
-      int64 service_id = 8; // @gotags: gorm:"column:service_id; default:0; NOT NULL; index:idx_service_id"
-      repeated WorkflowStep workflow_steps = 9; // @gotags: gorm:"-"
+      string lables = 4; // @gotags: gorm:"column:lables; default:''; NOT NULL"
+      string env = 5; // @gotags: gorm:"column:env; default:''; NOT NULL"
+      string storage_class = 6; // @gotags: gorm:"column:storage_class; default:''; NOT NULL"
+      WorkflowType type = 7; // @gotags: gorm:"column:type; default:0; NOT NULL"
+      string description = 8; // @gotags: gorm:"column:description; default:''; NOT NULL"
+      int64 service_id = 9; // @gotags: gorm:"column:service_id; default:0; NOT NULL; index:idx_service_id"
+      repeated WorkflowStep workflow_steps = 10; // @gotags: gorm:"-"
 }
 
 message WorkflowStep {
@@ -154,10 +160,11 @@ message Service {
       repeated Volume volumes = 12; // @gotags: gorm:"-"
       string description = 13; // @gotags: gorm:"column:description; default:''; NOT NULL"
       repeated Port ports = 14; // @gotags: gorm:"-"
-      int64 project_id = 15; // @gotags: gorm:"column:project_id; default:0; NOT NULL; index:idx_project_id"
-      int64 workspace_id = 16; // @gotags: gorm:"column:workspace_id; default:0; NOT NULL; index:idx_workspace_id"
-      int64 cluster_id = 17; // @gotags: gorm:"column:cluster_id; default:0; NOT NULL; index:idx_cluster_id"
-      int64 user_id = 18; // @gotags: gorm:"column:user_id; default:0; NOT NULL; index:idx_user_id"
-      ServiceStatus status = 19; // @gotags: gorm:"column:status; default:0; NOT NULL"
-      string log = 20; // @gotags: gorm:"-"
+      string storage_class = 15; // @gotags: gorm:"column:storage_class; default:''; NOT NULL"
+      int64 project_id = 16; // @gotags: gorm:"column:project_id; default:0; NOT NULL; index:idx_project_id"
+      int64 workspace_id = 17; // @gotags: gorm:"column:workspace_id; default:0; NOT NULL; index:idx_workspace_id"
+      int64 cluster_id = 18; // @gotags: gorm:"column:cluster_id; default:0; NOT NULL; index:idx_cluster_id"
+      int64 user_id = 19; // @gotags: gorm:"column:user_id; default:0; NOT NULL; index:idx_user_id"
+      ServiceStatus status = 20; // @gotags: gorm:"column:status; default:0; NOT NULL"
+      string log = 21; // @gotags: gorm:"-"
 }

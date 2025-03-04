@@ -81,3 +81,16 @@ func (s *ClusterRuntimeService) GetWorkflow(ctx context.Context, wf *biz.Workflo
 	}
 	return nil
 }
+
+func (s *ClusterRuntimeService) CleanWorkflow(ctx context.Context, wf *biz.Workflow) error {
+	grpconn, err := connGrpc(ctx, s.conf)
+	if err != nil {
+		return err
+	}
+	defer grpconn.Close()
+	_, err = serviceApi.NewServiceInterfaceClient(grpconn.Conn).CleanWorkflow(ctx, wf)
+	if err != nil {
+		return err
+	}
+	return nil
+}

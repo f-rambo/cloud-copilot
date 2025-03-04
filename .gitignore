@@ -9,6 +9,7 @@
 *.test
 **/*_test.go
 *_test.go
+*.workflow
 
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
