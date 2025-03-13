@@ -172,7 +172,7 @@ func (c *ClusterInterface) Save(ctx context.Context, clusterArgs *v1alpha1.Clust
 		if cluster.Id != 0 {
 			return nil, errors.New("cluster already exists")
 		}
-		cluster.Version = c.c.Cluster.GetKubernetesVersion()
+		cluster.KuberentesVersion = c.c.Cluster.GetKubernetesVersion()
 		cluster.ContainerdVersion = c.c.Cluster.GetContainerdVersion()
 		cluster.RuncVersion = c.c.Cluster.GetRuncVersion()
 	}
@@ -183,7 +183,6 @@ func (c *ClusterInterface) Save(ctx context.Context, clusterArgs *v1alpha1.Clust
 	cluster.AccessId = clusterArgs.AccessId
 	cluster.AccessKey = clusterArgs.AccessKey
 	cluster.Region = clusterArgs.Region
-	cluster.NodeUser = clusterArgs.NodeUsername
 	cluster.NodeStartIp = clusterArgs.NodeStartIp
 	cluster.NodeEndIp = clusterArgs.NodeEndIp
 	user := biz.GetUserInfo(ctx)
@@ -293,25 +292,24 @@ func (c *ClusterInterface) bizCLusterToCluster(bizCluster *biz.Cluster) *v1alpha
 		nodeGroups = append(nodeGroups, c.bizNodeGroupToNodeGroup(v))
 	}
 	return &v1alpha1.Cluster{
-		Id:               bizCluster.Id,
-		Name:             bizCluster.Name,
-		Version:          bizCluster.Version,
-		ApiServerAddress: bizCluster.ApiServerAddress,
-		Status:           int32(bizCluster.Status),
-		Type:             int32(bizCluster.Type),
-		PublicKey:        bizCluster.PublicKey,
-		PrivateKey:       bizCluster.PrivateKey,
-		Region:           bizCluster.Region,
-		RegionName:       bizCluster.Region,
-		AccessId:         bizCluster.AccessId,
-		AccessKey:        bizCluster.AccessKey,
-		CreateAt:         bizCluster.CreatedAt.Format("2006-01-02 15:04:05"),
-		UpdateAt:         bizCluster.UpdatedAt.Format("2006-01-02 15:04:05"),
-		Nodes:            nodes,
-		NodeGroups:       nodeGroups,
-		NodeUsername:     bizCluster.NodeUser,
-		NodeStartIp:      bizCluster.NodeStartIp,
-		NodeEndIp:        bizCluster.NodeEndIp,
+		Id:                bizCluster.Id,
+		Name:              bizCluster.Name,
+		KuberentesVersion: bizCluster.KuberentesVersion,
+		ApiServerAddress:  bizCluster.ApiServerAddress,
+		Status:            int32(bizCluster.Status),
+		Type:              int32(bizCluster.Type),
+		PublicKey:         bizCluster.PublicKey,
+		PrivateKey:        bizCluster.PrivateKey,
+		Region:            bizCluster.Region,
+		RegionName:        bizCluster.Region,
+		AccessId:          bizCluster.AccessId,
+		AccessKey:         bizCluster.AccessKey,
+		CreateAt:          bizCluster.CreatedAt.Format("2006-01-02 15:04:05"),
+		UpdateAt:          bizCluster.UpdatedAt.Format("2006-01-02 15:04:05"),
+		Nodes:             nodes,
+		NodeGroups:        nodeGroups,
+		NodeStartIp:       bizCluster.NodeStartIp,
+		NodeEndIp:         bizCluster.NodeEndIp,
 	}
 }
 

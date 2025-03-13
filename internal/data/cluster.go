@@ -244,8 +244,8 @@ func (c *clusterRepo) List(ctx context.Context, cluster *biz.Cluster) ([]*biz.Cl
 	if cluster.Name != "" {
 		clusterModelObj = clusterModelObj.Where("name = ?", cluster.Name)
 	}
-	if cluster.Version != "" {
-		clusterModelObj = clusterModelObj.Where("server_version = ?", cluster.Version)
+	if cluster.KuberentesVersion != "" {
+		clusterModelObj = clusterModelObj.Where("server_version = ?", cluster.KuberentesVersion)
 	}
 	err := clusterModelObj.Find(&clusters).Error
 	return clusters, err

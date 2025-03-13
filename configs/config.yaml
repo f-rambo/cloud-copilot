@@ -42,10 +42,10 @@ auth:
   admin_password: "123456"
 cluster:
   name: "cloud-copilot"
-  env: local
   kubernetes_version: "v1.31.2"
   containerd_version: "v2.0.0"
   runc_version: "v1.2.1"
+  image_repository: "registry.aliyuncs.com/google_containers"
   level:
     basic: 50
     advanced: 100
@@ -63,28 +63,28 @@ cluster:
       end_port: 6443
       protocol: "TCP"
       ip_cidr: "0.0.0.0/0"
-      access: 0
+      access: false
     - name: "kubelet"
       start_port: 10250
       end_port: 10255
       protocol: "TCP"
       ip_cidr: "0.0.0.0/0"
-      access: 0
+      access: false
     - name: "ssh"
       start_port: 22
       end_port: 22
       protocol: "TCP"
       ip_cidr: "0.0.0.0/0"
-      access: 0
+      access: false
     - name: "https"
       start_port: 443
       end_port: 443
       protocol: "TCP"
       ip_cidr: "0.0.0.0/0"
-      access: 1
+      access: true
     - name: "http"
       start_port: 80
       end_port: 80
       protocol: "TCP"
       ip_cidr: "0.0.0.0/0"
-      access: 1
+      access: true

@@ -192,13 +192,13 @@ type Event struct {
 
 	Id        string      `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT"`                                    // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
 	Name      string      `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty" gorm:"column:name; default:''; NOT NULL"`                                  // @gotags: gorm:"column:name; default:''; NOT NULL"
-	Source    EventSource `gorm:"column:source; default:0; NOT NULL" protobuf:"varint,3,opt,name=source,proto3,enum=biz.event.EventSource" json:"source,omitempty"` // @gotags: gorm:"column:source; default:0; NOT NULL"
-	Action    EventAction `protobuf:"varint,4,opt,name=action,proto3,enum=biz.event.EventAction" json:"action,omitempty" gorm:"column:action; default:0; NOT NULL"` // @gotags: gorm:"column:action; default:0; NOT NULL"
-	Status    EventStatus `gorm:"column:status; default:0; NOT NULL" protobuf:"varint,5,opt,name=status,proto3,enum=biz.event.EventStatus" json:"status,omitempty"` // @gotags: gorm:"column:status; default:0; NOT NULL"
+	Source    EventSource `protobuf:"varint,3,opt,name=source,proto3,enum=biz.event.EventSource" json:"source,omitempty" gorm:"column:source; default:0; NOT NULL"` // @gotags: gorm:"column:source; default:0; NOT NULL"
+	Action    EventAction `gorm:"column:action; default:0; NOT NULL" protobuf:"varint,4,opt,name=action,proto3,enum=biz.event.EventAction" json:"action,omitempty"` // @gotags: gorm:"column:action; default:0; NOT NULL"
+	Status    EventStatus `protobuf:"varint,5,opt,name=status,proto3,enum=biz.event.EventStatus" json:"status,omitempty" gorm:"column:status; default:0; NOT NULL"` // @gotags: gorm:"column:status; default:0; NOT NULL"
 	SourceId  int64       `protobuf:"varint,6,opt,name=source_id,json=sourceId,proto3" json:"source_id,omitempty" gorm:"column:source_id; default:0; NOT NULL"`     // @gotags: gorm:"column:source_id; default:0; NOT NULL"
 	Data      string      `protobuf:"bytes,7,opt,name=data,proto3" json:"data,omitempty" gorm:"column:data; default:''; NOT NULL"`                                  // @gotags: gorm:"column:data; default:''; NOT NULL"
-	Error     string      `protobuf:"bytes,8,opt,name=error,proto3" json:"error,omitempty" gorm:"column:error; default:''; NOT NULL"`                               // @gotags: gorm:"column:error; default:''; NOT NULL"
-	CreatedAt string      `gorm:"column:created_at; default:''; NOT NULL" protobuf:"bytes,9,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"` // @gotags: gorm:"column:created_at; default:''; NOT NULL"
+	Error     string      `gorm:"column:error; default:''; NOT NULL" protobuf:"bytes,8,opt,name=error,proto3" json:"error,omitempty"`                               // @gotags: gorm:"column:error; default:''; NOT NULL"
+	CreatedAt string      `protobuf:"bytes,9,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty" gorm:"column:created_at; default:''; NOT NULL"` // @gotags: gorm:"column:created_at; default:''; NOT NULL"
 }
 
 func (x *Event) Reset() {

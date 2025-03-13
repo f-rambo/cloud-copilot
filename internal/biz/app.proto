@@ -13,6 +13,7 @@ enum BasicComponentAppType {
       STORAGE = 5;
       COMPUTING = 6;
       SCHEDULING = 7;
+      ML_TOOL = 8;
 }
 
 enum AppReleaseSatus {

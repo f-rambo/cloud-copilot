@@ -302,6 +302,10 @@ func (uc *AppUsecase) apply(appRelease *AppRelease) {
 }
 
 func (uc *AppUsecase) Start(ctx context.Context) error {
+	// check cluster is running install perapp
+	// if node num > 3 install storage or ...
+	// if node have Gpu install gpu app
+	// default check app...
 	for {
 		select {
 		case <-ctx.Done():
@@ -314,7 +318,6 @@ func (uc *AppUsecase) Start(ctx context.Context) error {
 			if err != nil {
 				return err
 			}
-			return nil
 		}
 	}
 }

@@ -108,7 +108,7 @@ message ClusterList {
 message Cluster {
     int64 id = 1 [json_name = "id"];
     string name = 2 [json_name = "name"];
-    string version = 3 [json_name = "version"];
+    string kuberentes_version = 3 [json_name = "kuberentes_version"];
     string api_server_address = 4 [json_name = "api_server_address"];
     int32 status = 5 [json_name = "status"];
     int32 type = 6 [json_name = "type"];

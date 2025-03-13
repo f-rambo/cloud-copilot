@@ -2007,7 +2007,7 @@ components:
                     type: string
                 name:
                     type: string
-                version:
+                kuberentes_version:
                     type: string
                 api_server_address:
                     type: string

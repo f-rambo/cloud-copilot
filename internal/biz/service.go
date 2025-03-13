@@ -270,8 +270,8 @@ func (w *Workflow) SettingContinuousDeployment(ctx context.Context, service *Ser
 				continue
 			}
 			if WorkflowStepType_Deploy == WorkflowStepType(wfType) {
-				task.TaskCommand = fmt.Sprintf("curl -X POST -H 'Content-Type: application/json' -H 'Authorization: Bearer %s' -d '{\"id\":\"%d\",\"ci_id\":\"%d\",\"cd_id\":\"%d\"}' http://%s/api/v1alpha1/service/apply",
-					cluster.ServiceAccessToken, service.Id, ci.Id, cd.Id, cluster.Name)
+				task.TaskCommand = fmt.Sprintf("curl -X POST -H 'Content-Type: application/json' -d '{\"id\":\"%d\",\"ci_id\":\"%d\",\"cd_id\":\"%d\"}' http://%s/api/v1alpha1/service/apply",
+					service.Id, ci.Id, cd.Id, cluster.Name)
 			}
 		}
 	}

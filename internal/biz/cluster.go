@@ -23,12 +23,6 @@ const (
 
 var ErrClusterNotFound error = errors.New("cluster not found")
 
-var PreInstallationAppTypes []BasicComponentAppType = []BasicComponentAppType{
-	BasicComponentAppType_NETWORKING,
-	BasicComponentAppType_BUILDING,
-	BasicComponentAppType_MONITORING,
-}
-
 type ClusterData interface {
 	Save(context.Context, *Cluster) error
 	Get(context.Context, int64) (*Cluster, error)
@@ -64,7 +58,6 @@ type ClusterAgent interface {
 
 type ClusterUsecase struct {
 	clusterData           ClusterData
-	appData               AppData
 	clusterInfrastructure ClusterInfrastructure
 	clusterRuntime        ClusterRuntime
 	locks                 map[int64]*sync.Mutex
@@ -189,7 +182,7 @@ func (c *Cluster) SettingDefaultNodeGroup(nodegroupConfig *confPkg.NodeGroupConf
 	}
 	c.NodeGroups = append(c.NodeGroups, &NodeGroup{
 		Id:         uuid.NewString(),
-		Name:       "default",
+		Name:       c.Name + "-default",
 		ClusterId:  c.Id,
 		Type:       NodeGroupType_NORMAL,
 		TargetSize: nodegroupConfig.TargetSize,
@@ -200,9 +193,23 @@ func (c *Cluster) SettingDefaultNodeGroup(nodegroupConfig *confPkg.NodeGroupConf
 		Memory:     nodegroupConfig.Memory,
 	})
 	c.Nodes = append(c.Nodes, &Node{
-		Name:           "default",
+		Name:           "node1",
 		Status:         NodeStatus_NODE_FINDING,
 		Role:           NodeRole_MASTER,
+		NodeGroupId:    c.NodeGroups[0].Id,
+		SystemDiskSize: nodegroupConfig.DiskSize,
+		ClusterId:      c.Id,
+	}, &Node{
+		Name:           "node2",
+		Status:         NodeStatus_NODE_FINDING,
+		Role:           NodeRole_WORKER,
+		NodeGroupId:    c.NodeGroups[0].Id,
+		SystemDiskSize: nodegroupConfig.DiskSize,
+		ClusterId:      c.Id,
+	}, &Node{
+		Name:           "node3",
+		Status:         NodeStatus_NODE_FINDING,
+		Role:           NodeRole_WORKER,
 		NodeGroupId:    c.NodeGroups[0].Id,
 		SystemDiskSize: nodegroupConfig.DiskSize,
 		ClusterId:      c.Id,
@@ -222,11 +229,10 @@ func (c *Cluster) settingDefatultIngressRules(rules []*confPkg.IngressRule) {
 			ClusterId: c.Id,
 			Name:      rule.Name,
 		}
-		if rule.Access == confPkg.Access_Private {
-			clusterIngressControllerRule.Access = IngressControllerRuleAccess_PRIVATE
-		}
-		if rule.Access == confPkg.Access_Public {
+		if rule.Access {
 			clusterIngressControllerRule.Access = IngressControllerRuleAccess_PUBLIC
+		} else {
+			clusterIngressControllerRule.Access = IngressControllerRuleAccess_PRIVATE
 		}
 		clusterIngressControllerRule.Id = fmt.Sprintf("%s-%s-%s-%d-%d-%d-%d",
 			clusterIngressControllerRule.Name,
@@ -439,6 +445,9 @@ func (uc *ClusterUsecase) Delete(ctx context.Context, clusterID int64) error {
 }
 
 func (uc *ClusterUsecase) Save(ctx context.Context, cluster *Cluster) error {
+	if cluster.ImageRepo == "" {
+		cluster.ImageRepo = uc.conf.Cluster.ImageRepository
+	}
 	return uc.clusterData.Save(ctx, cluster)
 }
 
@@ -499,7 +508,7 @@ func (uc *ClusterUsecase) Start(ctx context.Context) error {
 			}
 			err := uc.handleEvent(ctx, data)
 			if err != nil {
-				uc.log.Errorf("cluster handle event error: %v", err)
+				return err
 			}
 		}
 	}
@@ -629,30 +638,6 @@ func (uc *ClusterUsecase) handleEvent(ctx context.Context, cluster *Cluster) (er
 			node.SetNodeStatus(NodeStatus_NODE_RUNNING)
 		}
 	}
-	for _, preInstallationAppType := range PreInstallationAppTypes {
-		_, appReleases, err := uc.clusterRuntime.InstallBasicComponent(ctx, preInstallationAppType)
-		if err != nil {
-			return err
-		}
-		for _, v := range appReleases {
-			appRelease, err := uc.clusterData.GetClusterAppReleaseByName(ctx, v.ReleaseName)
-			if err != nil {
-				return err
-			}
-			err = uc.clusterRuntime.GetAppReleaseResources(ctx, appRelease)
-			if err != nil {
-				return err
-			}
-			for _, appReleaseResource := range appRelease.Resources {
-				if appReleaseResource.Status == AppReleaseResourceStatus_UNHEALTHY {
-					err = uc.clusterRuntime.ReloadAppReleaseResource(ctx, appReleaseResource)
-					if err != nil {
-						return err
-					}
-				}
-			}
-		}
-	}
 	return
 }
 
@@ -709,35 +694,68 @@ func (uc *ClusterUsecase) handlerClusterNotInstalled(ctx context.Context, cluste
 		return err
 	}
 	cluster.SetNodeStatus(NodeStatus_NODE_PENDING, NodeStatus_NODE_RUNNING)
-	for _, preInstallationAppType := range PreInstallationAppTypes {
-		apps, appReleases, err := uc.clusterRuntime.InstallBasicComponent(ctx, preInstallationAppType)
-		if err != nil {
-			return err
-		}
-		for _, v := range apps {
-			err = uc.appData.Save(ctx, v)
-			if err != nil {
-				return err
-			}
-		}
-		for _, appRelease := range appReleases {
-			app := GetAppById(apps, appRelease.AppId)
-			if app == nil {
-				continue
-			}
-			appVersion := app.GetVersionById(appRelease.VersionId)
-			if appVersion == nil {
-				continue
-			}
-			appReleaseRes, err := uc.clusterRuntime.AppRelease(ctx, app, appVersion, appRelease)
-			if err != nil {
-				return err
-			}
-			err = uc.appData.SaveAppRelease(ctx, appReleaseRes)
-			if err != nil {
-				return err
-			}
-		}
-	}
 	return nil
 }
+
+// install apps
+// var PreInstallationAppTypes []BasicComponentAppType = []BasicComponentAppType{
+// 	BasicComponentAppType_NETWORKING,
+// 	BasicComponentAppType_BUILDING,
+// 	BasicComponentAppType_MONITORING,
+// }
+
+// for _, preInstallationAppType := range PreInstallationAppTypes {
+// 	_, appReleases, err := uc.clusterRuntime.InstallBasicComponent(ctx, preInstallationAppType)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	for _, v := range appReleases {
+// 		appRelease, err := uc.clusterData.GetClusterAppReleaseByName(ctx, v.ReleaseName)
+// 		if err != nil {
+// 			return err
+// 		}
+// 		err = uc.clusterRuntime.GetAppReleaseResources(ctx, appRelease)
+// 		if err != nil {
+// 			return err
+// 		}
+// 		for _, appReleaseResource := range appRelease.Resources {
+// 			if appReleaseResource.Status == AppReleaseResourceStatus_UNHEALTHY {
+// 				err = uc.clusterRuntime.ReloadAppReleaseResource(ctx, appReleaseResource)
+// 				if err != nil {
+// 					return err
+// 				}
+// 			}
+// 		}
+// 	}
+// }
+
+// for _, preInstallationAppType := range PreInstallationAppTypes {
+// 	apps, appReleases, err := uc.clusterRuntime.InstallBasicComponent(ctx, preInstallationAppType)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	for _, v := range apps {
+// 		err = uc.appData.Save(ctx, v)
+// 		if err != nil {
+// 			return err
+// 		}
+// 	}
+// 	for _, appRelease := range appReleases {
+// 		app := GetAppById(apps, appRelease.AppId)
+// 		if app == nil {
+// 			continue
+// 		}
+// 		appVersion := app.GetVersionById(appRelease.VersionId)
+// 		if appVersion == nil {
+// 			continue
+// 		}
+// 		appReleaseRes, err := uc.clusterRuntime.AppRelease(ctx, app, appVersion, appRelease)
+// 		if err != nil {
+// 			return err
+// 		}
+// 		err = uc.appData.SaveAppRelease(ctx, appReleaseRes)
+// 		if err != nil {
+// 			return err
+// 		}
+// 	}
+// }

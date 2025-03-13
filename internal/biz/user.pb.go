@@ -127,15 +127,15 @@ type User struct {
 	// @goimport: "gorm.io/gorm"
 	// @gofield: gorm.Model
 	Id                   int64        `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT"`                                                                                  // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
-	Name                 string       `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty" gorm:"column:name; default:''; NOT NULL"`                                                                                 // @gotags: gorm:"column:name; default:''; NOT NULL"
+	Name                 string       `gorm:"column:name; default:''; NOT NULL" protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`                                                                                 // @gotags: gorm:"column:name; default:''; NOT NULL"
 	Email                string       `protobuf:"bytes,3,opt,name=email,proto3" json:"email,omitempty" gorm:"column:email; default:''; NOT NULL"`                                                                              // @gotags: gorm:"column:email; default:''; NOT NULL"
 	GitrepoName          string       `protobuf:"bytes,4,opt,name=gitrepo_name,json=gitrepoName,proto3" json:"gitrepo_name,omitempty" gorm:"column:gitrepo_name; default:''; NOT NULL"`                                        // @gotags: gorm:"column:gitrepo_name; default:''; NOT NULL"
 	ImagerepoName        string       `protobuf:"bytes,5,opt,name=imagerepo_name,json=imagerepoName,proto3" json:"imagerepo_name,omitempty" gorm:"column:imagerepo_name; default:''; NOT NULL"`                                // @gotags: gorm:"column:imagerepo_name; default:''; NOT NULL"
 	Password             string       `protobuf:"bytes,6,opt,name=password,proto3" json:"password,omitempty" gorm:"column:password; default:''; NOT NULL"`                                                                     // @gotags: gorm:"column:password; default:''; NOT NULL"
 	Status               UserStatus   `gorm:"column:status; default:0; NOT NULL" protobuf:"varint,7,opt,name=status,proto3,enum=biz.user.UserStatus" json:"status,omitempty"`                                                  // @gotags: gorm:"column:status; default:0; NOT NULL"
-	AccessToken          string       `json:"access_token,omitempty" gorm:"-" protobuf:"bytes,8,opt,name=access_token,json=accessToken,proto3"`                                                                                // @gotags: gorm:"-"`
+	AccessToken          string       `protobuf:"bytes,8,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty" gorm:"-"`                                                                                // @gotags: gorm:"-"`
 	SignType             UserSignType `protobuf:"varint,9,opt,name=sign_type,json=signType,proto3,enum=biz.user.UserSignType" json:"sign_type,omitempty" gorm:"column:sign_type; default:0; NOT NULL"`                         // @gotags: gorm:"column:sign_type; default:0; NOT NULL"
-	WorkspaceId          int64        `protobuf:"varint,10,opt,name=workspace_id,json=workspaceId,proto3" json:"workspace_id,omitempty" gorm:"column:workspace_id; default:0; NOT NULL"`                                       // @gotags: gorm:"column:workspace_id; default:0; NOT NULL"
+	WorkspaceId          int64        `json:"workspace_id,omitempty" gorm:"column:workspace_id; default:0; NOT NULL" protobuf:"varint,10,opt,name=workspace_id,json=workspaceId,proto3"`                                       // @gotags: gorm:"column:workspace_id; default:0; NOT NULL"
 	GitRepositoryToken   string       `protobuf:"bytes,11,opt,name=git_repository_token,json=gitRepositoryToken,proto3" json:"git_repository_token,omitempty" gorm:"column:gitrepository_token; default:''; NOT NULL"`         // @gotags: gorm:"column:gitrepository_token; default:''; NOT NULL"
 	ImageRepositoryToken string       `protobuf:"bytes,12,opt,name=image_repository_token,json=imageRepositoryToken,proto3" json:"image_repository_token,omitempty" gorm:"column:imagerepository_token; default:''; NOT NULL"` // @gotags: gorm:"column:imagerepository_token; default:''; NOT NULL"
 	gorm.Model
@@ -265,7 +265,7 @@ type Role struct {
 	// @goimport: "gorm.io/gorm"
 	// @gofield: gorm.Model
 	Id          int64  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT"`                       // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
-	Name        string `json:"name,omitempty" gorm:"column:name; default:''; NOT NULL" protobuf:"bytes,2,opt,name=name,proto3"`                      // @gotags: gorm:"column:name; default:''; NOT NULL"
+	Name        string `gorm:"column:name; default:''; NOT NULL" protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`                      // @gotags: gorm:"column:name; default:''; NOT NULL"
 	Description string `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty" gorm:"column:description; default:''; NOT NULL"` // @gotags: gorm:"column:description; default:''; NOT NULL"
 	gorm.Model
 }
@@ -330,8 +330,8 @@ type UserRole struct {
 
 	// @goimport: "gorm.io/gorm"
 	// @gofield: gorm.Model
-	Id     int64 `json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT" protobuf:"varint,1,opt,name=id,proto3"`                       // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
-	UserId int64 `gorm:"column:user_id; default:0; NOT NULL" protobuf:"varint,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"` // @gotags: gorm:"column:user_id; default:0; NOT NULL"
+	Id     int64 `gorm:"column:id;primaryKey;AUTO_INCREMENT" protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`                       // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
+	UserId int64 `protobuf:"varint,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty" gorm:"column:user_id; default:0; NOT NULL"` // @gotags: gorm:"column:user_id; default:0; NOT NULL"
 	RoleId int64 `protobuf:"varint,3,opt,name=role_id,json=roleId,proto3" json:"role_id,omitempty" gorm:"column:role_id; default:0; NOT NULL"` // @gotags: gorm:"column:role_id; default:0; NOT NULL"
 	gorm.Model
 }
@@ -397,7 +397,7 @@ type ResourcePermissions struct {
 	// @goimport: "gorm.io/gorm"
 	// @gofield: gorm.Model
 	Id          int64  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT"`                       // @gotags: gorm:"column:id;primaryKey;AUTO_INCREMENT"
-	Verbs       string `gorm:"column:verbs; default:''; NOT NULL" protobuf:"bytes,2,opt,name=verbs,proto3" json:"verbs,omitempty"`                   // @gotags: gorm:"column:verbs; default:''; NOT NULL"
+	Verbs       string `protobuf:"bytes,2,opt,name=verbs,proto3" json:"verbs,omitempty" gorm:"column:verbs; default:''; NOT NULL"`                   // @gotags: gorm:"column:verbs; default:''; NOT NULL"
 	Resources   string `protobuf:"bytes,3,opt,name=resources,proto3" json:"resources,omitempty" gorm:"column:resources; default:''; NOT NULL"`       // @gotags: gorm:"column:resources; default:''; NOT NULL"
 	Permissions string `protobuf:"bytes,4,opt,name=Permissions,proto3" json:"Permissions,omitempty" gorm:"column:permissions; default:''; NOT NULL"` // @gotags: gorm:"column:permissions; default:''; NOT NULL"
 	gorm.Model
