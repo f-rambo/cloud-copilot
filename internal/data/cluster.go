@@ -39,9 +39,9 @@ func (c *clusterRepo) Save(ctx context.Context, cluster *biz.Cluster) (err error
 		c.saveIngressControllerRules,
 	}
 	for _, f := range funcs {
-		err := f(ctx, cluster, tx)
-		if err != nil {
-			return err
+		getErr := f(ctx, cluster, tx)
+		if getErr != nil {
+			return getErr
 		}
 	}
 	err = tx.Commit().Error
@@ -279,13 +279,4 @@ func (c *clusterRepo) Delete(ctx context.Context, id int64) (err error) {
 		return err
 	}
 	return tx.Commit().Error
-}
-
-func (c *clusterRepo) GetClusterAppReleaseByName(ctx context.Context, name string) (*biz.AppRelease, error) {
-	appRelease := &biz.AppRelease{}
-	err := c.data.db.Model(&biz.AppRelease{}).Where("release_name = ?", name).First(appRelease).Error
-	if err != nil && err != gorm.ErrRecordNotFound {
-		return nil, err
-	}
-	return appRelease, nil
 }

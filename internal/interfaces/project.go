@@ -32,6 +32,9 @@ func (p *ProjectInterface) Save(ctx context.Context, project *v1alpha1.Project) 
 	if project.Name == "" {
 		return nil, errors.New("project name is required")
 	}
+	if !utils.IsValidKubernetesName(project.Name) {
+		return nil, errors.New("project name is invalid")
+	}
 	if project.Id == 0 {
 		projectData, err := p.projectUc.GetByName(ctx, project.Name)
 		if err != nil {
@@ -137,6 +140,5 @@ func (p *ProjectInterface) bizProjectToProject(bizProject *biz.Project) *v1alpha
 		LimitGpu:    bizProject.LimitGpu,
 		LimitMemory: bizProject.LimitMemory,
 		LimitDisk:   bizProject.LimitDisk,
-		UpdatedAt:   bizProject.UpdatedAt.Format("2006-01-02 15:04:05"),
 	}
 }

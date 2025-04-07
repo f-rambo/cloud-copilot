@@ -24,6 +24,75 @@ const (
 	AuthKey     ContextKey = "auth"
 )
 
+type UserStatus int32
+
+const (
+	UserStatus_USER_INIT    UserStatus = 0
+	UserStatus_USER_ENABLE  UserStatus = 1
+	UserStatus_USER_DISABLE UserStatus = 2
+	UserStatus_USER_DELETED UserStatus = 3
+)
+
+// UserStatus to string
+func (s UserStatus) String() string {
+	switch s {
+	case UserStatus_USER_INIT:
+		return "USER_INIT"
+	case UserStatus_USER_ENABLE:
+		return "USER_ENABLE"
+	case UserStatus_USER_DISABLE:
+		return "USER_DISABLE"
+	case UserStatus_USER_DELETED:
+		return "USER_DELETED"
+	}
+	return "UNKNOWN"
+}
+
+type UserSignType int32
+
+const (
+	UserSignType_CREDENTIALS UserSignType = 0
+)
+
+// SignType to string
+func (s UserSignType) String() string {
+	switch s {
+	case UserSignType_CREDENTIALS:
+		return "CREDENTIALS"
+	}
+	return "UNKNOWN"
+}
+
+type User struct {
+	Id                   int64        `json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
+	Name                 string       `json:"name,omitempty" gorm:"column:name;default:'';NOT NULL"`
+	Namespace            string       `json:"namespace,omitempty" gorm:"column:namespace;default:'';NOT NULL"`
+	Email                string       `json:"email,omitempty" gorm:"column:email;default:'';NOT NULL"`
+	GitrepoName          string       `json:"gitrepo_name,omitempty" gorm:"column:gitrepo_name;default:'';NOT NULL"`
+	ImagerepoName        string       `json:"imagerepo_name,omitempty" gorm:"column:imagerepo_name;default:'';NOT NULL"`
+	Password             string       `json:"password,omitempty" gorm:"column:password;default:'';NOT NULL"`
+	Status               UserStatus   `json:"status,omitempty" gorm:"column:status;default:0;NOT NULL"`
+	AccessToken          string       `json:"access_token,omitempty" gorm:"-"`
+	SignType             UserSignType `json:"sign_type,omitempty" gorm:"column:sign_type;default:0;NOT NULL"`
+	WorkspaceId          int64        `json:"workspace_id,omitempty" gorm:"column:workspace_id;default:0;NOT NULL"`
+	GitRepositoryToken   string       `json:"git_repository_token,omitempty" gorm:"column:gitrepository_token;default:'';NOT NULL"`
+	ImageRepositoryToken string       `json:"image_repository_token,omitempty" gorm:"column:imagerepository_token;default:'';NOT NULL"`
+}
+
+type Role struct {
+	Id          int64  `json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
+	Name        string `json:"name,omitempty" gorm:"column:name;default:'';NOT NULL"`
+	Verbs       string `json:"verbs,omitempty" gorm:"column:verbs;default:'';NOT NULL"`         // GET,POST,PUT,DELETE
+	Resources   string `json:"resources,omitempty" gorm:"column:resources;default:'';NOT NULL"` // project1:servicename1,servicename2|project2:servicename1  in the workspace
+	Description string `json:"description,omitempty" gorm:"column:description;default:'';NOT NULL"`
+}
+
+type UserRole struct {
+	Id     int64 `json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
+	UserId int64 `json:"user_id,omitempty" gorm:"column:user_id;default:0;NOT NULL"`
+	RoleId int64 `json:"role_id,omitempty" gorm:"column:role_id;default:0;NOT NULL"`
+}
+
 type UserData interface {
 	GetUserInfoByEmail(ctx context.Context, email string) (*User, error)
 	GetUser(ctx context.Context, id int64) (*User, error)
@@ -34,24 +103,16 @@ type UserData interface {
 	GetUserEmail(ctx context.Context, token string) (string, error)
 }
 
-type Thirdparty interface {
-	GetUserEmail(ctx context.Context, token string) (string, error)
-}
-
-type UserAgent interface {
-}
-
 type UserUseCase struct {
-	userData   UserData
-	thirdparty Thirdparty
-	log        *log.Helper
-	conf       *conf.Bootstrap
+	userData UserData
+	log      *log.Helper
+	conf     *conf.Bootstrap
 }
 
-func NewUseUser(userData UserData, thirdparty Thirdparty, logger log.Logger, conf *conf.Bootstrap) *UserUseCase {
+func NewUseUser(userData UserData, logger log.Logger, conf *conf.Bootstrap) *UserUseCase {
 	os.Setenv(Exp.String(), string(conf.Auth.Exp))
 	os.Setenv(AuthKey.String(), conf.Auth.Key)
-	return &UserUseCase{userData: userData, thirdparty: thirdparty, log: log.NewHelper(logger), conf: conf}
+	return &UserUseCase{userData: userData, log: log.NewHelper(logger), conf: conf}
 }
 
 func GetUserInfo(ctx context.Context) *User {
@@ -96,14 +157,6 @@ func (u *UserUseCase) GetUsers(ctx context.Context, name, email string, pageNum,
 
 func (u *UserUseCase) Register(ctx context.Context, user *User) error {
 	user.SignType = UserSignType_CREDENTIALS
-	if user.AccessToken != "" {
-		email, err := u.thirdparty.GetUserEmail(ctx, user.AccessToken)
-		if err != nil {
-			return err
-		}
-		user.Email = email
-		user.SignType = UserSignType_GITHUB
-	}
 	return u.Save(ctx, user)
 }
 
@@ -134,14 +187,6 @@ func (u *UserUseCase) SignIn(ctx context.Context, user *User) (err error) {
 		}
 		user.Status = UserStatus_USER_ENABLE
 		return nil
-	}
-	if user.AccessToken != "" {
-		email, err := u.thirdparty.GetUserEmail(ctx, user.AccessToken)
-		if err != nil {
-			return err
-		}
-		user.Email = email
-		user.SignType = UserSignType_GITHUB
 	}
 	if user.Email == "" {
 		return errors.New("email or password error")

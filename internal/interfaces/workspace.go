@@ -6,6 +6,7 @@ import (
 	"github.com/f-rambo/cloud-copilot/api/common"
 	"github.com/f-rambo/cloud-copilot/api/workspace/v1alpha1"
 	"github.com/f-rambo/cloud-copilot/internal/biz"
+	"github.com/f-rambo/cloud-copilot/utils"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/pkg/errors"
 )
@@ -30,6 +31,9 @@ func (w *WorkspaceInterface) GetWorkspace(ctx context.Context, id int64) (*biz.W
 func (w *WorkspaceInterface) Save(ctx context.Context, workspaceParam *v1alpha1.Workspace) (*common.Msg, error) {
 	if workspaceParam.Name == "" {
 		return nil, errors.New("workspace name is empty")
+	}
+	if !utils.IsValidKubernetesName(workspaceParam.Name) {
+		return nil, errors.New("workspace name is invalid")
 	}
 	if workspaceParam.Id == 0 {
 		workspaceData, err := w.workspaceUc.GetByName(ctx, workspaceParam.Name)
@@ -85,7 +89,6 @@ func (w *WorkspaceInterface) bizToWorkspace(workspace *biz.Workspace) *v1alpha1.
 		LimitCpu:    workspace.LimitCpu,
 		LimitGpu:    workspace.LimitGpu,
 		LimitMemory: workspace.LimitMemory,
-		UpdatedAt:   workspace.UpdatedAt.Format("2006-01-02 15:04:05"),
 	}
 }
 

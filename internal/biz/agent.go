@@ -1,9 +1,16 @@
 package biz
 
-import "github.com/go-kratos/kratos/v2/log"
+import (
+	"context"
 
-// config
-// Add case...
+	"github.com/go-kratos/kratos/v2/log"
+)
+
+// todo config & Add case...
+
+type Agent interface {
+	Get(context.Context)
+}
 
 type AgentUsecase struct {
 	log *log.Helper

@@ -10,7 +10,6 @@ SERVER_NAME=cloud-copilot
 AUTHOR=frambo9
 IMG=$(AUTHOR)/$(SERVER_NAME):$(VERSION)
 
-INTERNAL_PROTO_FILES=$(shell find internal -name *.proto)
 INTERNAL_BIZ_PBGO_FILES=$(shell find internal/biz -name *.pb.go)
 API_PROTO_FILES=$(shell find api -name *.proto)
 
@@ -34,19 +33,16 @@ api:
 	       --openapi_out=fq_schema_naming=true,default_response=false:. \
 	       $(API_PROTO_FILES)
 
-.PHONY: internal
-internal:
+.PHONY: conf
+conf:
 	protoc --proto_path=. \
-	       --proto_path=./third_party \
  	       --go_out=paths=source_relative:. \
- 	       --go-grpc_out=paths=source_relative:. \
-	       $(INTERNAL_PROTO_FILES)
-	protoc-go-inject $(INTERNAL_BIZ_PBGO_FILES)
+	       internal/conf/conf.proto
 
 
 .PHONY: build
 build:
-	mkdir -p bin/ && go build -ldflags "-X main.Version=$(VERSION)" -o ./bin/$(SERVER_NAME) ./cmd/${SERVER_NAME}
+	mkdir -p bin/ && go build -ldflags "-s -w -X main.Version=$(VERSION)" -o ./bin/$(SERVER_NAME) ./cmd/${SERVER_NAME}
 
 .PHONY: generate
 generate:

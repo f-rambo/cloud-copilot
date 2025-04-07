@@ -11,6 +11,20 @@ const (
 	ProjectKey ContextKey = "project"
 )
 
+type Project struct {
+	Id          int64  `json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
+	Name        string `json:"name,omitempty" gorm:"column:name;default:'';NOT NULL"`
+	Namespace   string `json:"namespace,omitempty" gorm:"column:namespace;default:'';NOT NULL"`
+	Description string `json:"description,omitempty" gorm:"column:namespace;default:'';NOT NULL"`
+	ClusterId   int64  `json:"cluster_id,omitempty" gorm:"column:cluster_id;default:0;NOT NULL"`
+	UserId      int64  `json:"user_id,omitempty" gorm:"column:user_id;default:0;NOT NULL"`
+	WorkspaceId int64  `json:"workspace_id,omitempty" gorm:"column:workspace_id;default:0;NOT NULL"`
+	LimitCpu    int32  `json:"limit_cpu,omitempty" gorm:"column:limit_cpu;default:0;NOT NULL"`
+	LimitGpu    int32  `json:"limit_gpu,omitempty" gorm:"column:limit_gpu;default:0;NOT NULL"`
+	LimitMemory int32  `json:"limit_memory,omitempty" gorm:"column:limit_memory;default:0;NOT NULL"`
+	LimitDisk   int32  `json:"limit_disk,omitempty" gorm:"column:limit_disk;default:0;NOT NULL"`
+}
+
 type ProjectData interface {
 	Save(context.Context, *Project) error
 	Get(context.Context, int64) (*Project, error)
@@ -21,11 +35,8 @@ type ProjectData interface {
 }
 
 type ProjectRuntime interface {
-	CreateNamespace(context.Context, string) error
-	GetNamespaces(context.Context) (namespaces []string, err error)
-}
-
-type ProjectAgent interface {
+	Reload(context.Context, *Project) error
+	Delete(context.Context, *Project) error
 }
 
 type ProjectUsecase struct {
@@ -49,6 +60,12 @@ func GetProject(ctx context.Context) *Project {
 
 func WithProject(ctx context.Context, p *Project) context.Context {
 	return context.WithValue(ctx, ProjectKey, p)
+}
+
+func (p *Project) GetLabels() map[string]string {
+	return map[string]string{
+		"project": p.Name,
+	}
 }
 
 func (uc *ProjectUsecase) Save(ctx context.Context, project *Project) error {

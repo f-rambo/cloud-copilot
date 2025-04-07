@@ -188,7 +188,12 @@ func (a *appRepo) DeleteAppRelease(ctx context.Context, id int64) error {
 }
 
 func (a *appRepo) SaveRepo(ctx context.Context, repo *biz.AppRepo) error {
-	return a.data.db.Save(repo).Error
+	err := a.data.db.Save(repo).Error
+	if err != nil {
+		return err
+	}
+	// todo save app and app version
+	return nil
 }
 
 func (a *appRepo) ListRepo(ctx context.Context) ([]*biz.AppRepo, error) {
@@ -211,6 +216,14 @@ func (a *appRepo) GetRepo(ctx context.Context, repoID int64) (*biz.AppRepo, erro
 
 func (a *appRepo) DeleteRepo(ctx context.Context, repoID int64) error {
 	return a.data.db.Delete(&biz.AppRepo{}, repoID).Error
+}
+
+func (a *appRepo) GetAppVersionDetailByRepo(ctx context.Context, repoId int64, appName, version string) (*biz.App, error) {
+	return nil, nil
+}
+
+func (a *appRepo) GetAppsByRepo(ctx context.Context, repoId int64) ([]*biz.App, error) {
+	return nil, nil
 }
 
 func (a *appRepo) GetRepoByName(ctx context.Context, repoName string) (*biz.AppRepo, error) {

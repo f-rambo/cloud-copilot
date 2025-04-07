@@ -7,6 +7,7 @@ import (
 	v1alpha1 "github.com/f-rambo/cloud-copilot/api/service/v1alpha1"
 	"github.com/f-rambo/cloud-copilot/internal/biz"
 	"github.com/f-rambo/cloud-copilot/utils"
+	"github.com/pkg/errors"
 )
 
 type ServicesInterface struct {
@@ -41,6 +42,9 @@ func (s *ServicesInterface) List(ctx context.Context, serviceReq *v1alpha1.Servi
 func (s *ServicesInterface) Save(ctx context.Context, service *v1alpha1.Service) (*common.Msg, error) {
 	if service.ProjectId == 0 || service.Name == "" {
 		return nil, common.ResponseError(common.ErrorReason_ErrInvalidArgument)
+	}
+	if !utils.IsValidKubernetesName(service.Name) {
+		return nil, errors.New("service name is invalid")
 	}
 	bizService := &biz.Service{}
 	err := utils.StructTransform(service, bizService)
@@ -101,6 +105,9 @@ func (s *ServicesInterface) SaveWorkflow(ctx context.Context, wf *v1alpha1.Workf
 	if wf.ServiceId == 0 || wf.Name == "" {
 		return nil, common.ResponseError(common.ErrorReason_ErrInvalidArgument)
 	}
+	if !utils.IsValidKubernetesName(wf.Name) {
+		return nil, errors.New("workflow name is invalid")
+	}
 	bizWf := &biz.Workflow{}
 	err := utils.StructTransform(wf, bizWf)
 	if err != nil {
@@ -117,8 +124,8 @@ func (s *ServicesInterface) GetWorkflow(ctx context.Context, wfReq *v1alpha1.Wor
 	if wfReq.ServiceId == 0 || wfReq.WorkflowType == "" {
 		return nil, common.ResponseError(common.ErrorReason_ErrInvalidArgument)
 	}
-	wfType, ok := biz.WorkflowType_value[wfReq.WorkflowType]
-	if !ok {
+	wfType := biz.WorkflowTypeFindByString(wfReq.WorkflowType)
+	if wfType == biz.WorkflowType_UNSPECIFIED {
 		return nil, common.ResponseError(common.ErrorReason_ErrInvalidArgument)
 	}
 	wfData, err := s.serviceUc.GetWorkflow(ctx, wfReq.ServiceId, biz.WorkflowType(wfType))

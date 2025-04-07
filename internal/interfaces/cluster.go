@@ -2,7 +2,6 @@ package interfaces
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/f-rambo/cloud-copilot/api/cluster/v1alpha1"
 	"github.com/f-rambo/cloud-copilot/api/common"
@@ -29,8 +28,6 @@ func NewClusterInterface(clusterUc *biz.ClusterUsecase, c *conf.Bootstrap, logge
 }
 
 func (c *ClusterInterface) Ping(ctx context.Context, _ *emptypb.Empty) (*common.Msg, error) {
-	cluster := biz.GetCluster(ctx)
-	fmt.Println(cluster)
 	return common.Response(), nil
 }
 
@@ -38,11 +35,11 @@ func (c *ClusterInterface) GetCluster(ctx context.Context, clusterId int64) (*bi
 	return c.clusterUc.Get(ctx, clusterId)
 }
 
-func (c *ClusterInterface) GetClusterTypes(ctx context.Context, _ *emptypb.Empty) (*v1alpha1.ClusterTypes, error) {
-	clusterTypes := c.clusterUc.GetClusterTypes()
-	clusterTypeResponse := &v1alpha1.ClusterTypes{ClusterTypes: make([]*v1alpha1.ClusterType, 0)}
+func (c *ClusterInterface) GetClusterProviders(ctx context.Context, _ *emptypb.Empty) (*v1alpha1.ClusterProviders, error) {
+	clusterTypes := c.clusterUc.GetClusterProviders()
+	clusterTypeResponse := &v1alpha1.ClusterProviders{ClusterProviders: make([]*v1alpha1.ClusterProvider, 0)}
 	for _, clusterType := range clusterTypes {
-		clusterTypeResponse.ClusterTypes = append(clusterTypeResponse.ClusterTypes, &v1alpha1.ClusterType{
+		clusterTypeResponse.ClusterProviders = append(clusterTypeResponse.ClusterProviders, &v1alpha1.ClusterProvider{
 			Id:      int32(clusterType),
 			Name:    clusterType.String(),
 			IsCloud: clusterType.IsCloud(),
@@ -145,13 +142,13 @@ func (c *ClusterInterface) Get(ctx context.Context, clusterIdArgs *v1alpha1.Clus
 	return data, nil
 }
 func (c *ClusterInterface) Save(ctx context.Context, clusterArgs *v1alpha1.ClusterSaveArgs) (msg *v1alpha1.ClusterIdMessge, err error) {
-	if clusterArgs.Name == "" || clusterArgs.PrivateKey == "" || clusterArgs.Type == 0 || clusterArgs.PublicKey == "" {
+	if clusterArgs.Name == "" || clusterArgs.PrivateKey == "" || clusterArgs.Provider == 0 || clusterArgs.PublicKey == "" {
 		return nil, errors.New("cluster name, private key, type and public key are required")
 	}
-	if biz.ClusterType(clusterArgs.Type).IsCloud() && (clusterArgs.AccessId == "" || clusterArgs.AccessKey == "" || clusterArgs.Region == "") {
+	if biz.ClusterProvider(clusterArgs.Provider).IsCloud() && (clusterArgs.AccessId == "" || clusterArgs.AccessKey == "" || clusterArgs.Region == "") {
 		return nil, errors.New("access key id and secret access key, region are required")
 	}
-	if clusterArgs.Type == int32(biz.ClusterType_LOCAL.Number()) && (clusterArgs.NodeUsername == "" || clusterArgs.NodeStartIp == "" || clusterArgs.NodeEndIp == "") {
+	if clusterArgs.Provider == int32(biz.ClusterProvider_BareMetal) && (clusterArgs.NodeUsername == "" || clusterArgs.NodeStartIp == "" || clusterArgs.NodeEndIp == "") {
 		return nil, errors.New("node username, start ip and end ip are required")
 	}
 	cluster := &biz.Cluster{}
@@ -177,7 +174,7 @@ func (c *ClusterInterface) Save(ctx context.Context, clusterArgs *v1alpha1.Clust
 		cluster.RuncVersion = c.c.Cluster.GetRuncVersion()
 	}
 	cluster.Name = clusterArgs.Name
-	cluster.Type = biz.ClusterType(clusterArgs.Type)
+	cluster.Provider = biz.ClusterProvider(clusterArgs.Provider)
 	cluster.PublicKey = clusterArgs.PublicKey
 	cluster.PrivateKey = clusterArgs.PrivateKey
 	cluster.AccessId = clusterArgs.AccessId
@@ -261,7 +258,7 @@ func (c *ClusterInterface) GetRegions(ctx context.Context, clusterArgs *v1alpha1
 	if clusterArgs == nil || clusterArgs.Type == 0 || clusterArgs.AccessId == "" || clusterArgs.AccessKey == "" {
 		return nil, errors.New("type, access id and access key are required")
 	}
-	cluster := &biz.Cluster{Type: biz.ClusterType(clusterArgs.Type), AccessId: clusterArgs.AccessId, AccessKey: clusterArgs.AccessKey}
+	cluster := &biz.Cluster{Provider: biz.ClusterProvider(clusterArgs.Type), AccessId: clusterArgs.AccessId, AccessKey: clusterArgs.AccessKey}
 	regions, err := c.clusterUc.GetRegions(ctx, cluster)
 	if err != nil {
 		return nil, err
@@ -297,15 +294,13 @@ func (c *ClusterInterface) bizCLusterToCluster(bizCluster *biz.Cluster) *v1alpha
 		KuberentesVersion: bizCluster.KuberentesVersion,
 		ApiServerAddress:  bizCluster.ApiServerAddress,
 		Status:            int32(bizCluster.Status),
-		Type:              int32(bizCluster.Type),
+		Provider:          int32(bizCluster.Provider),
 		PublicKey:         bizCluster.PublicKey,
 		PrivateKey:        bizCluster.PrivateKey,
 		Region:            bizCluster.Region,
 		RegionName:        bizCluster.Region,
 		AccessId:          bizCluster.AccessId,
 		AccessKey:         bizCluster.AccessKey,
-		CreateAt:          bizCluster.CreatedAt.Format("2006-01-02 15:04:05"),
-		UpdateAt:          bizCluster.UpdatedAt.Format("2006-01-02 15:04:05"),
 		Nodes:             nodes,
 		NodeGroups:        nodeGroups,
 		NodeStartIp:       bizCluster.NodeStartIp,
@@ -322,7 +317,6 @@ func (c *ClusterInterface) bizNodeToNode(node *biz.Node) *v1alpha1.Node {
 		User:       node.User,
 		Status:     int32(node.Status),
 		InstanceId: node.InstanceId,
-		UpdateAt:   node.UpdatedAt.Format("2006-01-02 15:04:05"),
 	}
 }
 
@@ -340,6 +334,5 @@ func (c *ClusterInterface) bizNodeGroupToNodeGroup(nodeGroup *biz.NodeGroup) *v1
 		MinSize:    nodeGroup.MinSize,
 		MaxSize:    nodeGroup.MaxSize,
 		TargetSize: nodeGroup.TargetSize,
-		UpdateAt:   nodeGroup.UpdatedAt.Format("2006-01-02 15:04:05"),
 	}
 }

@@ -1,0 +1,21 @@
+apiVersion: kubeadm.k8s.io/v1beta4
+kind: ClusterConfiguration
+clusterName: "{{.Name}}"
+kubernetesVersion: "{{.Version}}"
+certificatesDir: "/etc/kubernetes/pki"
+imageRepository: "{{.ImageRepo}}"
+dns:
+  disabled: false
+proxy:
+  disabled: true
+apiServer:
+  certSANs:
+    - "{{.ApiServerAddress}}"
+controlPlaneEndpoint: "{{.ApiServerAddress}}:6443"
+networking:
+  serviceSubnet: "{{.ServiceCidr}}"
+  podSubnet: "{{.PodCidr}}"
+  dnsDomain: "{{.Name}}.svc"
+controllerManager:
+  extraArgs:
+    cloud-provider: "external"

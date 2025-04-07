@@ -11,6 +11,31 @@ const (
 	WorkspaceKey ContextKey = "workspace"
 )
 
+type AlreadyResource struct {
+	Cpu     int32 `json:"cpu,omitempty"`
+	Memory  int32 `json:"memory,omitempty"`
+	Gpu     int32 `json:"gpu,omitempty"`
+	Storage int32 `json:"storage,omitempty"`
+}
+
+type Workspace struct {
+	Id              int64  `json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
+	Name            string `json:"name,omitempty" gorm:"column:name;default:'';NOT NULL"`
+	Description     string `json:"description,omitempty" gorm:"column:namespace;default:'';NOT NULL"`
+	ClusterId       int64  `json:"cluster_id,omitempty" gorm:"column:cluster_id;default:0;NOT NULL"`
+	UserId          int64  `json:"user_id,omitempty" gorm:"column:user_id;default:0;NOT NULL"`
+	CpuRate         int32  `json:"cpu_rate,omitempty" gorm:"column:cpu_rate;default:0;NOT NULL"`
+	GpuRate         int32  `json:"gpu_rate,omitempty" gorm:"column:gpu_rate;default:0;NOT NULL"`
+	MemoryRate      int32  `json:"memory_rate,omitempty" gorm:"column:memory_rate;default:0;NOT NULL"`
+	DiskRate        int32  `json:"disk_rate,omitempty" gorm:"column:disk_rate;default:0;NOT NULL"`
+	LimitCpu        int32  `json:"limit_cpu,omitempty" gorm:"column:limit_cpu;default:0;NOT NULL"`
+	LimitGpu        int32  `json:"limit_gpu,omitempty" gorm:"column:limit_gpu;default:0;NOT NULL"`
+	LimitMemory     int32  `json:"limit_memory,omitempty" gorm:"column:limit_memory;default:0;NOT NULL"`
+	LimitDisk       int32  `json:"limit_disk,omitempty" gorm:"column:limit_disk;default:0;NOT NULL"`
+	GitRepository   string `json:"git_repository,omitempty" gorm:"column:git_repository;default:'';NOT NULL"`
+	ImageRepository string `json:"image_repository,omitempty" gorm:"column:image_repository;default:'';NOT NULL"`
+}
+
 type WorkspaceData interface {
 	Get(ctx context.Context, id int64) (*Workspace, error)
 	Save(context.Context, *Workspace) error
@@ -18,7 +43,9 @@ type WorkspaceData interface {
 	GetByName(ctx context.Context, name string) (*Workspace, error)
 }
 
-type WorkspaceAgent interface {
+type WorkspaceRuntime interface {
+	Reload(context.Context, *Workspace) error
+	Delete(context.Context, *Workspace) error
 }
 
 type WorkspaceUsecase struct {
@@ -44,6 +71,12 @@ func GetWorkspace(ctx context.Context) *Workspace {
 
 func WithWorkspace(ctx context.Context, w *Workspace) context.Context {
 	return context.WithValue(ctx, WorkspaceKey, w)
+}
+
+func (w *Workspace) GetLabels() map[string]string {
+	return map[string]string{
+		"workspace": w.Name,
+	}
 }
 
 func (w *Workspace) GetCpuCount(ctx context.Context) {

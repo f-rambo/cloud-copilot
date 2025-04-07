@@ -16,9 +16,9 @@ service ClusterInterface {
             };
       }
 
-      rpc GetClusterTypes(google.protobuf.Empty) returns (cluster.v1alpha1.ClusterTypes) {
+      rpc GetClusterProviders(google.protobuf.Empty) returns (cluster.v1alpha1.ClusterProviders) {
             option (google.api.http) = {
-              get: "/api/v1alpha1/cluster/types"
+              get: "/api/v1alpha1/cluster/providers"
             };
       }
 

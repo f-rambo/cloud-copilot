@@ -2,14 +2,17 @@ package interfaces
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"math"
+	"os"
+	"path/filepath"
+	"strings"
 
 	v1alpha1 "github.com/f-rambo/cloud-copilot/api/app/v1alpha1"
 	"github.com/f-rambo/cloud-copilot/api/common"
 	"github.com/f-rambo/cloud-copilot/internal/biz"
-	"github.com/f-rambo/cloud-copilot/internal/conf"
-	appApi "github.com/f-rambo/cloud-copilot/internal/repository/clusterruntime/api/app"
 	"github.com/f-rambo/cloud-copilot/utils"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/pkg/errors"
@@ -20,12 +23,11 @@ type AppInterface struct {
 	v1alpha1.UnimplementedAppInterfaceServer
 	uc     *biz.AppUsecase
 	userUc *biz.UserUseCase
-	c      *conf.Bootstrap
 	log    *log.Helper
 }
 
-func NewAppInterface(uc *biz.AppUsecase, user *biz.UserUseCase, c *conf.Bootstrap, logger log.Logger) *AppInterface {
-	return &AppInterface{uc: uc, c: c, userUc: user, log: log.NewHelper(logger)}
+func NewAppInterface(uc *biz.AppUsecase, user *biz.UserUseCase, logger log.Logger) *AppInterface {
+	return &AppInterface{uc: uc, userUc: user, log: log.NewHelper(logger)}
 }
 
 func (a *AppInterface) Ping(ctx context.Context, _ *emptypb.Empty) (*common.Msg, error) {
@@ -147,35 +149,56 @@ func (a *AppInterface) DeleteAppVersion(ctx context.Context, appReq *v1alpha1.Ap
 }
 
 func (a *AppInterface) UploadApp(ctx context.Context, req *v1alpha1.FileUploadRequest) (*v1alpha1.App, error) {
-	var service *conf.Service
-	for _, v := range a.c.Services {
-		if v.Name == "cluster-runtime" {
-			service = v
+	var fileExt string = ".tgz"
+	if filepath.Ext(req.GetFileName()) != fileExt {
+		return nil, errors.New("file type is not supported")
+	}
+	appPath := utils.GetServerStoragePathByNames(biz.AppsDir)
+	fileName, err := a.upload(appPath, req.GetFileName(), req.GetChunk())
+	if err != nil {
+		return nil, err
+	}
+	appTmpChartPath := filepath.Join(appPath, fileName)
+	app := &biz.App{Versions: make([]*biz.AppVersion, 0)}
+	app.AddVersion(&biz.AppVersion{Chart: appTmpChartPath})
+	err = a.uc.GetAppAndVersionInfo(ctx, app)
+	if err != nil {
+		return nil, err
+	}
+	appTgzFileName := fmt.Sprintf("%s-%s%s", app.Name, app.Versions[0].Version, fileExt)
+	appChartPath := filepath.Join(appPath, appTgzFileName)
+	if utils.IsFileExist(appChartPath) {
+		err = os.Remove(appChartPath)
+		if err != nil {
+			return nil, err
 		}
 	}
-	if service == nil {
-		return nil, errors.New("cluster-runtime service not found")
-	}
-	grpcConn, err := new(utils.GrpcConn).OpenGrpcConn(ctx, service.Addr, service.Port, service.Timeout)
+	err = os.Rename(appTmpChartPath, appChartPath)
 	if err != nil {
 		return nil, err
 	}
-	defer grpcConn.Close()
-	uploadAppRes, err := appApi.NewAppInterfaceClient(grpcConn.Conn).UploadApp(ctx, &appApi.FileUploadRequest{
-		FileName: req.GetFileName(),
-		Chunk:    req.GetChunk(),
-		Resume:   req.GetResume(),
-		Finish:   req.GetFinish(),
-		Icon:     req.GetIcon(),
-	})
+	return a.bizAppToApp(app)
+}
+
+func (a *AppInterface) upload(path, filename, chunk string) (string, error) {
+	data, err := base64.StdEncoding.DecodeString(chunk[strings.IndexByte(chunk, ',')+1:])
 	if err != nil {
-		return nil, err
+		return "", err
 	}
-	err = a.uc.Save(ctx, uploadAppRes.App)
+	file, err := utils.NewFile(path, filename, false)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
-	return a.bizAppToApp(uploadAppRes.App)
+	defer func() {
+		if file != nil {
+			file.Close()
+		}
+	}()
+	err = file.Write(data)
+	if err != nil {
+		return "", err
+	}
+	return file.GetFileName(), nil
 }
 
 func (a *AppInterface) CreateAppType(ctx context.Context, appType *v1alpha1.AppType) (*common.Msg, error) {
@@ -287,7 +310,6 @@ func (a *AppInterface) GetAppsByRepo(ctx context.Context, repoReq *v1alpha1.AppR
 			return nil, err
 		}
 		dataApp.Id = int64(index) + 1
-		dataApp.UpdateTime = app.UpdatedAt.Format("2006-01-02 15:04:05")
 		appList.Items[index] = dataApp
 	}
 	return appList, nil
@@ -331,8 +353,6 @@ func (a *AppInterface) GetAppRelease(ctx context.Context, AppReleaseReq *v1alpha
 		return nil, err
 	}
 	appRelease.UserName = user.Name
-	appRelease.CreateTime = appReleaseRes.CreatedAt.Format("2006-01-02 15:04:05")
-	appRelease.UpdateTime = appReleaseRes.UpdatedAt.Format("2006-01-02 15:04:05")
 	return appRelease, nil
 }
 
@@ -444,12 +464,11 @@ func (a *AppInterface) DeleteAppRelease(ctx context.Context, appReleaseReq *v1al
 
 func (a *AppInterface) bizAppToApp(bizApp *biz.App) (*v1alpha1.App, error) {
 	app := &v1alpha1.App{
-		Id:         bizApp.Id,
-		Name:       bizApp.Name,
-		Icon:       bizApp.Icon,
-		AppTypeId:  bizApp.AppTypeId,
-		Versions:   make([]*v1alpha1.AppVersion, len(bizApp.Versions)),
-		UpdateTime: bizApp.UpdatedAt.Format("2006-01-02 15:04:05"),
+		Id:        bizApp.Id,
+		Name:      bizApp.Name,
+		Icon:      bizApp.Icon,
+		AppTypeId: bizApp.AppTypeId,
+		Versions:  make([]*v1alpha1.AppVersion, len(bizApp.Versions)),
 	}
 	for index, v := range bizApp.Versions {
 		appversion, err := a.bizAppVersionToAppVersion(v)

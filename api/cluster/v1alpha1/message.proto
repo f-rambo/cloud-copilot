@@ -4,14 +4,14 @@ package cluster.v1alpha1;
 
 option go_package = "api/cluster/v1alpha1;v1alpha1";
 
-message ClusterType {
+message ClusterProvider {
     int32 id = 1 [json_name = "id"];
     string name = 2 [json_name = "name"];
     bool is_cloud = 3 [json_name = "is_cloud"];
 }
 
-message ClusterTypes {
-    repeated ClusterType cluster_types = 1 [json_name = "cluster_types"];
+message ClusterProviders {
+    repeated ClusterProvider cluster_providers = 1 [json_name = "cluster_providers"];
 }
 
 message ClusterStatus {
@@ -84,7 +84,7 @@ message ClusterIdMessge {
 message ClusterSaveArgs {
     int64 id = 1 [json_name = "id"];
     string name = 2 [json_name = "name"];
-    int32 type = 3 [json_name = "type"];
+    int32 provider = 3 [json_name = "provider"];
     string public_key = 4 [json_name = "public_key"];
     string private_key = 5 [json_name = "private_key"];
     string access_id = 6 [json_name = "access_id"];
@@ -111,7 +111,7 @@ message Cluster {
     string kuberentes_version = 3 [json_name = "kuberentes_version"];
     string api_server_address = 4 [json_name = "api_server_address"];
     int32 status = 5 [json_name = "status"];
-    int32 type = 6 [json_name = "type"];
+    int32 provider = 6 [json_name = "provider"];
     string public_key = 7 [json_name = "public_key"];
     string private_key = 8 [json_name = "private_key"];
     string region = 9 [json_name = "region"];

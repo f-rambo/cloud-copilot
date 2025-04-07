@@ -21,23 +21,23 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	ClusterInterface_Ping_FullMethodName               = "/cluster.v1alpha1.ClusterInterface/Ping"
-	ClusterInterface_GetClusterTypes_FullMethodName    = "/cluster.v1alpha1.ClusterInterface/GetClusterTypes"
-	ClusterInterface_GetClusterStatuses_FullMethodName = "/cluster.v1alpha1.ClusterInterface/GetClusterStatuses"
-	ClusterInterface_GetClusterLevels_FullMethodName   = "/cluster.v1alpha1.ClusterInterface/GetClusterLevels"
-	ClusterInterface_GetNodeRoles_FullMethodName       = "/cluster.v1alpha1.ClusterInterface/GetNodeRoles"
-	ClusterInterface_GetNodeStatuses_FullMethodName    = "/cluster.v1alpha1.ClusterInterface/GetNodeStatuses"
-	ClusterInterface_GetNodeGroupTypes_FullMethodName  = "/cluster.v1alpha1.ClusterInterface/GetNodeGroupTypes"
-	ClusterInterface_GetResourceTypes_FullMethodName   = "/cluster.v1alpha1.ClusterInterface/GetResourceTypes"
-	ClusterInterface_Get_FullMethodName                = "/cluster.v1alpha1.ClusterInterface/Get"
-	ClusterInterface_Save_FullMethodName               = "/cluster.v1alpha1.ClusterInterface/Save"
-	ClusterInterface_List_FullMethodName               = "/cluster.v1alpha1.ClusterInterface/List"
-	ClusterInterface_Delete_FullMethodName             = "/cluster.v1alpha1.ClusterInterface/Delete"
-	ClusterInterface_Start_FullMethodName              = "/cluster.v1alpha1.ClusterInterface/Start"
-	ClusterInterface_Stop_FullMethodName               = "/cluster.v1alpha1.ClusterInterface/Stop"
-	ClusterInterface_GetRegions_FullMethodName         = "/cluster.v1alpha1.ClusterInterface/GetRegions"
-	ClusterInterface_PollingLogs_FullMethodName        = "/cluster.v1alpha1.ClusterInterface/PollingLogs"
-	ClusterInterface_GetLogs_FullMethodName            = "/cluster.v1alpha1.ClusterInterface/GetLogs"
+	ClusterInterface_Ping_FullMethodName                = "/cluster.v1alpha1.ClusterInterface/Ping"
+	ClusterInterface_GetClusterProviders_FullMethodName = "/cluster.v1alpha1.ClusterInterface/GetClusterProviders"
+	ClusterInterface_GetClusterStatuses_FullMethodName  = "/cluster.v1alpha1.ClusterInterface/GetClusterStatuses"
+	ClusterInterface_GetClusterLevels_FullMethodName    = "/cluster.v1alpha1.ClusterInterface/GetClusterLevels"
+	ClusterInterface_GetNodeRoles_FullMethodName        = "/cluster.v1alpha1.ClusterInterface/GetNodeRoles"
+	ClusterInterface_GetNodeStatuses_FullMethodName     = "/cluster.v1alpha1.ClusterInterface/GetNodeStatuses"
+	ClusterInterface_GetNodeGroupTypes_FullMethodName   = "/cluster.v1alpha1.ClusterInterface/GetNodeGroupTypes"
+	ClusterInterface_GetResourceTypes_FullMethodName    = "/cluster.v1alpha1.ClusterInterface/GetResourceTypes"
+	ClusterInterface_Get_FullMethodName                 = "/cluster.v1alpha1.ClusterInterface/Get"
+	ClusterInterface_Save_FullMethodName                = "/cluster.v1alpha1.ClusterInterface/Save"
+	ClusterInterface_List_FullMethodName                = "/cluster.v1alpha1.ClusterInterface/List"
+	ClusterInterface_Delete_FullMethodName              = "/cluster.v1alpha1.ClusterInterface/Delete"
+	ClusterInterface_Start_FullMethodName               = "/cluster.v1alpha1.ClusterInterface/Start"
+	ClusterInterface_Stop_FullMethodName                = "/cluster.v1alpha1.ClusterInterface/Stop"
+	ClusterInterface_GetRegions_FullMethodName          = "/cluster.v1alpha1.ClusterInterface/GetRegions"
+	ClusterInterface_PollingLogs_FullMethodName         = "/cluster.v1alpha1.ClusterInterface/PollingLogs"
+	ClusterInterface_GetLogs_FullMethodName             = "/cluster.v1alpha1.ClusterInterface/GetLogs"
 )
 
 // ClusterInterfaceClient is the client API for ClusterInterface service.
@@ -45,7 +45,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ClusterInterfaceClient interface {
 	Ping(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*common.Msg, error)
-	GetClusterTypes(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*ClusterTypes, error)
+	GetClusterProviders(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*ClusterProviders, error)
 	GetClusterStatuses(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*ClusterStatuses, error)
 	GetClusterLevels(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*ClusterLevels, error)
 	GetNodeRoles(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*NodeRoles, error)
@@ -81,10 +81,10 @@ func (c *clusterInterfaceClient) Ping(ctx context.Context, in *emptypb.Empty, op
 	return out, nil
 }
 
-func (c *clusterInterfaceClient) GetClusterTypes(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*ClusterTypes, error) {
+func (c *clusterInterfaceClient) GetClusterProviders(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*ClusterProviders, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ClusterTypes)
-	err := c.cc.Invoke(ctx, ClusterInterface_GetClusterTypes_FullMethodName, in, out, cOpts...)
+	out := new(ClusterProviders)
+	err := c.cc.Invoke(ctx, ClusterInterface_GetClusterProviders_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -249,7 +249,7 @@ type ClusterInterface_GetLogsClient = grpc.BidiStreamingClient[ClusterLogsReques
 // for forward compatibility.
 type ClusterInterfaceServer interface {
 	Ping(context.Context, *emptypb.Empty) (*common.Msg, error)
-	GetClusterTypes(context.Context, *emptypb.Empty) (*ClusterTypes, error)
+	GetClusterProviders(context.Context, *emptypb.Empty) (*ClusterProviders, error)
 	GetClusterStatuses(context.Context, *emptypb.Empty) (*ClusterStatuses, error)
 	GetClusterLevels(context.Context, *emptypb.Empty) (*ClusterLevels, error)
 	GetNodeRoles(context.Context, *emptypb.Empty) (*NodeRoles, error)
@@ -278,8 +278,8 @@ type UnimplementedClusterInterfaceServer struct{}
 func (UnimplementedClusterInterfaceServer) Ping(context.Context, *emptypb.Empty) (*common.Msg, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Ping not implemented")
 }
-func (UnimplementedClusterInterfaceServer) GetClusterTypes(context.Context, *emptypb.Empty) (*ClusterTypes, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetClusterTypes not implemented")
+func (UnimplementedClusterInterfaceServer) GetClusterProviders(context.Context, *emptypb.Empty) (*ClusterProviders, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetClusterProviders not implemented")
 }
 func (UnimplementedClusterInterfaceServer) GetClusterStatuses(context.Context, *emptypb.Empty) (*ClusterStatuses, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetClusterStatuses not implemented")
@@ -365,20 +365,20 @@ func _ClusterInterface_Ping_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ClusterInterface_GetClusterTypes_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _ClusterInterface_GetClusterProviders_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(emptypb.Empty)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ClusterInterfaceServer).GetClusterTypes(ctx, in)
+		return srv.(ClusterInterfaceServer).GetClusterProviders(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: ClusterInterface_GetClusterTypes_FullMethodName,
+		FullMethod: ClusterInterface_GetClusterProviders_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ClusterInterfaceServer).GetClusterTypes(ctx, req.(*emptypb.Empty))
+		return srv.(ClusterInterfaceServer).GetClusterProviders(ctx, req.(*emptypb.Empty))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -654,8 +654,8 @@ var ClusterInterface_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _ClusterInterface_Ping_Handler,
 		},
 		{
-			MethodName: "GetClusterTypes",
-			Handler:    _ClusterInterface_GetClusterTypes_Handler,
+			MethodName: "GetClusterProviders",
+			Handler:    _ClusterInterface_GetClusterProviders_Handler,
 		},
 		{
 			MethodName: "GetClusterStatuses",

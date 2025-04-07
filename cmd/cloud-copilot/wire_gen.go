@@ -7,13 +7,13 @@
 package main
 
 import (
+	"github.com/f-rambo/cloud-copilot/infrastructure"
 	"github.com/f-rambo/cloud-copilot/internal/biz"
 	"github.com/f-rambo/cloud-copilot/internal/conf"
 	"github.com/f-rambo/cloud-copilot/internal/data"
 	"github.com/f-rambo/cloud-copilot/internal/interfaces"
-	"github.com/f-rambo/cloud-copilot/internal/repository/clusterruntime"
-	"github.com/f-rambo/cloud-copilot/internal/repository/infrastructure"
 	"github.com/f-rambo/cloud-copilot/internal/server"
+	"github.com/f-rambo/cloud-copilot/runtime"
 	"github.com/go-kratos/kratos/v2"
 	"github.com/go-kratos/kratos/v2/log"
 )
@@ -32,32 +32,32 @@ func wireApp(bootstrap *conf.Bootstrap, logger log.Logger) (*kratos.App, func(),
 		return nil, nil, err
 	}
 	clusterData := data.NewClusterRepo(dataData, logger)
-	clusterInfrastructure := infrastructure.NewInfrastructureCluster(bootstrap, logger)
-	clusterRuntime := clusterruntime.NewClusterRuntimeCluster(bootstrap, logger)
+	clusterInfrastructure := infrastructure.NewInfrastructure(logger)
+	clusterRuntime := runtime.NewClusterRuntime(logger)
 	clusterUsecase := biz.NewClusterUseCase(bootstrap, clusterData, clusterInfrastructure, clusterRuntime, logger)
 	clusterInterface := interfaces.NewClusterInterface(clusterUsecase, bootstrap, logger)
 	appData := data.NewAppRepo(dataData, logger)
-	appRuntime := clusterruntime.NewClusterRuntimeApp(bootstrap, logger)
+	appRuntime := runtime.NewAppRuntime(logger)
 	appUsecase := biz.NewAppUsecase(appData, appRuntime, logger, bootstrap)
 	userData := data.NewUserRepo(dataData, bootstrap, logger)
-	thirdparty := clusterruntime.NewClusterRuntimeUser(bootstrap, logger)
-	userUseCase := biz.NewUseUser(userData, thirdparty, logger, bootstrap)
-	appInterface := interfaces.NewAppInterface(appUsecase, userUseCase, bootstrap, logger)
+	userUseCase := biz.NewUseUser(userData, logger, bootstrap)
+	appInterface := interfaces.NewAppInterface(appUsecase, userUseCase, logger)
 	servicesData := data.NewServicesRepo(dataData, logger)
-	workflowRuntime := clusterruntime.NewClusterRuntimeService(bootstrap, logger)
-	servicesUseCase := biz.NewServicesUseCase(servicesData, workflowRuntime, logger)
+	serviceRuntime := runtime.NewServiceRuntime(logger)
+	workflowRuntime := runtime.NewWorkflowRuntime(logger)
+	servicesUseCase := biz.NewServicesUseCase(servicesData, serviceRuntime, workflowRuntime, logger)
 	servicesInterface := interfaces.NewServicesInterface(servicesUseCase)
 	userInterface := interfaces.NewUserInterface(userUseCase, bootstrap)
 	workspaceData := data.NewWorkspaceRepo(dataData, logger)
 	workspaceUsecase := biz.NewWorkspaceUsecase(workspaceData, logger)
 	workspaceInterface := interfaces.NewWorkspaceInterface(workspaceUsecase, logger)
 	projectData := data.NewProjectRepo(dataData, bootstrap, logger)
-	projectRuntime := clusterruntime.NewClusterRuntimeProject(bootstrap, logger)
+	projectRuntime := runtime.NewProjectRuntime(logger)
 	projectUsecase := biz.NewProjectUseCase(projectData, projectRuntime, logger, bootstrap)
 	projectInterface := interfaces.NewProjectInterface(projectUsecase, userUseCase, bootstrap, logger)
 	grpcServer := server.NewGRPCServer(bootstrap, clusterInterface, appInterface, servicesInterface, userInterface, workspaceInterface, projectInterface, logger)
 	httpServer := server.NewHTTPServer(bootstrap, clusterInterface, appInterface, servicesInterface, userInterface, workspaceInterface, projectInterface, logger)
-	bizBiz := biz.NewBiz(clusterUsecase, appUsecase, servicesUseCase, userUseCase, projectUsecase, bootstrap, logger)
+	bizBiz := biz.NewBiz(clusterUsecase, appUsecase)
 	app := newApp(logger, grpcServer, httpServer, bizBiz)
 	return app, func() {
 		cleanup()

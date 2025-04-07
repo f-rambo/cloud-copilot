@@ -1,8 +1,6 @@
 package biz
 
 import (
-	"github.com/f-rambo/cloud-copilot/internal/conf"
-	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-kratos/kratos/v2/transport"
 	"github.com/google/wire"
 )
@@ -13,16 +11,12 @@ var ProviderSet = wire.NewSet(NewBiz, NewClusterUseCase, NewAppUsecase, NewServi
 type Biz struct {
 	clusterUc *ClusterUsecase
 	appUc     *AppUsecase
-	conf      *conf.Bootstrap
-	log       *log.Helper
 }
 
-func NewBiz(clusterUc *ClusterUsecase, appUc *AppUsecase, servicesUc *ServicesUseCase, userUc *UserUseCase, projectUc *ProjectUsecase, conf *conf.Bootstrap, logger log.Logger) *Biz {
+func NewBiz(clusterUc *ClusterUsecase, appUc *AppUsecase) *Biz {
 	return &Biz{
 		clusterUc: clusterUc,
 		appUc:     appUc,
-		conf:      conf,
-		log:       log.NewHelper(logger),
 	}
 }
 

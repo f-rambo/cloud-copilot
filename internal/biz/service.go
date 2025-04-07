@@ -2,15 +2,179 @@ package biz
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
-	"strings"
 
 	"github.com/f-rambo/cloud-copilot/utils"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/pkg/errors"
-	"github.com/spf13/cast"
 )
+
+type ServiceEnv int32
+
+const (
+	ServiceEnv_UNSPECIFIED      ServiceEnv = 0
+	ServiceEnv_SERVICE_NAME     ServiceEnv = 1
+	ServiceEnv_VERSION          ServiceEnv = 2
+	ServiceEnv_BRANCH           ServiceEnv = 3
+	ServiceEnv_TAG              ServiceEnv = 4
+	ServiceEnv_COMMIT_ID        ServiceEnv = 5
+	ServiceEnv_SERVICE_ID       ServiceEnv = 6
+	ServiceEnv_IMAGE            ServiceEnv = 7
+	ServiceEnv_GIT_REPO         ServiceEnv = 8
+	ServiceEnv_IMAGE_REPO       ServiceEnv = 9
+	ServiceEnv_GIT_REPO_NAME    ServiceEnv = 10
+	ServiceEnv_IMAGE_REPO_NAME  ServiceEnv = 11
+	ServiceEnv_GIT_REPO_TOKEN   ServiceEnv = 12
+	ServiceEnv_IMAGE_REPO_TOKEN ServiceEnv = 13
+)
+
+// ServiceEnv to string
+func (s ServiceEnv) String() string {
+	switch s {
+	case ServiceEnv_SERVICE_NAME:
+		return "SERVICE_NAME"
+	case ServiceEnv_VERSION:
+		return "VERSION"
+	case ServiceEnv_BRANCH:
+		return "BRANCH"
+	case ServiceEnv_TAG:
+		return "TAG"
+	case ServiceEnv_COMMIT_ID:
+		return "COMMIT_ID"
+	case ServiceEnv_SERVICE_ID:
+		return "SERVICE_ID"
+	case ServiceEnv_IMAGE:
+		return "IMAGE"
+	case ServiceEnv_GIT_REPO:
+		return "GIT_REPO"
+	case ServiceEnv_IMAGE_REPO:
+		return "IMAGE_REPO"
+	case ServiceEnv_GIT_REPO_NAME:
+		return "GIT_REPO_NAME"
+	case ServiceEnv_IMAGE_REPO_NAME:
+		return "IMAGE_REPO_NAME"
+	case ServiceEnv_GIT_REPO_TOKEN:
+		return "GIT_REPO_TOKEN"
+	case ServiceEnv_IMAGE_REPO_TOKEN:
+		return "IMAGE_REPO_TOKEN"
+	default:
+		return ""
+	}
+}
+
+// ServiceEnv items
+func ServiceEnvItems() []ServiceEnv {
+	return []ServiceEnv{
+		ServiceEnv_SERVICE_NAME,
+		ServiceEnv_VERSION,
+		ServiceEnv_BRANCH,
+		ServiceEnv_TAG,
+		ServiceEnv_COMMIT_ID,
+		ServiceEnv_SERVICE_ID,
+		ServiceEnv_IMAGE,
+		ServiceEnv_GIT_REPO,
+		ServiceEnv_IMAGE_REPO,
+		ServiceEnv_GIT_REPO_NAME,
+		ServiceEnv_IMAGE_REPO_NAME,
+		ServiceEnv_GIT_REPO_TOKEN,
+		ServiceEnv_IMAGE_REPO_TOKEN,
+	}
+}
+
+type AccessExternal int32
+
+const (
+	AccessExternal_UNSPECIFIED AccessExternal = 0
+	AccessExternal_True        AccessExternal = 1
+	AccessExternal_False       AccessExternal = 2
+)
+
+type ServiceStatus int32
+
+const (
+	ServiceStatus_UNSPECIFIED ServiceStatus = 0
+	ServiceStatus_Starting    ServiceStatus = 1
+	ServiceStatus_Running     ServiceStatus = 2
+	ServiceStatus_Terminated  ServiceStatus = 3
+)
+
+type ContinuousIntegration struct {
+	Id              int64         `json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
+	Version         string        `json:"version,omitempty" gorm:"column:version;default:'';NOT NULL"`
+	Branch          string        `json:"branch,omitempty" gorm:"column:branch;default:'';NOT NULL"`
+	CommitId        string        `json:"commit_id,omitempty" gorm:"column:commit_id;default:'';NOT NULL"`
+	Tag             string        `json:"tag,omitempty" gorm:"column:tag;default:'';NOT NULL"`
+	Status          WorkfloStatus `json:"status,omitempty" gorm:"column:status;default:0;NOT NULL"`
+	Description     string        `json:"description,omitempty" gorm:"column:description;default:'';NOT NULL"`
+	ServiceId       int64         `json:"service_id,omitempty" gorm:"column:service_id;default:0;NOT NULL;index:idx_service_id"`
+	UserId          int64         `json:"user_id,omitempty" gorm:"column:user_id;default:0;NOT NULL;index:idx_user_id"`
+	WorkflowRuntime string        `json:"workflow_runtime,omitempty" gorm:"column:workflow_runtime;default:'';NOT NULL"`
+	Logs            string        `json:"logs,omitempty" gorm:"-"`
+}
+
+type ContinuousDeployment struct {
+	Id               int64             `json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
+	CiId             int64             `json:"ci_id,omitempty" gorm:"column:ci_id;default:0;NOT NULL;index:idx_ci_id"`
+	ServiceId        int64             `json:"service_id,omitempty" gorm:"column:service_id;default:0;NOT NULL;index:idx_service_id"`
+	UserId           int64             `json:"user_id,omitempty" gorm:"column:user_id;default:0;NOT NULL"`
+	Status           WorkfloStatus     `json:"status,omitempty" gorm:"column:status;default:0;NOT NULL"`
+	Image            string            `json:"image,omitempty" gorm:"column:image;default:'';NOT NULL"`
+	WorkflowRuntime  string            `json:"workflow_runtime,omitempty" gorm:"column:workflow_runtime;default:'';NOT NULL"`
+	Config           map[string]string `json:"config,omitempty"` // key: filename, value: content
+	CanaryDeployment *CanaryDeployment `json:"canary_deployment,omitempty" gorm:"-"`
+	IsAccessExternal AccessExternal    `json:"is_access_external,omitempty" gorm:"column:is_access_external;default:0;NOT NULL"`
+	Logs             string            `json:"logs,omitempty" gorm:"-"`
+}
+
+type CanaryDeployment struct {
+	CdId       int64             `json:"cd_id,omitempty" gorm:"column:cd_id;default:0;NOT NULL;index:idx_cd_id"`
+	Image      string            `json:"image,omitempty" gorm:"column:image;default:'';NOT NULL"`
+	Replicas   int32             `json:"replicas,omitempty" gorm:"column:replicas;default:0;NOT NULL"`
+	Config     map[string]string `json:"config,omitempty" gorm:"-"` // key: filename, value: content
+	TrafficPct int32             `json:"traffic_pct,omitempty" gorm:"column:traffic_pct;default:0;NOT NULL"`
+}
+
+type Port struct {
+	Id            int64  `json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
+	Name          string `json:"name,omitempty" gorm:"column:name;default:'';NOT NULL"`
+	IngressPath   string `json:"ingress_path,omitempty" gorm:"column:ingress_path;default:'';NOT NULL"`
+	Protocol      string `json:"protocol,omitempty" gorm:"column:protocol;default:'';NOT NULL"`
+	ContainerPort int32  `json:"container_port,omitempty" gorm:"column:container_port;default:0;NOT NULL"`
+	ServiceId     int64  `json:"service_id,omitempty" gorm:"column:service_id;default:0;NOT NULL;index:idx_service_id"`
+}
+
+type Volume struct {
+	Id           int64  `json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
+	Name         string `json:"name,omitempty" gorm:"column:name;default:'';NOT NULL"`
+	MountPath    string `json:"mount_path,omitempty" gorm:"column:mount_path;default:'';NOT NULL"`
+	Storage      int32  `json:"storage,omitempty" gorm:"column:storage;default:0;NOT NULL"`
+	StorageClass string `json:"storage_class,omitempty" gorm:"column:storage_class;default:'';NOT NULL"`
+	ServiceId    int64  `json:"service_id,omitempty" gorm:"column:service_id;default:0;NOT NULL;index:idx_service_id"`
+}
+
+type Service struct {
+	Id            int64         `json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
+	Name          string        `json:"name,omitempty" gorm:"column:name;default:'';NOT NULL"`
+	Namespace     string        `json:"namespace,omitempty" gorm:"column:namespace;default:'';NOT NULL"`
+	Lables        string        `json:"lables,omitempty" gorm:"column:lables;default:'';NOT NULL"`
+	Replicas      int32         `json:"replicas,omitempty" gorm:"column:replicas;default:0;NOT NULL"`
+	RequestCpu    int32         `json:"request_cpu,omitempty" gorm:"column:request_cpu;default:0;NOT NULL"`
+	LimitCpu      int32         `json:"limit_cpu,omitempty" gorm:"column:limit_cpu;default:0;NOT NULL"`
+	RequestGpu    int32         `json:"request_gpu,omitempty" gorm:"column:request_gpu;default:0;NOT NULL"`
+	LimitGpu      int32         `json:"limit_gpu,omitempty" gorm:"column:limit_gpu;default:0;NOT NULL"`
+	RequestMemory int32         `json:"request_memory,omitempty" gorm:"column:request_memory;default:0;NOT NULL"`
+	LimitMemory   int32         `json:"limit_memory,omitempty" gorm:"column:limit_memory;default:0;NOT NULL"`
+	Volumes       []*Volume     `json:"volumes,omitempty" gorm:"-"`
+	Gateway       string        `json:"gateway,omitempty" gorm:"column:gateway;default:'';NOT NULL"`
+	Ports         []*Port       `json:"ports,omitempty" gorm:"-"`
+	StorageClass  string        `json:"storage_class,omitempty" gorm:"column:storage_class;default:'';NOT NULL"`
+	ProjectId     int64         `json:"project_id,omitempty" gorm:"column:project_id;default:0;NOT NULL;index:idx_project_id"`
+	WorkspaceId   int64         `json:"workspace_id,omitempty" gorm:"column:workspace_id;default:0;NOT NULL;index:idx_workspace_id"`
+	ClusterId     int64         `json:"cluster_id,omitempty" gorm:"column:cluster_id;default:0;NOT NULL;index:idx_cluster_id"`
+	UserId        int64         `json:"user_id,omitempty" gorm:"column:user_id;default:0;NOT NULL;index:idx_user_id"`
+	Status        ServiceStatus `json:"status,omitempty" gorm:"column:status;default:0;NOT NULL"`
+	Description   string        `json:"description,omitempty" gorm:"column:description;default:'';NOT NULL"`
+	Log           string        `json:"log,omitempty" gorm:"-"`
+}
 
 type ServicesData interface {
 	Save(ctx context.Context, service *Service) error
@@ -33,295 +197,24 @@ type ServicesData interface {
 
 type ServiceRuntime interface {
 	ApplyService(context.Context, *Service, *ContinuousDeployment) error
-	GetService(context.Context, *Service) error
-	CommitWorkflow(context.Context, *Workflow) error
-	GetWorkflow(context.Context, *Workflow) error
-	CleanWorkflow(context.Context, *Workflow) error
-}
-
-type ServiceAgent interface {
+	GetServiceStatus(context.Context, *Service) error
 }
 
 type ServicesUseCase struct {
-	serviceData    ServicesData
-	serviceRuntime ServiceRuntime
-	log            *log.Helper
+	serviceData     ServicesData
+	serviceRuntime  ServiceRuntime
+	workflowRuntime WorkflowRuntime
+	log             *log.Helper
 }
 
-func NewServicesUseCase(serviceData ServicesData, serviceRuntime ServiceRuntime, logger log.Logger) *ServicesUseCase {
-	return &ServicesUseCase{serviceData: serviceData, serviceRuntime: serviceRuntime, log: log.NewHelper(logger)}
+func NewServicesUseCase(serviceData ServicesData, serviceRuntime ServiceRuntime, wfRuntime WorkflowRuntime, logger log.Logger) *ServicesUseCase {
+	return &ServicesUseCase{serviceData: serviceData, serviceRuntime: serviceRuntime, workflowRuntime: wfRuntime, log: log.NewHelper(logger)}
 }
 
-func (w *Workflow) GetFirstStep() *WorkflowStep {
-	if len(w.WorkflowSteps) == 0 {
-		return nil
-	}
-	var firstStep *WorkflowStep
-	for _, step := range w.WorkflowSteps {
-		if firstStep == nil || step.Order < firstStep.Order {
-			firstStep = step
-		}
-	}
-	return firstStep
-}
-
-func (w *Workflow) GetNextStep(s *WorkflowStep) *WorkflowStep {
-	if len(w.WorkflowSteps) == 0 {
-		return nil
-	}
-	var nextStep *WorkflowStep
-	for _, step := range w.WorkflowSteps {
-		if step.Order > s.Order {
-			if nextStep == nil || step.Order < nextStep.Order {
-				nextStep = step
-			}
-		}
-	}
-	return nextStep
-}
-
-func (s *WorkflowStep) GetFirstTask() *WorkflowTask {
-	if len(s.WorkflowTasks) == 0 {
-		return nil
-	}
-	var firstTask *WorkflowTask
-	for _, task := range s.WorkflowTasks {
-		if firstTask == nil || task.Order < firstTask.Order {
-			firstTask = task
-		}
-	}
-	return firstTask
-}
-
-func (s *WorkflowStep) GetNextTask(t *WorkflowTask) *WorkflowTask {
-	if len(s.WorkflowTasks) == 0 {
-		return nil
-	}
-	var nextTask *WorkflowTask
-	for _, task := range s.WorkflowTasks {
-		if task.Order > t.Order {
-			if nextTask == nil || task.Order < nextTask.Order {
-				nextTask = task
-			}
-		}
-	}
-	return nextTask
-}
-
-func (w WorkflowStepType) Image() string {
-	if w == WorkflowStepType_CodePull {
-		return "alpine/git:latest"
-	}
-	if w == WorkflowStepType_ImageRepoAuth {
-		return "docker:latest"
-	}
-	if w == WorkflowStepType_Build {
-		return "moby/buildkit:latest"
-	}
-	if w == WorkflowStepType_Deploy {
-		return "curlimages/curl:latest"
-	}
-	return ""
-}
-
-func (w *Workflow) GetWorkdir() string {
-	return "/app"
-}
-
-func (w *Workflow) GetWorkdirName() string {
-	return "app"
-}
-
-func (s *Service) GetDefaultWorkflow(wfType WorkflowType) *Workflow {
-	workflow := &Workflow{
-		Name:         fmt.Sprintf("%s-%s", s.Name, strings.ToLower(wfType.String())),
-		Type:         wfType,
-		ServiceId:    s.Id,
-		StorageClass: s.StorageClass,
-	}
-	workflow.Description = "These are the environment variables that can be used\n"
-	for _, v := range ServiceEnv_name {
-		workflow.Description += fmt.Sprintf("{%s} ", v)
-	}
-	workflow.Description += fmt.Sprintf("\n\n Example: if %s = git_repo_url 'git clone {%s}', You get 'git clone git_repo_url' like this",
-		ServiceEnv_GIT_REPO.String(), ServiceEnv_GIT_REPO.String())
-	workflow.WorkflowSteps = make([]*WorkflowStep, 0)
-	var order int32 = 1
-	var taskCommamd string
-	for name, v := range WorkflowStepType_value {
-		if WorkflowStepType(v) == WorkflowStepType_Customizable {
-			continue
-		}
-		if wfType == WorkflowType_ContinuousIntegrationType && v > int32(WorkflowStepType_Build) {
-			continue
-		}
-		if wfType == WorkflowType_ContinuousDeploymentType && v < int32(WorkflowStepType_Deploy) {
-			continue
-		}
-		if WorkflowStepType(v) == WorkflowStepType_CodePull {
-			taskCommamd = "Git pull code handler... (This is the default and cannot be changed)"
-		}
-		if WorkflowStepType(v) == WorkflowStepType_Build {
-			taskCommamd = "Build image handler... (This is the default and cannot be changed)"
-		}
-		if WorkflowStepType(v) == WorkflowStepType_Deploy {
-			taskCommamd = "Deploy handler... (This is the default and cannot be changed)"
-		}
-		workflow.WorkflowSteps = append(workflow.WorkflowSteps, &WorkflowStep{
-			Name:             name,
-			Order:            order,
-			Description:      name,
-			WorkflowStepType: WorkflowStepType(v),
-			Image:            WorkflowStepType(v).Image(),
-			WorkflowTasks: []*WorkflowTask{
-				{
-					Name:        name,
-					Order:       order,
-					Description: name,
-					TaskCommand: taskCommamd,
-				},
-			},
-		})
-		order += 1
-	}
-	return workflow
-}
-
-func (w *Workflow) SettingServiceEnv(ctx context.Context, project *Project, s *Service, ci *ContinuousIntegration) map[string]string {
-	user := GetUserInfo(ctx)
-	serviceEnv := make(map[string]string)
-	for _, val := range ServiceEnv_value {
-		switch ServiceEnv(val) {
-		case ServiceEnv_SERVICE_NAME:
-			serviceEnv[ServiceEnv_SERVICE_NAME.String()] = s.Name
-		case ServiceEnv_VERSION:
-			serviceEnv[ServiceEnv_VERSION.String()] = cast.ToString(ci.Version)
-		case ServiceEnv_BRANCH:
-			serviceEnv[ServiceEnv_BRANCH.String()] = ci.Branch
-		case ServiceEnv_TAG:
-			serviceEnv[ServiceEnv_TAG.String()] = ci.Tag
-		case ServiceEnv_COMMIT_ID:
-			serviceEnv[ServiceEnv_COMMIT_ID.String()] = ci.CommitId
-		case ServiceEnv_SERVICE_ID:
-			serviceEnv[ServiceEnv_SERVICE_ID.String()] = cast.ToString(s.Id)
-		case ServiceEnv_IMAGE:
-			serviceEnv[ServiceEnv_IMAGE.String()] = ci.GetImage(user, s)
-		case ServiceEnv_GIT_REPO:
-			serviceEnv[ServiceEnv_GIT_REPO.String()] = project.GitRepository
-		case ServiceEnv_IMAGE_REPO:
-			serviceEnv[ServiceEnv_IMAGE_REPO.String()] = project.ImageRepository
-		case ServiceEnv_GIT_REPO_NAME:
-			serviceEnv[ServiceEnv_GIT_REPO_NAME.String()] = user.GitrepoName
-		case ServiceEnv_IMAGE_REPO_NAME:
-			serviceEnv[ServiceEnv_IMAGE_REPO_NAME.String()] = user.ImagerepoName
-		case ServiceEnv_GIT_REPO_TOKEN:
-			serviceEnv[ServiceEnv_GIT_REPO_TOKEN.String()] = user.GitRepositoryToken
-		case ServiceEnv_IMAGE_REPO_TOKEN:
-			serviceEnv[ServiceEnv_IMAGE_REPO_TOKEN.String()] = user.ImageRepositoryToken
-		}
-	}
-	w.Env = utils.MapToString(serviceEnv)
-	return serviceEnv
-}
-
-func (w *Workflow) SettingContinuousIntegration(ctx context.Context, service *Service, ci *ContinuousIntegration) {
-	project := GetProject(ctx)
-	user := GetUserInfo(ctx)
-	serviceEnv := w.SettingServiceEnv(ctx, project, service, ci)
-	for _, step := range w.WorkflowSteps {
-		for _, task := range step.WorkflowTasks {
-			wfType, ok := WorkflowStepType_value[task.Name]
-			if !ok {
-				task.TaskCommand = utils.DecodeString(task.TaskCommand, serviceEnv)
-				continue
-			}
-			switch WorkflowStepType(wfType) {
-			case WorkflowStepType_CodePull:
-				project.GitRepository = strings.ReplaceAll(project.GitRepository, "https://", "")
-				gitRepoUrl := fmt.Sprintf("https://%s:%s@%s/%s.git", user.GitrepoName, user.GitRepositoryToken, project.GitRepository, service.Name)
-				if ci.Branch != "" && ci.CommitId != "" {
-					task.TaskCommand = fmt.Sprintf("git clone %s --depth 1 --branch %s /app && cd /app && git checkout %s && ls -la /app",
-						gitRepoUrl, ci.Branch, ci.CommitId)
-				}
-				if ci.Tag != "" {
-					task.TaskCommand = fmt.Sprintf("git clone %s --depth 1 /app && cd /app && git checkout tags/%s",
-						gitRepoUrl, ci.Tag)
-				}
-			case WorkflowStepType_ImageRepoAuth:
-				task.TaskCommand = fmt.Sprintf("ls -la /app && echo '%s' | docker login -u '%s' --password-stdin %s && cp /root/.docker/config.json /app/config.json",
-					user.ImageRepositoryToken, user.ImagerepoName, project.ImageRepository)
-			case WorkflowStepType_Build:
-				task.TaskCommand = fmt.Sprintf("ls -la /app && mkdir /root/.docker && cp /app/config.json /root/.docker && buildkitd --rootless --addr unix:///run/buildkit/buildkitd.sock & sleep 3 && buildctl build --frontend dockerfile.v0 --local context=/app --local dockerfile=/app --output type=image,name=%s,push=true",
-					ci.GetImage(user, service))
-			}
-		}
-	}
-}
-
-func (w *Workflow) SettingContinuousDeployment(ctx context.Context, service *Service, ci *ContinuousIntegration, cd *ContinuousDeployment) error {
-	cluster := GetCluster(ctx)
-	project := GetProject(ctx)
-	serviceEnv := w.SettingServiceEnv(ctx, project, service, ci)
-	for _, step := range w.WorkflowSteps {
-		for _, task := range step.WorkflowTasks {
-			wfType, ok := WorkflowStepType_value[task.Name]
-			if !ok {
-				task.TaskCommand = utils.DecodeString(task.TaskCommand, serviceEnv)
-				continue
-			}
-			if WorkflowStepType_Deploy == WorkflowStepType(wfType) {
-				task.TaskCommand = fmt.Sprintf("curl -X POST -H 'Content-Type: application/json' -d '{\"id\":\"%d\",\"ci_id\":\"%d\",\"cd_id\":\"%d\"}' http://%s/api/v1alpha1/service/apply",
-					service.Id, ci.Id, cd.Id, cluster.Name)
-			}
-		}
-	}
-	return nil
-}
-
-func (ci *ContinuousIntegration) GetImage(u *User, s *Service) string {
-	return fmt.Sprintf("%s/%s:%s", u.ImagerepoName, s.Name, ci.Version)
-}
-
-func (ci *ContinuousIntegration) SetWorkflow(wf *Workflow) error {
-	jsonData, err := json.Marshal(wf)
-	if err != nil {
-		return err
-	}
-	ci.WorkflowRuntime = string(jsonData)
-	return nil
-}
-
-func (ci *ContinuousIntegration) GetWorkflow() (*Workflow, error) {
-	if ci.WorkflowRuntime == "" {
-		return nil, nil
-	}
-	var workflow Workflow
-	err := json.Unmarshal([]byte(ci.WorkflowRuntime), &workflow)
-	if err != nil {
-		return nil, err
-	}
-	return &workflow, nil
-}
-
-func (cd *ContinuousDeployment) SetWorkflow(wf *Workflow) error {
-	jsonData, err := json.Marshal(wf)
-	if err != nil {
-		return err
-	}
-	cd.WorkflowRuntime = string(jsonData)
-	return nil
-}
-
-func (cd *ContinuousDeployment) GetWorkflow() (*Workflow, error) {
-	if cd.WorkflowRuntime == "" {
-		return nil, nil
-	}
-	var workflow Workflow
-	err := json.Unmarshal([]byte(cd.WorkflowRuntime), &workflow)
-	if err != nil {
-		return nil, err
-	}
-	return &workflow, nil
+func (s *Service) GetLabels() map[string]string {
+	serviceLables := utils.LabelsToMap(s.Lables)
+	serviceLables["service"] = s.Name
+	return serviceLables
 }
 
 func (uc *ServicesUseCase) Save(ctx context.Context, service *Service) error {
@@ -342,7 +235,7 @@ func (uc *ServicesUseCase) Get(ctx context.Context, id int64) (*Service, error) 
 	if err != nil {
 		return nil, err
 	}
-	err = uc.serviceRuntime.GetService(ctx, service)
+	err = uc.serviceRuntime.GetServiceStatus(ctx, service)
 	if err != nil {
 		return nil, err
 	}
@@ -413,17 +306,6 @@ func (uc *ServicesUseCase) GetWorkflow(ctx context.Context, serviceId int64, wfT
 	return nil, errors.New("workflow not found")
 }
 
-type Workflows []*Workflow
-
-func (ws Workflows) GetWorkflowByType(wfType WorkflowType) *Workflow {
-	for _, v := range ws {
-		if v.Type == wfType {
-			return v
-		}
-	}
-	return nil
-}
-
 func (uc *ServicesUseCase) CreateContinuousIntegration(ctx context.Context, ci *ContinuousIntegration) error {
 	service, err := uc.Get(ctx, ci.ServiceId)
 	if err != nil {
@@ -438,12 +320,12 @@ func (uc *ServicesUseCase) CreateContinuousIntegration(ctx context.Context, ci *
 	if workflow == nil {
 		return errors.New("workflow not found")
 	}
-	err = uc.serviceRuntime.CleanWorkflow(ctx, workflow)
+	err = uc.workflowRuntime.CleanWorkflow(ctx, workflow)
 	if err != nil {
 		return err
 	}
 	workflow.SettingContinuousIntegration(ctx, service, ci)
-	err = uc.serviceRuntime.CommitWorkflow(ctx, workflow)
+	err = uc.workflowRuntime.CommitWorkflow(ctx, workflow)
 	if err != nil {
 		return err
 	}
@@ -464,7 +346,7 @@ func (uc *ServicesUseCase) GetContinuousIntegration(ctx context.Context, ciId in
 	if err != nil {
 		return nil, nil, err
 	}
-	err = uc.serviceRuntime.GetWorkflow(ctx, workflow)
+	err = uc.workflowRuntime.GetWorkflowStatus(ctx, workflow)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -530,12 +412,12 @@ func (uc *ServicesUseCase) CreateContinuousDeployment(ctx context.Context, cd *C
 	if workflow == nil {
 		return errors.New("workflow not found")
 	}
-	err = uc.serviceRuntime.CleanWorkflow(ctx, workflow)
+	err = uc.workflowRuntime.CleanWorkflow(ctx, workflow)
 	if err != nil {
 		return err
 	}
 	workflow.SettingContinuousDeployment(ctx, service, ci, cd)
-	err = uc.serviceRuntime.CommitWorkflow(ctx, workflow)
+	err = uc.workflowRuntime.CommitWorkflow(ctx, workflow)
 	if err != nil {
 		return err
 	}
@@ -556,7 +438,7 @@ func (uc *ServicesUseCase) GetContinuousDeployment(ctx context.Context, cdId int
 	if err != nil {
 		return nil, nil, err
 	}
-	err = uc.serviceRuntime.GetWorkflow(ctx, workflow)
+	err = uc.workflowRuntime.GetWorkflowStatus(ctx, workflow)
 	if err != nil {
 		return nil, nil, err
 	}
