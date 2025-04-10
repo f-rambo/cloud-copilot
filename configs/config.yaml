@@ -9,22 +9,6 @@ server:
     network: tcp
     addr: 0.0.0.0:9000
     timeout: 15
-services:
-  - name: cluster-runtime
-    version: "0.0.1"
-    port: 9003
-    addr: localhost
-    timeout: 15
-  - name: infrastructure
-    version: "0.0.1"
-    port: 9002
-    addr: localhost
-    timeout: 15
-  - name: sidecar
-    version: "0.0.1"
-    port: 9001
-    addr: localhost
-    timeout: 15
 data:
   database: cloud-copilot
   host: "localhost"

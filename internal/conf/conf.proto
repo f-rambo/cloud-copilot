@@ -58,14 +58,6 @@ message Server {
   GRPCServer grpc = 4;
 }
 
-message Service {
-  string name = 1;
-  string version = 2;
-  int32 port = 3;
-  string addr = 4;
-  int64 timeout = 5;
-}
-
 message Database {
   string database = 1;
   string host = 2;
@@ -90,8 +82,7 @@ message Auth {
 message Bootstrap {
   ClusterConfig cluster = 1;
   Server server = 2;
-  repeated Service services = 3;
-  Database data = 4;
-  Log log = 5;
-  Auth auth = 6;
+  Database data = 3;
+  Log log = 4;
+  Auth auth = 5;
 }
