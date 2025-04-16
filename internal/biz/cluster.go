@@ -117,6 +117,19 @@ func (cp ClusterProvider) String() string {
 	}
 }
 
+func ClusterProviderFromString(s string) ClusterProvider {
+	switch s {
+	case "baremetal":
+		return ClusterProvider_BareMetal
+	case "aws":
+		return ClusterProvider_Aws
+	case "ali_cloud":
+		return ClusterProvider_AliCloud
+	default:
+		return 0
+	}
+}
+
 type ClusterStatus int32
 
 const (
@@ -565,12 +578,12 @@ type ClusterData interface {
 	Save(context.Context, *Cluster) error
 	Get(context.Context, int64) (*Cluster, error)
 	GetByName(context.Context, string) (*Cluster, error)
-	List(context.Context, *Cluster) ([]*Cluster, error)
+	List(ctx context.Context, name string, page, pageSize int32) ([]*Cluster, int64, error)
 	Delete(context.Context, int64) error
 }
 
 type ClusterInfrastructure interface {
-	GetRegions(context.Context, *Cluster) error
+	GetRegions(ctx context.Context, provider ClusterProvider, accessId, accessKey string) ([]*CloudResource, error)
 	GetZones(context.Context, *Cluster) error
 	CreateCloudBasicResource(context.Context, *Cluster) error
 	DeleteCloudBasicResource(context.Context, *Cluster) error
@@ -613,7 +626,10 @@ func NewClusterUseCase(conf *confPkg.Bootstrap, clusterData ClusterData, cluster
 	}
 }
 
-func (c *Cluster) IsDeleted() bool {
+func (c *Cluster) IsEmpty() bool {
+	if c.Id == 0 {
+		return true
+	}
 	return false
 }
 
@@ -1311,11 +1327,21 @@ func (uc *ClusterUsecase) GetByName(ctx context.Context, name string) (*Cluster,
 	return cluster, nil
 }
 
-func (uc *ClusterUsecase) List(ctx context.Context) ([]*Cluster, error) {
-	return uc.clusterData.List(ctx, nil)
+func (uc *ClusterUsecase) List(ctx context.Context, clusterName string, page, pageSize int32) ([]*Cluster, int64, error) {
+	return uc.clusterData.List(ctx, clusterName, page, pageSize)
 }
 
 func (uc *ClusterUsecase) Delete(ctx context.Context, clusterID int64) error {
+	cluster, err := uc.clusterData.Get(ctx, clusterID)
+	if err != nil {
+		return err
+	}
+	if cluster.IsEmpty() {
+		return ErrClusterNotFound
+	}
+	if cluster.Status == ClusterStatus_RUNNING {
+		return errors.New("cluster is running")
+	}
 	return uc.clusterData.Delete(ctx, clusterID)
 }
 
@@ -1326,15 +1352,11 @@ func (uc *ClusterUsecase) Save(ctx context.Context, cluster *Cluster) error {
 	return uc.clusterData.Save(ctx, cluster)
 }
 
-func (uc *ClusterUsecase) GetRegions(ctx context.Context, cluster *Cluster) ([]*CloudResource, error) {
-	if cluster.Provider == ClusterProvider_BareMetal {
-		return []*CloudResource{}, nil
+func (uc *ClusterUsecase) GetRegions(ctx context.Context, provider ClusterProvider, accessId, accessKey string) ([]*CloudResource, error) {
+	if !provider.IsCloud() {
+		return nil, errors.New("This provider not support region")
 	}
-	err := uc.clusterInfrastructure.GetRegions(ctx, cluster)
-	if err != nil {
-		return nil, err
-	}
-	return cluster.GetCloudResource(ResourceType_REGION), nil
+	return uc.clusterInfrastructure.GetRegions(ctx, provider, accessId, accessKey)
 }
 
 func (uc *ClusterUsecase) StartCluster(ctx context.Context, clusterId int64) error {
@@ -1342,7 +1364,7 @@ func (uc *ClusterUsecase) StartCluster(ctx context.Context, clusterId int64) err
 	if err != nil {
 		return err
 	}
-	if cluster == nil || cluster.Id == 0 {
+	if cluster.IsEmpty() {
 		return ErrClusterNotFound
 	}
 	if cluster.Status != ClusterStatus_UNSPECIFIED && cluster.Status != ClusterStatus_STOPPED {
@@ -1361,7 +1383,7 @@ func (uc *ClusterUsecase) StopCluster(ctx context.Context, clusterId int64) erro
 	if err != nil {
 		return err
 	}
-	if cluster == nil || cluster.Id == 0 {
+	if cluster.IsEmpty() {
 		return errors.New("cluster not found")
 	}
 	if cluster.Status != ClusterStatus_UNSPECIFIED && cluster.Status != ClusterStatus_RUNNING {
@@ -1399,7 +1421,7 @@ func (uc *ClusterUsecase) Stop(ctx context.Context) error {
 }
 
 func (uc *ClusterUsecase) Apply(cluster *Cluster) error {
-	if cluster == nil || cluster.Id == 0 {
+	if cluster.IsEmpty() {
 		return errors.New("invalid cluster")
 	}
 	if uc.eventChan == nil {
@@ -1442,7 +1464,7 @@ func (uc *ClusterUsecase) handleEvent(ctx context.Context, cluster *Cluster) (er
 		}
 		cluster.SetStatus(ClusterStatus_RUNNING)
 	}()
-	if cluster.IsDeleted() {
+	if cluster.Status == ClusterStatus_STOPPING {
 		for _, node := range cluster.Nodes {
 			if node.Status == NodeStatus_UNSPECIFIED || node.Status == NodeStatus_NODE_DELETED {
 				continue

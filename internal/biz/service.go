@@ -119,7 +119,7 @@ type ContinuousDeployment struct {
 	Status           WorkfloStatus     `json:"status,omitempty" gorm:"column:status;default:0;NOT NULL"`
 	Image            string            `json:"image,omitempty" gorm:"column:image;default:'';NOT NULL"`
 	WorkflowRuntime  string            `json:"workflow_runtime,omitempty" gorm:"column:workflow_runtime;default:'';NOT NULL"`
-	Config           map[string]string `json:"config,omitempty"` // key: filename, value: content
+	Config           map[string]string `json:"config,omitempty" gorm:"-"` // key: filename, value: content
 	CanaryDeployment *CanaryDeployment `json:"canary_deployment,omitempty" gorm:"-"`
 	IsAccessExternal AccessExternal    `json:"is_access_external,omitempty" gorm:"column:is_access_external;default:0;NOT NULL"`
 	Logs             string            `json:"logs,omitempty" gorm:"-"`

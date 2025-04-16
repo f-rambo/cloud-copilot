@@ -11,7 +11,6 @@ import (
 	common "github.com/f-rambo/cloud-copilot/api/common"
 	http "github.com/go-kratos/kratos/v2/transport/http"
 	binding "github.com/go-kratos/kratos/v2/transport/http/binding"
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -22,14 +21,12 @@ var _ = binding.EncodeURL
 const _ = http.SupportPackageIsVersion1
 
 const OperationUserInterfaceDeleteUser = "/user.v1alpha1.UserInterface/DeleteUser"
-const OperationUserInterfaceGetUserInfo = "/user.v1alpha1.UserInterface/GetUserInfo"
 const OperationUserInterfaceGetUsers = "/user.v1alpha1.UserInterface/GetUsers"
 const OperationUserInterfaceSaveUser = "/user.v1alpha1.UserInterface/SaveUser"
 const OperationUserInterfaceSignIn = "/user.v1alpha1.UserInterface/SignIn"
 
 type UserInterfaceHTTPServer interface {
 	DeleteUser(context.Context, *User) (*common.Msg, error)
-	GetUserInfo(context.Context, *emptypb.Empty) (*User, error)
 	GetUsers(context.Context, *UsersRequest) (*Users, error)
 	SaveUser(context.Context, *User) (*User, error)
 	SignIn(context.Context, *SignIn) (*User, error)
@@ -38,7 +35,6 @@ type UserInterfaceHTTPServer interface {
 func RegisterUserInterfaceHTTPServer(s *http.Server, srv UserInterfaceHTTPServer) {
 	r := s.Route("/")
 	r.POST("/api/v1alpha1/user/signin", _UserInterface_SignIn0_HTTP_Handler(srv))
-	r.GET("/api/v1alpha1/user", _UserInterface_GetUserInfo0_HTTP_Handler(srv))
 	r.GET("/api/v1alpha1/users", _UserInterface_GetUsers0_HTTP_Handler(srv))
 	r.POST("/api/v1alpha1/user", _UserInterface_SaveUser0_HTTP_Handler(srv))
 	r.DELETE("/api/v1alpha1/user", _UserInterface_DeleteUser0_HTTP_Handler(srv))
@@ -56,25 +52,6 @@ func _UserInterface_SignIn0_HTTP_Handler(srv UserInterfaceHTTPServer) func(ctx h
 		http.SetOperation(ctx, OperationUserInterfaceSignIn)
 		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
 			return srv.SignIn(ctx, req.(*SignIn))
-		})
-		out, err := h(ctx, &in)
-		if err != nil {
-			return err
-		}
-		reply := out.(*User)
-		return ctx.Result(200, reply)
-	}
-}
-
-func _UserInterface_GetUserInfo0_HTTP_Handler(srv UserInterfaceHTTPServer) func(ctx http.Context) error {
-	return func(ctx http.Context) error {
-		var in emptypb.Empty
-		if err := ctx.BindQuery(&in); err != nil {
-			return err
-		}
-		http.SetOperation(ctx, OperationUserInterfaceGetUserInfo)
-		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.GetUserInfo(ctx, req.(*emptypb.Empty))
 		})
 		out, err := h(ctx, &in)
 		if err != nil {
@@ -147,7 +124,6 @@ func _UserInterface_DeleteUser0_HTTP_Handler(srv UserInterfaceHTTPServer) func(c
 
 type UserInterfaceHTTPClient interface {
 	DeleteUser(ctx context.Context, req *User, opts ...http.CallOption) (rsp *common.Msg, err error)
-	GetUserInfo(ctx context.Context, req *emptypb.Empty, opts ...http.CallOption) (rsp *User, err error)
 	GetUsers(ctx context.Context, req *UsersRequest, opts ...http.CallOption) (rsp *Users, err error)
 	SaveUser(ctx context.Context, req *User, opts ...http.CallOption) (rsp *User, err error)
 	SignIn(ctx context.Context, req *SignIn, opts ...http.CallOption) (rsp *User, err error)
@@ -168,19 +144,6 @@ func (c *UserInterfaceHTTPClientImpl) DeleteUser(ctx context.Context, in *User, 
 	opts = append(opts, http.Operation(OperationUserInterfaceDeleteUser))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "DELETE", path, nil, &out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return &out, nil
-}
-
-func (c *UserInterfaceHTTPClientImpl) GetUserInfo(ctx context.Context, in *emptypb.Empty, opts ...http.CallOption) (*User, error) {
-	var out User
-	pattern := "/api/v1alpha1/user"
-	path := binding.EncodeURL(pattern, in, true)
-	opts = append(opts, http.Operation(OperationUserInterfaceGetUserInfo))
-	opts = append(opts, http.PathTemplate(pattern))
-	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
 	if err != nil {
 		return nil, err
 	}

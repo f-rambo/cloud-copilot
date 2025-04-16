@@ -2,15 +2,10 @@ package data
 
 import (
 	"context"
-	"fmt"
-	"time"
 
 	"github.com/f-rambo/cloud-copilot/internal/biz"
 	"github.com/f-rambo/cloud-copilot/internal/conf"
 	"github.com/go-kratos/kratos/v2/log"
-	jwtv5 "github.com/golang-jwt/jwt/v5"
-	"github.com/pkg/errors"
-	"github.com/spf13/cast"
 	"gorm.io/gorm"
 )
 
@@ -81,33 +76,4 @@ func (u *UserRepo) GetUsers(ctx context.Context, name, email string, pageNum, pa
 
 func (u *UserRepo) DeleteUser(ctx context.Context, id int64) error {
 	return u.data.db.Delete(&biz.User{}, "id = ?", id).Error
-}
-
-func (u *UserRepo) GetUserEmail(ctx context.Context, token string) (string, error) {
-	user, err := u.decodeToken(ctx, token)
-	if err != nil {
-		return "", err
-	}
-	return user.Email, nil
-}
-
-func (u *UserRepo) decodeToken(_ context.Context, t string) (*biz.User, error) {
-	token, err := jwtv5.Parse(t, func(token *jwtv5.Token) (any, error) {
-		if _, ok := token.Method.(*jwtv5.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-		}
-		return []byte(u.c.Auth.Key), nil
-	})
-	if err != nil {
-		return nil, err
-	}
-	claims, ok := token.Claims.(jwtv5.MapClaims)
-	if !ok || cast.ToInt64(claims["exp"]) < time.Now().Unix() {
-		return nil, errors.New("invalid token")
-	}
-	return &biz.User{
-		Id:    cast.ToInt64(claims["id"]),
-		Email: cast.ToString(claims["email"]),
-		Name:  cast.ToString(claims["name"]),
-	}, nil
 }

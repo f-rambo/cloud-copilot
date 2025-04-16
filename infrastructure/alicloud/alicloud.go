@@ -45,18 +45,21 @@ func NewAliCloudUseCase(logger log.Logger) *AliCloudUsecase {
 	}
 }
 
-func (a *AliCloudUsecase) Connections(ctx context.Context, cluster *biz.Cluster) (err error) {
-	if cluster.Region == "" {
-		cluster.Region = alicloudDefaultRegion
+func (a *AliCloudUsecase) Connections(ctx context.Context, accessId, accessKey string, regionParam ...string) (err error) {
+	var region string
+	if len(regionParam) == 0 {
+		region = alicloudDefaultRegion
+	} else {
+		region = regionParam[0]
 	}
-	os.Setenv(ALICLOUD_ACCESS_KEY, cluster.AccessId)
-	os.Setenv(ALICLOUD_SECRET_KEY, cluster.AccessKey)
-	os.Setenv(ALICLOUD_REGION, cluster.Region)
-	os.Setenv(ALICLOUD_DEFAULT_REGION, cluster.Region)
+	os.Setenv(ALICLOUD_ACCESS_KEY, accessId)
+	os.Setenv(ALICLOUD_SECRET_KEY, accessKey)
+	os.Setenv(ALICLOUD_REGION, region)
+	os.Setenv(ALICLOUD_DEFAULT_REGION, region)
 	config := &openapi.Config{
-		AccessKeyId:     tea.String(cluster.AccessId),
-		AccessKeySecret: tea.String(cluster.AccessKey),
-		RegionId:        tea.String(cluster.Region),
+		AccessKeyId:     tea.String(accessId),
+		AccessKeySecret: tea.String(accessKey),
+		RegionId:        tea.String(region),
 	}
 	a.vpcClient, err = vpc.NewClient(config)
 	if err != nil {
@@ -73,27 +76,28 @@ func (a *AliCloudUsecase) Connections(ctx context.Context, cluster *biz.Cluster)
 	return nil
 }
 
-func (a *AliCloudUsecase) GetAvailabilityRegions(ctx context.Context, cluster *biz.Cluster) error {
+func (a *AliCloudUsecase) GetAvailabilityRegions(ctx context.Context) ([]*biz.CloudResource, error) {
 	res, err := a.ecsClient.DescribeRegions(&ecs.DescribeRegionsRequest{
 		AcceptLanguage:     tea.String("zh-CN"),
 		InstanceChargeType: tea.String("PostPaid"),
 		ResourceType:       tea.String("instance"),
 	})
 	if err != nil {
-		return errors.Wrap(err, "failed to describe regions")
+		return nil, errors.Wrap(err, "failed to describe regions")
 	}
+	cloudResources := make([]*biz.CloudResource, 0)
 	for _, v := range res.Body.Regions.Region {
 		if tea.StringValue(v.Status) != "available" {
 			continue
 		}
-		cluster.AddCloudResource(&biz.CloudResource{
+		cloudResources = append(cloudResources, &biz.CloudResource{
 			Type:  biz.ResourceType_REGION,
 			RefId: tea.StringValue(v.RegionId),
 			Name:  tea.StringValue(v.LocalName),
 			Value: tea.StringValue(v.RegionEndpoint),
 		})
 	}
-	return nil
+	return cloudResources, nil
 }
 
 func (a *AliCloudUsecase) GetAvailabilityZones(ctx context.Context, cluster *biz.Cluster) error {

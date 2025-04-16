@@ -12,7 +12,6 @@ import (
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -21,11 +20,10 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	UserInterface_SignIn_FullMethodName      = "/user.v1alpha1.UserInterface/SignIn"
-	UserInterface_GetUserInfo_FullMethodName = "/user.v1alpha1.UserInterface/GetUserInfo"
-	UserInterface_GetUsers_FullMethodName    = "/user.v1alpha1.UserInterface/GetUsers"
-	UserInterface_SaveUser_FullMethodName    = "/user.v1alpha1.UserInterface/SaveUser"
-	UserInterface_DeleteUser_FullMethodName  = "/user.v1alpha1.UserInterface/DeleteUser"
+	UserInterface_SignIn_FullMethodName     = "/user.v1alpha1.UserInterface/SignIn"
+	UserInterface_GetUsers_FullMethodName   = "/user.v1alpha1.UserInterface/GetUsers"
+	UserInterface_SaveUser_FullMethodName   = "/user.v1alpha1.UserInterface/SaveUser"
+	UserInterface_DeleteUser_FullMethodName = "/user.v1alpha1.UserInterface/DeleteUser"
 )
 
 // UserInterfaceClient is the client API for UserInterface service.
@@ -33,7 +31,6 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type UserInterfaceClient interface {
 	SignIn(ctx context.Context, in *SignIn, opts ...grpc.CallOption) (*User, error)
-	GetUserInfo(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*User, error)
 	GetUsers(ctx context.Context, in *UsersRequest, opts ...grpc.CallOption) (*Users, error)
 	SaveUser(ctx context.Context, in *User, opts ...grpc.CallOption) (*User, error)
 	DeleteUser(ctx context.Context, in *User, opts ...grpc.CallOption) (*common.Msg, error)
@@ -51,16 +48,6 @@ func (c *userInterfaceClient) SignIn(ctx context.Context, in *SignIn, opts ...gr
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(User)
 	err := c.cc.Invoke(ctx, UserInterface_SignIn_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *userInterfaceClient) GetUserInfo(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*User, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(User)
-	err := c.cc.Invoke(ctx, UserInterface_GetUserInfo_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -102,7 +89,6 @@ func (c *userInterfaceClient) DeleteUser(ctx context.Context, in *User, opts ...
 // for forward compatibility.
 type UserInterfaceServer interface {
 	SignIn(context.Context, *SignIn) (*User, error)
-	GetUserInfo(context.Context, *emptypb.Empty) (*User, error)
 	GetUsers(context.Context, *UsersRequest) (*Users, error)
 	SaveUser(context.Context, *User) (*User, error)
 	DeleteUser(context.Context, *User) (*common.Msg, error)
@@ -118,9 +104,6 @@ type UnimplementedUserInterfaceServer struct{}
 
 func (UnimplementedUserInterfaceServer) SignIn(context.Context, *SignIn) (*User, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SignIn not implemented")
-}
-func (UnimplementedUserInterfaceServer) GetUserInfo(context.Context, *emptypb.Empty) (*User, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetUserInfo not implemented")
 }
 func (UnimplementedUserInterfaceServer) GetUsers(context.Context, *UsersRequest) (*Users, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetUsers not implemented")
@@ -166,24 +149,6 @@ func _UserInterface_SignIn_Handler(srv interface{}, ctx context.Context, dec fun
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(UserInterfaceServer).SignIn(ctx, req.(*SignIn))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _UserInterface_GetUserInfo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(emptypb.Empty)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(UserInterfaceServer).GetUserInfo(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: UserInterface_GetUserInfo_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(UserInterfaceServer).GetUserInfo(ctx, req.(*emptypb.Empty))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -252,10 +217,6 @@ var UserInterface_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SignIn",
 			Handler:    _UserInterface_SignIn_Handler,
-		},
-		{
-			MethodName: "GetUserInfo",
-			Handler:    _UserInterface_GetUserInfo_Handler,
 		},
 		{
 			MethodName: "GetUsers",

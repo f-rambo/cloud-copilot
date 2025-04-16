@@ -7,7 +7,6 @@ option go_package = "api/user/v1alpha1;v1alpha1";
 message SignIn {
       string email = 1 [json_name = "email"];
       string password = 2 [json_name = "password"];
-      string access_token = 3 [json_name = "access_token"];
 }
 
 message UsersRequest {
@@ -26,8 +25,8 @@ message User {
       int64 id = 1 [json_name = "id"];
       string username = 2 [json_name = "username"];
       string email = 3 [json_name = "email"];
-      string access_token = 4 [json_name = "access_token"];
-      string status_string = 5 [json_name = "status_string"];
-      string sign_type_string = 6 [json_name = "sign_type_string"];
-      string updated_at = 7 [json_name = "updated_at"];
+      string image = 4 [json_name = "image"];
+      string token = 5 [json_name = "token"];
+      string status = 6 [json_name = "status"];
+      string expires = 7 [json_name = "expires"];
 }

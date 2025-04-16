@@ -58,39 +58,39 @@ service ClusterInterface {
             };
       }
       
-      rpc Get(cluster.v1alpha1.ClusterIdMessge) returns (cluster.v1alpha1.Cluster) {
+      rpc Get(cluster.v1alpha1.ClusterArgs) returns (cluster.v1alpha1.Cluster) {
             option (google.api.http) = {
               get: "/api/v1alpha1/cluster"
             };
       }
 
-      rpc Save(cluster.v1alpha1.ClusterSaveArgs) returns (cluster.v1alpha1.ClusterIdMessge) {
+      rpc Save(cluster.v1alpha1.ClusterSaveArgs) returns (cluster.v1alpha1.Cluster) {
             option (google.api.http) = {
               post: "/api/v1alpha1/cluster"
               body: "*"
             };
       }
 
-      rpc List(google.protobuf.Empty) returns (cluster.v1alpha1.ClusterList) {
+      rpc List(cluster.v1alpha1.ClusterArgs) returns (cluster.v1alpha1.ClusterList) {
             option (google.api.http) = {
               get: "/api/v1alpha1/cluster/list"
             };
       }
 
-      rpc Delete(cluster.v1alpha1.ClusterIdMessge) returns (common.Msg) {
+      rpc Delete(cluster.v1alpha1.ClusterArgs) returns (common.Msg) {
             option (google.api.http) = {
               delete: "/api/v1alpha1/cluster"
             };
       }
 
-      rpc Start(cluster.v1alpha1.ClusterIdMessge) returns (common.Msg) {
+      rpc Start(cluster.v1alpha1.ClusterArgs) returns (common.Msg) {
             option (google.api.http) = {
               post: "/api/v1alpha1/cluster/start"
               body: "*"
             };
       }
 
-      rpc Stop(cluster.v1alpha1.ClusterIdMessge) returns (common.Msg) {
+      rpc Stop(cluster.v1alpha1.ClusterArgs) returns (common.Msg) {
             option (google.api.http) = {
               post: "/api/v1alpha1/cluster/stop"
               body: "*"
@@ -102,13 +102,4 @@ service ClusterInterface {
               get: "/api/v1alpha1/cluster/regions"
             };
       }
-
-      rpc PollingLogs(cluster.v1alpha1.ClusterLogsRequest) returns (cluster.v1alpha1.ClusterLogsResponse){
-            option (google.api.http) = {
-              post: "/api/v1alpha1/cluster/logs"
-              body: "*"
-            };
-      }
-
-      rpc GetLogs(stream cluster.v1alpha1.ClusterLogsRequest) returns (stream cluster.v1alpha1.ClusterLogsResponse); 
 }

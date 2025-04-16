@@ -22,7 +22,7 @@ import (
 func NewGRPCServer(c *conf.Bootstrap, cluster *interfaces.ClusterInterface, app *interfaces.AppInterface, services *interfaces.ServicesInterface, user *interfaces.UserInterface, workspace *interfaces.WorkspaceInterface, project *interfaces.ProjectInterface, logger log.Logger) *grpc.Server {
 	var opts = []grpc.ServerOption{
 		grpc.Middleware(
-			selector.Server(NewAuthServer(user), BizContext(cluster, project, workspace)).Match(NewWhiteListMatcher()).Build(),
+			selector.Server(NewAuthServer(user, c), BizContext(cluster, project, workspace)).Match(NewWhiteListMatcher()).Build(),
 			recovery.Recovery(),
 			metadata.Server(),
 		),

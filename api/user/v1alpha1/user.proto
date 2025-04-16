@@ -3,7 +3,6 @@ syntax = "proto3";
 package user.v1alpha1;
 
 import "google/api/annotations.proto";
-import "google/protobuf/empty.proto";
 import "api/common/error_reason.proto";
 import "api/user/v1alpha1/message.proto";
 
@@ -14,12 +13,6 @@ service UserInterface {
             option (google.api.http) = {
               post: "/api/v1alpha1/user/signin"
               body: "*"
-            };
-      }
-
-      rpc GetUserInfo(google.protobuf.Empty) returns (user.v1alpha1.User) {
-            option (google.api.http) = {
-              get: "/api/v1alpha1/user"
             };
       }
 

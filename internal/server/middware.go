@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/f-rambo/cloud-copilot/internal/biz"
+	"github.com/f-rambo/cloud-copilot/internal/conf"
 	"github.com/f-rambo/cloud-copilot/internal/interfaces"
 	"github.com/go-kratos/kratos/v2/middleware"
 	"github.com/go-kratos/kratos/v2/middleware/selector"
@@ -19,7 +20,7 @@ const (
 	AuthorizationKey biz.ContextKey = "Authorization"
 )
 
-func NewAuthServer(user *interfaces.UserInterface) func(handler middleware.Handler) middleware.Handler {
+func NewAuthServer(user *interfaces.UserInterface, conf *conf.Bootstrap) func(handler middleware.Handler) middleware.Handler {
 	return func(handler middleware.Handler) middleware.Handler {
 		return func(ctx context.Context, req interface{}) (reply interface{}, err error) {
 			var authorization string
@@ -44,13 +45,11 @@ func NewAuthServer(user *interfaces.UserInterface) func(handler middleware.Handl
 				return nil, errors.New(AuthorizationKey.String() + " is error")
 			}
 
-			userInfo, err := biz.ValidateJWT(authorizationArr[1])
+			userInfo, err := biz.ValidateJWT(authorizationArr[1], conf.Auth.Key)
 			if err != nil {
 				return nil, err
 			}
 
-			ctx = context.WithValue(ctx, biz.SignType, authorizationArr[0])
-			ctx = context.WithValue(ctx, biz.TokenKey, authorizationArr[1])
 			ctx = biz.WithUser(ctx, userInfo)
 			return handler(ctx, req)
 		}

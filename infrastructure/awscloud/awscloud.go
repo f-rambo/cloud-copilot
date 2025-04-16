@@ -46,15 +46,18 @@ func NewAwsCloudUseCase(logger log.Logger) *AwsCloudUsecase {
 	}
 }
 
-func (a *AwsCloudUsecase) Connections(ctx context.Context, cluster *biz.Cluster) error {
-	if cluster.Region == "" {
-		cluster.Region = awsDefaultRegion
+func (a *AwsCloudUsecase) Connections(ctx context.Context, accessId, accessKey string, regionParam ...string) error {
+	var region string
+	if len(regionParam) == 0 {
+		region = awsDefaultRegion
+	} else {
+		region = regionParam[0]
 	}
-	os.Setenv(AWS_REGION, cluster.Region)
-	os.Setenv(AWS_DEFAULT_REGION, cluster.Region)
-	os.Setenv(AWS_ACCESS_KEY_ID, cluster.AccessId)
-	os.Setenv(AWS_SECRET_ACCESS_KEY, cluster.AccessKey)
-	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(cluster.Region))
+	os.Setenv(AWS_REGION, region)
+	os.Setenv(AWS_DEFAULT_REGION, region)
+	os.Setenv(AWS_ACCESS_KEY_ID, accessId)
+	os.Setenv(AWS_SECRET_ACCESS_KEY, accessKey)
+	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(region))
 	if err != nil {
 		return err
 	}
@@ -64,20 +67,21 @@ func (a *AwsCloudUsecase) Connections(ctx context.Context, cluster *biz.Cluster)
 	return nil
 }
 
-func (a *AwsCloudUsecase) GetAvailabilityRegions(ctx context.Context, cluster *biz.Cluster) error {
+func (a *AwsCloudUsecase) GetAvailabilityRegions(ctx context.Context) ([]*biz.CloudResource, error) {
 	res, err := a.ec2Client.DescribeRegions(ctx, &ec2.DescribeRegionsInput{})
 	if err != nil {
-		return errors.Wrap(err, "failed to describe regions")
+		return nil, errors.Wrap(err, "failed to describe regions")
 	}
+	cloudResources := make([]*biz.CloudResource, 0)
 	for _, v := range res.Regions {
-		cluster.AddCloudResource(&biz.CloudResource{
+		cloudResources = append(cloudResources, &biz.CloudResource{
 			Type:  biz.ResourceType_REGION,
 			RefId: aws.ToString(v.RegionName),
 			Name:  aws.ToString(v.RegionName),
 			Value: aws.ToString(v.Endpoint),
 		})
 	}
-	return nil
+	return cloudResources, nil
 }
 
 func (a *AwsCloudUsecase) GetAvailabilityZones(ctx context.Context, cluster *biz.Cluster) error {

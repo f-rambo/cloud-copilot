@@ -120,53 +120,45 @@ func (c *ClusterInterface) GetResourceTypes(ctx context.Context, _ *emptypb.Empt
 	return resourceTypeResponse, nil
 }
 
-func (c *ClusterInterface) Get(ctx context.Context, clusterIdArgs *v1alpha1.ClusterIdMessge) (*v1alpha1.Cluster, error) {
-	if clusterIdArgs.Id == 0 {
+func (c *ClusterInterface) Get(ctx context.Context, clusterArgs *v1alpha1.ClusterArgs) (*v1alpha1.Cluster, error) {
+	if clusterArgs.Id == 0 {
 		return nil, errors.New("cluster id is required")
 	}
-	cluster, err := c.clusterUc.Get(ctx, clusterIdArgs.Id)
+	cluster, err := c.clusterUc.Get(ctx, clusterArgs.Id)
 	if err != nil {
 		return nil, err
 	}
-	data := &v1alpha1.Cluster{}
-	if cluster == nil {
-		return data, nil
-	}
-	data = c.bizCLusterToCluster(cluster)
-	data.ClusterResource = &v1alpha1.ClusterResource{
-		Cpu:    cluster.GetCpuCount(),
-		Gpu:    cluster.GetGpuCount(),
-		Memory: cluster.GetMemoryCount(),
-		Disk:   cluster.GetDiskSizeCount(),
-	}
-	return data, nil
+	return c.bizCLusterToCluster(cluster), nil
 }
-func (c *ClusterInterface) Save(ctx context.Context, clusterArgs *v1alpha1.ClusterSaveArgs) (msg *v1alpha1.ClusterIdMessge, err error) {
-	if clusterArgs.Name == "" || clusterArgs.PrivateKey == "" || clusterArgs.Provider == 0 || clusterArgs.PublicKey == "" {
+func (c *ClusterInterface) Save(ctx context.Context, clusterArgs *v1alpha1.ClusterSaveArgs) (*v1alpha1.Cluster, error) {
+	if clusterArgs.Name == "" || clusterArgs.PrivateKey == "" || clusterArgs.Provider == "" || clusterArgs.PublicKey == "" {
 		return nil, errors.New("cluster name, private key, type and public key are required")
 	}
-	if biz.ClusterProvider(clusterArgs.Provider).IsCloud() && (clusterArgs.AccessId == "" || clusterArgs.AccessKey == "" || clusterArgs.Region == "") {
+	if biz.ClusterProviderFromString(clusterArgs.Provider) == 0 {
+		return nil, errors.New("cluster type is invalid")
+	}
+	if biz.ClusterProviderFromString(clusterArgs.Provider).IsCloud() && (clusterArgs.AccessId == "" || clusterArgs.AccessKey == "" || clusterArgs.Region == "") {
 		return nil, errors.New("access key id and secret access key, region are required")
 	}
-	if clusterArgs.Provider == int32(biz.ClusterProvider_BareMetal) && (clusterArgs.NodeUsername == "" || clusterArgs.NodeStartIp == "" || clusterArgs.NodeEndIp == "") {
+	if !biz.ClusterProviderFromString(clusterArgs.Provider).IsCloud() && (clusterArgs.NodeUsername == "" || clusterArgs.NodeStartIp == "" || clusterArgs.NodeEndIp == "") {
 		return nil, errors.New("node username, start ip and end ip are required")
 	}
-	cluster := &biz.Cluster{}
+	cluster := new(biz.Cluster)
 	if clusterArgs.Id != 0 {
-		cluster, err = c.clusterUc.Get(ctx, clusterArgs.Id)
+		clusterRes, err := c.clusterUc.Get(ctx, clusterArgs.Id)
 		if err != nil {
 			return nil, err
 		}
-		if cluster == nil || cluster.Id == 0 {
+		if clusterRes == nil || clusterRes.Id == 0 {
 			return nil, errors.New("cluster not found")
 		}
 	}
 	if cluster.Id == 0 {
-		cluster, err = c.clusterUc.GetByName(ctx, clusterArgs.Name)
+		clusterRes, err := c.clusterUc.GetByName(ctx, clusterArgs.Name)
 		if err != nil {
 			return nil, err
 		}
-		if cluster.Id != 0 {
+		if clusterRes.Id != 0 {
 			return nil, errors.New("cluster already exists")
 		}
 		cluster.KuberentesVersion = c.c.Cluster.GetKubernetesVersion()
@@ -174,7 +166,7 @@ func (c *ClusterInterface) Save(ctx context.Context, clusterArgs *v1alpha1.Clust
 		cluster.RuncVersion = c.c.Cluster.GetRuncVersion()
 	}
 	cluster.Name = clusterArgs.Name
-	cluster.Provider = biz.ClusterProvider(clusterArgs.Provider)
+	cluster.Provider = biz.ClusterProviderFromString(clusterArgs.Provider)
 	cluster.PublicKey = clusterArgs.PublicKey
 	cluster.PrivateKey = clusterArgs.PrivateKey
 	cluster.AccessId = clusterArgs.AccessId
@@ -184,14 +176,14 @@ func (c *ClusterInterface) Save(ctx context.Context, clusterArgs *v1alpha1.Clust
 	cluster.NodeEndIp = clusterArgs.NodeEndIp
 	user := biz.GetUserInfo(ctx)
 	cluster.UserId = user.Id
-	err = c.clusterUc.Save(ctx, cluster)
+	err := c.clusterUc.Save(ctx, cluster)
 	if err != nil {
 		return nil, err
 	}
-	return &v1alpha1.ClusterIdMessge{Id: cluster.Id}, nil
+	return c.bizCLusterToCluster(cluster), nil
 }
 
-func (c *ClusterInterface) Start(ctx context.Context, clusterArgs *v1alpha1.ClusterIdMessge) (*common.Msg, error) {
+func (c *ClusterInterface) Start(ctx context.Context, clusterArgs *v1alpha1.ClusterArgs) (*common.Msg, error) {
 	if clusterArgs.Id == 0 {
 		return nil, errors.New("cluster id is required")
 	}
@@ -202,7 +194,7 @@ func (c *ClusterInterface) Start(ctx context.Context, clusterArgs *v1alpha1.Clus
 	return common.Response(), nil
 }
 
-func (c *ClusterInterface) Stop(ctx context.Context, clusterArgs *v1alpha1.ClusterIdMessge) (*common.Msg, error) {
+func (c *ClusterInterface) Stop(ctx context.Context, clusterArgs *v1alpha1.ClusterArgs) (*common.Msg, error) {
 	if clusterArgs.Id == 0 {
 		return nil, errors.New("cluster id is required")
 	}
@@ -213,53 +205,35 @@ func (c *ClusterInterface) Stop(ctx context.Context, clusterArgs *v1alpha1.Clust
 	return common.Response(), nil
 }
 
-func (c *ClusterInterface) List(ctx context.Context, _ *emptypb.Empty) (*v1alpha1.ClusterList, error) {
+func (c *ClusterInterface) List(ctx context.Context, clusterArgs *v1alpha1.ClusterArgs) (*v1alpha1.ClusterList, error) {
 	data := &v1alpha1.ClusterList{}
-	clusters, err := c.clusterUc.List(ctx)
+	clusters, total, err := c.clusterUc.List(ctx, clusterArgs.Name, clusterArgs.Page, clusterArgs.PageSize)
 	if err != nil {
 		return nil, err
 	}
-	if len(clusters) == 0 {
-		return data, nil
-	}
 	for _, v := range clusters {
-		interfaceCluster := c.bizCLusterToCluster(v)
-		interfaceCluster.ClusterResource = &v1alpha1.ClusterResource{
-			Cpu:    v.GetCpuCount(),
-			Gpu:    v.GetGpuCount(),
-			Memory: v.GetMemoryCount(),
-			Disk:   v.GetDiskSizeCount(),
-		}
-		data.Clusters = append(data.Clusters, interfaceCluster)
+		data.Clusters = append(data.Clusters, c.bizCLusterToCluster(v))
 	}
+	data.Total = total
 	return data, nil
 }
 
-func (c *ClusterInterface) Delete(ctx context.Context, clusterID *v1alpha1.ClusterIdMessge) (*common.Msg, error) {
-	if clusterID.Id == 0 {
+func (c *ClusterInterface) Delete(ctx context.Context, clusterArgs *v1alpha1.ClusterArgs) (*common.Msg, error) {
+	if clusterArgs.Id == 0 {
 		return nil, errors.New("cluster id is required")
 	}
-	cluster, err := c.clusterUc.Get(ctx, clusterID.Id)
-	if err != nil {
-		return nil, err
-	}
-	if cluster == nil || cluster.Id == 0 {
-		return nil, errors.New("cluster not found")
-	}
-	err = c.clusterUc.Delete(ctx, clusterID.Id)
+	err := c.clusterUc.Delete(ctx, clusterArgs.Id)
 	if err != nil {
 		return nil, err
 	}
 	return common.Response(), nil
 }
 
-// get regions
 func (c *ClusterInterface) GetRegions(ctx context.Context, clusterArgs *v1alpha1.ClusterRegionArgs) (*v1alpha1.Regions, error) {
-	if clusterArgs == nil || clusterArgs.Type == 0 || clusterArgs.AccessId == "" || clusterArgs.AccessKey == "" {
-		return nil, errors.New("type, access id and access key are required")
+	if clusterArgs.Provider == "" || clusterArgs.AccessId == "" || clusterArgs.AccessKey == "" {
+		return nil, errors.New("Provider, access id and access key are required")
 	}
-	cluster := &biz.Cluster{Provider: biz.ClusterProvider(clusterArgs.Type), AccessId: clusterArgs.AccessId, AccessKey: clusterArgs.AccessKey}
-	regions, err := c.clusterUc.GetRegions(ctx, cluster)
+	regions, err := c.clusterUc.GetRegions(ctx, biz.ClusterProviderFromString(clusterArgs.Provider), clusterArgs.AccessId, clusterArgs.AccessKey)
 	if err != nil {
 		return nil, err
 	}
@@ -292,19 +266,28 @@ func (c *ClusterInterface) bizCLusterToCluster(bizCluster *biz.Cluster) *v1alpha
 		Id:                bizCluster.Id,
 		Name:              bizCluster.Name,
 		KuberentesVersion: bizCluster.KuberentesVersion,
+		ContainerdVersion: bizCluster.ContainerdVersion,
+		CiliumVersion:     bizCluster.CiliumVersion,
 		ApiServerAddress:  bizCluster.ApiServerAddress,
-		Status:            int32(bizCluster.Status),
-		Provider:          int32(bizCluster.Provider),
+		Status:            bizCluster.Status.String(),
+		Domain:            bizCluster.Domain,
+		NodeNumber:        int32(len(bizCluster.Nodes)),
+		Provider:          bizCluster.Provider.String(),
 		PublicKey:         bizCluster.PublicKey,
 		PrivateKey:        bizCluster.PrivateKey,
 		Region:            bizCluster.Region,
-		RegionName:        bizCluster.Region,
 		AccessId:          bizCluster.AccessId,
 		AccessKey:         bizCluster.AccessKey,
-		Nodes:             nodes,
-		NodeGroups:        nodeGroups,
 		NodeStartIp:       bizCluster.NodeStartIp,
 		NodeEndIp:         bizCluster.NodeEndIp,
+		Nodes:             nodes,
+		NodeGroups:        nodeGroups,
+		ClusterResource: &v1alpha1.ClusterResource{
+			Cpu:    bizCluster.GetCpuCount(),
+			Gpu:    bizCluster.GetGpuCount(),
+			Memory: bizCluster.GetMemoryCount(),
+			Disk:   bizCluster.GetDiskSizeCount(),
+		},
 	}
 }
 

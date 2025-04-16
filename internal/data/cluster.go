@@ -231,24 +231,28 @@ func (c *clusterRepo) GetByName(ctx context.Context, name string) (*biz.Cluster,
 	return cluster, nil
 }
 
-func (c *clusterRepo) List(ctx context.Context, cluster *biz.Cluster) ([]*biz.Cluster, error) {
+func (c *clusterRepo) List(ctx context.Context, name string, page, pageSize int32) ([]*biz.Cluster, int64, error) {
 	var clusters []*biz.Cluster
-	clusterModelObj := c.data.db.Model(&biz.Cluster{})
-	if cluster == nil {
-		err := clusterModelObj.Find(&clusters).Error
-		return clusters, err
+	var total int64
+
+	query := c.data.db.Model(&biz.Cluster{})
+
+	if name != "" {
+		query = query.Where("name LIKE ?", "%"+name+"%")
 	}
-	if cluster.Id != 0 {
-		clusterModelObj = clusterModelObj.Where("id = ?", cluster.Id)
+
+	err := query.Count(&total).Error
+	if err != nil {
+		return nil, 0, err
 	}
-	if cluster.Name != "" {
-		clusterModelObj = clusterModelObj.Where("name = ?", cluster.Name)
+
+	offset := (page - 1) * pageSize
+	err = query.Offset(int(offset)).Limit(int(pageSize)).Find(&clusters).Error
+	if err != nil {
+		return nil, 0, err
 	}
-	if cluster.KuberentesVersion != "" {
-		clusterModelObj = clusterModelObj.Where("server_version = ?", cluster.KuberentesVersion)
-	}
-	err := clusterModelObj.Find(&clusters).Error
-	return clusters, err
+
+	return clusters, total, nil
 }
 
 func (c *clusterRepo) Delete(ctx context.Context, id int64) (err error) {

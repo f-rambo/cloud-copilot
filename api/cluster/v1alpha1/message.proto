@@ -77,14 +77,10 @@ message Region {
     string name = 2 [json_name = "name"];
 }
 
-message ClusterIdMessge {
-    int64 id = 1 [json_name = "id"];
-}
-
 message ClusterSaveArgs {
     int64 id = 1 [json_name = "id"];
     string name = 2 [json_name = "name"];
-    int32 provider = 3 [json_name = "provider"];
+    string provider = 3 [json_name = "provider"]; // 'baremetal' | 'aws' | 'ali_cloud'
     string public_key = 4 [json_name = "public_key"];
     string private_key = 5 [json_name = "private_key"];
     string access_id = 6 [json_name = "access_id"];
@@ -98,33 +94,41 @@ message ClusterSaveArgs {
 message ClusterRegionArgs {
     string access_id = 1 [json_name = "access_id"];
     string access_key = 2 [json_name = "access_key"];
-    int32 type = 3 [json_name = "type"];
+    string provider = 3 [json_name = "provider"]; // 'baremetal' | 'aws' | 'ali_cloud'
+}
+
+message ClusterArgs {
+    int64 id = 1 [json_name = "id"];
+    string name = 2 [json_name = "name"];
+    int32 page = 3 [json_name = "page"];
+    int32 page_size = 4 [json_name = "page_size"];
 }
 
 message ClusterList {
     repeated Cluster clusters = 1 [json_name = "clusters"];
+    int64 total = 2 [json_name = "total"];
 }
 
 message Cluster {
     int64 id = 1 [json_name = "id"];
     string name = 2 [json_name = "name"];
     string kuberentes_version = 3 [json_name = "kuberentes_version"];
-    string api_server_address = 4 [json_name = "api_server_address"];
-    int32 status = 5 [json_name = "status"];
-    int32 provider = 6 [json_name = "provider"];
-    string public_key = 7 [json_name = "public_key"];
-    string private_key = 8 [json_name = "private_key"];
-    string region = 9 [json_name = "region"];
-    string region_name = 10 [json_name = "region_name"];
-    string access_id = 11 [json_name = "access_id"];
-    string access_key = 12 [json_name = "access_key"];
-    string create_at = 13 [json_name = "create_at"];
-    string update_at = 14 [json_name = "update_at"];
-    repeated Node nodes = 15 [json_name = "nodes"];
-    repeated NodeGroup node_groups = 16 [json_name = "node_groups"];
-    string node_username = 17 [json_name = "node_username"];
-    string node_start_ip = 18 [json_name = "node_start_ip"];
-    string node_end_ip = 19 [json_name = "node_end_ip"];
+    string containerd_version = 4 [json_name = "containerd_version"];
+    string cilium_version = 5 [json_name = "cilium_version"];
+    string api_server_address = 6 [json_name = "api_server_address"];
+    string status = 7 [json_name = "status"];
+    string domain = 8 [json_name = "domain"];
+    int32 node_number = 9 [json_name = "node_number"];
+    string provider = 10 [json_name = "provider"];
+    string public_key = 11 [json_name = "public_key"];
+    string private_key = 12 [json_name = "private_key"];
+    string region = 13 [json_name = "region"];
+    string access_id = 14 [json_name = "access_id"];
+    string access_key = 15 [json_name = "access_key"];
+    string node_start_ip = 16 [json_name = "node_start_ip"];
+    string node_end_ip = 17 [json_name = "node_end_ip"];
+    repeated Node nodes = 18 [json_name = "nodes"];
+    repeated NodeGroup node_groups = 19 [json_name = "node_groups"];
     ClusterResource cluster_resource = 20 [json_name = "cluster_resource"];
 }
 
@@ -162,16 +166,4 @@ message ClusterResource {
     int32 memory = 2 [json_name = "memory"];
     int32 gpu = 3 [json_name = "gpu"];
     int32 disk = 4 [json_name = "disk"];
-}
-
-message ClusterLogsRequest {
-    int64 cluster_id = 1 [json_name = "cluster_id"];
-    int32 tail_lines = 2 [json_name = "tail_lines"];
-    string cluster_name = 3 [json_name = "cluster_name"];
-    int32 current_line = 4 [json_name = "current_line"];
-}
-
-message ClusterLogsResponse {
-    string logs = 1 [json_name = "logs"];
-    int32 last_line = 2 [json_name = "last_line"];
 }

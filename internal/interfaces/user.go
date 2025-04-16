@@ -9,7 +9,6 @@ import (
 	"github.com/f-rambo/cloud-copilot/internal/biz"
 	"github.com/f-rambo/cloud-copilot/internal/conf"
 	"github.com/pkg/errors"
-	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 type UserInterface struct {
@@ -22,34 +21,17 @@ func NewUserInterface(uc *biz.UserUseCase, conf *conf.Bootstrap) *UserInterface 
 }
 
 func (u *UserInterface) SignIn(ctx context.Context, request *v1alpha1.SignIn) (*v1alpha1.User, error) {
-	user := &biz.User{
-		Email:       request.Email,
-		Password:    request.Password,
-		AccessToken: request.AccessToken,
-	}
-	err := u.uc.SignIn(ctx, user)
+	user, expires, err := u.uc.SignIn(ctx, request.Email, request.Password)
 	if err != nil {
 		return nil, err
 	}
 	return &v1alpha1.User{
-		Id:             user.Id,
-		Email:          user.Email,
-		Username:       user.Name,
-		AccessToken:    user.AccessToken,
-		StatusString:   user.Status.String(),
-		SignTypeString: user.SignType.String(),
-	}, nil
-}
-
-func (u *UserInterface) GetUserInfo(ctx context.Context, _ *emptypb.Empty) (*v1alpha1.User, error) {
-	user := biz.GetUserInfo(ctx)
-	return &v1alpha1.User{
-		Id:             user.Id,
-		Email:          user.Email,
-		Username:       user.Name,
-		AccessToken:    user.AccessToken,
-		StatusString:   user.Status.String(),
-		SignTypeString: user.SignType.String(),
+		Id:       user.Id,
+		Email:    user.Email,
+		Username: user.Name,
+		Token:    user.AccessToken,
+		Status:   user.Status.String(),
+		Expires:  expires.Format("2006-01-02T15:04:05.000Z"), // "2024-03-20T10:30:00.000Z" ISO 8601
 	}, nil
 }
 
@@ -61,12 +43,10 @@ func (u *UserInterface) GetUsers(ctx context.Context, request *v1alpha1.UsersReq
 	var userList []*v1alpha1.User
 	for _, user := range users {
 		userList = append(userList, &v1alpha1.User{
-			Id:             user.Id,
-			Email:          user.Email,
-			Username:       user.Name,
-			AccessToken:    user.AccessToken,
-			StatusString:   strings.ToUpper(user.Status.String()),
-			SignTypeString: strings.ToUpper(user.SignType.String()),
+			Id:       user.Id,
+			Email:    user.Email,
+			Username: user.Name,
+			Status:   strings.ToUpper(user.Status.String()),
 		})
 	}
 	return &v1alpha1.Users{
@@ -81,16 +61,16 @@ func (u *UserInterface) SaveUser(ctx context.Context, request *v1alpha1.User) (*
 		Email: request.Email,
 		Name:  request.Username,
 	}
-	err := u.uc.Save(ctx, user)
+	err := u.uc.Register(ctx, user)
 	if err != nil {
 		return nil, err
 	}
 	return &v1alpha1.User{
-		Id:           user.Id,
-		Email:        user.Email,
-		Username:     user.Name,
-		AccessToken:  user.AccessToken,
-		StatusString: user.Status.String(),
+		Id:       user.Id,
+		Email:    user.Email,
+		Username: user.Name,
+		Token:    user.AccessToken,
+		Status:   user.Status.String(),
 	}, nil
 }
 

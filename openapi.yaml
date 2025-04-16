@@ -642,6 +642,20 @@ paths:
                   in: query
                   schema:
                     type: string
+                - name: name
+                  in: query
+                  schema:
+                    type: string
+                - name: page
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: page_size
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
             responses:
                 "200":
                     description: OK
@@ -665,7 +679,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/cluster.v1alpha1.ClusterIdMessge'
+                                $ref: '#/components/schemas/cluster.v1alpha1.Cluster'
         delete:
             tags:
                 - ClusterInterface
@@ -675,6 +689,20 @@ paths:
                   in: query
                   schema:
                     type: string
+                - name: name
+                  in: query
+                  schema:
+                    type: string
+                - name: page
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: page_size
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
             responses:
                 "200":
                     description: OK
@@ -699,6 +727,25 @@ paths:
             tags:
                 - ClusterInterface
             operationId: ClusterInterface_List
+            parameters:
+                - name: id
+                  in: query
+                  schema:
+                    type: string
+                - name: name
+                  in: query
+                  schema:
+                    type: string
+                - name: page
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: page_size
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
             responses:
                 "200":
                     description: OK
@@ -706,24 +753,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/cluster.v1alpha1.ClusterList'
-    /api/v1alpha1/cluster/logs:
-        post:
-            tags:
-                - ClusterInterface
-            operationId: ClusterInterface_PollingLogs
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/cluster.v1alpha1.ClusterLogsRequest'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/cluster.v1alpha1.ClusterLogsResponse'
     /api/v1alpha1/cluster/node/group/types:
         get:
             tags:
@@ -798,11 +827,10 @@ paths:
                   in: query
                   schema:
                     type: string
-                - name: type
+                - name: provider
                   in: query
                   schema:
-                    type: integer
-                    format: int32
+                    type: string
             responses:
                 "200":
                     description: OK
@@ -831,7 +859,7 @@ paths:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/cluster.v1alpha1.ClusterIdMessge'
+                            $ref: '#/components/schemas/cluster.v1alpha1.ClusterArgs'
                 required: true
             responses:
                 "200":
@@ -861,7 +889,7 @@ paths:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/cluster.v1alpha1.ClusterIdMessge'
+                            $ref: '#/components/schemas/cluster.v1alpha1.ClusterArgs'
                 required: true
             responses:
                 "200":
@@ -1522,17 +1550,6 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/common.Msg'
     /api/v1alpha1/user:
-        get:
-            tags:
-                - UserInterface
-            operationId: UserInterface_GetUserInfo
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/user.v1alpha1.User'
         post:
             tags:
                 - UserInterface
@@ -1567,19 +1584,19 @@ paths:
                   in: query
                   schema:
                     type: string
-                - name: access_token
+                - name: image
                   in: query
                   schema:
                     type: string
-                - name: status_string
+                - name: token
                   in: query
                   schema:
                     type: string
-                - name: sign_type_string
+                - name: status
                   in: query
                   schema:
                     type: string
-                - name: updated_at
+                - name: expires
                   in: query
                   schema:
                     type: string
@@ -2009,29 +2026,34 @@ components:
                     type: string
                 kuberentes_version:
                     type: string
+                containerd_version:
+                    type: string
+                cilium_version:
+                    type: string
                 api_server_address:
                     type: string
                 status:
+                    type: string
+                domain:
+                    type: string
+                node_number:
                     type: integer
                     format: int32
                 provider:
-                    type: integer
-                    format: int32
+                    type: string
                 public_key:
                     type: string
                 private_key:
                     type: string
                 region:
                     type: string
-                region_name:
-                    type: string
                 access_id:
                     type: string
                 access_key:
                     type: string
-                create_at:
+                node_start_ip:
                     type: string
-                update_at:
+                node_end_ip:
                     type: string
                 nodes:
                     type: array
@@ -2041,19 +2063,21 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/cluster.v1alpha1.NodeGroup'
-                node_username:
-                    type: string
-                node_start_ip:
-                    type: string
-                node_end_ip:
-                    type: string
                 cluster_resource:
                     $ref: '#/components/schemas/cluster.v1alpha1.ClusterResource'
-        cluster.v1alpha1.ClusterIdMessge:
+        cluster.v1alpha1.ClusterArgs:
             type: object
             properties:
                 id:
                     type: string
+                name:
+                    type: string
+                page:
+                    type: integer
+                    format: int32
+                page_size:
+                    type: integer
+                    format: int32
         cluster.v1alpha1.ClusterLevel:
             type: object
             properties:
@@ -2076,27 +2100,8 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/cluster.v1alpha1.Cluster'
-        cluster.v1alpha1.ClusterLogsRequest:
-            type: object
-            properties:
-                cluster_id:
+                total:
                     type: string
-                tail_lines:
-                    type: integer
-                    format: int32
-                cluster_name:
-                    type: string
-                current_line:
-                    type: integer
-                    format: int32
-        cluster.v1alpha1.ClusterLogsResponse:
-            type: object
-            properties:
-                logs:
-                    type: string
-                last_line:
-                    type: integer
-                    format: int32
         cluster.v1alpha1.ClusterProvider:
             type: object
             properties:
@@ -2137,8 +2142,7 @@ components:
                 name:
                     type: string
                 provider:
-                    type: integer
-                    format: int32
+                    type: string
                 public_key:
                     type: string
                 private_key:
@@ -2598,8 +2602,6 @@ components:
                     type: string
                 password:
                     type: string
-                access_token:
-                    type: string
         user.v1alpha1.User:
             type: object
             properties:
@@ -2609,13 +2611,13 @@ components:
                     type: string
                 email:
                     type: string
-                access_token:
+                image:
                     type: string
-                status_string:
+                token:
                     type: string
-                sign_type_string:
+                status:
                     type: string
-                updated_at:
+                expires:
                     type: string
         user.v1alpha1.Users:
             type: object
