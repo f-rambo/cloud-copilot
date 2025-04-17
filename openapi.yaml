@@ -2024,12 +2024,6 @@ components:
                     type: string
                 name:
                     type: string
-                kuberentes_version:
-                    type: string
-                containerd_version:
-                    type: string
-                cilium_version:
-                    type: string
                 api_server_address:
                     type: string
                 status:
@@ -2050,6 +2044,8 @@ components:
                 access_id:
                     type: string
                 access_key:
+                    type: string
+                node_username:
                     type: string
                 node_start_ip:
                     type: string
@@ -2186,14 +2182,10 @@ components:
                 user:
                     type: string
                 role:
-                    type: integer
-                    format: int32
-                status:
-                    type: integer
-                    format: int32
-                instance_id:
                     type: string
-                update_at:
+                status:
+                    type: string
+                instance_id:
                     type: string
         cluster.v1alpha1.NodeGroup:
             type: object
@@ -2203,8 +2195,7 @@ components:
                 name:
                     type: string
                 type:
-                    type: integer
-                    format: int32
+                    type: string
                 os:
                     type: string
                 arch:
@@ -2235,8 +2226,6 @@ components:
                 target_size:
                     type: integer
                     format: int32
-                update_at:
-                    type: string
         cluster.v1alpha1.NodeGroupType:
             type: object
             properties:

@@ -34,6 +34,7 @@ var NodeGPUSpecToCloudSpec = map[biz.NodeGPUSpec]string{
 }
 
 type FindInstanceTypeParam struct {
+	Os            string
 	CPU           int32
 	GPU           int32
 	Memory        int32

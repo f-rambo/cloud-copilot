@@ -28,7 +28,7 @@ func (c *ClusterRuntime) ReloadCluster(ctx context.Context, cluster *biz.Cluster
 	SetSpec(obj, cluster)
 	dynamicClient, err := GetKubeDynamicClient()
 	if err != nil {
-		return err
+		return biz.ErrClusterNotFound
 	}
 	_, err = GetResource(ctx, dynamicClient, obj)
 	if k8sErr.IsNotFound(err) {
@@ -45,7 +45,6 @@ func (c *ClusterRuntime) ReloadCluster(ctx context.Context, cluster *biz.Cluster
 	if err != nil {
 		return err
 	}
-	// with old HandlerNodes function
 	return nil
 }
 

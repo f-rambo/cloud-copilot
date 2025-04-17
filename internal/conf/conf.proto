@@ -19,24 +19,9 @@ message Level {
   int32 standard = 3;
 }
 
-message NodeGroupConfig {
-  int32 cpu = 1;
-  int32 memory = 2;
-  int32 disk_size = 3;
-  int32 target_size = 4;
-  int32 min_size = 5;
-  int32 max_size = 6;
-}
-
 message ClusterConfig {
   string name = 1;
-  string kubernetes_version = 2;
-  string containerd_version = 3;
-  string runc_version = 4;
-  repeated IngressRule ingress_rules = 5;
-  Level level = 6;
-  NodeGroupConfig nodegroup_config = 7;
-  string image_repository = 8;
+  string image_repository = 2;
 }
 
 message HTTPServer {

@@ -18,6 +18,8 @@ import (
 	yaml "gopkg.in/yaml.v3"
 )
 
+const defaultSHHPort = 22
+
 var ARCH_MAP = map[string]string{
 	"x86_64":  "amd64",
 	"aarch64": "arm64",
@@ -63,12 +65,31 @@ func NewBaremetal(logger log.Logger) *Baremetal {
 	return &Baremetal{log: log.NewHelper(logger)}
 }
 
+// kubernetes_version: "v1.31.2"
+// containerd_version: "v2.0.0"
+// runc_version: "v1.2.1"
+
+func getKubernetesVersion() string {
+	// todo find resource file version
+	return "v1.31.2"
+}
+
+// func getContainerdVersion() string {
+// 	// todo find resource file version
+// 	return "v2.0.0"
+// }
+
+// func getRuncVersion() string {
+// 	// todo find resource file version
+// 	return "v1.2.1"
+// }
+
 func (b *Baremetal) getClusterNodeRemoteBash(cluster *biz.Cluster, node *biz.Node) *utils.RemoteBash {
 	return utils.NewRemoteBash(utils.Server{
 		Name:       node.Name,
 		Host:       node.Ip,
 		User:       node.User,
-		Port:       22,
+		Port:       defaultSHHPort,
 		PrivateKey: cluster.PrivateKey,
 	}, Shell, b.log)
 }
@@ -83,7 +104,7 @@ func (b *Baremetal) nodeInstallInit(cluster *biz.Cluster, node *biz.Node) error 
 	if err != nil {
 		return err
 	}
-	err = remoteBash.ExecShellLogging(ComponentShell, filepath.Join(userHomePath, Resource), cluster.ImageRepo, cluster.KuberentesVersion)
+	err = remoteBash.ExecShellLogging(ComponentShell, filepath.Join(userHomePath, Resource), cluster.ImageRepo, getKubernetesVersion())
 	if err != nil {
 		return err
 	}
@@ -126,36 +147,44 @@ func (b *Baremetal) migrateResources(cluster *biz.Cluster, node *biz.Node) error
 	return nil
 }
 
+type SystemInfo struct {
+	Id      string `json:"id"`
+	Os      string `json:"os"`
+	Arch    string `json:"arch"`
+	Mem     string `json:"mem"`
+	Cpu     string `json:"cpu"`
+	Gpu     string `json:"gpu"`
+	GpuInfo string `json:"gpu_info"`
+	Disk    string `json:"disk"`
+	Ip      string `json:"ip"`
+}
+
 func (b *Baremetal) GetNodesSystemInfo(ctx context.Context, cluster *biz.Cluster) error {
+	nodeIps := utils.RangeIps(cluster.NodeStartIp, cluster.NodeEndIp)
 	errGroup, _ := errgroup.WithContext(ctx)
 	errGroup.SetLimit(10)
-	nodeInforMaps := make([]map[string]string, 0)
 	lock := new(sync.Mutex)
-	for _, v := range cluster.Nodes {
-		node := v
+	systemInfos := make([]SystemInfo, 0)
+	for _, ip := range nodeIps {
 		errGroup.Go(func() error {
-			nodeInfoMap := make(map[string]string)
 			remoteBash := utils.NewRemoteBash(utils.Server{
-				Name:       node.Name,
-				Host:       node.Ip,
-				User:       node.User,
-				Port:       22,
+				Name:       ip,
+				Host:       ip,
+				User:       cluster.DefaultUsername,
+				Port:       defaultSHHPort,
 				PrivateKey: cluster.PrivateKey,
 			}, Shell, b.log)
 			systemInfoOutput, err := remoteBash.ExecShell(SystemInfoShell)
 			if err != nil {
-				b.log.Errorf("node %s connection refused", node.Ip)
+				b.log.Errorf("node %s connection refused", ip)
 				return nil
 			}
-			systemInfoMap := make(map[string]any)
-			if err := json.Unmarshal([]byte(systemInfoOutput), &systemInfoMap); err != nil {
+			systemInfo := SystemInfo{}
+			if err := json.Unmarshal([]byte(systemInfoOutput), &systemInfo); err != nil {
 				return err
 			}
-			for key, val := range systemInfoMap {
-				nodeInfoMap[key] = cast.ToString(val)
-			}
 			lock.Lock()
-			nodeInforMaps = append(nodeInforMaps, nodeInfoMap)
+			systemInfos = append(systemInfos, systemInfo)
 			lock.Unlock()
 			return nil
 		})
@@ -164,83 +193,63 @@ func (b *Baremetal) GetNodesSystemInfo(ctx context.Context, cluster *biz.Cluster
 	if err != nil {
 		return err
 	}
-	nodeGroupMaps := make(map[string][]*biz.Node)
-	for _, m := range nodeInforMaps {
-		nodegroup := &biz.NodeGroup{}
-		node := &biz.Node{}
-		for key, val := range m {
-			switch key {
-			case "os":
-				nodegroup.Os = val
-			case "arch":
-				arch, ok := ArchMap[val]
-				if !ok {
-					arch = biz.NodeArchType_UNSPECIFIED
+	if cluster.Nodes == nil {
+		cluster.Nodes = make([]*biz.Node, 0)
+	}
+	if cluster.NodeGroups == nil {
+		cluster.NodeGroups = make([]*biz.NodeGroup, 0)
+	}
+	groupMap := make(map[string]*biz.NodeGroup)
+	for _, info := range systemInfos {
+		groupKey := fmt.Sprintf("%s-%s-%s-%s-%s-%s",
+			info.Os, info.Arch, info.Mem, info.Cpu, info.Gpu, info.GpuInfo)
+		if _, exists := groupMap[groupKey]; !exists {
+			groupMap[groupKey] = &biz.NodeGroup{
+				Id:     uuid.NewString(),
+				Name:   fmt.Sprintf("group-%s-%s-%s", info.Arch, info.Cpu, info.Mem),
+				Os:     info.Os,
+				Arch:   ArchMap[info.Arch],
+				Memory: cast.ToInt32(info.Mem),
+				Cpu:    cast.ToInt32(info.Cpu),
+				Gpu:    cast.ToInt32(info.Gpu),
+			}
+			if cast.ToInt32(info.Gpu) > 0 && info.GpuInfo != "" {
+				if spec, ok := GPUSpecMap[strings.ToLower(info.GpuInfo)]; ok {
+					groupMap[groupKey].GpuSpec = spec
 				}
-				nodegroup.Arch = arch
-			case "mem":
-				nodegroup.Memory = cast.ToInt32(val)
-			case "cpu":
-				nodegroup.Cpu = cast.ToInt32(val)
-			case "gpu":
-				nodegroup.Gpu = cast.ToInt32(val)
-			case "gpu_info":
-				gpuSpec, ok := GPUSpecMap[val]
-				if !ok {
-					gpuSpec = biz.NodeGPUSpec_UNSPECIFIED
-				}
-				nodegroup.GpuSpec = gpuSpec
-			case "disk":
-				node.SystemDiskSize = cast.ToInt32(val)
-			case "ip":
-				node.Ip = cast.ToString(val)
 			}
 		}
-		nodeGroupMaps[cluster.EncodeNodeGroup(nodegroup)] = append(nodeGroupMaps[cluster.EncodeNodeGroup(nodegroup)], node)
-	}
-
-	// Init node group and node
-	cluster.NodeGroups = make([]*biz.NodeGroup, 0)
-	cluster.Nodes = make([]*biz.Node, 0)
-	for nodeGroupEncodeKey, nodes := range nodeGroupMaps {
-		nodeGroupExits := false
-		nodeGrpupId := ""
-		for _, ng := range cluster.NodeGroups {
-			if cluster.EncodeNodeGroup(ng) == nodeGroupEncodeKey {
-				nodeGrpupId = ng.Id
-				nodeGroupExits = true
+		node := &biz.Node{
+			Name:           info.Id,
+			Ip:             info.Ip,
+			User:           cluster.DefaultUsername,
+			SystemDiskSize: cast.ToInt32(info.Disk),
+			NodeGroupId:    groupMap[groupKey].Id,
+			ClusterId:      cluster.Id,
+		}
+		isExist := false
+		for _, n := range cluster.Nodes {
+			if n.Ip == node.Ip {
+				isExist = true
 				break
 			}
 		}
-		if nodeGroupExits {
-			for _, node := range nodes {
-				nodeExits := false
-				for _, n := range cluster.Nodes {
-					if n.Ip == node.Ip {
-						nodeExits = true
-						break
-					}
-				}
-				if !nodeExits {
-					node.ClusterId = cluster.Id
-					node.NodeGroupId = nodeGrpupId
-					node.User = "root"
-					node.Name = node.Ip
-					cluster.Nodes = append(cluster.Nodes, node)
-				}
+		if !isExist {
+			cluster.Nodes = append(cluster.Nodes, node)
+		}
+	}
+	for _, group := range groupMap {
+		nodeNumber := int32(0)
+		for _, node := range cluster.Nodes {
+			if node.NodeGroupId == group.Id {
+				nodeNumber++
 			}
-			continue
 		}
-		nodegroup := cluster.DecodeNodeGroup(nodeGroupEncodeKey)
-		nodegroup.Id = uuid.NewString()
-		for _, node := range nodes {
-			node.ClusterId = cluster.Id
-			node.NodeGroupId = nodegroup.Id
-			node.User = "root"
-			node.Name = node.Ip
-		}
-		cluster.NodeGroups = append(cluster.NodeGroups, nodegroup)
-		cluster.Nodes = append(cluster.Nodes, nodes...)
+		group.TargetSize = nodeNumber
+		group.MinSize = nodeNumber
+		group.MaxSize = nodeNumber
+		group.ClusterId = cluster.Id
+		cluster.NodeGroups = append(cluster.NodeGroups, group)
 	}
 	return nil
 }
@@ -274,7 +283,7 @@ func (b *Baremetal) ApplyServices(ctx context.Context, cluster *biz.Cluster) err
 	if ok {
 		arch = archMapVal
 	}
-	kubeCtlPath := filepath.Join(userHomePath, Resource, arch, "kubernetes", cluster.KuberentesVersion, "kubectl")
+	kubeCtlPath := filepath.Join(userHomePath, Resource, arch, "kubernetes", getKubernetesVersion(), "kubectl")
 	err = remoteBash.RunWithLogging("install -m 755", kubeCtlPath, "/usr/local/bin/kubectl")
 	if err != nil {
 		return err
@@ -393,7 +402,7 @@ func (b *Baremetal) uninstallNode(cluster *biz.Cluster, node *biz.Node) error {
 		Name:       node.Name,
 		Host:       node.Ip,
 		User:       node.User,
-		Port:       22,
+		Port:       defaultSHHPort,
 		PrivateKey: cluster.PrivateKey,
 	}, Shell, b.log)
 	err := remoteBash.RunWithLogging("sudo kubeadm reset --force")

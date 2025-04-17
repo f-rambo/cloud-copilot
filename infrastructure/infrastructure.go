@@ -181,12 +181,22 @@ func (i *Infrastructure) ManageNodeResource(ctx context.Context, cluster *biz.Cl
 
 func (i *Infrastructure) GetNodesSystemInfo(ctx context.Context, cluster *biz.Cluster) error {
 	if !cluster.Provider.IsCloud() {
+		// bare metal node
 		err := i.baremetal.GetNodesSystemInfo(ctx, cluster)
 		if err != nil {
 			return err
 		}
 		return nil
 	}
+	// cloud node
+	err := i.GeCloudtNodesSystemInfo(ctx, cluster)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (i *Infrastructure) GeCloudtNodesSystemInfo(ctx context.Context, cluster *biz.Cluster) error {
 	for _, nodeGroup := range cluster.NodeGroups {
 		isFindNode := false
 		for _, node := range cluster.Nodes {
@@ -219,6 +229,7 @@ func (i *Infrastructure) GetNodesSystemInfo(ctx context.Context, cluster *biz.Cl
 			nodeUser = awscloud.DetermineUsername(aws.ToString(image.Name), aws.ToString(image.Description))
 			systemDiskName = aws.ToString(image.RootDeviceName)
 			instanceTypes, err := i.awsCloud.FindInstanceType(ctx, common.FindInstanceTypeParam{
+				Os:            nodeGroup.Os,
 				CPU:           nodeGroup.Cpu,
 				Memory:        nodeGroup.Memory,
 				Arch:          nodeGroup.Arch,
@@ -252,6 +263,7 @@ func (i *Infrastructure) GetNodesSystemInfo(ctx context.Context, cluster *biz.Cl
 			}
 			imageId = tea.StringValue(image.ImageId)
 			instanceTypes, err := i.aliCloud.FindInstanceType(common.FindInstanceTypeParam{
+				Os:            nodeGroup.Os,
 				CPU:           nodeGroup.Cpu,
 				Memory:        nodeGroup.Memory,
 				Arch:          nodeGroup.Arch,

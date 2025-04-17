@@ -143,7 +143,6 @@ func (c *ClusterInterface) Save(ctx context.Context, clusterArgs *v1alpha1.Clust
 	if !biz.ClusterProviderFromString(clusterArgs.Provider).IsCloud() && (clusterArgs.NodeUsername == "" || clusterArgs.NodeStartIp == "" || clusterArgs.NodeEndIp == "") {
 		return nil, errors.New("node username, start ip and end ip are required")
 	}
-	cluster := new(biz.Cluster)
 	if clusterArgs.Id != 0 {
 		clusterRes, err := c.clusterUc.Get(ctx, clusterArgs.Id)
 		if err != nil {
@@ -152,30 +151,29 @@ func (c *ClusterInterface) Save(ctx context.Context, clusterArgs *v1alpha1.Clust
 		if clusterRes == nil || clusterRes.Id == 0 {
 			return nil, errors.New("cluster not found")
 		}
-	}
-	if cluster.Id == 0 {
+	} else {
 		clusterRes, err := c.clusterUc.GetByName(ctx, clusterArgs.Name)
 		if err != nil {
 			return nil, err
 		}
-		if clusterRes.Id != 0 {
+		if !clusterRes.IsEmpty() {
 			return nil, errors.New("cluster already exists")
 		}
-		cluster.KuberentesVersion = c.c.Cluster.GetKubernetesVersion()
-		cluster.ContainerdVersion = c.c.Cluster.GetContainerdVersion()
-		cluster.RuncVersion = c.c.Cluster.GetRuncVersion()
 	}
-	cluster.Name = clusterArgs.Name
-	cluster.Provider = biz.ClusterProviderFromString(clusterArgs.Provider)
-	cluster.PublicKey = clusterArgs.PublicKey
-	cluster.PrivateKey = clusterArgs.PrivateKey
-	cluster.AccessId = clusterArgs.AccessId
-	cluster.AccessKey = clusterArgs.AccessKey
-	cluster.Region = clusterArgs.Region
-	cluster.NodeStartIp = clusterArgs.NodeStartIp
-	cluster.NodeEndIp = clusterArgs.NodeEndIp
-	user := biz.GetUserInfo(ctx)
-	cluster.UserId = user.Id
+	cluster := &biz.Cluster{
+		Id:              clusterArgs.Id,
+		Name:            clusterArgs.Name,
+		Provider:        biz.ClusterProviderFromString(clusterArgs.Provider),
+		PublicKey:       clusterArgs.PublicKey,
+		PrivateKey:      clusterArgs.PrivateKey,
+		AccessId:        clusterArgs.AccessId,
+		AccessKey:       clusterArgs.AccessKey,
+		Region:          clusterArgs.Region,
+		DefaultUsername: clusterArgs.NodeUsername,
+		NodeStartIp:     clusterArgs.NodeStartIp,
+		NodeEndIp:       clusterArgs.NodeEndIp,
+		UserId:          biz.GetUserInfo(ctx).Id,
+	}
 	err := c.clusterUc.Save(ctx, cluster)
 	if err != nil {
 		return nil, err
@@ -263,25 +261,23 @@ func (c *ClusterInterface) bizCLusterToCluster(bizCluster *biz.Cluster) *v1alpha
 		nodeGroups = append(nodeGroups, c.bizNodeGroupToNodeGroup(v))
 	}
 	return &v1alpha1.Cluster{
-		Id:                bizCluster.Id,
-		Name:              bizCluster.Name,
-		KuberentesVersion: bizCluster.KuberentesVersion,
-		ContainerdVersion: bizCluster.ContainerdVersion,
-		CiliumVersion:     bizCluster.CiliumVersion,
-		ApiServerAddress:  bizCluster.ApiServerAddress,
-		Status:            bizCluster.Status.String(),
-		Domain:            bizCluster.Domain,
-		NodeNumber:        int32(len(bizCluster.Nodes)),
-		Provider:          bizCluster.Provider.String(),
-		PublicKey:         bizCluster.PublicKey,
-		PrivateKey:        bizCluster.PrivateKey,
-		Region:            bizCluster.Region,
-		AccessId:          bizCluster.AccessId,
-		AccessKey:         bizCluster.AccessKey,
-		NodeStartIp:       bizCluster.NodeStartIp,
-		NodeEndIp:         bizCluster.NodeEndIp,
-		Nodes:             nodes,
-		NodeGroups:        nodeGroups,
+		Id:               bizCluster.Id,
+		Name:             bizCluster.Name,
+		ApiServerAddress: bizCluster.ApiServerAddress,
+		Status:           bizCluster.Status.String(),
+		Domain:           bizCluster.Domain,
+		NodeNumber:       int32(len(bizCluster.Nodes)),
+		Provider:         bizCluster.Provider.String(),
+		PublicKey:        bizCluster.PublicKey,
+		PrivateKey:       bizCluster.PrivateKey,
+		Region:           bizCluster.Region,
+		AccessId:         bizCluster.AccessId,
+		AccessKey:        bizCluster.AccessKey,
+		NodeUsername:     bizCluster.DefaultUsername,
+		NodeStartIp:      bizCluster.NodeStartIp,
+		NodeEndIp:        bizCluster.NodeEndIp,
+		Nodes:            nodes,
+		NodeGroups:       nodeGroups,
 		ClusterResource: &v1alpha1.ClusterResource{
 			Cpu:    bizCluster.GetCpuCount(),
 			Gpu:    bizCluster.GetGpuCount(),
@@ -296,9 +292,9 @@ func (c *ClusterInterface) bizNodeToNode(node *biz.Node) *v1alpha1.Node {
 		Id:         node.Id,
 		Ip:         node.Ip,
 		Name:       node.Name,
-		Role:       int32(node.Role),
+		Role:       node.Role.String(),
 		User:       node.User,
-		Status:     int32(node.Status),
+		Status:     node.Status.String(),
 		InstanceId: node.InstanceId,
 	}
 }
@@ -307,7 +303,7 @@ func (c *ClusterInterface) bizNodeGroupToNodeGroup(nodeGroup *biz.NodeGroup) *v1
 	return &v1alpha1.NodeGroup{
 		Id:         nodeGroup.Id,
 		Name:       nodeGroup.Name,
-		Type:       int32(nodeGroup.Type),
+		Type:       nodeGroup.Type.String(),
 		Os:         nodeGroup.Os,
 		Arch:       nodeGroup.Arch.String(),
 		Cpu:        nodeGroup.Cpu,

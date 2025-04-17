@@ -66,7 +66,7 @@ done < <(df -h --output=size | tail -n +2)
 
 total_disk_gb=$(((total_disk_bytes + 1073741823) / 1073741824))
 
-inner_ip=$(hostname -I | awk '{print $1}')
+ip=$(hostname -I | awk '{print $1}')
 
 json_output=$(
       cat <<EOF
@@ -79,7 +79,7 @@ json_output=$(
   "gpu": "$gpu_count",
   "gpu_info": "$gpu_info",
   "disk": "${total_disk_gb}",
-  "inner_ip": "$inner_ip"
+  "ip": "$ip"
 }
 EOF
 )
