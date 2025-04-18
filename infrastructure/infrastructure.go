@@ -308,7 +308,7 @@ func (i *Infrastructure) Install(ctx context.Context, cluster *biz.Cluster) erro
 	if err != nil {
 		return err
 	}
-	err = i.baremetal.ApplyServices(ctx, cluster)
+	err = i.baremetal.ApplyCloudCopilot(ctx, cluster)
 	if err != nil {
 		return err
 	}

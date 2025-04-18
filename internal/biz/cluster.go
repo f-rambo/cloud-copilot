@@ -476,8 +476,6 @@ type Cluster struct {
 	Id                     int64                    `gorm:"column:id;primaryKey;AUTO_INCREMENT" json:"id,omitempty"`
 	Name                   string                   `gorm:"column:name;default:'';NOT NULL" json:"name,omitempty"`
 	ApiServerAddress       string                   `gorm:"column:api_server_address;default:'';NOT NULL" json:"api_server_address,omitempty"`
-	ApiServerPort          string                   `gorm:"column:api_server_port;default:'';NOT NULL" json:"api_server_port,omitempty"`
-	ImageRepo              string                   `gorm:"column:image_repo;default:'';NOT NULL" json:"image_repo,omitempty"`
 	Config                 string                   `gorm:"column:config;default:'';NOT NULL" json:"config,omitempty"`
 	Status                 ClusterStatus            `gorm:"column:status;default:0;NOT NULL" json:"status,omitempty"`
 	Provider               ClusterProvider          `gorm:"column:provider;default:0;NOT NULL" json:"provider,omitempty"`
@@ -1193,11 +1191,8 @@ func (uc *ClusterUsecase) Refresh(ctx context.Context) error {
 }
 
 func (uc *ClusterUsecase) GetCurrentCluster(ctx context.Context) (*Cluster, error) {
-	cluster, err := uc.clusterData.GetByName(ctx, uc.conf.Cluster.Name)
-	if err != nil {
-		return nil, err
-	}
-	err = uc.clusterRuntime.CurrentCluster(ctx, cluster)
+	cluster := &Cluster{}
+	err := uc.clusterRuntime.CurrentCluster(ctx, cluster)
 	if err != nil {
 		return nil, err
 	}
@@ -1317,9 +1312,6 @@ func (uc *ClusterUsecase) Delete(ctx context.Context, clusterID int64) error {
 }
 
 func (uc *ClusterUsecase) Save(ctx context.Context, cluster *Cluster) error {
-	if cluster.ImageRepo == "" {
-		cluster.ImageRepo = uc.conf.Cluster.ImageRepository
-	}
 	return uc.clusterData.Save(ctx, cluster)
 }
 
@@ -1382,7 +1374,9 @@ func (uc *ClusterUsecase) Start(ctx context.Context) error {
 			}
 			err := uc.handleEvent(ctx, data)
 			if err != nil {
-				return err
+				// todo alert
+				uc.log.Errorf("cluster handle event error: %v", err)
+				return nil
 			}
 		}
 	}

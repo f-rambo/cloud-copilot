@@ -53,11 +53,11 @@ func (c *ClusterRuntime) CurrentCluster(ctx context.Context, cluster *biz.Cluste
 	obj.SetName(cluster.Name)
 	dynamicClient, err := GetKubeDynamicClient()
 	if err != nil {
-		return err
+		return biz.ErrClusterNotFound
 	}
 	res, err := GetResource(ctx, dynamicClient, obj)
-	if err != nil {
-		return err
+	if err != nil && k8sErr.IsNotFound(err) {
+		return biz.ErrClusterNotFound
 	}
 	err = GetSpec(res, cluster)
 	if err != nil {

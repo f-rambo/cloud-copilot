@@ -84,6 +84,14 @@ func getKubernetesVersion() string {
 // 	return "v1.2.1"
 // }
 
+func getDefaultKuberentesImageRepo() string {
+	return "registry.k8s.io"
+}
+
+func getAliyunKuberentesImageRepo() string {
+	return "registry.aliyuncs.com/google_containers"
+}
+
 func (b *Baremetal) getClusterNodeRemoteBash(cluster *biz.Cluster, node *biz.Node) *utils.RemoteBash {
 	return utils.NewRemoteBash(utils.Server{
 		Name:       node.Name,
@@ -104,7 +112,11 @@ func (b *Baremetal) nodeInstallInit(cluster *biz.Cluster, node *biz.Node) error 
 	if err != nil {
 		return err
 	}
-	err = remoteBash.ExecShellLogging(ComponentShell, filepath.Join(userHomePath, Resource), cluster.ImageRepo, getKubernetesVersion())
+	k8sImageRepo := getDefaultKuberentesImageRepo()
+	if cluster.Provider == biz.ClusterProvider_AliCloud {
+		k8sImageRepo = getAliyunKuberentesImageRepo()
+	}
+	err = remoteBash.ExecShellLogging(ComponentShell, filepath.Join(userHomePath, Resource), k8sImageRepo, getKubernetesVersion())
 	if err != nil {
 		return err
 	}
@@ -254,7 +266,7 @@ func (b *Baremetal) GetNodesSystemInfo(ctx context.Context, cluster *biz.Cluster
 	return nil
 }
 
-func (b *Baremetal) ApplyServices(ctx context.Context, cluster *biz.Cluster) error {
+func (b *Baremetal) ApplyCloudCopilot(ctx context.Context, cluster *biz.Cluster) error {
 	var node *biz.Node
 	for _, v := range cluster.Nodes {
 		if v.Role == biz.NodeRole_MASTER {

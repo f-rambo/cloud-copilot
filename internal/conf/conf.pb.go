@@ -171,61 +171,6 @@ func (x *Level) GetStandard() int32 {
 	return 0
 }
 
-type ClusterConfig struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	Name            string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	ImageRepository string `protobuf:"bytes,2,opt,name=image_repository,json=imageRepository,proto3" json:"image_repository,omitempty"`
-}
-
-func (x *ClusterConfig) Reset() {
-	*x = ClusterConfig{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_internal_conf_conf_proto_msgTypes[2]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *ClusterConfig) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ClusterConfig) ProtoMessage() {}
-
-func (x *ClusterConfig) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_conf_conf_proto_msgTypes[2]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ClusterConfig.ProtoReflect.Descriptor instead.
-func (*ClusterConfig) Descriptor() ([]byte, []int) {
-	return file_internal_conf_conf_proto_rawDescGZIP(), []int{2}
-}
-
-func (x *ClusterConfig) GetName() string {
-	if x != nil {
-		return x.Name
-	}
-	return ""
-}
-
-func (x *ClusterConfig) GetImageRepository() string {
-	if x != nil {
-		return x.ImageRepository
-	}
-	return ""
-}
-
 type HTTPServer struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -239,7 +184,7 @@ type HTTPServer struct {
 func (x *HTTPServer) Reset() {
 	*x = HTTPServer{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_internal_conf_conf_proto_msgTypes[3]
+		mi := &file_internal_conf_conf_proto_msgTypes[2]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -252,7 +197,7 @@ func (x *HTTPServer) String() string {
 func (*HTTPServer) ProtoMessage() {}
 
 func (x *HTTPServer) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_conf_conf_proto_msgTypes[3]
+	mi := &file_internal_conf_conf_proto_msgTypes[2]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -265,7 +210,7 @@ func (x *HTTPServer) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use HTTPServer.ProtoReflect.Descriptor instead.
 func (*HTTPServer) Descriptor() ([]byte, []int) {
-	return file_internal_conf_conf_proto_rawDescGZIP(), []int{3}
+	return file_internal_conf_conf_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *HTTPServer) GetNetwork() string {
@@ -302,7 +247,7 @@ type GRPCServer struct {
 func (x *GRPCServer) Reset() {
 	*x = GRPCServer{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_internal_conf_conf_proto_msgTypes[4]
+		mi := &file_internal_conf_conf_proto_msgTypes[3]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -315,7 +260,7 @@ func (x *GRPCServer) String() string {
 func (*GRPCServer) ProtoMessage() {}
 
 func (x *GRPCServer) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_conf_conf_proto_msgTypes[4]
+	mi := &file_internal_conf_conf_proto_msgTypes[3]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -328,7 +273,7 @@ func (x *GRPCServer) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GRPCServer.ProtoReflect.Descriptor instead.
 func (*GRPCServer) Descriptor() ([]byte, []int) {
-	return file_internal_conf_conf_proto_rawDescGZIP(), []int{4}
+	return file_internal_conf_conf_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *GRPCServer) GetNetwork() string {
@@ -366,7 +311,7 @@ type Server struct {
 func (x *Server) Reset() {
 	*x = Server{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_internal_conf_conf_proto_msgTypes[5]
+		mi := &file_internal_conf_conf_proto_msgTypes[4]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -379,7 +324,7 @@ func (x *Server) String() string {
 func (*Server) ProtoMessage() {}
 
 func (x *Server) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_conf_conf_proto_msgTypes[5]
+	mi := &file_internal_conf_conf_proto_msgTypes[4]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -392,7 +337,7 @@ func (x *Server) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Server.ProtoReflect.Descriptor instead.
 func (*Server) Descriptor() ([]byte, []int) {
-	return file_internal_conf_conf_proto_rawDescGZIP(), []int{5}
+	return file_internal_conf_conf_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *Server) GetName() string {
@@ -438,7 +383,7 @@ type Database struct {
 func (x *Database) Reset() {
 	*x = Database{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_internal_conf_conf_proto_msgTypes[6]
+		mi := &file_internal_conf_conf_proto_msgTypes[5]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -451,7 +396,7 @@ func (x *Database) String() string {
 func (*Database) ProtoMessage() {}
 
 func (x *Database) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_conf_conf_proto_msgTypes[6]
+	mi := &file_internal_conf_conf_proto_msgTypes[5]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -464,7 +409,7 @@ func (x *Database) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Database.ProtoReflect.Descriptor instead.
 func (*Database) Descriptor() ([]byte, []int) {
-	return file_internal_conf_conf_proto_rawDescGZIP(), []int{6}
+	return file_internal_conf_conf_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *Database) GetDatabase() string {
@@ -515,7 +460,7 @@ type Log struct {
 func (x *Log) Reset() {
 	*x = Log{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_internal_conf_conf_proto_msgTypes[7]
+		mi := &file_internal_conf_conf_proto_msgTypes[6]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -528,7 +473,7 @@ func (x *Log) String() string {
 func (*Log) ProtoMessage() {}
 
 func (x *Log) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_conf_conf_proto_msgTypes[7]
+	mi := &file_internal_conf_conf_proto_msgTypes[6]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -541,7 +486,7 @@ func (x *Log) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Log.ProtoReflect.Descriptor instead.
 func (*Log) Descriptor() ([]byte, []int) {
-	return file_internal_conf_conf_proto_rawDescGZIP(), []int{7}
+	return file_internal_conf_conf_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *Log) GetMaxSize() int32 {
@@ -579,7 +524,7 @@ type Auth struct {
 func (x *Auth) Reset() {
 	*x = Auth{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_internal_conf_conf_proto_msgTypes[8]
+		mi := &file_internal_conf_conf_proto_msgTypes[7]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -592,7 +537,7 @@ func (x *Auth) String() string {
 func (*Auth) ProtoMessage() {}
 
 func (x *Auth) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_conf_conf_proto_msgTypes[8]
+	mi := &file_internal_conf_conf_proto_msgTypes[7]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -605,7 +550,7 @@ func (x *Auth) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Auth.ProtoReflect.Descriptor instead.
 func (*Auth) Descriptor() ([]byte, []int) {
-	return file_internal_conf_conf_proto_rawDescGZIP(), []int{8}
+	return file_internal_conf_conf_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *Auth) GetExp() int32 {
@@ -641,17 +586,16 @@ type Bootstrap struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Cluster *ClusterConfig `protobuf:"bytes,1,opt,name=cluster,proto3" json:"cluster,omitempty"`
-	Server  *Server        `protobuf:"bytes,2,opt,name=server,proto3" json:"server,omitempty"`
-	Data    *Database      `protobuf:"bytes,3,opt,name=data,proto3" json:"data,omitempty"`
-	Log     *Log           `protobuf:"bytes,4,opt,name=log,proto3" json:"log,omitempty"`
-	Auth    *Auth          `protobuf:"bytes,5,opt,name=auth,proto3" json:"auth,omitempty"`
+	Server *Server   `protobuf:"bytes,1,opt,name=server,proto3" json:"server,omitempty"`
+	Data   *Database `protobuf:"bytes,2,opt,name=data,proto3" json:"data,omitempty"`
+	Log    *Log      `protobuf:"bytes,3,opt,name=log,proto3" json:"log,omitempty"`
+	Auth   *Auth     `protobuf:"bytes,4,opt,name=auth,proto3" json:"auth,omitempty"`
 }
 
 func (x *Bootstrap) Reset() {
 	*x = Bootstrap{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_internal_conf_conf_proto_msgTypes[9]
+		mi := &file_internal_conf_conf_proto_msgTypes[8]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -664,7 +608,7 @@ func (x *Bootstrap) String() string {
 func (*Bootstrap) ProtoMessage() {}
 
 func (x *Bootstrap) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_conf_conf_proto_msgTypes[9]
+	mi := &file_internal_conf_conf_proto_msgTypes[8]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -677,14 +621,7 @@ func (x *Bootstrap) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Bootstrap.ProtoReflect.Descriptor instead.
 func (*Bootstrap) Descriptor() ([]byte, []int) {
-	return file_internal_conf_conf_proto_rawDescGZIP(), []int{9}
-}
-
-func (x *Bootstrap) GetCluster() *ClusterConfig {
-	if x != nil {
-		return x.Cluster
-	}
-	return nil
+	return file_internal_conf_conf_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *Bootstrap) GetServer() *Server {
@@ -737,12 +674,7 @@ var file_internal_conf_conf_proto_rawDesc = []byte{
 	0x05, 0x62, 0x61, 0x73, 0x69, 0x63, 0x12, 0x1a, 0x0a, 0x08, 0x61, 0x64, 0x76, 0x61, 0x6e, 0x63,
 	0x65, 0x64, 0x18, 0x02, 0x20, 0x01, 0x28, 0x05, 0x52, 0x08, 0x61, 0x64, 0x76, 0x61, 0x6e, 0x63,
 	0x65, 0x64, 0x12, 0x1a, 0x0a, 0x08, 0x73, 0x74, 0x61, 0x6e, 0x64, 0x61, 0x72, 0x64, 0x18, 0x03,
-	0x20, 0x01, 0x28, 0x05, 0x52, 0x08, 0x73, 0x74, 0x61, 0x6e, 0x64, 0x61, 0x72, 0x64, 0x22, 0x4e,
-	0x0a, 0x0d, 0x43, 0x6c, 0x75, 0x73, 0x74, 0x65, 0x72, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x12,
-	0x12, 0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x6e,
-	0x61, 0x6d, 0x65, 0x12, 0x29, 0x0a, 0x10, 0x69, 0x6d, 0x61, 0x67, 0x65, 0x5f, 0x72, 0x65, 0x70,
-	0x6f, 0x73, 0x69, 0x74, 0x6f, 0x72, 0x79, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0f, 0x69,
-	0x6d, 0x61, 0x67, 0x65, 0x52, 0x65, 0x70, 0x6f, 0x73, 0x69, 0x74, 0x6f, 0x72, 0x79, 0x22, 0x54,
+	0x20, 0x01, 0x28, 0x05, 0x52, 0x08, 0x73, 0x74, 0x61, 0x6e, 0x64, 0x61, 0x72, 0x64, 0x22, 0x54,
 	0x0a, 0x0a, 0x48, 0x54, 0x54, 0x50, 0x53, 0x65, 0x72, 0x76, 0x65, 0x72, 0x12, 0x18, 0x0a, 0x07,
 	0x6e, 0x65, 0x74, 0x77, 0x6f, 0x72, 0x6b, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x6e,
 	0x65, 0x74, 0x77, 0x6f, 0x72, 0x6b, 0x12, 0x12, 0x0a, 0x04, 0x61, 0x64, 0x64, 0x72, 0x18, 0x02,
@@ -782,22 +714,19 @@ var file_internal_conf_conf_proto_rawDesc = []byte{
 	0x6d, 0x61, 0x69, 0x6c, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0a, 0x61, 0x64, 0x6d, 0x69,
 	0x6e, 0x45, 0x6d, 0x61, 0x69, 0x6c, 0x12, 0x25, 0x0a, 0x0e, 0x61, 0x64, 0x6d, 0x69, 0x6e, 0x5f,
 	0x70, 0x61, 0x73, 0x73, 0x77, 0x6f, 0x72, 0x64, 0x18, 0x04, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0d,
-	0x61, 0x64, 0x6d, 0x69, 0x6e, 0x50, 0x61, 0x73, 0x73, 0x77, 0x6f, 0x72, 0x64, 0x22, 0xa8, 0x01,
-	0x0a, 0x09, 0x42, 0x6f, 0x6f, 0x74, 0x73, 0x74, 0x72, 0x61, 0x70, 0x12, 0x28, 0x0a, 0x07, 0x63,
-	0x6c, 0x75, 0x73, 0x74, 0x65, 0x72, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x0e, 0x2e, 0x43,
-	0x6c, 0x75, 0x73, 0x74, 0x65, 0x72, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x52, 0x07, 0x63, 0x6c,
-	0x75, 0x73, 0x74, 0x65, 0x72, 0x12, 0x1f, 0x0a, 0x06, 0x73, 0x65, 0x72, 0x76, 0x65, 0x72, 0x18,
-	0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x07, 0x2e, 0x53, 0x65, 0x72, 0x76, 0x65, 0x72, 0x52, 0x06,
-	0x73, 0x65, 0x72, 0x76, 0x65, 0x72, 0x12, 0x1d, 0x0a, 0x04, 0x64, 0x61, 0x74, 0x61, 0x18, 0x03,
-	0x20, 0x01, 0x28, 0x0b, 0x32, 0x09, 0x2e, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x52,
-	0x04, 0x64, 0x61, 0x74, 0x61, 0x12, 0x16, 0x0a, 0x03, 0x6c, 0x6f, 0x67, 0x18, 0x04, 0x20, 0x01,
-	0x28, 0x0b, 0x32, 0x04, 0x2e, 0x4c, 0x6f, 0x67, 0x52, 0x03, 0x6c, 0x6f, 0x67, 0x12, 0x19, 0x0a,
-	0x04, 0x61, 0x75, 0x74, 0x68, 0x18, 0x05, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x05, 0x2e, 0x41, 0x75,
-	0x74, 0x68, 0x52, 0x04, 0x61, 0x75, 0x74, 0x68, 0x42, 0x35, 0x5a, 0x33, 0x67, 0x69, 0x74, 0x68,
-	0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x66, 0x2d, 0x72, 0x61, 0x6d, 0x62, 0x6f, 0x2f, 0x63,
-	0x6c, 0x6f, 0x75, 0x64, 0x2d, 0x63, 0x6f, 0x70, 0x69, 0x6c, 0x6f, 0x74, 0x2f, 0x69, 0x6e, 0x74,
-	0x65, 0x72, 0x6e, 0x61, 0x6c, 0x2f, 0x63, 0x6f, 0x6e, 0x66, 0x3b, 0x63, 0x6f, 0x6e, 0x66, 0x62,
-	0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x61, 0x64, 0x6d, 0x69, 0x6e, 0x50, 0x61, 0x73, 0x73, 0x77, 0x6f, 0x72, 0x64, 0x22, 0x7e, 0x0a,
+	0x09, 0x42, 0x6f, 0x6f, 0x74, 0x73, 0x74, 0x72, 0x61, 0x70, 0x12, 0x1f, 0x0a, 0x06, 0x73, 0x65,
+	0x72, 0x76, 0x65, 0x72, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x07, 0x2e, 0x53, 0x65, 0x72,
+	0x76, 0x65, 0x72, 0x52, 0x06, 0x73, 0x65, 0x72, 0x76, 0x65, 0x72, 0x12, 0x1d, 0x0a, 0x04, 0x64,
+	0x61, 0x74, 0x61, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x09, 0x2e, 0x44, 0x61, 0x74, 0x61,
+	0x62, 0x61, 0x73, 0x65, 0x52, 0x04, 0x64, 0x61, 0x74, 0x61, 0x12, 0x16, 0x0a, 0x03, 0x6c, 0x6f,
+	0x67, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x04, 0x2e, 0x4c, 0x6f, 0x67, 0x52, 0x03, 0x6c,
+	0x6f, 0x67, 0x12, 0x19, 0x0a, 0x04, 0x61, 0x75, 0x74, 0x68, 0x18, 0x04, 0x20, 0x01, 0x28, 0x0b,
+	0x32, 0x05, 0x2e, 0x41, 0x75, 0x74, 0x68, 0x52, 0x04, 0x61, 0x75, 0x74, 0x68, 0x42, 0x35, 0x5a,
+	0x33, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x66, 0x2d, 0x72, 0x61,
+	0x6d, 0x62, 0x6f, 0x2f, 0x63, 0x6c, 0x6f, 0x75, 0x64, 0x2d, 0x63, 0x6f, 0x70, 0x69, 0x6c, 0x6f,
+	0x74, 0x2f, 0x69, 0x6e, 0x74, 0x65, 0x72, 0x6e, 0x61, 0x6c, 0x2f, 0x63, 0x6f, 0x6e, 0x66, 0x3b,
+	0x63, 0x6f, 0x6e, 0x66, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -812,32 +741,30 @@ func file_internal_conf_conf_proto_rawDescGZIP() []byte {
 	return file_internal_conf_conf_proto_rawDescData
 }
 
-var file_internal_conf_conf_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
+var file_internal_conf_conf_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_internal_conf_conf_proto_goTypes = []any{
-	(*IngressRule)(nil),   // 0: IngressRule
-	(*Level)(nil),         // 1: Level
-	(*ClusterConfig)(nil), // 2: ClusterConfig
-	(*HTTPServer)(nil),    // 3: HTTPServer
-	(*GRPCServer)(nil),    // 4: GRPCServer
-	(*Server)(nil),        // 5: Server
-	(*Database)(nil),      // 6: Database
-	(*Log)(nil),           // 7: Log
-	(*Auth)(nil),          // 8: Auth
-	(*Bootstrap)(nil),     // 9: Bootstrap
+	(*IngressRule)(nil), // 0: IngressRule
+	(*Level)(nil),       // 1: Level
+	(*HTTPServer)(nil),  // 2: HTTPServer
+	(*GRPCServer)(nil),  // 3: GRPCServer
+	(*Server)(nil),      // 4: Server
+	(*Database)(nil),    // 5: Database
+	(*Log)(nil),         // 6: Log
+	(*Auth)(nil),        // 7: Auth
+	(*Bootstrap)(nil),   // 8: Bootstrap
 }
 var file_internal_conf_conf_proto_depIdxs = []int32{
-	3, // 0: Server.http:type_name -> HTTPServer
-	4, // 1: Server.grpc:type_name -> GRPCServer
-	2, // 2: Bootstrap.cluster:type_name -> ClusterConfig
-	5, // 3: Bootstrap.server:type_name -> Server
-	6, // 4: Bootstrap.data:type_name -> Database
-	7, // 5: Bootstrap.log:type_name -> Log
-	8, // 6: Bootstrap.auth:type_name -> Auth
-	7, // [7:7] is the sub-list for method output_type
-	7, // [7:7] is the sub-list for method input_type
-	7, // [7:7] is the sub-list for extension type_name
-	7, // [7:7] is the sub-list for extension extendee
-	0, // [0:7] is the sub-list for field type_name
+	2, // 0: Server.http:type_name -> HTTPServer
+	3, // 1: Server.grpc:type_name -> GRPCServer
+	4, // 2: Bootstrap.server:type_name -> Server
+	5, // 3: Bootstrap.data:type_name -> Database
+	6, // 4: Bootstrap.log:type_name -> Log
+	7, // 5: Bootstrap.auth:type_name -> Auth
+	6, // [6:6] is the sub-list for method output_type
+	6, // [6:6] is the sub-list for method input_type
+	6, // [6:6] is the sub-list for extension type_name
+	6, // [6:6] is the sub-list for extension extendee
+	0, // [0:6] is the sub-list for field type_name
 }
 
 func init() { file_internal_conf_conf_proto_init() }
@@ -871,18 +798,6 @@ func file_internal_conf_conf_proto_init() {
 			}
 		}
 		file_internal_conf_conf_proto_msgTypes[2].Exporter = func(v any, i int) any {
-			switch v := v.(*ClusterConfig); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_internal_conf_conf_proto_msgTypes[3].Exporter = func(v any, i int) any {
 			switch v := v.(*HTTPServer); i {
 			case 0:
 				return &v.state
@@ -894,7 +809,7 @@ func file_internal_conf_conf_proto_init() {
 				return nil
 			}
 		}
-		file_internal_conf_conf_proto_msgTypes[4].Exporter = func(v any, i int) any {
+		file_internal_conf_conf_proto_msgTypes[3].Exporter = func(v any, i int) any {
 			switch v := v.(*GRPCServer); i {
 			case 0:
 				return &v.state
@@ -906,7 +821,7 @@ func file_internal_conf_conf_proto_init() {
 				return nil
 			}
 		}
-		file_internal_conf_conf_proto_msgTypes[5].Exporter = func(v any, i int) any {
+		file_internal_conf_conf_proto_msgTypes[4].Exporter = func(v any, i int) any {
 			switch v := v.(*Server); i {
 			case 0:
 				return &v.state
@@ -918,7 +833,7 @@ func file_internal_conf_conf_proto_init() {
 				return nil
 			}
 		}
-		file_internal_conf_conf_proto_msgTypes[6].Exporter = func(v any, i int) any {
+		file_internal_conf_conf_proto_msgTypes[5].Exporter = func(v any, i int) any {
 			switch v := v.(*Database); i {
 			case 0:
 				return &v.state
@@ -930,7 +845,7 @@ func file_internal_conf_conf_proto_init() {
 				return nil
 			}
 		}
-		file_internal_conf_conf_proto_msgTypes[7].Exporter = func(v any, i int) any {
+		file_internal_conf_conf_proto_msgTypes[6].Exporter = func(v any, i int) any {
 			switch v := v.(*Log); i {
 			case 0:
 				return &v.state
@@ -942,7 +857,7 @@ func file_internal_conf_conf_proto_init() {
 				return nil
 			}
 		}
-		file_internal_conf_conf_proto_msgTypes[8].Exporter = func(v any, i int) any {
+		file_internal_conf_conf_proto_msgTypes[7].Exporter = func(v any, i int) any {
 			switch v := v.(*Auth); i {
 			case 0:
 				return &v.state
@@ -954,7 +869,7 @@ func file_internal_conf_conf_proto_init() {
 				return nil
 			}
 		}
-		file_internal_conf_conf_proto_msgTypes[9].Exporter = func(v any, i int) any {
+		file_internal_conf_conf_proto_msgTypes[8].Exporter = func(v any, i int) any {
 			switch v := v.(*Bootstrap); i {
 			case 0:
 				return &v.state
@@ -973,7 +888,7 @@ func file_internal_conf_conf_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_internal_conf_conf_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   10,
+			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

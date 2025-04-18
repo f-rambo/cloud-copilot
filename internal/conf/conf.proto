@@ -19,11 +19,6 @@ message Level {
   int32 standard = 3;
 }
 
-message ClusterConfig {
-  string name = 1;
-  string image_repository = 2;
-}
-
 message HTTPServer {
   string network = 1;
   string addr = 2;
@@ -65,9 +60,8 @@ message Auth {
 }
 
 message Bootstrap {
-  ClusterConfig cluster = 1;
-  Server server = 2;
-  Database data = 3;
-  Log log = 4;
-  Auth auth = 5;
+  Server server = 1;
+  Database data = 2;
+  Log log = 3;
+  Auth auth = 4;
 }
