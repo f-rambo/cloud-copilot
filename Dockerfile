@@ -7,7 +7,7 @@ ENV GO111MODULE=on
 ENV GOPROXY=https://goproxy.cn
 ENV GOPRIVATE=github.com/f-rambo/
 
-RUN make build && mkdir -p /app && cp -r bin configs infrastructure/shell infrastructure/component /app/
+RUN make build && mkdir -p /app && cp -r bin configs shell component /app/
 
 FROM debian:stable-slim
 

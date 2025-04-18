@@ -45,7 +45,11 @@ function install_cloud_copilot() {
             log "Error: Failed to extract cloud copilot."
             exit 1
       fi
-      if ! sudo cp -r $packageName"/shell" $HOME; then
+      if ! sudo cp -r $packageName"/shell" $HOME/; then
+            log "Error: Failed to move cloud copilot."
+            exit 1
+      fi
+      if ! sudo cp -r $packageName"/component" $HOME/; then
             log "Error: Failed to move cloud copilot."
             exit 1
       fi
