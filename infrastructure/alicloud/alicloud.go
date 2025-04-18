@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -100,7 +101,7 @@ func (a *AliCloudUsecase) GetAvailabilityRegions(ctx context.Context) ([]*biz.Cl
 	return cloudResources, nil
 }
 
-func (a *AliCloudUsecase) GetAvailabilityZones(ctx context.Context, cluster *biz.Cluster) error {
+func (a *AliCloudUsecase) GetAvailabilityZones(ctx context.Context, cluster *biz.Cluster) ([]*biz.CloudResource, error) {
 	zonesRes, err := a.ecsClient.DescribeZones(&ecs.DescribeZonesRequest{
 		AcceptLanguage:     tea.String("en-US"),
 		RegionId:           tea.String(cluster.Region),
@@ -108,10 +109,10 @@ func (a *AliCloudUsecase) GetAvailabilityZones(ctx context.Context, cluster *biz
 		SpotStrategy:       tea.String("NoSpot"),
 	})
 	if err != nil {
-		return errors.Wrap(err, "failed to describe zones")
+		return nil, errors.Wrap(err, "failed to describe zones")
 	}
 	if len(zonesRes.Body.Zones.Zone) == 0 {
-		return errors.New("no availability zones found")
+		return nil, errors.New("no availability zones found")
 	}
 	zones := make([]*ecs.DescribeZonesResponseBodyZonesZone, 0)
 	for _, zone := range zonesRes.Body.Zones.Zone {
@@ -143,8 +144,9 @@ func (a *AliCloudUsecase) GetAvailabilityZones(ctx context.Context, cluster *biz
 		AcceptLanguage: tea.String("en-US"),
 	})
 	if err != nil {
-		return errors.Wrap(err, "failed to list nat gateway available zones")
+		return nil, errors.Wrap(err, "failed to list nat gateway available zones")
 	}
+	clusterResouces := make([]*biz.CloudResource, 0)
 	for _, zone := range zones {
 		gatewayOk := false
 		for _, gatewayZone := range gatewayAvailableZones.Body.Zones {
@@ -154,7 +156,7 @@ func (a *AliCloudUsecase) GetAvailabilityZones(ctx context.Context, cluster *biz
 			}
 		}
 		if gatewayOk {
-			cluster.AddCloudResource(&biz.CloudResource{
+			clusterResouces = append(clusterResouces, &biz.CloudResource{
 				RefId: tea.StringValue(zone.ZoneId),
 				Name:  tea.StringValue(zone.LocalName),
 				Type:  biz.ResourceType_AVAILABILITY_ZONES,
@@ -162,25 +164,7 @@ func (a *AliCloudUsecase) GetAvailabilityZones(ctx context.Context, cluster *biz
 			})
 		}
 	}
-	return nil
-}
-
-func (a *AliCloudUsecase) OpenSSh(ctx context.Context, cluster *biz.Cluster) error {
-	for _, rule := range cluster.IngressControllerRules {
-		if rule.StartPort == 22 && rule.EndPort == 22 {
-			rule.Access = biz.IngressControllerRuleAccess_PUBLIC
-		}
-	}
-	return a.ManageSLB(ctx, cluster)
-}
-
-func (a *AliCloudUsecase) CloseSSh(ctx context.Context, cluster *biz.Cluster) error {
-	for _, rule := range cluster.IngressControllerRules {
-		if rule.StartPort == 22 && rule.EndPort == 22 {
-			rule.Access = biz.IngressControllerRuleAccess_PRIVATE
-		}
-	}
-	return a.ManageSLB(ctx, cluster)
+	return clusterResouces, nil
 }
 
 func (a *AliCloudUsecase) CreateNetwork(ctx context.Context, cluster *biz.Cluster) error {
@@ -449,7 +433,7 @@ func (a *AliCloudUsecase) ManageInstance(ctx context.Context, cluster *biz.Clust
 				node.ErrorMessage = "INSUFFICIENT INVENTORY"
 				continue
 			}
-			createInstanceRes, err := a.ecsClient.CreateInstance(&ecs.CreateInstanceRequest{
+			createInstanceRequest := &ecs.CreateInstanceRequest{
 				InstanceChargeType: tea.String("PostPaid"),
 				RegionId:           tea.String(cluster.Region),
 				KeyPairName:        tea.String(keyPair.Name),
@@ -461,7 +445,15 @@ func (a *AliCloudUsecase) ManageInstance(ctx context.Context, cluster *biz.Clust
 					Category: tea.String("cloud_ssd"),
 					Size:     tea.Int32(node.SystemDiskSize),
 				},
-			})
+			}
+			if cluster.Status == biz.ClusterStatus_STARTING && node.Role == biz.NodeRole_MASTER {
+				installShell, readShellErr := os.ReadFile(utils.GetShellPath(common.InstallShell))
+				if readShellErr != nil {
+					return readShellErr
+				}
+				createInstanceRequest.UserData = tea.String(base64.StdEncoding.EncodeToString(installShell))
+			}
+			createInstanceRes, err := a.ecsClient.CreateInstance(createInstanceRequest)
 			if err != nil {
 				node.ErrorType = biz.NodeErrorType_INFRASTRUCTURE_ERROR
 				node.ErrorMessage = "CREATE FAILURE"
@@ -808,7 +800,8 @@ func (a *AliCloudUsecase) createVPC(ctx context.Context, cluster *biz.Cluster) e
 		RegionId:  tea.String(cluster.Region),
 		CidrBlock: tea.String(cluster.VpcCidr),
 	})
-	if err := a.handlerError(err); err != nil {
+	err = a.handlerError(err)
+	if err != nil {
 		return err
 	}
 	// wait vpc status to be available
@@ -1236,7 +1229,7 @@ func (a *AliCloudUsecase) createNatGateways(ctx context.Context, cluster *biz.Cl
 			}
 			time.Sleep(time.Second * 3 * common.TimeOutSecond)
 			timeOutNumber++
-			res, err := a.vpcClient.DescribeNatGateways(&vpc.DescribeNatGatewaysRequest{
+			res, DescribeNatGatewaysErr := a.vpcClient.DescribeNatGateways(&vpc.DescribeNatGatewaysRequest{
 				RegionId:     tea.String(cluster.Region),
 				VpcId:        tea.String(vpcRes.RefId),
 				NatGatewayId: natRes.Body.NatGatewayId,
@@ -1244,8 +1237,8 @@ func (a *AliCloudUsecase) createNatGateways(ctx context.Context, cluster *biz.Cl
 				PageNumber:   tea.Int32(1),
 				PageSize:     tea.Int32(10),
 			})
-			if err != nil {
-				return errors.Wrap(err, "failed to describe nat gateway")
+			if DescribeNatGatewaysErr != nil {
+				return errors.Wrap(DescribeNatGatewaysErr, "failed to describe nat gateway")
 			}
 			for _, v := range res.Body.NatGateways.NatGateway {
 				if tea.StringValue(v.Status) == "Available" {
@@ -1532,9 +1525,9 @@ func (a *AliCloudUsecase) ManageSecurityGroup(ctx context.Context, cluster *biz.
 			SecurityGroupType: tea.String("normal"),
 			Description:       tea.String(sgName),
 		}
-		sgRes, err := a.ecsClient.CreateSecurityGroup(createSGReq)
-		if err != nil {
-			return errors.Wrap(err, "failed to create security group")
+		sgRes, CreateSecurityGroupErr := a.ecsClient.CreateSecurityGroup(createSGReq)
+		if CreateSecurityGroupErr != nil {
+			return errors.Wrap(CreateSecurityGroupErr, "failed to create security group")
 		}
 		sgCloudResource = &biz.CloudResource{
 			Name:         sgName,
@@ -1649,7 +1642,7 @@ func (a *AliCloudUsecase) ManageSLB(_ context.Context, cluster *biz.Cluster) err
 	}
 	if len(cluster.GetCloudResource(biz.ResourceType_LOAD_BALANCER)) == 0 {
 		// Create SLB
-		slbRes, err := a.slbClient.CreateLoadBalancer(&slb.CreateLoadBalancerRequest{
+		slbRes, CreateLoadBalancerErr := a.slbClient.CreateLoadBalancer(&slb.CreateLoadBalancerRequest{
 			RegionId:           tea.String(cluster.Region),
 			VpcId:              tea.String(vpcRes.RefId),
 			LoadBalancerName:   tea.String(slbName),
@@ -1658,8 +1651,8 @@ func (a *AliCloudUsecase) ManageSLB(_ context.Context, cluster *biz.Cluster) err
 			InternetChargeType: tea.String("paybytraffic"),
 			InstanceChargeType: tea.String("PayByCLCU"),
 		})
-		if err != nil {
-			return errors.Wrap(err, "failed to create SLB")
+		if CreateLoadBalancerErr != nil {
+			return errors.Wrap(CreateLoadBalancerErr, "failed to create SLB")
 		}
 
 		a.log.Infof("slb %s created", tea.StringValue(slbRes.Body.LoadBalancerName))

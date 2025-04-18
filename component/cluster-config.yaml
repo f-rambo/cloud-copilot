@@ -15,7 +15,7 @@ controlPlaneEndpoint: "{{.ApiServerAddress}}:6443"
 networking:
   serviceSubnet: "{{.ServiceCidr}}"
   podSubnet: "{{.PodCidr}}"
-  dnsDomain: "{{.Name}}.svc"
+  dnsDomain: "{{.Domain}}"
 controllerManager:
   extraArgs:
     cloud-provider: "external"

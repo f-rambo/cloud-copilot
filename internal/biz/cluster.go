@@ -9,6 +9,7 @@ import (
 	"sync"
 
 	confPkg "github.com/f-rambo/cloud-copilot/internal/conf"
+	"github.com/f-rambo/cloud-copilot/utils"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
@@ -138,6 +139,7 @@ const (
 	ClusterStatus_STOPPING    ClusterStatus = 3
 	ClusterStatus_STOPPED     ClusterStatus = 4
 	ClusterStatus_DELETED     ClusterStatus = 5
+	ClusterStatus_ERROR       ClusterStatus = 6
 )
 
 // ClusterStatus to string
@@ -153,6 +155,8 @@ func (cs ClusterStatus) String() string {
 		return "stopped"
 	case ClusterStatus_DELETED:
 		return "deleted"
+	case ClusterStatus_ERROR:
+		return "error"
 	default:
 		return "unspecified"
 	}
@@ -483,18 +487,17 @@ type Cluster struct {
 	PublicKey              string                   `gorm:"column:public_key;default:'';NOT NULL" json:"public_key,omitempty"`
 	PrivateKey             string                   `gorm:"column:private_key;default:'';NOT NULL" json:"private_key,omitempty"`
 	Region                 string                   `gorm:"column:region;default:'';NOT NULL" json:"region,omitempty"`
-	UserId                 int64                    `gorm:"column:user_id;default:0;NOT NULL" json:"user_id,omitempty"`
+	UserId                 int64                    `gorm:"column:user_id;default:0;NOT NULL" json:"user_id,omitempty"` // action user
 	AccessId               string                   `gorm:"column:access_id;default:'';NOT NULL" json:"access_id,omitempty"`
 	AccessKey              string                   `gorm:"column:access_key;default:'';NOT NULL" json:"access_key,omitempty"`
-	ResroucePath           string                   `gorm:"column:resrouce_path;default:'';NOT NULL" json:"resrouce_path,omitempty"`
-	DefaultUsername        string                   `gorm:"column:default_username;default:'';NOT NULL" json:"default_username,omitempty"`
+	Username               string                   `gorm:"column:username;default:'';NOT NULL" json:"username,omitempty"` // ssh username
 	NodeStartIp            string                   `gorm:"column:node_start_ip;default:'';NOT NULL" json:"node_start_ip,omitempty"`
 	NodeEndIp              string                   `gorm:"column:node_end_ip;default:'';NOT NULL" json:"node_end_ip,omitempty"`
 	Domain                 string                   `gorm:"column:domain;default:'';NOT NULL" json:"domain,omitempty"`
 	VpcCidr                string                   `gorm:"column:vpc_cidr;default:'';NOT NULL" json:"vpc_cidr,omitempty"`
 	ServiceCidr            string                   `gorm:"column:service_cidr;default:'';NOT NULL" json:"service_cidr,omitempty"`
 	PodCidr                string                   `gorm:"column:pod_cidr;default:'';NOT NULL" json:"pod_cidr,omitempty"`
-	KubeConfigPath         string                   `gorm:"column:kube_config_path;default:'';NOT NULL" json:"kube_config_path,omitempty"`
+	SubnetCidrs            string                   `gorm:"column:subnet_cidrs;default:'';NOT NULL" json:"subnet_cidrs,omitempty"` // 多个子网cidr，逗号分隔
 	NodeGroups             []*NodeGroup             `gorm:"-" json:"node_groups,omitempty"`
 	Nodes                  []*Node                  `gorm:"-" json:"nodes,omitempty"`
 	CloudResources         []*CloudResource         `gorm:"-" json:"cloud_resources,omitempty"`
@@ -574,7 +577,7 @@ type ClusterData interface {
 
 type ClusterInfrastructure interface {
 	GetRegions(ctx context.Context, provider ClusterProvider, accessId, accessKey string) ([]*CloudResource, error)
-	GetZones(context.Context, *Cluster) error
+	GetZones(context.Context, *Cluster) ([]*CloudResource, error)
 	CreateCloudBasicResource(context.Context, *Cluster) error
 	DeleteCloudBasicResource(context.Context, *Cluster) error
 	ManageNodeResource(context.Context, *Cluster) error
@@ -838,6 +841,16 @@ func (c *Cluster) GetNodeGroupByName(nodeGroupName string) *NodeGroup {
 	return nil
 }
 
+func (c *Cluster) GetNodeByNodeGroupId(nodeGroupId string) []*Node {
+	nodes := make([]*Node, 0)
+	for _, node := range c.Nodes {
+		if node.NodeGroupId == nodeGroupId && node.Status == NodeStatus_NODE_RUNNING {
+			nodes = append(nodes, node)
+		}
+	}
+	return nodes
+}
+
 func (c *Cluster) DistributeNodePrivateSubnets(nodeIndex int) *CloudResource {
 	tags := c.GetTags()
 	tags[ResourceTypeKeyValue_ACCESS] = ResourceTypeKeyValue_ACCESS_PRIVATE
@@ -940,6 +953,29 @@ func (c *Cluster) GetLabels() map[string]string {
 	}
 }
 
+func (c *Cluster) SetCidr() (err error) {
+	c.VpcCidr, err = utils.GenerateClusterCIDR(c.Id)
+	if err != nil {
+		return
+	}
+	kubernetesCIDRs, err := utils.GenerateKubernetesCIDRs(c.Id, c.VpcCidr)
+	if err != nil {
+		return
+	}
+	c.PodCidr = kubernetesCIDRs.PodCIDR
+	c.ServiceCidr = kubernetesCIDRs.ServiceCIDR
+	subnetCidr, err := utils.GenerateSubnets(c.VpcCidr, 10)
+	if err != nil {
+		return
+	}
+	c.SubnetCidrs = strings.Join(subnetCidr, ",")
+	return
+}
+
+func (c *Cluster) SetDomain() {
+	c.Domain = fmt.Sprintf("cluster-%s.svc", c.Name)
+}
+
 func (c *Cluster) SettingClusterLevelByNodeNumber() {
 	var (
 		basicNumber    int32 = 50
@@ -966,7 +1002,7 @@ func (c *Cluster) SettingClusterLevelByNodeNumber() {
 	}
 }
 
-func (c *Cluster) SettingClusterAvailabilityZoneByClusterLevel(zones []*CloudResource) {
+func (c *Cluster) SetZoneByLevel(zones []*CloudResource) {
 	zoneNumber := len(zones)
 	if c.Level == ClusterLevel_BASIC {
 		zoneNumber = 1
@@ -979,6 +1015,9 @@ func (c *Cluster) SettingClusterAvailabilityZoneByClusterLevel(zones []*CloudRes
 	}
 	needNewZoneNumber := zoneNumber - len(c.GetCloudResource(ResourceType_AVAILABILITY_ZONES))
 	for _, zone := range zones {
+		if needNewZoneNumber <= 0 {
+			break
+		}
 		ok := false
 		for _, v := range c.GetCloudResource(ResourceType_AVAILABILITY_ZONES) {
 			if v.RefId == zone.RefId {
@@ -1009,7 +1048,7 @@ func (c *Cluster) SettingDefaultNodeGroup() {
 			Memory:     8,
 		},
 	}
-	for i := 0; i < int(targetNodeSize); i++ {
+	for i := range make([]struct{}, targetNodeSize) {
 		c.Nodes = append(c.Nodes, &Node{
 			Name:           fmt.Sprintf("node%d", i+1),
 			Status:         NodeStatus_NODE_FINDING,
@@ -1086,32 +1125,38 @@ func (c *Cluster) SetNodeStatus(fromStatus, toStatus NodeStatus) {
 }
 
 func (c *Cluster) GetCpuCount() int32 {
-	var cpuCount int32 = 0
+	var cpuCount = int(0)
 	for _, nodeGroup := range c.NodeGroups {
-		cpuCount += nodeGroup.Cpu
+		cpuCount += int(nodeGroup.Cpu) * len(c.GetNodeByNodeGroupId(nodeGroup.Id))
 	}
-	return cpuCount
+	return int32(cpuCount)
 }
 
 func (c *Cluster) GetGpuCount() int32 {
-	var gpuCount int32 = 0
+	var gpuCount = int(0)
 	for _, nodeGroup := range c.NodeGroups {
-		gpuCount += nodeGroup.Gpu
+		if nodeGroup.Gpu == 0 {
+			continue
+		}
+		gpuCount += int(nodeGroup.Gpu) * len(c.GetNodeByNodeGroupId(nodeGroup.Id))
 	}
-	return gpuCount
+	return int32(gpuCount)
 }
 
 func (c *Cluster) GetMemoryCount() int32 {
-	var memoryCount int32 = 0
+	var memoryCount = int(0)
 	for _, nodeGroup := range c.NodeGroups {
-		memoryCount += nodeGroup.Memory
+		memoryCount += int(nodeGroup.Memory) * len(c.GetNodeByNodeGroupId(nodeGroup.Id))
 	}
-	return memoryCount
+	return int32(memoryCount)
 }
 
 func (c *Cluster) GetDiskSizeCount() int32 {
 	var diskSizeCount int32 = 0
 	for _, node := range c.Nodes {
+		if node.Status != NodeStatus_NODE_RUNNING {
+			continue
+		}
 		diskSizeCount += node.DataDiskSize + node.SystemDiskSize
 	}
 	return diskSizeCount
@@ -1330,6 +1375,8 @@ func (uc *ClusterUsecase) StartCluster(ctx context.Context, clusterId int64) err
 	if cluster.IsEmpty() {
 		return ErrClusterNotFound
 	}
+	cluster.SetCidr()
+	cluster.SetDomain()
 	cluster.SetStatus(ClusterStatus_STARTING)
 	err = uc.clusterData.Save(ctx, cluster)
 	if err != nil {
@@ -1423,13 +1470,15 @@ func (uc *ClusterUsecase) handleEvent(ctx context.Context, cluster *Cluster) (er
 	defer func() {
 		lock.Unlock()
 		if err != nil {
+			cluster.SetStatus(ClusterStatus_ERROR)
 			uc.log.Errorf("cluster handle event error: %v", err)
+		} else {
+			cluster.SetStatus(ClusterStatus_RUNNING)
 		}
 		err = uc.clusterData.Save(ctx, cluster)
 		if err != nil {
 			uc.log.Errorf("cluster save error: %v", err)
 		}
-		cluster.SetStatus(ClusterStatus_RUNNING)
 	}()
 	if cluster.Status == ClusterStatus_STOPPING {
 		for _, node := range cluster.Nodes {
@@ -1474,28 +1523,21 @@ func (uc *ClusterUsecase) handleEvent(ctx context.Context, cluster *Cluster) (er
 	}
 	cluster.SettingClusterLevelByNodeNumber()
 	if cluster.Provider.IsCloud() {
-		getErr := uc.clusterInfrastructure.GetZones(ctx, cluster)
-		if getErr != nil {
-			return getErr
+		var zoneResources []*CloudResource
+		zoneResources, err = uc.clusterInfrastructure.GetZones(ctx, cluster)
+		if err != nil {
+			return err
 		}
-		cluster.SettingClusterAvailabilityZoneByClusterLevel(cluster.GetCloudResource(ResourceType_AVAILABILITY_ZONES))
+		cluster.SetZoneByLevel(zoneResources)
 	}
 	err = uc.clusterInfrastructure.GetNodesSystemInfo(ctx, cluster)
 	if err != nil {
 		return err
 	}
 	if !cluster.Provider.IsCloud() {
-		for _, node := range cluster.Nodes {
-			if node.Status == NodeStatus_UNSPECIFIED {
-				node.SetNodeStatus(NodeStatus_NODE_FINDING)
-			}
-		}
+		cluster.SetNodeStatus(NodeStatus_UNSPECIFIED, NodeStatus_NODE_FINDING)
 	}
-	for _, node := range cluster.Nodes {
-		if node.Status == NodeStatus_NODE_FINDING {
-			node.SetNodeStatus(NodeStatus_NODE_CREATING)
-		}
-	}
+	cluster.SetNodeStatus(NodeStatus_NODE_FINDING, NodeStatus_NODE_CREATING)
 	err = uc.clusterRuntime.ReloadCluster(ctx, cluster)
 	if err != nil {
 		return err
@@ -1510,11 +1552,7 @@ func (uc *ClusterUsecase) handleEvent(ctx context.Context, cluster *Cluster) (er
 	if err != nil {
 		return err
 	}
-	for _, node := range cluster.Nodes {
-		if node.Status == NodeStatus_NODE_CREATING {
-			node.SetNodeStatus(NodeStatus_NODE_RUNNING)
-		}
-	}
+	cluster.SetNodeStatus(NodeStatus_NODE_CREATING, NodeStatus_NODE_RUNNING)
 	return
 }
 
@@ -1525,11 +1563,11 @@ func (uc *ClusterUsecase) handlerClusterNotInstalled(ctx context.Context, cluste
 	}
 	cluster.SettingClusterLevelByNodeNumber()
 	if cluster.Provider.IsCloud() {
-		err := uc.clusterInfrastructure.GetZones(ctx, cluster)
+		zoneResources, err := uc.clusterInfrastructure.GetZones(ctx, cluster)
 		if err != nil {
 			return err
 		}
-		cluster.SettingClusterAvailabilityZoneByClusterLevel(cluster.GetCloudResource(ResourceType_AVAILABILITY_ZONES))
+		cluster.SetZoneByLevel(zoneResources)
 		err = uc.clusterInfrastructure.CreateCloudBasicResource(ctx, cluster)
 		if err != nil {
 			return err

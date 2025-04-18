@@ -44,6 +44,19 @@ conf:
 build:
 	mkdir -p bin/ && go build -ldflags "-s -w -X main.Version=$(VERSION)" -o ./bin/$(SERVER_NAME) ./cmd/${SERVER_NAME}
 
+.PHONY: build-linux-arm64
+build-linux-arm64:
+	GOOS=linux GOARCH=arm64 go build -ldflags "-s -w -X main.Version=$(VERSION)" -o ./bin/$(SERVER_NAME)-linux-arm64 ./cmd/${SERVER_NAME}
+
+.PHONY: build-linux-amd64
+build-linux-amd64:
+	GOOS=linux GOARCH=amd64 go build -ldflags "-s -w -X main.Version=$(VERSION)" -o ./bin/$(SERVER_NAME)-linux-amd64 ./cmd/${SERVER_NAME}
+
+.PHONY: build-all
+build-all:
+	make build-linux-arm64;
+	make build-linux-amd64;
+
 .PHONY: generate
 generate:
 	go mod tidy
@@ -73,6 +86,28 @@ docker-save:
 .PHONY: run
 run:
 	go run ./cmd/${SERVER_NAME} -conf ./configs
+
+.PHONY: package
+package:
+	make build-all;
+
+	[ -d "./resource" ] && tar -C ./ -czvf resource-$(VERSION).tar.gz ./resource || echo "resource directory not found"
+	
+	if [ -f "./bin/$(SERVER_NAME)-linux-arm64" ]; then \
+		mkdir -p ./$(SERVER_NAME)-arm64-$(VERSION) && \
+		cp ./bin/$(SERVER_NAME)-linux-arm64 ./$(SERVER_NAME)-arm64-$(VERSION)/$(SERVER_NAME) && \
+		[ -d "./shell" ] && cp -r ./shell ./$(SERVER_NAME)-arm64-$(VERSION)/ && \
+		tar -C./ -czvf $(SERVER_NAME)-arm64-$(VERSION).tar.gz ./$(SERVER_NAME)-arm64-$(VERSION) && \
+		rm -rf ./$(SERVER_NAME)-arm64-$(VERSION); \
+	fi
+	
+	if [ -f "./bin/$(SERVER_NAME)-linux-amd64" ]; then \
+		mkdir -p ./$(SERVER_NAME)-amd64-$(VERSION) && \
+		cp ./bin/$(SERVER_NAME)-linux-amd64 ./$(SERVER_NAME)-amd64-$(VERSION)/$(SERVER_NAME) && \
+		[ -d "./shell" ] && cp -r ./shell ./$(SERVER_NAME)-amd64-$(VERSION)/ && \
+		tar -C./ -czvf $(SERVER_NAME)-amd64-$(VERSION).tar.gz ./$(SERVER_NAME)-amd64-$(VERSION) && \
+		rm -rf ./$(SERVER_NAME)-amd64-$(VERSION); \
+	fi
 
 .PHONY: all
 all:

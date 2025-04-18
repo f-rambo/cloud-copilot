@@ -2,6 +2,7 @@ package awscloud
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"os"
 	"slices"
@@ -84,8 +85,7 @@ func (a *AwsCloudUsecase) GetAvailabilityRegions(ctx context.Context) ([]*biz.Cl
 	return cloudResources, nil
 }
 
-func (a *AwsCloudUsecase) GetAvailabilityZones(ctx context.Context, cluster *biz.Cluster) error {
-	cluster.DeleteCloudResource(biz.ResourceType_AVAILABILITY_ZONES)
+func (a *AwsCloudUsecase) GetAvailabilityZones(ctx context.Context, cluster *biz.Cluster) ([]*biz.CloudResource, error) {
 	result, err := a.ec2Client.DescribeAvailabilityZones(ctx, &ec2.DescribeAvailabilityZonesInput{
 		Filters: []ec2Types.Filter{
 			{
@@ -99,40 +99,21 @@ func (a *AwsCloudUsecase) GetAvailabilityZones(ctx context.Context, cluster *biz
 		},
 	})
 	if err != nil {
-		return errors.Wrap(err, "failed to describe regions")
+		return nil, errors.Wrap(err, "failed to describe regions")
 	}
 	if len(result.AvailabilityZones) == 0 {
-		return errors.New("no availability zones found")
+		return nil, errors.New("no availability zones found")
 	}
+	clusterResrouces := make([]*biz.CloudResource, 0)
 	for _, az := range result.AvailabilityZones {
-		cluster.AddCloudResource(&biz.CloudResource{
+		clusterResrouces = append(clusterResrouces, &biz.CloudResource{
 			Name:  aws.ToString(az.ZoneName),
 			RefId: aws.ToString(az.ZoneId),
 			Type:  biz.ResourceType_AVAILABILITY_ZONES,
 			Value: aws.ToString(az.RegionName),
 		})
 	}
-	return nil
-}
-
-func (a *AwsCloudUsecase) OpenSSh(ctx context.Context, cluster *biz.Cluster) error {
-	for _, rule := range cluster.IngressControllerRules {
-		if rule.StartPort == 22 && rule.EndPort == 22 {
-			rule.Access = biz.IngressControllerRuleAccess_PUBLIC
-			break
-		}
-	}
-	return a.ManageSLB(ctx, cluster)
-}
-
-func (a *AwsCloudUsecase) CloseSSh(ctx context.Context, cluster *biz.Cluster) error {
-	for _, rule := range cluster.IngressControllerRules {
-		if rule.StartPort == 22 && rule.EndPort == 22 {
-			rule.Access = biz.IngressControllerRuleAccess_PRIVATE
-			break
-		}
-	}
-	return a.ManageSLB(ctx, cluster)
+	return clusterResrouces, nil
 }
 
 func (a *AwsCloudUsecase) CreateNetwork(ctx context.Context, cluster *biz.Cluster) error {
@@ -231,7 +212,7 @@ func (a *AwsCloudUsecase) DeleteNetwork(ctx context.Context, cluster *biz.Cluste
 			return errors.Wrap(err, "failed to describe listeners")
 		}
 		for _, listener := range listenerRes.Listeners {
-			_, err := a.elbv2Client.DeleteListener(ctx, &elasticloadbalancingv2.DeleteListenerInput{
+			_, err = a.elbv2Client.DeleteListener(ctx, &elasticloadbalancingv2.DeleteListenerInput{
 				ListenerArn: listener.ListenerArn,
 			})
 			if err != nil {
@@ -249,7 +230,7 @@ func (a *AwsCloudUsecase) DeleteNetwork(ctx context.Context, cluster *biz.Cluste
 			return errors.Wrap(err, "failed to describe target groups")
 		}
 		for _, targetGroup := range targetGroupRes.TargetGroups {
-			_, err := a.elbv2Client.DeleteTargetGroup(ctx, &elasticloadbalancingv2.DeleteTargetGroupInput{
+			_, err = a.elbv2Client.DeleteTargetGroup(ctx, &elasticloadbalancingv2.DeleteTargetGroupInput{
 				TargetGroupArn: targetGroup.TargetGroupArn,
 			})
 			if err != nil {
@@ -612,7 +593,7 @@ func (a *AwsCloudUsecase) ManageInstance(ctx context.Context, cluster *biz.Clust
 				node.ErrorMessage = "INSUFFICIENT INVENTORY"
 				continue
 			}
-			instancesOutput, err := a.ec2Client.RunInstances(ctx, &ec2.RunInstancesInput{
+			runInstancesInput := &ec2.RunInstancesInput{
 				KeyName:          aws.String(keyPair.Name),
 				MaxCount:         aws.Int32(1),
 				MinCount:         aws.Int32(1),
@@ -630,7 +611,15 @@ func (a *AwsCloudUsecase) ManageInstance(ctx context.Context, cluster *biz.Clust
 						},
 					},
 				},
-			})
+			}
+			if cluster.Status == biz.ClusterStatus_STARTING && node.Role == biz.NodeRole_MASTER {
+				installShell, readShellErr := os.ReadFile(utils.GetShellPath(common.InstallShell))
+				if readShellErr != nil {
+					return readShellErr
+				}
+				runInstancesInput.UserData = aws.String(base64.StdEncoding.EncodeToString(installShell))
+			}
+			instancesOutput, err := a.ec2Client.RunInstances(ctx, runInstancesInput)
 			if err != nil {
 				return errors.Wrap(err, "failed to run instances")
 			}
@@ -1288,104 +1277,6 @@ func (a *AwsCloudUsecase) createRouteTables(ctx context.Context, cluster *biz.Cl
 		routeTable.AssociatedId = natGateway.RefId
 		time.Sleep(time.Second * common.TimeOutSecond)
 	}
-
-	// create public route table
-	publicRouteTableName := cluster.GetPublicRouteTableName()
-	publicRouteTableRes, err := a.ec2Client.DescribeRouteTables(ctx, &ec2.DescribeRouteTablesInput{
-		Filters: []ec2Types.Filter{
-			{Name: aws.String("vpc-id"), Values: []string{vpc.RefId}},
-			{Name: aws.String("association.main"), Values: []string{"false"}},
-			{Name: aws.String("route.state"), Values: []string{"active"}},
-			{Name: aws.String("tag:Name"), Values: []string{publicRouteTableName}},
-		},
-		MaxResults: aws.Int32(100),
-	})
-	if err != nil {
-		return errors.Wrap(err, "failed to describe route tables")
-	}
-	routeTableResource := cluster.GetCloudResourceByName(biz.ResourceType_ROUTE_TABLE, publicRouteTableName)
-	if routeTableResource != nil && len(publicRouteTableRes.RouteTables) == 0 {
-		cluster.DeleteCloudResourceByID(biz.ResourceType_ROUTE_TABLE, routeTableResource.Id)
-	}
-	if len(publicRouteTableRes.RouteTables) == 0 {
-		createRouteTableRes, err := a.ec2Client.CreateRouteTable(ctx, &ec2.CreateRouteTableInput{
-			VpcId: aws.String(vpc.RefId),
-			TagSpecifications: []ec2Types.TagSpecification{
-				{
-					ResourceType: ec2Types.ResourceTypeRouteTable,
-					Tags: []ec2Types.Tag{
-						{
-							Key:   aws.String("Name"),
-							Value: aws.String(cluster.GetPublicRouteTableName()),
-						},
-					},
-				},
-			},
-		})
-		if err != nil {
-			return errors.Wrap(err, "failed to create route table")
-		}
-		time.Sleep(time.Second * common.TimeOutSecond)
-		tags := cluster.GetTags()
-		tags[biz.ResourceTypeKeyValue_NAME] = cluster.GetPublicRouteTableName()
-		tags[biz.ResourceTypeKeyValue_ACCESS] = biz.ResourceTypeKeyValue_ACCESS_PUBLIC
-		cluster.AddCloudResource(&biz.CloudResource{
-			Name:  cluster.GetPublicRouteTableName(),
-			RefId: aws.ToString(createRouteTableRes.RouteTable.RouteTableId),
-			Tags:  cluster.EncodeTags(tags),
-			Type:  biz.ResourceType_ROUTE_TABLE,
-		})
-	}
-	if len(publicRouteTableRes.RouteTables) != 0 && routeTableResource == nil {
-		tags := cluster.GetTags()
-		tags[biz.ResourceTypeKeyValue_NAME] = publicRouteTableName
-		tags[biz.ResourceTypeKeyValue_ACCESS] = biz.ResourceTypeKeyValue_ACCESS_PUBLIC
-		cluster.AddCloudResource(&biz.CloudResource{
-			Name:  publicRouteTableName,
-			RefId: aws.ToString(publicRouteTableRes.RouteTables[0].RouteTableId),
-			Tags:  cluster.EncodeTags(tags),
-			Type:  biz.ResourceType_ROUTE_TABLE,
-		})
-	}
-	subnetCloudResource := cluster.GetCloudResource(biz.ResourceType_SUBNET)
-	internetgateway := cluster.GetSingleCloudResource(biz.ResourceType_INTERNET_GATEWAY)
-	routeTableResource = cluster.GetCloudResourceByName(biz.ResourceType_ROUTE_TABLE, publicRouteTableName)
-	exitsSubnetIds := make([]string, 0)
-	exisInternetgateway := false
-	for _, routertable := range publicRouteTableRes.RouteTables {
-		for _, v := range routertable.Associations {
-			exitsSubnetIds = append(exitsSubnetIds, aws.ToString(v.SubnetId))
-		}
-		for _, v := range routertable.Routes {
-			if aws.ToString(v.GatewayId) == internetgateway.RefId {
-				exisInternetgateway = true
-			}
-		}
-	}
-	for _, v := range subnetCloudResource {
-		if slices.Contains(exitsSubnetIds, v.RefId) {
-			continue
-		}
-		_, err = a.ec2Client.AssociateRouteTable(ctx, &ec2.AssociateRouteTableInput{
-			RouteTableId: aws.String(routeTableResource.RefId),
-			SubnetId:     aws.String(v.RefId),
-		})
-		if err != nil {
-			return errors.Wrap(err, "failed to associate subnet with route table in AZ")
-		}
-		time.Sleep(time.Second)
-	}
-	if !exisInternetgateway {
-		_, err := a.ec2Client.CreateRoute(ctx, &ec2.CreateRouteInput{
-			RouteTableId:         aws.String(routeTableResource.RefId),
-			DestinationCidrBlock: aws.String("0.0.0.0/0"),
-			GatewayId:            aws.String(internetgateway.RefId),
-		})
-		if err != nil {
-			return errors.Wrap(err, "failed to add route to NAT Gateway for AZ")
-		}
-		time.Sleep(time.Second * common.TimeOutSecond)
-	}
 	return nil
 }
 
@@ -1432,7 +1323,7 @@ func (a *AwsCloudUsecase) ManageSecurityGroup(ctx context.Context, cluster *biz.
 		// Create security group
 		tags := cluster.GetTags()
 		tags[biz.ResourceTypeKeyValue_NAME] = sgName
-		sgOutput, err := a.ec2Client.CreateSecurityGroup(ctx, &ec2.CreateSecurityGroupInput{
+		sgOutput, CreateSecurityGroupErr := a.ec2Client.CreateSecurityGroup(ctx, &ec2.CreateSecurityGroupInput{
 			GroupName:   aws.String(sgName),
 			VpcId:       aws.String(vpc.RefId),
 			Description: aws.String(sgName),
@@ -1443,8 +1334,8 @@ func (a *AwsCloudUsecase) ManageSecurityGroup(ctx context.Context, cluster *biz.
 				},
 			},
 		})
-		if err != nil {
-			return errors.Wrap(err, "failed to create security group")
+		if CreateSecurityGroupErr != nil {
+			return errors.Wrap(CreateSecurityGroupErr, "failed to create security group")
 		}
 		waiter := ec2.NewSecurityGroupExistsWaiter(a.ec2Client)
 		err = waiter.Wait(ctx, &ec2.DescribeSecurityGroupsInput{
@@ -1594,7 +1485,7 @@ func (a *AwsCloudUsecase) ManageSLB(ctx context.Context, cluster *biz.Cluster) e
 	}
 	if len(cluster.GetCloudResource(biz.ResourceType_LOAD_BALANCER)) == 0 {
 		// Create SLB
-		slbOutput, err := a.elbv2Client.CreateLoadBalancer(ctx, &elasticloadbalancingv2.CreateLoadBalancerInput{
+		slbOutput, CreateLoadBalancerErr := a.elbv2Client.CreateLoadBalancer(ctx, &elasticloadbalancingv2.CreateLoadBalancerInput{
 			Name:           aws.String(slbName),
 			IpAddressType:  elasticloadbalancingv2Types.IpAddressTypeIpv4,
 			Scheme:         elasticloadbalancingv2Types.LoadBalancerSchemeEnumInternetFacing,
@@ -1605,8 +1496,11 @@ func (a *AwsCloudUsecase) ManageSLB(ctx context.Context, cluster *biz.Cluster) e
 				biz.ResourceTypeKeyValue_NAME: slbName,
 			}),
 		})
-		if err != nil || len(slbOutput.LoadBalancers) == 0 {
-			return errors.Wrap(err, "failed to create SLB")
+		if CreateLoadBalancerErr != nil {
+			return errors.Wrap(CreateLoadBalancerErr, "failed to create SLB")
+		}
+		if len(slbOutput.LoadBalancers) == 0 {
+			return errors.New("failed to create SLB")
 		}
 		waiter := elasticloadbalancingv2.NewLoadBalancerAvailableWaiter(a.elbv2Client)
 		err = waiter.Wait(ctx, &elasticloadbalancingv2.DescribeLoadBalancersInput{
@@ -1652,7 +1546,7 @@ func (a *AwsCloudUsecase) ManageSLB(ctx context.Context, cluster *biz.Cluster) e
 			exitsListenerPorts = append(exitsListenerPorts, aws.ToInt32(listener.Port))
 			continue
 		}
-		_, err := a.elbv2Client.DeleteListener(ctx, &elasticloadbalancingv2.DeleteListenerInput{
+		_, err = a.elbv2Client.DeleteListener(ctx, &elasticloadbalancingv2.DeleteListenerInput{
 			ListenerArn: listener.ListenerArn,
 		})
 		if err != nil {
@@ -1661,6 +1555,7 @@ func (a *AwsCloudUsecase) ManageSLB(ctx context.Context, cluster *biz.Cluster) e
 		time.Sleep(time.Second)
 	}
 
+	portTargetGroupArnMap := make(map[int32]string)
 	// clear not exits target group
 	targetGroupRes, err := a.elbv2Client.DescribeTargetGroups(ctx, &elasticloadbalancingv2.DescribeTargetGroupsInput{
 		LoadBalancerArn: aws.String(slbCloudResource.RefId),
@@ -1673,9 +1568,10 @@ func (a *AwsCloudUsecase) ManageSLB(ctx context.Context, cluster *biz.Cluster) e
 	for _, targetGroup := range targetGroupRes.TargetGroups {
 		if slices.Contains(ports, aws.ToInt32(targetGroup.Port)) {
 			exitsTargetGroupPorts = append(exitsTargetGroupPorts, aws.ToInt32(targetGroup.Port))
+			portTargetGroupArnMap[aws.ToInt32(targetGroup.Port)] = aws.ToString(targetGroup.TargetGroupArn)
 			continue
 		}
-		_, err := a.elbv2Client.DeleteTargetGroup(ctx, &elasticloadbalancingv2.DeleteTargetGroupInput{
+		_, err = a.elbv2Client.DeleteTargetGroup(ctx, &elasticloadbalancingv2.DeleteTargetGroupInput{
 			TargetGroupArn: targetGroup.TargetGroupArn,
 		})
 		if err != nil {
@@ -1690,15 +1586,15 @@ func (a *AwsCloudUsecase) ManageSLB(ctx context.Context, cluster *biz.Cluster) e
 		if slices.Contains(exitsTargetGroupPorts, port) {
 			continue
 		}
-		targetGroupRes, err := a.elbv2Client.CreateTargetGroup(ctx, &elasticloadbalancingv2.CreateTargetGroupInput{
+		targetGroupRes, CreateTargetGroupErr := a.elbv2Client.CreateTargetGroup(ctx, &elasticloadbalancingv2.CreateTargetGroupInput{
 			Name:       aws.String(fmt.Sprintf("tpc-%d", port)),
 			TargetType: elasticloadbalancingv2Types.TargetTypeEnumInstance,
 			Port:       aws.Int32(port),
 			Protocol:   elasticloadbalancingv2Types.ProtocolEnumTcp,
 			VpcId:      aws.String(vpc.RefId),
 		})
-		if err != nil {
-			return errors.Wrap(err, "failed to create target group")
+		if CreateTargetGroupErr != nil {
+			return errors.Wrap(CreateTargetGroupErr, "failed to create target group")
 		}
 		time.Sleep(time.Second * common.TimeOutSecond)
 		if len(targetGroupRes.TargetGroups) == 0 {
@@ -1721,17 +1617,20 @@ func (a *AwsCloudUsecase) ManageSLB(ctx context.Context, cluster *biz.Cluster) e
 		if err != nil {
 			return errors.Wrap(err, "failed to register targets")
 		}
+		portTargetGroupArnMap[port] = aws.ToString(targetGroupRes.TargetGroups[0].TargetGroupArn)
 	}
+
+	// create listener
 	for _, port := range ports {
-		// create listener
 		if slices.Contains(exitsListenerPorts, port) {
 			continue
 		}
+		targetGroupArn := portTargetGroupArnMap[port]
 		_, err = a.elbv2Client.CreateListener(ctx, &elasticloadbalancingv2.CreateListenerInput{
 			DefaultActions: []elasticloadbalancingv2Types.Action{
 				{
 					Type:           elasticloadbalancingv2Types.ActionTypeEnumForward,
-					TargetGroupArn: targetGroupRes.TargetGroups[0].TargetGroupArn,
+					TargetGroupArn: aws.String(targetGroupArn),
 				},
 			},
 			LoadBalancerArn: aws.String(slbCloudResource.RefId),
@@ -1915,6 +1814,14 @@ func (a *AwsCloudUsecase) FindInstanceType(ctx context.Context, findInstanceType
 				Name:   aws.String("vcpu-info.default-vcpus"),
 				Values: []string{fmt.Sprintf("%d", findInstanceTypeParam.CPU)},
 			},
+			{
+				Name:   aws.String("supported-virtualization-type"),
+				Values: []string{"hvm"},
+			},
+			// {
+			// 	Name:   aws.String("supported-root-device-type"),
+			// 	Values: []string{"ebs"}, // ebs 独立磁盘, instance-store 本地存储，性能更好
+			// },
 		},
 		InstanceTypes: instanceTypes,
 	}

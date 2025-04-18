@@ -44,3 +44,6 @@ log/
 *.swp
 
 temp/
+
+# package
+*.tar.gz

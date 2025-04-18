@@ -9,7 +9,9 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/f-rambo/cloud-copilot/infrastructure/common"
 	"github.com/f-rambo/cloud-copilot/internal/biz"
+	"github.com/f-rambo/cloud-copilot/internal/conf"
 	"github.com/f-rambo/cloud-copilot/utils"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
@@ -53,16 +55,15 @@ var (
 	ClusterInitAction string = "init"
 	ClusterJoinAction string = "join"
 	ClusterController string = "controller"
-
-	ResourcePackageUrl = "https://github.com/f-rambo/infrastructure/releases/download/v0.0.1/resource-v0.0.1.tar.gz"
 )
 
 type Baremetal struct {
+	c   *conf.Bootstrap
 	log *log.Helper
 }
 
-func NewBaremetal(logger log.Logger) *Baremetal {
-	return &Baremetal{log: log.NewHelper(logger)}
+func NewBaremetal(c *conf.Bootstrap, logger log.Logger) *Baremetal {
+	return &Baremetal{c: c, log: log.NewHelper(logger)}
 }
 
 // kubernetes_version: "v1.31.2"
@@ -129,30 +130,15 @@ func (b *Baremetal) migrateResources(cluster *biz.Cluster, node *biz.Node) error
 	if err != nil {
 		return err
 	}
-	resourcePackageDir := fmt.Sprintf("ls %s | wc -l", filepath.Join(userHomePath, Resource))
-	fileNumber, err := remoteBash.Run(resourcePackageDir)
+	remoteResroucePath := filepath.Join(userHomePath, Resource)
+	fileNumber, err := remoteBash.Run(fmt.Sprintf("ls %s | wc -l", remoteResroucePath))
 	if err != nil {
 		return err
 	}
 	if cast.ToInt(strings.TrimSpace(fileNumber)) > 0 {
 		return nil
 	}
-	tarFilename, err := utils.DownloadFile(ResourcePackageUrl)
-	if err != nil {
-		return err
-	}
-	remoteTarfile := fmt.Sprintf("/tmp/%s", tarFilename)
-	fileNumber, err = remoteBash.Run("ls", remoteTarfile, "| wc -l")
-	if err != nil {
-		return err
-	}
-	if cast.ToInt(strings.TrimSpace(fileNumber)) == 0 {
-		err = remoteBash.SftpFile(tarFilename, remoteTarfile)
-		if err != nil {
-			return err
-		}
-	}
-	err = remoteBash.RunWithLogging("tar", "-C", userHomePath, "-zxvf", remoteTarfile)
+	err = remoteBash.SftpDirectory(b.c.Infrastructure.ResourcePath, remoteResroucePath)
 	if err != nil {
 		return err
 	}
@@ -182,7 +168,7 @@ func (b *Baremetal) GetNodesSystemInfo(ctx context.Context, cluster *biz.Cluster
 			remoteBash := utils.NewRemoteBash(utils.Server{
 				Name:       ip,
 				Host:       ip,
-				User:       cluster.DefaultUsername,
+				User:       cluster.Username,
 				Port:       defaultSHHPort,
 				PrivateKey: cluster.PrivateKey,
 			}, Shell, b.log)
@@ -234,7 +220,7 @@ func (b *Baremetal) GetNodesSystemInfo(ctx context.Context, cluster *biz.Cluster
 		node := &biz.Node{
 			Name:           info.Id,
 			Ip:             info.Ip,
-			User:           cluster.DefaultUsername,
+			User:           cluster.Username,
 			SystemDiskSize: cast.ToInt32(info.Disk),
 			NodeGroupId:    groupMap[groupKey].Id,
 			ClusterId:      cluster.Id,
@@ -350,6 +336,23 @@ func (b *Baremetal) Install(ctx context.Context, cluster *biz.Cluster) error {
 	err = remoteBash.ExecShellLogging(ClusterInstall, ClusterInitAction, string(clusterYaml))
 	if err != nil {
 		return err
+	}
+	return nil
+}
+
+func (b *Baremetal) PreInstall(cluster *biz.Cluster) error {
+	if cluster.Status != biz.ClusterStatus_STARTING {
+		return nil
+	}
+	for _, node := range cluster.Nodes {
+		if node.Role == biz.NodeRole_MASTER {
+			// as cloud user data
+			err := b.getClusterNodeRemoteBash(cluster, node).ExecShellLogging(common.InstallShell)
+			if err != nil {
+				return err
+			}
+			break
+		}
 	}
 	return nil
 }

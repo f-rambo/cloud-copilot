@@ -245,3 +245,69 @@ func (s *RemoteBash) ExecShell(shellName string, args ...string) (stdout string,
 	}
 	return s.Run(fmt.Sprintf("sudo bash %s", execShellPath), args...)
 }
+
+func GetShellPath(shellName string) string {
+	return filepath.Join(shellDirName, shellName)
+}
+
+func (s *RemoteBash) SftpDirectory(localDir, remoteDir string) error {
+	_, err := s.connections()
+	if err != nil {
+		return err
+	}
+	defer s.close()
+
+	sftpClient, err := sftp.NewClient(s.sshClient)
+	if err != nil {
+		return errors.Wrap(err, "failed to create sftp client")
+	}
+	defer sftpClient.Close()
+
+	// 确保远程目录存在
+	err = sftpClient.MkdirAll(remoteDir)
+	if err != nil {
+		return errors.Wrap(err, "failed to create remote directory")
+	}
+
+	// 遍历本地目录
+	return filepath.Walk(localDir, func(localPath string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		// 计算相对路径
+		relPath, err := filepath.Rel(localDir, localPath)
+		if err != nil {
+			return errors.Wrap(err, "failed to get relative path")
+		}
+
+		// 构建远程路径
+		remotePath := filepath.Join(remoteDir, relPath)
+
+		if info.IsDir() {
+			// 如果是目录，在远程创建对应的目录
+			return sftpClient.MkdirAll(remotePath)
+		}
+
+		// 如果是文件，复制文件内容
+		srcFile, err := os.Open(localPath)
+		if err != nil {
+			return errors.Wrap(err, "failed to open local file")
+		}
+		defer srcFile.Close()
+
+		dstFile, err := sftpClient.Create(remotePath)
+		if err != nil {
+			return errors.Wrap(err, "failed to create remote file")
+		}
+		defer dstFile.Close()
+
+		bytesCopied, err := dstFile.ReadFrom(srcFile)
+		if err != nil {
+			return errors.Wrap(err, "failed to copy file")
+		}
+
+		s.log.Infof("Copied %d bytes from %s to %s", bytesCopied, localPath, remotePath)
+		return nil
+	})
+}

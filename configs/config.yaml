@@ -24,3 +24,6 @@ auth:
   key: "S89XMkyGIpI0tgJkf7b8undK"
   admin_email: "admin@eamil.com"
   admin_password: "123456"
+infrastructure:
+  shell_path: "shell"
+  resource_path: "resource"

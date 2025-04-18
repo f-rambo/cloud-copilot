@@ -11,22 +11,28 @@ import (
 	"github.com/f-rambo/cloud-copilot/infrastructure/baremetal"
 	"github.com/f-rambo/cloud-copilot/infrastructure/common"
 	"github.com/f-rambo/cloud-copilot/internal/biz"
+	"github.com/f-rambo/cloud-copilot/internal/conf"
 	"github.com/go-kratos/kratos/v2/log"
+	"github.com/google/wire"
 	"github.com/pkg/errors"
 )
 
+var ProviderSet = wire.NewSet(NewInfrastructure, baremetal.NewBaremetal, awscloud.NewAwsCloudUseCase, alicloud.NewAliCloudUseCase)
+
 type Infrastructure struct {
+	c         *conf.Bootstrap
 	baremetal *baremetal.Baremetal
 	aliCloud  *alicloud.AliCloudUsecase
 	awsCloud  *awscloud.AwsCloudUsecase
 	log       *log.Helper
 }
 
-func NewInfrastructure(logger log.Logger) biz.ClusterInfrastructure {
+func NewInfrastructure(c *conf.Bootstrap, baremetal *baremetal.Baremetal, aliCloud *alicloud.AliCloudUsecase, awsCloud *awscloud.AwsCloudUsecase, logger log.Logger) biz.ClusterInfrastructure {
 	return &Infrastructure{
-		baremetal: baremetal.NewBaremetal(logger),
-		aliCloud:  alicloud.NewAliCloudUseCase(logger),
-		awsCloud:  awscloud.NewAwsCloudUseCase(logger),
+		c:         c,
+		baremetal: baremetal,
+		aliCloud:  aliCloud,
+		awsCloud:  awsCloud,
 		log:       log.NewHelper(logger),
 	}
 }
@@ -49,31 +55,32 @@ func (i *Infrastructure) GetRegions(ctx context.Context, provider biz.ClusterPro
 	return nil, errors.New("Not support")
 }
 
-func (i *Infrastructure) GetZones(ctx context.Context, cluster *biz.Cluster) error {
+func (i *Infrastructure) GetZones(ctx context.Context, cluster *biz.Cluster) (resrouces []*biz.CloudResource, err error) {
 	if !cluster.Provider.IsCloud() {
-		return nil
+		return
 	}
+
 	if cluster.Provider == biz.ClusterProvider_Aws {
-		err := i.awsCloud.Connections(ctx, cluster.AccessId, cluster.AccessKey)
+		err = i.awsCloud.Connections(ctx, cluster.AccessId, cluster.AccessKey)
 		if err != nil {
-			return err
+			return
 		}
-		err = i.awsCloud.GetAvailabilityZones(ctx, cluster)
+		resrouces, err = i.awsCloud.GetAvailabilityZones(ctx, cluster)
 		if err != nil {
-			return err
+			return
 		}
 	}
 	if cluster.Provider == biz.ClusterProvider_AliCloud {
-		err := i.aliCloud.Connections(ctx, cluster.AccessId, cluster.AccessKey)
+		err = i.aliCloud.Connections(ctx, cluster.AccessId, cluster.AccessKey)
 		if err != nil {
-			return err
+			return
 		}
-		err = i.aliCloud.GetAvailabilityZones(ctx, cluster)
+		resrouces, err = i.aliCloud.GetAvailabilityZones(ctx, cluster)
 		if err != nil {
-			return err
+			return
 		}
 	}
-	return nil
+	return
 }
 
 func (i *Infrastructure) CreateCloudBasicResource(ctx context.Context, cluster *biz.Cluster) error {
@@ -172,6 +179,12 @@ func (i *Infrastructure) ManageNodeResource(ctx context.Context, cluster *biz.Cl
 			return err
 		}
 		err = i.aliCloud.ManageSLB(ctx, cluster)
+		if err != nil {
+			return err
+		}
+	}
+	if cluster.Provider == biz.ClusterProvider_BareMetal {
+		err := i.baremetal.PreInstall(cluster)
 		if err != nil {
 			return err
 		}
@@ -300,19 +313,11 @@ func (i *Infrastructure) GeCloudtNodesSystemInfo(ctx context.Context, cluster *b
 }
 
 func (i *Infrastructure) Install(ctx context.Context, cluster *biz.Cluster) error {
-	err := i.openSsh(ctx, cluster)
-	if err != nil {
-		return err
-	}
-	err = i.baremetal.Install(ctx, cluster)
+	err := i.baremetal.Install(ctx, cluster)
 	if err != nil {
 		return err
 	}
 	err = i.baremetal.ApplyCloudCopilot(ctx, cluster)
-	if err != nil {
-		return err
-	}
-	err = i.closeSsh(ctx, cluster)
 	if err != nil {
 		return err
 	}
@@ -325,52 +330,4 @@ func (i *Infrastructure) UnInstall(_ context.Context, cluster *biz.Cluster) erro
 
 func (i *Infrastructure) HandlerNodes(_ context.Context, cluster *biz.Cluster) error {
 	return i.baremetal.HandlerNodes(cluster)
-}
-
-func (i *Infrastructure) openSsh(ctx context.Context, cluster *biz.Cluster) error {
-	if cluster.Provider == biz.ClusterProvider_AliCloud {
-		err := i.aliCloud.Connections(ctx, cluster.AccessId, cluster.AccessKey)
-		if err != nil {
-			return err
-		}
-		err = i.aliCloud.OpenSSh(ctx, cluster)
-		if err != nil {
-			return err
-		}
-	}
-	if cluster.Provider == biz.ClusterProvider_Aws {
-		err := i.awsCloud.Connections(ctx, cluster.AccessId, cluster.AccessKey)
-		if err != nil {
-			return err
-		}
-		err = i.awsCloud.OpenSSh(ctx, cluster)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (i *Infrastructure) closeSsh(ctx context.Context, cluster *biz.Cluster) error {
-	if cluster.Provider == biz.ClusterProvider_AliCloud {
-		err := i.aliCloud.Connections(ctx, cluster.AccessId, cluster.AccessKey)
-		if err != nil {
-			return err
-		}
-		err = i.aliCloud.CloseSSh(ctx, cluster)
-		if err != nil {
-			return err
-		}
-	}
-	if cluster.Provider == biz.ClusterProvider_Aws {
-		err := i.awsCloud.Connections(ctx, cluster.AccessId, cluster.AccessKey)
-		if err != nil {
-			return err
-		}
-		err = i.awsCloud.CloseSSh(ctx, cluster)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
 }

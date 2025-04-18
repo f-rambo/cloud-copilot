@@ -6,6 +6,10 @@ import (
 	"github.com/f-rambo/cloud-copilot/internal/biz"
 )
 
+var (
+	InstallShell string = "install.sh"
+)
+
 const (
 	TimeoutPerInstance = 5 * time.Minute
 	TimeOutCountNumber = 10

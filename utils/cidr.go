@@ -9,15 +9,14 @@ import (
 	"github.com/pkg/errors"
 )
 
-func GenerateCIDR(ip string, prefixLen int) (string, error) {
-	parsedIP := net.ParseIP(ip)
-	if parsedIP == nil {
-		return "", errors.New("invalid IP address")
+func GenerateClusterCIDR(clusterID int64) (string, error) {
+	if clusterID <= 0 {
+		return "", errors.New("cluster ID must be positive")
 	}
-	if prefixLen < 0 || prefixLen > 32 {
-		return "", fmt.Errorf("invalid subnet mask: %d", prefixLen)
+	if clusterID > 255 {
+		return "", errors.New("cluster ID exceeds maximum allowed value (255)")
 	}
-	cidr := fmt.Sprintf("%s/%d", parsedIP.String(), prefixLen)
+	cidr := fmt.Sprintf("10.%d.0.0/16", clusterID)
 	return cidr, nil
 }
 
@@ -40,7 +39,7 @@ func GenerateSubnet(vpcCIDR string, exitsSubnets []string) (string, error) {
 	maxSubnets := 1 << uint(additionalBits)
 
 	// Try each possible subnet position
-	for i := 0; i < maxSubnets; i++ {
+	for i := range make([]struct{}, maxSubnets) {
 		subnet, err := subnet(vpcNet, additionalBits, i)
 		if err != nil {
 			continue
@@ -64,6 +63,99 @@ func GenerateSubnet(vpcCIDR string, exitsSubnets []string) (string, error) {
 	return "", fmt.Errorf("no available subnet found in VPC CIDR range")
 }
 
+func GenerateSubnets(vpcCIDR string, subnetCount int) ([]string, error) {
+	_, vpcNet, err := net.ParseCIDR(vpcCIDR)
+	if err != nil {
+		return nil, err
+	}
+
+	subnetMaskSize, totalMaskSize := vpcNet.Mask.Size()
+	requiredBits := int(math.Ceil(math.Log2(float64(subnetCount))))
+	newPrefix := subnetMaskSize + requiredBits
+
+	fmt.Println(totalMaskSize, newPrefix)
+
+	if newPrefix > totalMaskSize {
+		return nil, fmt.Errorf("subnet count too large for the given VPC CIDR. Maximum subnets that can be generated: %d", 1<<(totalMaskSize-subnetMaskSize))
+	}
+
+	subnets := []string{}
+	for i := range make([]struct{}, subnetCount) {
+		subnet, err := subnet(vpcNet, requiredBits, i)
+		if err != nil {
+			return nil, fmt.Errorf("failed to generate subnet: %v", err)
+		}
+		subnets = append(subnets, subnet.String())
+	}
+
+	return subnets, nil
+}
+
+type KubernetesCIDRs struct {
+	PodCIDR     string
+	ServiceCIDR string
+}
+
+func GenerateKubernetesCIDRs(clusterID int64, vpcCIDR string) (*KubernetesCIDRs, error) {
+	if clusterID <= 0 {
+		return nil, errors.New("cluster ID must be positive")
+	}
+
+	if clusterID > 255 {
+		return nil, errors.New("cluster ID exceeds maximum allowed value (255)")
+	}
+
+	_, _, err := net.ParseCIDR(vpcCIDR)
+	if err != nil {
+		return nil, errors.Wrap(err, "invalid VPC CIDR")
+	}
+
+	podCandidates := []string{
+		fmt.Sprintf("172.%d.0.0/16", clusterID),
+		fmt.Sprintf("192.168.%d.0/24", clusterID),
+	}
+	serviceCandidates := []string{
+		fmt.Sprintf("10.%d.0.0/16", 96+clusterID),
+		fmt.Sprintf("10.%d.0.0/16", 160+clusterID),
+	}
+
+	var podCIDR string
+	for _, candidate := range podCandidates {
+		overlap, err := IsSubnetOverlap(candidate, vpcCIDR)
+		if err != nil {
+			continue
+		}
+		if !overlap {
+			podCIDR = candidate
+			break
+		}
+	}
+	if podCIDR == "" {
+		return nil, errors.New("unable to find non-overlapping Pod CIDR")
+	}
+
+	var serviceCIDR string
+	for _, candidate := range serviceCandidates {
+		overlapVPC, err1 := IsSubnetOverlap(candidate, vpcCIDR)
+		overlapPod, err2 := IsSubnetOverlap(candidate, podCIDR)
+		if err1 != nil || err2 != nil {
+			continue
+		}
+		if !overlapVPC && !overlapPod {
+			serviceCIDR = candidate
+			break
+		}
+	}
+	if serviceCIDR == "" {
+		return nil, errors.New("unable to find non-overlapping Service CIDR")
+	}
+
+	return &KubernetesCIDRs{
+		PodCIDR:     podCIDR,
+		ServiceCIDR: serviceCIDR,
+	}, nil
+}
+
 func IsSubnetOverlap(cidr1, cidr2 string) (bool, error) {
 	_, network1, err := net.ParseCIDR(cidr1)
 	if err != nil {
@@ -82,44 +174,17 @@ func IsSubnetOverlap(cidr1, cidr2 string) (bool, error) {
 	return false, nil
 }
 
-func GenerateSubnets(vpcCIDR string, subnetCount int) ([]string, error) {
-	_, vpcNet, err := net.ParseCIDR(vpcCIDR)
+// CalculateCIDRIPCount 计算CIDR中可用的IP地址数量
+func CalculateCIDRIPCount(cidr string) (uint64, error) {
+	_, ipnet, err := net.ParseCIDR(cidr)
 	if err != nil {
-		return nil, err
+		return 0, errors.Wrap(err, "invalid CIDR")
 	}
 
-	subnetMaskSize, totalMaskSize := vpcNet.Mask.Size()
-	requiredBits := int(math.Ceil(math.Log2(float64(subnetCount))))
-	newPrefix := subnetMaskSize + requiredBits
-
-	fmt.Println(totalMaskSize, newPrefix)
-
-	if newPrefix > totalMaskSize {
-		return nil, fmt.Errorf("subnet count too large for the given VPC CIDR. Maximum subnets that can be generated: %d", 1<<(totalMaskSize-subnetMaskSize))
-	}
-
-	subnets := []string{}
-	for i := 0; i < subnetCount; i++ {
-		subnet, err := subnet(vpcNet, requiredBits, i)
-		if err != nil {
-			return nil, fmt.Errorf("failed to generate subnet: %v", err)
-		}
-		subnets = append(subnets, subnet.String())
-	}
-
-	return subnets, nil
-}
-
-func DecodeCidr(ipCidr string) string {
-	_, ipnet, err := net.ParseCIDR(ipCidr)
-	if err != nil {
-		return ""
-	}
-	ip := ipnet.IP.To4()
-	if ip != nil {
-		return fmt.Sprintf("%d.%d.%d.%d", ip[0], ip[1], ip[2], ip[3])
-	}
-	return ""
+	// 获取掩码的位数
+	ones, bits := ipnet.Mask.Size()
+	// 2的(位数差)次方
+	return uint64(1) << uint(bits-ones), nil
 }
 
 // subnet takes a parent CIDR range and creates a subnet within it

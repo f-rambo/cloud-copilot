@@ -4,19 +4,10 @@ import "google/protobuf/descriptor.proto";
 
 option go_package = "github.com/f-rambo/cloud-copilot/internal/conf;conf";
 
-message IngressRule {
-  string name = 1;
-  int32 start_port = 2;
-  int32 end_port = 3;
-  string protocol = 4;
-  string ip_cidr = 5;
-  bool access = 6;
-}
 
-message Level {
-  int32 basic = 1;
-  int32 advanced = 2;
-  int32 standard = 3;
+message Infrastructure {
+  string shell_path = 1;
+  string resource_path = 2;
 }
 
 message HTTPServer {
@@ -64,4 +55,5 @@ message Bootstrap {
   Database data = 2;
   Log log = 3;
   Auth auth = 4;
+  Infrastructure infrastructure = 5;
 }

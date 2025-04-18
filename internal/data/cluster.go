@@ -28,7 +28,11 @@ func (c *clusterRepo) Save(ctx context.Context, cluster *biz.Cluster) (err error
 			return
 		}
 	}()
-	err = tx.Model(&biz.Cluster{}).Where("id = ?", cluster.Id).Save(cluster).Error
+	if cluster.Id == 0 {
+		err = tx.Model(&biz.Cluster{}).Create(cluster).Error
+	} else {
+		err = tx.Model(&biz.Cluster{}).Where("id =?", cluster.Id).Updates(cluster).Error
+	}
 	if err != nil {
 		return err
 	}
