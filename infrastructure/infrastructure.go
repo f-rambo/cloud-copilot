@@ -6,10 +6,6 @@ import (
 
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/f-rambo/cloud-copilot/infrastructure/alicloud"
-	"github.com/f-rambo/cloud-copilot/infrastructure/awscloud"
-	"github.com/f-rambo/cloud-copilot/infrastructure/baremetal"
-	"github.com/f-rambo/cloud-copilot/infrastructure/common"
 	"github.com/f-rambo/cloud-copilot/internal/biz"
 	"github.com/f-rambo/cloud-copilot/internal/conf"
 	"github.com/go-kratos/kratos/v2/log"
@@ -17,17 +13,17 @@ import (
 	"github.com/pkg/errors"
 )
 
-var ProviderSet = wire.NewSet(NewInfrastructure, baremetal.NewBaremetal, awscloud.NewAwsCloudUseCase, alicloud.NewAliCloudUseCase)
+var ProviderSet = wire.NewSet(NewInfrastructure, NewBaremetal, NewAwsCloudUseCase, NewAliCloudUseCase)
 
 type Infrastructure struct {
 	c         *conf.Bootstrap
-	baremetal *baremetal.Baremetal
-	aliCloud  *alicloud.AliCloudUsecase
-	awsCloud  *awscloud.AwsCloudUsecase
+	baremetal *Baremetal
+	aliCloud  *AliCloudUsecase
+	awsCloud  *AwsCloudUsecase
 	log       *log.Helper
 }
 
-func NewInfrastructure(c *conf.Bootstrap, baremetal *baremetal.Baremetal, aliCloud *alicloud.AliCloudUsecase, awsCloud *awscloud.AwsCloudUsecase, logger log.Logger) biz.ClusterInfrastructure {
+func NewInfrastructure(c *conf.Bootstrap, baremetal *Baremetal, aliCloud *AliCloudUsecase, awsCloud *AwsCloudUsecase, logger log.Logger) biz.ClusterInfrastructure {
 	return &Infrastructure{
 		c:         c,
 		baremetal: baremetal,
@@ -83,7 +79,7 @@ func (i *Infrastructure) GetZones(ctx context.Context, cluster *biz.Cluster) (re
 	return
 }
 
-func (i *Infrastructure) CreateCloudBasicResource(ctx context.Context, cluster *biz.Cluster) error {
+func (i *Infrastructure) ManageCloudBasicResource(ctx context.Context, cluster *biz.Cluster) error {
 	if cluster.Provider == biz.ClusterProvider_Aws {
 		err := i.awsCloud.Connections(ctx, cluster.AccessId, cluster.AccessKey)
 		if err != nil {
@@ -146,7 +142,9 @@ func (i *Infrastructure) DeleteCloudBasicResource(ctx context.Context, cluster *
 	}
 	return nil
 }
+
 func (i *Infrastructure) ManageNodeResource(ctx context.Context, cluster *biz.Cluster) error {
+	// Slb resource from cloud and metallb
 	if cluster.Provider == biz.ClusterProvider_Aws {
 		err := i.awsCloud.Connections(ctx, cluster.AccessId, cluster.AccessKey)
 		if err != nil {
@@ -157,10 +155,6 @@ func (i *Infrastructure) ManageNodeResource(ctx context.Context, cluster *biz.Cl
 			return err
 		}
 		err = i.awsCloud.ManageInstance(ctx, cluster)
-		if err != nil {
-			return err
-		}
-		err = i.awsCloud.ManageSLB(ctx, cluster)
 		if err != nil {
 			return err
 		}
@@ -175,10 +169,6 @@ func (i *Infrastructure) ManageNodeResource(ctx context.Context, cluster *biz.Cl
 			return err
 		}
 		err = i.aliCloud.ManageInstance(ctx, cluster)
-		if err != nil {
-			return err
-		}
-		err = i.aliCloud.ManageSLB(ctx, cluster)
 		if err != nil {
 			return err
 		}
@@ -239,9 +229,9 @@ func (i *Infrastructure) GeCloudtNodesSystemInfo(ctx context.Context, cluster *b
 				return err
 			}
 			imageId = aws.ToString(image.ImageId)
-			nodeUser = awscloud.DetermineUsername(aws.ToString(image.Name), aws.ToString(image.Description))
+			nodeUser = AwsDetermineUsername(aws.ToString(image.Name), aws.ToString(image.Description))
 			systemDiskName = aws.ToString(image.RootDeviceName)
-			instanceTypes, err := i.awsCloud.FindInstanceType(ctx, common.FindInstanceTypeParam{
+			instanceTypes, err := i.awsCloud.FindInstanceType(ctx, FindInstanceTypeParam{
 				Os:            nodeGroup.Os,
 				CPU:           nodeGroup.Cpu,
 				Memory:        nodeGroup.Memory,
@@ -275,7 +265,7 @@ func (i *Infrastructure) GeCloudtNodesSystemInfo(ctx context.Context, cluster *b
 				return err
 			}
 			imageId = tea.StringValue(image.ImageId)
-			instanceTypes, err := i.aliCloud.FindInstanceType(common.FindInstanceTypeParam{
+			instanceTypes, err := i.aliCloud.FindInstanceType(FindInstanceTypeParam{
 				Os:            nodeGroup.Os,
 				CPU:           nodeGroup.Cpu,
 				Memory:        nodeGroup.Memory,

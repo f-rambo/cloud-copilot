@@ -1,4 +1,4 @@
-package baremetal
+package infrastructure
 
 import (
 	"context"
@@ -9,7 +9,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/f-rambo/cloud-copilot/infrastructure/common"
 	"github.com/f-rambo/cloud-copilot/internal/biz"
 	"github.com/f-rambo/cloud-copilot/internal/conf"
 	"github.com/f-rambo/cloud-copilot/utils"
@@ -20,43 +19,6 @@ import (
 	yaml "gopkg.in/yaml.v3"
 )
 
-const defaultSHHPort = 22
-
-var ARCH_MAP = map[string]string{
-	"x86_64":  "amd64",
-	"aarch64": "arm64",
-}
-
-var ArchMap = map[string]biz.NodeArchType{
-	"x86_64":  biz.NodeArchType_AMD64,
-	"aarch64": biz.NodeArchType_ARM64,
-}
-
-var GPUSpecMap = map[string]biz.NodeGPUSpec{
-	"nvidia-a10":  biz.NodeGPUSpec_NVIDIA_A10,
-	"nvidia-v100": biz.NodeGPUSpec_NVIDIA_V100,
-	"nvidia-t4":   biz.NodeGPUSpec_NVIDIA_T4,
-	"nvidia-p100": biz.NodeGPUSpec_NVIDIA_P100,
-	"nvidia-p4":   biz.NodeGPUSpec_NVIDIA_P4,
-}
-
-var (
-	Resource string = "resource"
-	Shell    string = "shell"
-
-	NodeInitShell   string = "nodeinit.sh"
-	ComponentShell  string = "component.sh"
-	SystemInfoShell string = "systeminfo.sh"
-	ClusterInstall  string = "clusterinstall.sh"
-
-	ClusterConfiguration string = "cluster-config.yaml"
-	Install              string = "install.yaml"
-
-	ClusterInitAction string = "init"
-	ClusterJoinAction string = "join"
-	ClusterController string = "controller"
-)
-
 type Baremetal struct {
 	c   *conf.Bootstrap
 	log *log.Helper
@@ -64,33 +26,6 @@ type Baremetal struct {
 
 func NewBaremetal(c *conf.Bootstrap, logger log.Logger) *Baremetal {
 	return &Baremetal{c: c, log: log.NewHelper(logger)}
-}
-
-// kubernetes_version: "v1.31.2"
-// containerd_version: "v2.0.0"
-// runc_version: "v1.2.1"
-
-func getKubernetesVersion() string {
-	// todo find resource file version
-	return "v1.31.2"
-}
-
-// func getContainerdVersion() string {
-// 	// todo find resource file version
-// 	return "v2.0.0"
-// }
-
-// func getRuncVersion() string {
-// 	// todo find resource file version
-// 	return "v1.2.1"
-// }
-
-func getDefaultKuberentesImageRepo() string {
-	return "registry.k8s.io"
-}
-
-func getAliyunKuberentesImageRepo() string {
-	return "registry.aliyuncs.com/google_containers"
 }
 
 func (b *Baremetal) getClusterNodeRemoteBash(cluster *biz.Cluster, node *biz.Node) *utils.RemoteBash {
@@ -347,7 +282,7 @@ func (b *Baremetal) PreInstall(cluster *biz.Cluster) error {
 	for _, node := range cluster.Nodes {
 		if node.Role == biz.NodeRole_MASTER {
 			// as cloud user data
-			err := b.getClusterNodeRemoteBash(cluster, node).ExecShellLogging(common.InstallShell)
+			err := b.getClusterNodeRemoteBash(cluster, node).ExecShellLogging(InstallShell)
 			if err != nil {
 				return err
 			}

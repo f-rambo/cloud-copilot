@@ -8,9 +8,6 @@ package main
 
 import (
 	"github.com/f-rambo/cloud-copilot/infrastructure"
-	"github.com/f-rambo/cloud-copilot/infrastructure/alicloud"
-	"github.com/f-rambo/cloud-copilot/infrastructure/awscloud"
-	"github.com/f-rambo/cloud-copilot/infrastructure/baremetal"
 	"github.com/f-rambo/cloud-copilot/internal/biz"
 	"github.com/f-rambo/cloud-copilot/internal/conf"
 	"github.com/f-rambo/cloud-copilot/internal/data"
@@ -35,10 +32,10 @@ func wireApp(bootstrap *conf.Bootstrap, logger log.Logger) (*kratos.App, func(),
 		return nil, nil, err
 	}
 	clusterData := data.NewClusterRepo(dataData, logger)
-	baremetalBaremetal := baremetal.NewBaremetal(bootstrap, logger)
-	aliCloudUsecase := alicloud.NewAliCloudUseCase(logger)
-	awsCloudUsecase := awscloud.NewAwsCloudUseCase(logger)
-	clusterInfrastructure := infrastructure.NewInfrastructure(bootstrap, baremetalBaremetal, aliCloudUsecase, awsCloudUsecase, logger)
+	baremetal := infrastructure.NewBaremetal(bootstrap, logger)
+	aliCloudUsecase := infrastructure.NewAliCloudUseCase(logger)
+	awsCloudUsecase := infrastructure.NewAwsCloudUseCase(logger)
+	clusterInfrastructure := infrastructure.NewInfrastructure(bootstrap, baremetal, aliCloudUsecase, awsCloudUsecase, logger)
 	clusterRuntime := runtime.NewClusterRuntime(logger)
 	clusterUsecase := biz.NewClusterUseCase(bootstrap, clusterData, clusterInfrastructure, clusterRuntime, logger)
 	clusterInterface := interfaces.NewClusterInterface(clusterUsecase, bootstrap, logger)

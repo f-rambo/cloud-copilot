@@ -23,7 +23,7 @@ auth:
   exp: 24
   key: "S89XMkyGIpI0tgJkf7b8undK"
   admin_email: "admin@eamil.com"
-  admin_password: "123456"
+  admin_password: "admin@eamil.com"
 infrastructure:
   shell_path: "shell"
   resource_path: "resource"

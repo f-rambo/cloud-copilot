@@ -578,7 +578,7 @@ type ClusterData interface {
 type ClusterInfrastructure interface {
 	GetRegions(ctx context.Context, provider ClusterProvider, accessId, accessKey string) ([]*CloudResource, error)
 	GetZones(context.Context, *Cluster) ([]*CloudResource, error)
-	CreateCloudBasicResource(context.Context, *Cluster) error
+	ManageCloudBasicResource(context.Context, *Cluster) error
 	DeleteCloudBasicResource(context.Context, *Cluster) error
 	ManageNodeResource(context.Context, *Cluster) error
 	GetNodesSystemInfo(context.Context, *Cluster) error
@@ -976,7 +976,7 @@ func (c *Cluster) SetDomain() {
 	c.Domain = fmt.Sprintf("cluster-%s.svc", c.Name)
 }
 
-func (c *Cluster) SettingClusterLevelByNodeNumber() {
+func (c *Cluster) SettingClusterLevelByNodeNumber() bool {
 	var (
 		basicNumber    int32 = 50
 		advancedNumber int32 = 100
@@ -999,7 +999,9 @@ func (c *Cluster) SettingClusterLevelByNodeNumber() {
 	}
 	if c.Level != setClusterLevel && setClusterLevel != ClusterLevel_UNSPECIFIED {
 		c.Level = setClusterLevel
+		return true
 	}
+	return false
 }
 
 func (c *Cluster) SetZoneByLevel(zones []*CloudResource) {
@@ -1499,11 +1501,11 @@ func (uc *ClusterUsecase) handleEvent(ctx context.Context, cluster *Cluster) (er
 		if err != nil {
 			return err
 		}
+		err = uc.clusterInfrastructure.ManageNodeResource(ctx, cluster)
+		if err != nil {
+			return err
+		}
 		if cluster.Provider.IsCloud() {
-			err = uc.clusterInfrastructure.ManageNodeResource(ctx, cluster)
-			if err != nil {
-				return err
-			}
 			err = uc.clusterInfrastructure.DeleteCloudBasicResource(ctx, cluster)
 			if err != nil {
 				return err
@@ -1521,14 +1523,17 @@ func (uc *ClusterUsecase) handleEvent(ctx context.Context, cluster *Cluster) (er
 	if err != nil {
 		return err
 	}
-	cluster.SettingClusterLevelByNodeNumber()
-	if cluster.Provider.IsCloud() {
+	if cluster.Provider.IsCloud() && cluster.SettingClusterLevelByNodeNumber() {
 		var zoneResources []*CloudResource
 		zoneResources, err = uc.clusterInfrastructure.GetZones(ctx, cluster)
 		if err != nil {
 			return err
 		}
 		cluster.SetZoneByLevel(zoneResources)
+		err = uc.clusterInfrastructure.ManageCloudBasicResource(ctx, cluster)
+		if err != nil {
+			return err
+		}
 	}
 	err = uc.clusterInfrastructure.GetNodesSystemInfo(ctx, cluster)
 	if err != nil {
@@ -1542,11 +1547,9 @@ func (uc *ClusterUsecase) handleEvent(ctx context.Context, cluster *Cluster) (er
 	if err != nil {
 		return err
 	}
-	if cluster.Provider.IsCloud() {
-		err = uc.clusterInfrastructure.ManageNodeResource(ctx, cluster)
-		if err != nil {
-			return err
-		}
+	err = uc.clusterInfrastructure.ManageNodeResource(ctx, cluster)
+	if err != nil {
+		return err
 	}
 	err = uc.clusterInfrastructure.HandlerNodes(ctx, cluster)
 	if err != nil {
@@ -1561,14 +1564,13 @@ func (uc *ClusterUsecase) handlerClusterNotInstalled(ctx context.Context, cluste
 		cluster.SettingDefaultNodeGroup()
 		cluster.settingDefatultIngressRules()
 	}
-	cluster.SettingClusterLevelByNodeNumber()
-	if cluster.Provider.IsCloud() {
+	if cluster.Provider.IsCloud() && cluster.SettingClusterLevelByNodeNumber() {
 		zoneResources, err := uc.clusterInfrastructure.GetZones(ctx, cluster)
 		if err != nil {
 			return err
 		}
 		cluster.SetZoneByLevel(zoneResources)
-		err = uc.clusterInfrastructure.CreateCloudBasicResource(ctx, cluster)
+		err = uc.clusterInfrastructure.ManageCloudBasicResource(ctx, cluster)
 		if err != nil {
 			return err
 		}
@@ -1581,11 +1583,9 @@ func (uc *ClusterUsecase) handlerClusterNotInstalled(ctx context.Context, cluste
 		cluster.SetNodeStatus(NodeStatus_UNSPECIFIED, NodeStatus_NODE_FINDING)
 	}
 	cluster.SetNodeStatus(NodeStatus_NODE_FINDING, NodeStatus_NODE_CREATING)
-	if cluster.Provider.IsCloud() {
-		err = uc.clusterInfrastructure.ManageNodeResource(ctx, cluster)
-		if err != nil {
-			return err
-		}
+	err = uc.clusterInfrastructure.ManageNodeResource(ctx, cluster)
+	if err != nil {
+		return err
 	}
 	cluster.SetNodeStatus(NodeStatus_NODE_CREATING, NodeStatus_NODE_PENDING)
 	err = uc.clusterInfrastructure.Install(ctx, cluster)

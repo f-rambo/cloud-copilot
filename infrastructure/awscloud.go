@@ -1,4 +1,4 @@
-package awscloud
+package infrastructure
 
 import (
 	"context"
@@ -15,7 +15,6 @@ import (
 	ec2Types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2"
 	elasticloadbalancingv2Types "github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2/types"
-	"github.com/f-rambo/cloud-copilot/infrastructure/common"
 	"github.com/f-rambo/cloud-copilot/internal/biz"
 	"github.com/f-rambo/cloud-copilot/utils"
 	"github.com/go-kratos/kratos/v2/log"
@@ -322,7 +321,7 @@ func (a *AwsCloudUsecase) DeleteNetwork(ctx context.Context, cluster *biz.Cluste
 		waiter := ec2.NewNatGatewayDeletedWaiter(a.ec2Client)
 		err := waiter.Wait(ctx, &ec2.DescribeNatGatewaysInput{
 			NatGatewayIds: natGwIDs,
-		}, time.Duration(len(natGwIDs))*common.TimeoutPerInstance)
+		}, time.Duration(len(natGwIDs))*TimeoutPerInstance)
 		if err != nil {
 			return fmt.Errorf("failed to wait for NAT Gateway deletion: %w", err)
 		}
@@ -346,7 +345,7 @@ func (a *AwsCloudUsecase) DeleteNetwork(ctx context.Context, cluster *biz.Cluste
 		if err != nil {
 			return errors.Wrap(err, "failed to release Elastic IP")
 		}
-		time.Sleep(time.Second * common.TimeOutSecond)
+		time.Sleep(time.Second * TimeOutSecond)
 		cluster.DeleteCloudResourceByID(biz.ResourceType_ELASTIC_IP, eip.Id)
 	}
 
@@ -423,12 +422,12 @@ func (a *AwsCloudUsecase) DeleteNetwork(ctx context.Context, cluster *biz.Cluste
 		if err != nil {
 			return errors.Wrap(err, "failed to detach internet gateway")
 		}
-		time.Sleep(time.Second * common.TimeOutSecond)
+		time.Sleep(time.Second * TimeOutSecond)
 		_, err = a.ec2Client.DeleteInternetGateway(ctx, &ec2.DeleteInternetGatewayInput{InternetGatewayId: aws.String(igw.RefId)})
 		if err != nil {
 			return errors.Wrap(err, "failed to delete internet gateway")
 		}
-		time.Sleep(time.Second * common.TimeOutSecond)
+		time.Sleep(time.Second * TimeOutSecond)
 		cluster.DeleteCloudResourceByID(biz.ResourceType_INTERNET_GATEWAY, igw.Id)
 	}
 
@@ -548,7 +547,7 @@ func (a *AwsCloudUsecase) ManageInstance(ctx context.Context, cluster *biz.Clust
 			return errors.Wrap(err, "failed to terminate instances")
 		}
 		waiter := ec2.NewInstanceTerminatedWaiter(a.ec2Client)
-		err := waiter.Wait(ctx, &ec2.DescribeInstancesInput{InstanceIds: deleteInstanceIDs}, time.Duration(len(deleteInstanceIDs))*common.TimeoutPerInstance)
+		err := waiter.Wait(ctx, &ec2.DescribeInstancesInput{InstanceIds: deleteInstanceIDs}, time.Duration(len(deleteInstanceIDs))*TimeoutPerInstance)
 		if err != nil {
 			return fmt.Errorf("failed to wait for instance termination: %w", err)
 		}
@@ -613,7 +612,7 @@ func (a *AwsCloudUsecase) ManageInstance(ctx context.Context, cluster *biz.Clust
 				},
 			}
 			if cluster.Status == biz.ClusterStatus_STARTING && node.Role == biz.NodeRole_MASTER {
-				installShell, readShellErr := os.ReadFile(utils.GetShellPath(common.InstallShell))
+				installShell, readShellErr := os.ReadFile(utils.GetShellPath(InstallShell))
 				if readShellErr != nil {
 					return readShellErr
 				}
@@ -633,7 +632,7 @@ func (a *AwsCloudUsecase) ManageInstance(ctx context.Context, cluster *biz.Clust
 	// wait for instance running
 	if len(instanceIds) > 0 {
 		waiter := ec2.NewInstanceRunningWaiter(a.ec2Client)
-		err := waiter.Wait(ctx, &ec2.DescribeInstancesInput{InstanceIds: instanceIds}, time.Duration(len(instanceIds))*common.TimeoutPerInstance)
+		err := waiter.Wait(ctx, &ec2.DescribeInstancesInput{InstanceIds: instanceIds}, time.Duration(len(instanceIds))*TimeoutPerInstance)
 		if err != nil {
 			return errors.Wrap(err, "failed to wait for instance running")
 		}
@@ -705,7 +704,7 @@ func (a *AwsCloudUsecase) createVPC(ctx context.Context, cluster *biz.Cluster) e
 	}
 	vpcId := aws.ToString(vpcOutput.Vpc.VpcId)
 	waiter := ec2.NewVpcAvailableWaiter(a.ec2Client)
-	err = waiter.Wait(ctx, &ec2.DescribeVpcsInput{VpcIds: []string{vpcId}}, time.Duration(1)*common.TimeoutPerInstance)
+	err = waiter.Wait(ctx, &ec2.DescribeVpcsInput{VpcIds: []string{vpcId}}, time.Duration(1)*TimeoutPerInstance)
 	if err != nil {
 		return errors.Wrap(err, "failed to wait for VPC availability")
 	}
@@ -785,7 +784,7 @@ func (a *AwsCloudUsecase) createInternetGateway(ctx context.Context, cluster *bi
 	}
 	internetgatewayId := aws.ToString(createInternetGatewayRes.InternetGateway.InternetGatewayId)
 	waiter := ec2.NewInternetGatewayExistsWaiter(a.ec2Client)
-	err = waiter.Wait(ctx, &ec2.DescribeInternetGatewaysInput{InternetGatewayIds: []string{internetgatewayId}}, time.Duration(1)*common.TimeoutPerInstance)
+	err = waiter.Wait(ctx, &ec2.DescribeInternetGatewaysInput{InternetGatewayIds: []string{internetgatewayId}}, time.Duration(1)*TimeoutPerInstance)
 	if err != nil {
 		return errors.Wrap(err, "failed to wait for internet gateway availability")
 	}
@@ -912,7 +911,7 @@ func (a *AwsCloudUsecase) createSubnets(ctx context.Context, cluster *biz.Cluste
 		}
 		subnetId := aws.ToString(subnetOutput.Subnet.SubnetId)
 		waiter := ec2.NewSubnetAvailableWaiter(a.ec2Client)
-		err = waiter.Wait(ctx, &ec2.DescribeSubnetsInput{SubnetIds: []string{subnetId}}, time.Duration(1)*common.TimeoutPerInstance)
+		err = waiter.Wait(ctx, &ec2.DescribeSubnetsInput{SubnetIds: []string{subnetId}}, time.Duration(1)*TimeoutPerInstance)
 		if err != nil {
 			return errors.Wrap(err, "failed to wait for private subnet availability")
 		}
@@ -997,7 +996,7 @@ func (a *AwsCloudUsecase) createEips(ctx context.Context, cluster *biz.Cluster) 
 			Type:  biz.ResourceType_ELASTIC_IP,
 		})
 		a.log.Infof("elastic ip %s allocated for %s", name, az.Name)
-		time.Sleep(time.Second * common.TimeOutSecond)
+		time.Sleep(time.Second * TimeOutSecond)
 	}
 	return nil
 }
@@ -1130,7 +1129,7 @@ func (a *AwsCloudUsecase) createNatGateways(ctx context.Context, cluster *biz.Cl
 	}
 	if len(natGateWayIds) != 0 {
 		waiter := ec2.NewNatGatewayAvailableWaiter(a.ec2Client)
-		err := waiter.Wait(ctx, &ec2.DescribeNatGatewaysInput{NatGatewayIds: natGateWayIds}, time.Duration(len(natGateWayIds))*common.TimeoutPerInstance)
+		err := waiter.Wait(ctx, &ec2.DescribeNatGatewaysInput{NatGatewayIds: natGateWayIds}, time.Duration(len(natGateWayIds))*TimeoutPerInstance)
 		if err != nil {
 			return errors.Wrap(err, "failed to wait for NAT Gateway availability")
 		}
@@ -1214,7 +1213,7 @@ func (a *AwsCloudUsecase) createRouteTables(ctx context.Context, cluster *biz.Cl
 			Type:  biz.ResourceType_ROUTE_TABLE,
 		})
 		a.log.Infof("private route table %s createing for AZ %s", routeTableName, az.Name)
-		time.Sleep(time.Second * common.TimeOutSecond)
+		time.Sleep(time.Second * TimeOutSecond)
 	}
 
 	routeTables := cluster.GetCloudResourceByTags(biz.ResourceType_ROUTE_TABLE, map[biz.ResourceTypeKeyValue]any{
@@ -1245,7 +1244,7 @@ func (a *AwsCloudUsecase) createRouteTables(ctx context.Context, cluster *biz.Cl
 			return errors.Wrap(err, "failed to associate private subnet with route table in AZ ")
 		}
 		routeTable.Value = privateSubnet.RefId
-		time.Sleep(time.Second * common.TimeOutSecond)
+		time.Sleep(time.Second * TimeOutSecond)
 	}
 
 	// Add route to NAT Gateway in private route table
@@ -1275,7 +1274,7 @@ func (a *AwsCloudUsecase) createRouteTables(ctx context.Context, cluster *biz.Cl
 			return errors.Wrap(err, "failed to add route to NAT Gateway for AZ")
 		}
 		routeTable.AssociatedId = natGateway.RefId
-		time.Sleep(time.Second * common.TimeOutSecond)
+		time.Sleep(time.Second * TimeOutSecond)
 	}
 	return nil
 }
@@ -1340,7 +1339,7 @@ func (a *AwsCloudUsecase) ManageSecurityGroup(ctx context.Context, cluster *biz.
 		waiter := ec2.NewSecurityGroupExistsWaiter(a.ec2Client)
 		err = waiter.Wait(ctx, &ec2.DescribeSecurityGroupsInput{
 			GroupIds: []string{aws.ToString(sgOutput.GroupId)},
-		}, time.Duration(1)*common.TimeoutPerInstance)
+		}, time.Duration(1)*TimeoutPerInstance)
 		if err != nil {
 			return errors.Wrap(err, "failed to wait security group exists")
 		}
@@ -1399,7 +1398,7 @@ func (a *AwsCloudUsecase) ManageSecurityGroup(ctx context.Context, cluster *biz.
 			if err != nil {
 				return errors.Wrap(err, "failed to revoke security group ingress")
 			}
-			time.Sleep(time.Second * common.TimeOutSecond)
+			time.Sleep(time.Second * TimeOutSecond)
 		}
 	}
 
@@ -1422,7 +1421,7 @@ func (a *AwsCloudUsecase) ManageSecurityGroup(ctx context.Context, cluster *biz.
 		if err != nil {
 			return errors.Wrap(err, "failed to add inbound rules to security group")
 		}
-		time.Sleep(time.Second * common.TimeOutSecond)
+		time.Sleep(time.Second * TimeOutSecond)
 	}
 	return nil
 }
@@ -1505,7 +1504,7 @@ func (a *AwsCloudUsecase) ManageSLB(ctx context.Context, cluster *biz.Cluster) e
 		waiter := elasticloadbalancingv2.NewLoadBalancerAvailableWaiter(a.elbv2Client)
 		err = waiter.Wait(ctx, &elasticloadbalancingv2.DescribeLoadBalancersInput{
 			LoadBalancerArns: []string{aws.ToString(slbOutput.LoadBalancers[0].LoadBalancerArn)},
-		}, time.Duration(1)*common.TimeoutPerInstance)
+		}, time.Duration(1)*TimeoutPerInstance)
 		if err != nil {
 			return errors.Wrap(err, "failed to wait for SLB to be available")
 		}
@@ -1596,7 +1595,7 @@ func (a *AwsCloudUsecase) ManageSLB(ctx context.Context, cluster *biz.Cluster) e
 		if CreateTargetGroupErr != nil {
 			return errors.Wrap(CreateTargetGroupErr, "failed to create target group")
 		}
-		time.Sleep(time.Second * common.TimeOutSecond)
+		time.Sleep(time.Second * TimeOutSecond)
 		if len(targetGroupRes.TargetGroups) == 0 {
 			return errors.New("target group not found")
 		}
@@ -1640,7 +1639,7 @@ func (a *AwsCloudUsecase) ManageSLB(ctx context.Context, cluster *biz.Cluster) e
 		if err != nil {
 			return errors.Wrap(err, "filled to create listener")
 		}
-		time.Sleep(time.Second * common.TimeOutSecond)
+		time.Sleep(time.Second * TimeOutSecond)
 	}
 	return nil
 }
@@ -1656,7 +1655,7 @@ func (a *AwsCloudUsecase) FindImage(ctx context.Context, arch biz.NodeArchType) 
 			},
 			{
 				Name:   aws.String("architecture"),
-				Values: []string{common.NodeArchToMagecloudType[arch]},
+				Values: []string{NodeArchToMagecloudType[arch]},
 			},
 			{
 				Name:   aws.String("state"),
@@ -1801,14 +1800,14 @@ func awsGetInstanceTypes(nodeGroupType biz.NodeGroupType, instanceSize string) [
 	return data
 }
 
-func (a *AwsCloudUsecase) FindInstanceType(ctx context.Context, findInstanceTypeParam common.FindInstanceTypeParam) ([]ec2Types.InstanceTypeInfo, error) {
+func (a *AwsCloudUsecase) FindInstanceType(ctx context.Context, findInstanceTypeParam FindInstanceTypeParam) ([]ec2Types.InstanceTypeInfo, error) {
 	instanceTypes := awsGetInstanceTypes(findInstanceTypeParam.NodeGroupType, awsGenerateInstanceSize(findInstanceTypeParam.CPU))
 	instanceTypeInfos := make([]ec2Types.InstanceTypeInfo, 0)
 	instanceTypeInput := &ec2.DescribeInstanceTypesInput{
 		Filters: []ec2Types.Filter{
 			{
 				Name:   aws.String("processor-info.supported-architecture"),
-				Values: []string{common.NodeArchToMagecloudType[findInstanceTypeParam.Arch]},
+				Values: []string{NodeArchToMagecloudType[findInstanceTypeParam.Arch]},
 			},
 			{
 				Name:   aws.String("vcpu-info.default-vcpus"),
@@ -1923,7 +1922,7 @@ func (a *AwsCloudUsecase) mapToElbv2Tags(tags map[biz.ResourceTypeKeyValue]any) 
 	return elbv2Tags
 }
 
-func DetermineUsername(amiName, amiDescription string) string {
+func AwsDetermineUsername(amiName, amiDescription string) string {
 	amiName = strings.ToLower(amiName)
 	amiDescription = strings.ToLower(amiDescription)
 

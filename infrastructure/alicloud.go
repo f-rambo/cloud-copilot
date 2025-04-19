@@ -1,4 +1,4 @@
-package alicloud
+package infrastructure
 
 import (
 	"context"
@@ -16,7 +16,6 @@ import (
 	slb "github.com/alibabacloud-go/slb-20140515/v4/client"
 	"github.com/alibabacloud-go/tea/tea"
 	vpc "github.com/alibabacloud-go/vpc-20160428/v6/client"
-	"github.com/f-rambo/cloud-copilot/infrastructure/common"
 	"github.com/f-rambo/cloud-copilot/internal/biz"
 	"github.com/f-rambo/cloud-copilot/utils"
 	"github.com/go-kratos/kratos/v2/log"
@@ -447,7 +446,7 @@ func (a *AliCloudUsecase) ManageInstance(ctx context.Context, cluster *biz.Clust
 				},
 			}
 			if cluster.Status == biz.ClusterStatus_STARTING && node.Role == biz.NodeRole_MASTER {
-				installShell, readShellErr := os.ReadFile(utils.GetShellPath(common.InstallShell))
+				installShell, readShellErr := os.ReadFile(utils.GetShellPath(InstallShell))
 				if readShellErr != nil {
 					return readShellErr
 				}
@@ -482,10 +481,10 @@ func (a *AliCloudUsecase) ManageInstance(ctx context.Context, cluster *biz.Clust
 		if finishNumber >= instanceCount {
 			break
 		}
-		if timeOutNumber > common.TimeOutCountNumber*instanceCount {
+		if timeOutNumber > TimeOutCountNumber*instanceCount {
 			break
 		}
-		time.Sleep(time.Second * common.TimeOutSecond)
+		time.Sleep(time.Second * TimeOutSecond)
 		timeOutNumber++
 		var pageNumber int32 = 1
 		instanceStatusData := make([]*ecs.DescribeInstanceStatusResponseBodyInstanceStatusesInstanceStatus, 0)
@@ -630,10 +629,10 @@ func (a *AliCloudUsecase) DeleteNetwork(ctx context.Context, cluster *biz.Cluste
 	timeOutNumber := 0
 	eipsOk := false
 	for {
-		if timeOutNumber > common.TimeOutCountNumber || eipsOk {
+		if timeOutNumber > TimeOutCountNumber || eipsOk {
 			break
 		}
-		time.Sleep(time.Second * common.TimeOutSecond)
+		time.Sleep(time.Second * TimeOutSecond)
 		timeOutNumber++
 		res, err := a.vpcClient.DescribeEipAddresses(&vpc.DescribeEipAddressesRequest{
 			RegionId:     tea.String(cluster.Region),
@@ -665,7 +664,7 @@ func (a *AliCloudUsecase) DeleteNetwork(ctx context.Context, cluster *biz.Cluste
 		}
 	}
 	cluster.DeleteCloudResource(biz.ResourceType_ELASTIC_IP)
-	time.Sleep(time.Second * common.TimeOutSecond)
+	time.Sleep(time.Second * TimeOutSecond)
 
 	// Delete NAT Gateways
 	for _, nat := range cluster.GetCloudResource(biz.ResourceType_NAT_GATEWAY) {
@@ -678,7 +677,7 @@ func (a *AliCloudUsecase) DeleteNetwork(ctx context.Context, cluster *biz.Cluste
 		if err != nil {
 			a.log.Warnf("failed to delete NAT Gateway %s: %v", nat.RefId, err)
 		}
-		time.Sleep(time.Second * 5 * common.TimeOutSecond)
+		time.Sleep(time.Second * 5 * TimeOutSecond)
 		cluster.DeleteCloudResourceByID(biz.ResourceType_NAT_GATEWAY, nat.Id)
 	}
 
@@ -808,10 +807,10 @@ func (a *AliCloudUsecase) createVPC(ctx context.Context, cluster *biz.Cluster) e
 	timeOutNumber := 0
 	vpcOk := false
 	for {
-		if timeOutNumber > common.TimeOutCountNumber || vpcOk {
+		if timeOutNumber > TimeOutCountNumber || vpcOk {
 			break
 		}
-		time.Sleep(time.Second * common.TimeOutSecond)
+		time.Sleep(time.Second * TimeOutSecond)
 		timeOutNumber++
 		res, err := a.vpcClient.DescribeVpcs(&vpc.DescribeVpcsRequest{
 			RegionId:   tea.String(cluster.Region),
@@ -957,7 +956,7 @@ func (a *AliCloudUsecase) createSubnets(ctx context.Context, cluster *biz.Cluste
 			Value:        cidr,
 		})
 		a.log.Infof("private subnet %s created", name)
-		time.Sleep(time.Second * common.TimeOutSecond)
+		time.Sleep(time.Second * TimeOutSecond)
 	}
 	return nil
 }
@@ -1061,10 +1060,10 @@ func (a *AliCloudUsecase) createEips(_ context.Context, cluster *biz.Cluster) er
 	timeOutNumber := 0
 	eipsOk := false
 	for {
-		if timeOutNumber > common.TimeOutCountNumber || eipsOk {
+		if timeOutNumber > TimeOutCountNumber || eipsOk {
 			break
 		}
-		time.Sleep(time.Second * common.TimeOutSecond)
+		time.Sleep(time.Second * TimeOutSecond)
 		timeOutNumber++
 		res, err := a.vpcClient.DescribeEipAddresses(&vpc.DescribeEipAddressesRequest{
 			RegionId:     tea.String(cluster.Region),
@@ -1224,10 +1223,10 @@ func (a *AliCloudUsecase) createNatGateways(ctx context.Context, cluster *biz.Cl
 		timeOutNumber := 0
 		natgatewayOk := false
 		for {
-			if timeOutNumber > common.TimeOutCountNumber || natgatewayOk {
+			if timeOutNumber > TimeOutCountNumber || natgatewayOk {
 				break
 			}
-			time.Sleep(time.Second * 3 * common.TimeOutSecond)
+			time.Sleep(time.Second * 3 * TimeOutSecond)
 			timeOutNumber++
 			res, DescribeNatGatewaysErr := a.vpcClient.DescribeNatGateways(&vpc.DescribeNatGatewaysRequest{
 				RegionId:     tea.String(cluster.Region),
@@ -1262,7 +1261,7 @@ func (a *AliCloudUsecase) createNatGateways(ctx context.Context, cluster *biz.Cl
 			return errors.Wrap(err, "failed to associate eip with nat gateway")
 		}
 		// wait eip bind to natgateway
-		time.Sleep(time.Second * 3 * common.TimeOutSecond)
+		time.Sleep(time.Second * 3 * TimeOutSecond)
 		snatTableId := ""
 		for _, v := range natRes.Body.SnatTableIds.SnatTableId {
 			if tea.StringValue(v) != "" {
@@ -1367,10 +1366,10 @@ func (a *AliCloudUsecase) createRouteTables(ctx context.Context, cluster *biz.Cl
 		timeOutNumber := 0
 		routeTableOk := false
 		for {
-			if timeOutNumber > common.TimeOutCountNumber || routeTableOk {
+			if timeOutNumber > TimeOutCountNumber || routeTableOk {
 				break
 			}
-			time.Sleep(time.Second * common.TimeOutSecond)
+			time.Sleep(time.Second * TimeOutSecond)
 			timeOutNumber++
 			res, err := a.vpcClient.DescribeRouteTableList(&vpc.DescribeRouteTableListRequest{
 				RegionId:     tea.String(cluster.Region),
@@ -1425,7 +1424,7 @@ func (a *AliCloudUsecase) createRouteTables(ctx context.Context, cluster *biz.Cl
 		}
 
 		// wait
-		time.Sleep(time.Second * 3 * common.TimeOutSecond)
+		time.Sleep(time.Second * 3 * TimeOutSecond)
 	}
 
 	// Add route to NAT Gateway in private route table
@@ -1470,7 +1469,7 @@ func (a *AliCloudUsecase) createRouteTables(ctx context.Context, cluster *biz.Cl
 		routeTable.Value = tea.StringValue(res.Body.RouteEntryId)
 
 		// wait
-		time.Sleep(time.Second * 3 * common.TimeOutSecond)
+		time.Sleep(time.Second * 3 * TimeOutSecond)
 	}
 	return nil
 }
@@ -1782,7 +1781,7 @@ func (a *AliCloudUsecase) ManageSLB(_ context.Context, cluster *biz.Cluster) err
 		if err != nil {
 			return errors.Wrap(err, "failed to create load balancer tcp listener")
 		}
-		time.Sleep(time.Second * common.TimeOutSecond)
+		time.Sleep(time.Second * TimeOutSecond)
 		_, err = a.slbClient.StartLoadBalancerListener(&slb.StartLoadBalancerListenerRequest{
 			RegionId:       tea.String(cluster.Region),
 			LoadBalancerId: tea.String(slbCloudResource.RefId),
@@ -1796,7 +1795,7 @@ func (a *AliCloudUsecase) ManageSLB(_ context.Context, cluster *biz.Cluster) err
 }
 
 func (a *AliCloudUsecase) FindImage(regionId string, arch biz.NodeArchType) (*ecs.DescribeImagesResponseBodyImagesImage, error) {
-	archStr, ok := common.NodeArchToMagecloudType[arch]
+	archStr, ok := NodeArchToMagecloudType[arch]
 	if !ok {
 		return nil, errors.New("unsupported arch")
 	}
@@ -1939,7 +1938,7 @@ func aliGetInstanceIds(nodeGroupType biz.NodeGroupType, ecsSize string) []string
 	return instanceTypeIds
 }
 
-func (a *AliCloudUsecase) FindInstanceType(param common.FindInstanceTypeParam) ([]*ecs.DescribeInstanceTypesResponseBodyInstanceTypesInstanceType, error) {
+func (a *AliCloudUsecase) FindInstanceType(param FindInstanceTypeParam) ([]*ecs.DescribeInstanceTypesResponseBodyInstanceTypesInstanceType, error) {
 	ecsSize := aliGenerateInstanceSize(param.CPU)
 	instanceTypeIds := aliGetInstanceIds(param.NodeGroupType, ecsSize)
 	instanceTypes := make([]*ecs.DescribeInstanceTypesResponseBodyInstanceTypesInstanceType, 0)
@@ -1947,7 +1946,7 @@ func (a *AliCloudUsecase) FindInstanceType(param common.FindInstanceTypeParam) (
 	for {
 		instancesReq := &ecs.DescribeInstanceTypesRequest{
 			InstanceTypes:       tea.StringSlice(instanceTypeIds),
-			CpuArchitecture:     tea.String(common.NodeArchToCloudType[param.Arch]),
+			CpuArchitecture:     tea.String(NodeArchToCloudType[param.Arch]),
 			MinimumCpuCoreCount: tea.Int32(param.CPU),
 			MaximumCpuCoreCount: tea.Int32(param.CPU),
 			NextToken:           tea.String(nexttoken),
@@ -1957,7 +1956,7 @@ func (a *AliCloudUsecase) FindInstanceType(param common.FindInstanceTypeParam) (
 			instancesReq.MinimumGPUAmount = tea.Int32(param.GPU)
 			instancesReq.MaximumGPUAmount = tea.Int32(param.GPU)
 			if param.GPUSpec.String() != "" {
-				instancesReq.GPUSpec = tea.String(common.NodeGPUSpecToCloudSpec[param.GPUSpec])
+				instancesReq.GPUSpec = tea.String(NodeGPUSpecToCloudSpec[param.GPUSpec])
 			}
 		}
 		instancesRes, err := a.ecsClient.DescribeInstanceTypes(instancesReq)
