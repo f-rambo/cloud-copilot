@@ -9,101 +9,101 @@ import "api/service/v1alpha1/message.proto";
 option go_package = "api/service/v1alpha1;v1alpha1";
 
 service ServiceInterface {
-      rpc List(service.v1alpha1.ServiceRequest) returns (service.v1alpha1.Services) {
+      rpc List(ServiceRequest) returns (Services) {
             option (google.api.http) = {
               get: "/api/v1alpha1/service/list"
             };
       }
 
-      rpc Save(service.v1alpha1.Service) returns (common.Msg) {
+      rpc Save(Service) returns (common.Msg) {
             option (google.api.http) = {
               post: "/api/v1alpha1/service/save"
               body: "*"
             };
       }
 
-      rpc Get(service.v1alpha1.ServiceRequest) returns (service.v1alpha1.Service) {
+      rpc Get(ServiceRequest) returns (Service) {
             option (google.api.http) = {
               get: "/api/v1alpha1/service/get"
             };
       }
 
-      rpc Delete(service.v1alpha1.ServiceRequest) returns (common.Msg) {
+      rpc Delete(ServiceRequest) returns (common.Msg) {
             option (google.api.http) = {
               delete: "/api/v1alpha1/service/delete"
             };
       }
 
-      rpc GetServiceResource(service.v1alpha1.ServiceRequest) returns (service.v1alpha1.AlreadyResource) {
+      rpc GetServiceResource(ServiceRequest) returns (AlreadyResource) {
             option (google.api.http) = {
               get: "/api/v1alpha1/service/resource"
             };
       }
 
-      rpc SaveWorkflow(service.v1alpha1.Workflow) returns(common.Msg) {
+      rpc SaveWorkflow(Workflow) returns(common.Msg) {
             option (google.api.http) = {
               post: "/api/v1alpha1/service/workflow"
               body: "*"
             };
       }
 
-      rpc GetWorkflow(service.v1alpha1.WorkflowRequest) returns(service.v1alpha1.Workflow) {
+      rpc GetWorkflow(WorkflowRequest) returns(Workflow) {
             option (google.api.http) = {
               get: "/api/v1alpha1/service/workflow"
             };
       }
 
-      rpc CreateContinuousIntegration(service.v1alpha1.ContinuousIntegration) returns(common.Msg) {
+      rpc CreateContinuousIntegration(ContinuousIntegration) returns(common.Msg) {
             option (google.api.http) = {
               post: "/api/v1alpha1/service/continuousintegration"
               body: "*"
             };
       }
 
-      rpc GetContinuousIntegration(service.v1alpha1.ContinuousIntegrationRequest) returns(service.v1alpha1.ContinuousIntegration) {
+      rpc GetContinuousIntegration(ContinuousIntegrationRequest) returns(ContinuousIntegration) {
             option (google.api.http) = {
               get: "/api/v1alpha1/service/continuousintegration"
             };
       }
 
-      rpc GetContinuousIntegrations(service.v1alpha1.ContinuousIntegrationRequest) returns(service.v1alpha1.ContinuousIntegrations) {
+      rpc GetContinuousIntegrations(ContinuousIntegrationRequest) returns(ContinuousIntegrations) {
             option (google.api.http) = {
               get: "/api/v1alpha1/service/continuousintegrations"
             };
       }
 
-      rpc DeleteContinuousIntegration(service.v1alpha1.ContinuousIntegrationRequest) returns(common.Msg) {
+      rpc DeleteContinuousIntegration(ContinuousIntegrationRequest) returns(common.Msg) {
             option (google.api.http) = {
               delete: "/api/v1alpha1/service/continuousintegration"
             };
       }
 
-      rpc CreateContinuousDeployment(service.v1alpha1.ContinuousDeployment) returns(common.Msg) {
+      rpc CreateContinuousDeployment(ContinuousDeployment) returns(common.Msg) {
             option (google.api.http) = {
               post: "/api/v1alpha1/service/continuousdeployment"
               body: "*"
             };
       }
 
-      rpc GetContinuousDeployment(service.v1alpha1.ContinuousDeploymentRequest) returns(service.v1alpha1.ContinuousDeployment) {
+      rpc GetContinuousDeployment(ContinuousDeploymentRequest) returns(ContinuousDeployment) {
             option (google.api.http) = {
               get: "/api/v1alpha1/service/continuousdeployment"
             };
       }
 
-      rpc GetContinuousDeployments(service.v1alpha1.ContinuousDeploymentRequest) returns(service.v1alpha1.ContinuousDeployments) {
+      rpc GetContinuousDeployments(ContinuousDeploymentRequest) returns(ContinuousDeployments) {
             option (google.api.http) = {
               get: "/api/v1alpha1/service/continuousdeployments"
             };
       }
 
-      rpc DeleteContinuousDeployment(service.v1alpha1.ContinuousDeploymentRequest) returns(common.Msg) {
+      rpc DeleteContinuousDeployment(ContinuousDeploymentRequest) returns(common.Msg) {
             option (google.api.http) = {
               delete: "/api/v1alpha1/service/continuousdeployment"
             };
       }
 
-      rpc ApplyService(service.v1alpha1.ServiceRequest) returns(common.Msg) {
+      rpc ApplyService(ServiceRequest) returns(common.Msg) {
             option (google.api.http) = {
               post: "/api/v1alpha1/service/apply"
               body: "*"

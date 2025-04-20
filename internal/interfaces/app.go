@@ -2,13 +2,11 @@ package interfaces
 
 import (
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"math"
 	"os"
 	"path/filepath"
-	"strings"
 
 	v1alpha1 "github.com/f-rambo/cloud-copilot/api/app/v1alpha1"
 	"github.com/f-rambo/cloud-copilot/api/common"
@@ -146,59 +144,6 @@ func (a *AppInterface) DeleteAppVersion(ctx context.Context, appReq *v1alpha1.Ap
 		return nil, err
 	}
 	return common.Response(), nil
-}
-
-func (a *AppInterface) UploadApp(ctx context.Context, req *v1alpha1.FileUploadRequest) (*v1alpha1.App, error) {
-	var fileExt string = ".tgz"
-	if filepath.Ext(req.GetFileName()) != fileExt {
-		return nil, errors.New("file type is not supported")
-	}
-	appPath := utils.GetServerStoragePathByNames(biz.AppsDir)
-	fileName, err := a.upload(appPath, req.GetFileName(), req.GetChunk())
-	if err != nil {
-		return nil, err
-	}
-	appTmpChartPath := filepath.Join(appPath, fileName)
-	app := &biz.App{Versions: make([]*biz.AppVersion, 0)}
-	app.AddVersion(&biz.AppVersion{Chart: appTmpChartPath})
-	err = a.uc.GetAppAndVersionInfo(ctx, app)
-	if err != nil {
-		return nil, err
-	}
-	appTgzFileName := fmt.Sprintf("%s-%s%s", app.Name, app.Versions[0].Version, fileExt)
-	appChartPath := filepath.Join(appPath, appTgzFileName)
-	if utils.IsFileExist(appChartPath) {
-		err = os.Remove(appChartPath)
-		if err != nil {
-			return nil, err
-		}
-	}
-	err = os.Rename(appTmpChartPath, appChartPath)
-	if err != nil {
-		return nil, err
-	}
-	return a.bizAppToApp(app)
-}
-
-func (a *AppInterface) upload(path, filename, chunk string) (string, error) {
-	data, err := base64.StdEncoding.DecodeString(chunk[strings.IndexByte(chunk, ',')+1:])
-	if err != nil {
-		return "", err
-	}
-	file, err := utils.NewFile(path, filename, false)
-	if err != nil {
-		return "", err
-	}
-	defer func() {
-		if file != nil {
-			file.Close()
-		}
-	}()
-	err = file.Write(data)
-	if err != nil {
-		return "", err
-	}
-	return file.GetFileName(), nil
 }
 
 func (a *AppInterface) CreateAppType(ctx context.Context, appType *v1alpha1.AppType) (*common.Msg, error) {
@@ -456,6 +401,52 @@ func (a *AppInterface) DeleteAppRelease(ctx context.Context, appReleaseReq *v1al
 		return nil, errors.New("app release id is required")
 	}
 	err := a.uc.DeleteAppRelease(ctx, appReleaseReq.Id)
+	if err != nil {
+		return nil, err
+	}
+	return common.Response(), nil
+}
+
+func (a *AppInterface) UploadApp(ctx context.Context, _ *emptypb.Empty) (*common.Msg, error) {
+	appPath := utils.GetServerStoragePathByNames(biz.AppsDir)
+	appFileName, err := utils.AcceptingFile(ctx, appPath)
+	if err != nil {
+		return nil, err
+	}
+	app := &biz.App{Versions: make([]*biz.AppVersion, 0)}
+	app.AddVersion(&biz.AppVersion{Chart: filepath.Join(appPath, appFileName)})
+	err = a.uc.GetAppAndVersionInfo(ctx, app)
+	if err != nil {
+		return nil, err
+	}
+	appVersion := app.GetLastVersion()
+	appTgzFileName := fmt.Sprintf("%s-%s.tgz", app.Name, appVersion.Version)
+	appChartPath := filepath.Join(appPath, appTgzFileName)
+	if utils.IsFileExist(appChartPath) {
+		err = os.Remove(appChartPath)
+		if err != nil {
+			return nil, err
+		}
+	}
+	err = os.Rename(filepath.Join(appPath, appFileName), appChartPath)
+	if err != nil {
+		return nil, err
+	}
+	appData, err := a.uc.GetAppByName(ctx, app.Name)
+	if err != nil {
+		return nil, err
+	}
+	if !appData.IsEmpty() {
+		appData.DeleteVersion(appVersion.Version)
+		appData.AddVersion(appVersion)
+		appData.UpdateApp(app)
+		err = a.uc.Save(ctx, appData)
+		if err != nil {
+			return nil, err
+		}
+		return common.Response(), nil
+	}
+	err = a.uc.Save(ctx, app)
 	if err != nil {
 		return nil, err
 	}

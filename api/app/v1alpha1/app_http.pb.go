@@ -60,13 +60,12 @@ type AppInterfaceHTTPServer interface {
 	Save(context.Context, *App) (*common.Msg, error)
 	SaveAppRelease(context.Context, *AppReleaseReq) (*AppRelease, error)
 	SaveRepo(context.Context, *AppRepo) (*common.Msg, error)
-	UploadApp(context.Context, *FileUploadRequest) (*App, error)
+	UploadApp(context.Context, *emptypb.Empty) (*common.Msg, error)
 }
 
 func RegisterAppInterfaceHTTPServer(s *http.Server, srv AppInterfaceHTTPServer) {
 	r := s.Route("/")
 	r.GET("/api/v1alpha1/app/ping", _AppInterface_Ping1_HTTP_Handler(srv))
-	r.POST("/api/v1alpha1/app/upload", _AppInterface_UploadApp0_HTTP_Handler(srv))
 	r.POST("/api/v1alpha1/app/save", _AppInterface_Save1_HTTP_Handler(srv))
 	r.GET("/api/v1alpha1/app", _AppInterface_Get1_HTTP_Handler(srv))
 	r.GET("/api/v1alpha1/app/list", _AppInterface_List1_HTTP_Handler(srv))
@@ -84,6 +83,7 @@ func RegisterAppInterfaceHTTPServer(s *http.Server, srv AppInterfaceHTTPServer) 
 	r.GET("/api/v1alpha1/app/release/resources", _AppInterface_GetAppReleaseResources0_HTTP_Handler(srv))
 	r.POST("/api/v1alpha1/app/release", _AppInterface_SaveAppRelease0_HTTP_Handler(srv))
 	r.DELETE("/api/v1alpha1/app/release", _AppInterface_DeleteAppRelease0_HTTP_Handler(srv))
+	r.POST("/api/v1alpha1/app/upload", _AppInterface_UploadApp0_HTTP_Handler(srv))
 }
 
 func _AppInterface_Ping1_HTTP_Handler(srv AppInterfaceHTTPServer) func(ctx http.Context) error {
@@ -101,28 +101,6 @@ func _AppInterface_Ping1_HTTP_Handler(srv AppInterfaceHTTPServer) func(ctx http.
 			return err
 		}
 		reply := out.(*common.Msg)
-		return ctx.Result(200, reply)
-	}
-}
-
-func _AppInterface_UploadApp0_HTTP_Handler(srv AppInterfaceHTTPServer) func(ctx http.Context) error {
-	return func(ctx http.Context) error {
-		var in FileUploadRequest
-		if err := ctx.Bind(&in); err != nil {
-			return err
-		}
-		if err := ctx.BindQuery(&in); err != nil {
-			return err
-		}
-		http.SetOperation(ctx, OperationAppInterfaceUploadApp)
-		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.UploadApp(ctx, req.(*FileUploadRequest))
-		})
-		out, err := h(ctx, &in)
-		if err != nil {
-			return err
-		}
-		reply := out.(*App)
 		return ctx.Result(200, reply)
 	}
 }
@@ -462,6 +440,28 @@ func _AppInterface_DeleteAppRelease0_HTTP_Handler(srv AppInterfaceHTTPServer) fu
 	}
 }
 
+func _AppInterface_UploadApp0_HTTP_Handler(srv AppInterfaceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in emptypb.Empty
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationAppInterfaceUploadApp)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.UploadApp(ctx, req.(*emptypb.Empty))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*common.Msg)
+		return ctx.Result(200, reply)
+	}
+}
+
 type AppInterfaceHTTPClient interface {
 	AppReleaseList(ctx context.Context, req *AppReleaseReq, opts ...http.CallOption) (rsp *AppReleaseList, err error)
 	CreateAppType(ctx context.Context, req *AppType, opts ...http.CallOption) (rsp *common.Msg, err error)
@@ -481,7 +481,7 @@ type AppInterfaceHTTPClient interface {
 	Save(ctx context.Context, req *App, opts ...http.CallOption) (rsp *common.Msg, err error)
 	SaveAppRelease(ctx context.Context, req *AppReleaseReq, opts ...http.CallOption) (rsp *AppRelease, err error)
 	SaveRepo(ctx context.Context, req *AppRepo, opts ...http.CallOption) (rsp *common.Msg, err error)
-	UploadApp(ctx context.Context, req *FileUploadRequest, opts ...http.CallOption) (rsp *App, err error)
+	UploadApp(ctx context.Context, req *emptypb.Empty, opts ...http.CallOption) (rsp *common.Msg, err error)
 }
 
 type AppInterfaceHTTPClientImpl struct {
@@ -726,8 +726,8 @@ func (c *AppInterfaceHTTPClientImpl) SaveRepo(ctx context.Context, in *AppRepo, 
 	return &out, nil
 }
 
-func (c *AppInterfaceHTTPClientImpl) UploadApp(ctx context.Context, in *FileUploadRequest, opts ...http.CallOption) (*App, error) {
-	var out App
+func (c *AppInterfaceHTTPClientImpl) UploadApp(ctx context.Context, in *emptypb.Empty, opts ...http.CallOption) (*common.Msg, error) {
+	var out common.Msg
 	pattern := "/api/v1alpha1/app/upload"
 	path := binding.EncodeURL(pattern, in, false)
 	opts = append(opts, http.Operation(OperationAppInterfaceUploadApp))

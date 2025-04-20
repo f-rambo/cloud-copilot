@@ -3,7 +3,6 @@ package data
 import (
 	"context"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/f-rambo/cloud-copilot/internal/biz"
@@ -11,6 +10,7 @@ import (
 	"github.com/f-rambo/cloud-copilot/utils"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/wire"
+	"github.com/pkg/errors"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	gormlogger "gorm.io/gorm/logger"
@@ -40,21 +40,17 @@ func NewData(c *conf.Bootstrap, logger log.Logger) (*Data, func(), error) {
 		log.Info("closing the data resources")
 	}
 
-	dbFile := fmt.Sprintf("%s.db", c.Data.GetDatabase())
+	dbFile := fmt.Sprintf("%s.db", c.Server.Name)
 	if !utils.IsFileExist(dbFile) {
-		if err := utils.CreateFile(dbFile); err != nil {
-			return data, cleanup, fmt.Errorf("create db file %s failed: %w", dbFile, err)
+		err = utils.CreateFile(dbFile)
+		if err != nil {
+			return data, cleanup, errors.New("create db file failed")
 		}
 	}
 
-	tablePrefix := fmt.Sprintf("%s_", strings.ReplaceAll(c.Data.GetDatabase(), "-", ""))
-
 	data.db, err = gorm.Open(sqlite.Open(dbFile), &gorm.Config{
-		Logger: data,
-		NamingStrategy: schema.NamingStrategy{
-			TablePrefix:   tablePrefix,
-			SingularTable: true,
-		},
+		Logger:         data,
+		NamingStrategy: schema.NamingStrategy{SingularTable: true},
 	})
 	if err != nil {
 		return data, cleanup, err

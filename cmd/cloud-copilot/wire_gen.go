@@ -33,11 +33,15 @@ func wireApp(bootstrap *conf.Bootstrap, logger log.Logger) (*kratos.App, func(),
 	}
 	clusterData := data.NewClusterRepo(dataData, logger)
 	baremetal := infrastructure.NewBaremetal(bootstrap, logger)
-	aliCloudUsecase := infrastructure.NewAliCloudUseCase(logger)
-	awsCloudUsecase := infrastructure.NewAwsCloudUseCase(logger)
+	aliCloudUsecase := infrastructure.NewAliCloudUseCase(bootstrap, logger)
+	awsCloudUsecase := infrastructure.NewAwsCloudUseCase(bootstrap, logger)
 	clusterInfrastructure := infrastructure.NewInfrastructure(bootstrap, baremetal, aliCloudUsecase, awsCloudUsecase, logger)
 	clusterRuntime := runtime.NewClusterRuntime(logger)
-	clusterUsecase := biz.NewClusterUseCase(bootstrap, clusterData, clusterInfrastructure, clusterRuntime, logger)
+	clusterUsecase, err := biz.NewClusterUseCase(bootstrap, clusterData, clusterInfrastructure, clusterRuntime, logger)
+	if err != nil {
+		cleanup()
+		return nil, nil, err
+	}
 	clusterInterface := interfaces.NewClusterInterface(clusterUsecase, bootstrap, logger)
 	appData := data.NewAppRepo(dataData, logger)
 	appRuntime := runtime.NewAppRuntime(logger)

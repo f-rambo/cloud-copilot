@@ -16,117 +16,117 @@ service AppInterface {
             };
       }
 
-      rpc UploadApp(app.v1alpha1.FileUploadRequest) returns(app.v1alpha1.App) {
-            option (google.api.http) = {
-                  post: "/api/v1alpha1/app/upload"
-                  body: "*"
-            };
-      }
-
-      rpc Save(app.v1alpha1.App) returns (common.Msg) {
+      rpc Save(App) returns (common.Msg) {
             option (google.api.http) = {
                   post: "/api/v1alpha1/app/save"
                   body: "*"
             };
       }
 
-      rpc Get(app.v1alpha1.AppReq) returns (app.v1alpha1.App) {
+      rpc Get(AppReq) returns (App) {
             option (google.api.http) = {
                   get: "/api/v1alpha1/app"
             };
       }
 
-      rpc List(app.v1alpha1.AppReq) returns (app.v1alpha1.AppList) {
+      rpc List(AppReq) returns (AppList) {
             option (google.api.http) = {
                   get: "/api/v1alpha1/app/list"
             };
       }
 
-      rpc Delete(app.v1alpha1.AppReq) returns (common.Msg) {
+      rpc Delete(AppReq) returns (common.Msg) {
             option (google.api.http) = {
                   delete: "/api/v1alpha1/app"
             };
       }
 
-      rpc CreateAppType(app.v1alpha1.AppType) returns (common.Msg) {
+      rpc CreateAppType(AppType) returns (common.Msg) {
             option (google.api.http) = {
                   post: "/api/v1alpha1/app/type"
                   body: "*"
             };
       }
 
-      rpc ListAppType(google.protobuf.Empty) returns (app.v1alpha1.AppTypeList) {
+      rpc ListAppType(google.protobuf.Empty) returns (AppTypeList) {
             option (google.api.http) = {
                   get: "/api/v1alpha1/app/type/list"
             };
       }
 
-      rpc DeleteAppType(app.v1alpha1.AppTypeReq) returns (common.Msg) {
+      rpc DeleteAppType(AppTypeReq) returns (common.Msg) {
             option (google.api.http) = {
                   delete: "/api/v1alpha1/app/type"
             };
       }
 
-      rpc SaveRepo(app.v1alpha1.AppRepo) returns (common.Msg) {
+      rpc SaveRepo(AppRepo) returns (common.Msg) {
             option (google.api.http) = {
                   post: "/api/v1alpha1/app/repo"
                   body: "*"
             };
       }
 
-      rpc ListRepo(google.protobuf.Empty) returns (app.v1alpha1.AppRepoList) {
+      rpc ListRepo(google.protobuf.Empty) returns (AppRepoList) {
             option (google.api.http) = {
                   get: "/api/v1alpha1/app/repo/list"
             };
       }
 
-      rpc DeleteRepo(app.v1alpha1.AppRepoReq) returns (common.Msg) {
+      rpc DeleteRepo(AppRepoReq) returns (common.Msg) {
             option (google.api.http) = {
                   delete: "/api/v1alpha1/app/repo"
             };
       }
 
-      rpc GetAppsByRepo(app.v1alpha1.AppRepoReq) returns (app.v1alpha1.AppList) {
+      rpc GetAppsByRepo(AppRepoReq) returns (AppList) {
             option (google.api.http) = {
                   get: "/api/v1alpha1/app/repo/apps"
             };
       }
 
-      rpc GetAppDetailByRepo(app.v1alpha1.AppRepoReq) returns (app.v1alpha1.App) {
+      rpc GetAppDetailByRepo(AppRepoReq) returns (App) {
             option (google.api.http) = {
                   get: "/api/v1alpha1/app/repo/app/detail"
             };
       }
 
-      rpc GetAppRelease(app.v1alpha1.AppReleaseReq) returns (app.v1alpha1.AppRelease) {
+      rpc GetAppRelease(AppReleaseReq) returns (AppRelease) {
             option (google.api.http) = {
                   get: "/api/v1alpha1/app/release"
             };
       }
       
-      rpc AppReleaseList(app.v1alpha1.AppReleaseReq) returns (app.v1alpha1.AppReleaseList) {
+      rpc AppReleaseList(AppReleaseReq) returns (app.v1alpha1.AppReleaseList) {
             option (google.api.http) = {
                   get: "/api/v1alpha1/app/release/list"
             };
       }
 
-      rpc GetAppReleaseResources(app.v1alpha1.AppReleaseReq) returns (app.v1alpha1.AppReleasepResources) {
+      rpc GetAppReleaseResources(AppReleaseReq) returns (AppReleasepResources) {
             option (google.api.http) = {
                   get: "/api/v1alpha1/app/release/resources"
             };
       }
 
-      rpc SaveAppRelease(app.v1alpha1.AppReleaseReq) returns (app.v1alpha1.AppRelease) {
+      rpc SaveAppRelease(AppReleaseReq) returns (AppRelease) {
             option (google.api.http) = {
                   post: "/api/v1alpha1/app/release"
                   body: "*"
             };
       }
       
-      rpc DeleteAppRelease(app.v1alpha1.AppReleaseReq) returns (common.Msg) {
+      rpc DeleteAppRelease(AppReleaseReq) returns (common.Msg) {
             option (google.api.http) = {
                   delete: "/api/v1alpha1/app/release"
             };
       }
+
+      rpc UploadApp(google.protobuf.Empty) returns (common.Msg) {
+            option (google.api.http) = {
+                post: "/api/v1alpha1/app/upload"
+                body: "*"
+            };
+      };
 
 }

@@ -621,9 +621,7 @@ paths:
             operationId: AppInterface_UploadApp
             requestBody:
                 content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/app.v1alpha1.FileUploadRequest'
+                    application/json: {}
                 required: true
             responses:
                 "200":
@@ -631,7 +629,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/app.v1alpha1.App'
+                                $ref: '#/components/schemas/common.Msg'
     /api/v1alpha1/cluster:
         get:
             tags:
@@ -1948,19 +1946,6 @@ components:
                         type: string
                 alias:
                     type: string
-        app.v1alpha1.FileUploadRequest:
-            type: object
-            properties:
-                icon:
-                    type: string
-                fileName:
-                    type: string
-                chunk:
-                    type: string
-                resume:
-                    type: boolean
-                finish:
-                    type: boolean
         app.v1alpha1.Maintainer:
             type: object
             properties:

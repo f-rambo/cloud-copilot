@@ -22,7 +22,6 @@ const _ = grpc.SupportPackageIsVersion9
 
 const (
 	AppInterface_Ping_FullMethodName                   = "/app.v1alpha1.AppInterface/Ping"
-	AppInterface_UploadApp_FullMethodName              = "/app.v1alpha1.AppInterface/UploadApp"
 	AppInterface_Save_FullMethodName                   = "/app.v1alpha1.AppInterface/Save"
 	AppInterface_Get_FullMethodName                    = "/app.v1alpha1.AppInterface/Get"
 	AppInterface_List_FullMethodName                   = "/app.v1alpha1.AppInterface/List"
@@ -40,6 +39,7 @@ const (
 	AppInterface_GetAppReleaseResources_FullMethodName = "/app.v1alpha1.AppInterface/GetAppReleaseResources"
 	AppInterface_SaveAppRelease_FullMethodName         = "/app.v1alpha1.AppInterface/SaveAppRelease"
 	AppInterface_DeleteAppRelease_FullMethodName       = "/app.v1alpha1.AppInterface/DeleteAppRelease"
+	AppInterface_UploadApp_FullMethodName              = "/app.v1alpha1.AppInterface/UploadApp"
 )
 
 // AppInterfaceClient is the client API for AppInterface service.
@@ -47,7 +47,6 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type AppInterfaceClient interface {
 	Ping(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*common.Msg, error)
-	UploadApp(ctx context.Context, in *FileUploadRequest, opts ...grpc.CallOption) (*App, error)
 	Save(ctx context.Context, in *App, opts ...grpc.CallOption) (*common.Msg, error)
 	Get(ctx context.Context, in *AppReq, opts ...grpc.CallOption) (*App, error)
 	List(ctx context.Context, in *AppReq, opts ...grpc.CallOption) (*AppList, error)
@@ -65,6 +64,7 @@ type AppInterfaceClient interface {
 	GetAppReleaseResources(ctx context.Context, in *AppReleaseReq, opts ...grpc.CallOption) (*AppReleasepResources, error)
 	SaveAppRelease(ctx context.Context, in *AppReleaseReq, opts ...grpc.CallOption) (*AppRelease, error)
 	DeleteAppRelease(ctx context.Context, in *AppReleaseReq, opts ...grpc.CallOption) (*common.Msg, error)
+	UploadApp(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*common.Msg, error)
 }
 
 type appInterfaceClient struct {
@@ -79,16 +79,6 @@ func (c *appInterfaceClient) Ping(ctx context.Context, in *emptypb.Empty, opts .
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(common.Msg)
 	err := c.cc.Invoke(ctx, AppInterface_Ping_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *appInterfaceClient) UploadApp(ctx context.Context, in *FileUploadRequest, opts ...grpc.CallOption) (*App, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(App)
-	err := c.cc.Invoke(ctx, AppInterface_UploadApp_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -265,12 +255,21 @@ func (c *appInterfaceClient) DeleteAppRelease(ctx context.Context, in *AppReleas
 	return out, nil
 }
 
+func (c *appInterfaceClient) UploadApp(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*common.Msg, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(common.Msg)
+	err := c.cc.Invoke(ctx, AppInterface_UploadApp_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AppInterfaceServer is the server API for AppInterface service.
 // All implementations must embed UnimplementedAppInterfaceServer
 // for forward compatibility.
 type AppInterfaceServer interface {
 	Ping(context.Context, *emptypb.Empty) (*common.Msg, error)
-	UploadApp(context.Context, *FileUploadRequest) (*App, error)
 	Save(context.Context, *App) (*common.Msg, error)
 	Get(context.Context, *AppReq) (*App, error)
 	List(context.Context, *AppReq) (*AppList, error)
@@ -288,6 +287,7 @@ type AppInterfaceServer interface {
 	GetAppReleaseResources(context.Context, *AppReleaseReq) (*AppReleasepResources, error)
 	SaveAppRelease(context.Context, *AppReleaseReq) (*AppRelease, error)
 	DeleteAppRelease(context.Context, *AppReleaseReq) (*common.Msg, error)
+	UploadApp(context.Context, *emptypb.Empty) (*common.Msg, error)
 	mustEmbedUnimplementedAppInterfaceServer()
 }
 
@@ -300,9 +300,6 @@ type UnimplementedAppInterfaceServer struct{}
 
 func (UnimplementedAppInterfaceServer) Ping(context.Context, *emptypb.Empty) (*common.Msg, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Ping not implemented")
-}
-func (UnimplementedAppInterfaceServer) UploadApp(context.Context, *FileUploadRequest) (*App, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method UploadApp not implemented")
 }
 func (UnimplementedAppInterfaceServer) Save(context.Context, *App) (*common.Msg, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Save not implemented")
@@ -355,6 +352,9 @@ func (UnimplementedAppInterfaceServer) SaveAppRelease(context.Context, *AppRelea
 func (UnimplementedAppInterfaceServer) DeleteAppRelease(context.Context, *AppReleaseReq) (*common.Msg, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteAppRelease not implemented")
 }
+func (UnimplementedAppInterfaceServer) UploadApp(context.Context, *emptypb.Empty) (*common.Msg, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UploadApp not implemented")
+}
 func (UnimplementedAppInterfaceServer) mustEmbedUnimplementedAppInterfaceServer() {}
 func (UnimplementedAppInterfaceServer) testEmbeddedByValue()                      {}
 
@@ -390,24 +390,6 @@ func _AppInterface_Ping_Handler(srv interface{}, ctx context.Context, dec func(i
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AppInterfaceServer).Ping(ctx, req.(*emptypb.Empty))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _AppInterface_UploadApp_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(FileUploadRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AppInterfaceServer).UploadApp(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: AppInterface_UploadApp_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AppInterfaceServer).UploadApp(ctx, req.(*FileUploadRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -718,6 +700,24 @@ func _AppInterface_DeleteAppRelease_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AppInterface_UploadApp_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(emptypb.Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AppInterfaceServer).UploadApp(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AppInterface_UploadApp_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AppInterfaceServer).UploadApp(ctx, req.(*emptypb.Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // AppInterface_ServiceDesc is the grpc.ServiceDesc for AppInterface service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -728,10 +728,6 @@ var AppInterface_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Ping",
 			Handler:    _AppInterface_Ping_Handler,
-		},
-		{
-			MethodName: "UploadApp",
-			Handler:    _AppInterface_UploadApp_Handler,
 		},
 		{
 			MethodName: "Save",
@@ -800,6 +796,10 @@ var AppInterface_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeleteAppRelease",
 			Handler:    _AppInterface_DeleteAppRelease_Handler,
+		},
+		{
+			MethodName: "UploadApp",
+			Handler:    _AppInterface_UploadApp_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

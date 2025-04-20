@@ -1,13 +1,12 @@
 package infrastructure
 
 import (
+	"encoding/json"
+	"path/filepath"
 	"time"
 
 	"github.com/f-rambo/cloud-copilot/internal/biz"
-)
-
-var (
-	InstallShell string = "install.sh"
+	"github.com/f-rambo/cloud-copilot/utils"
 )
 
 const (
@@ -58,9 +57,7 @@ var GPUSpecMap = map[string]biz.NodeGPUSpec{
 }
 
 var (
-	Resource string = "resource"
-	Shell    string = "shell"
-
+	InstallShell    string = "install.sh"
 	NodeInitShell   string = "nodeinit.sh"
 	ComponentShell  string = "component.sh"
 	SystemInfoShell string = "systeminfo.sh"
@@ -109,4 +106,17 @@ func getDefaultKuberentesImageRepo() string {
 
 func getAliyunKuberentesImageRepo() string {
 	return "registry.aliyuncs.com/google_containers"
+}
+
+func getRealInstallShell(shellDir string, cluster *biz.Cluster) (string, error) {
+	clusterJsonByte, err := json.Marshal(cluster)
+	if err != nil {
+		return "", err
+	}
+	installShell, err := utils.TransferredMeaning(map[string]string{"clusterJsonData": string(clusterJsonByte)},
+		filepath.Join(shellDir, InstallShell))
+	if err != nil {
+		return "", err
+	}
+	return installShell, nil
 }

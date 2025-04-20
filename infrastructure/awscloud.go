@@ -16,6 +16,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2"
 	elasticloadbalancingv2Types "github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2/types"
 	"github.com/f-rambo/cloud-copilot/internal/biz"
+	"github.com/f-rambo/cloud-copilot/internal/conf"
 	"github.com/f-rambo/cloud-copilot/utils"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/pkg/errors"
@@ -34,14 +35,16 @@ const (
 )
 
 type AwsCloudUsecase struct {
+	c           *conf.Bootstrap
 	ec2Client   *ec2.Client
 	elbv2Client *elasticloadbalancingv2.Client
 	awsConfig   aws.Config
 	log         *log.Helper
 }
 
-func NewAwsCloudUseCase(logger log.Logger) *AwsCloudUsecase {
+func NewAwsCloudUseCase(c *conf.Bootstrap, logger log.Logger) *AwsCloudUsecase {
 	return &AwsCloudUsecase{
+		c:   c,
 		log: log.NewHelper(logger),
 	}
 }
@@ -612,7 +615,11 @@ func (a *AwsCloudUsecase) ManageInstance(ctx context.Context, cluster *biz.Clust
 				},
 			}
 			if cluster.Status == biz.ClusterStatus_STARTING && node.Role == biz.NodeRole_MASTER {
-				installShell, readShellErr := os.ReadFile(utils.GetShellPath(InstallShell))
+				realInstallShell, realInstallShellErr := getRealInstallShell(a.c.Infrastructure.ShellPath, cluster)
+				if realInstallShellErr != nil {
+					return realInstallShellErr
+				}
+				installShell, readShellErr := os.ReadFile(realInstallShell)
 				if readShellErr != nil {
 					return readShellErr
 				}

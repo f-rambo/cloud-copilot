@@ -54,6 +54,7 @@ build-linux-amd64:
 
 .PHONY: build-all
 build-all:
+	make build;
 	make build-linux-arm64;
 	make build-linux-amd64;
 
@@ -98,6 +99,7 @@ package:
 		cp ./bin/$(SERVER_NAME)-linux-arm64 ./$(SERVER_NAME)-arm64-$(VERSION)/$(SERVER_NAME) && \
 		[ -d "./shell" ] && cp -r ./shell ./$(SERVER_NAME)-arm64-$(VERSION)/ && \
 		[ -d "./component" ] && cp -r ./component ./$(SERVER_NAME)-arm64-$(VERSION)/ && \
+		[ -d "./configs" ] && cp -r ./configs ./$(SERVER_NAME)-arm64-$(VERSION)/ && \
 		tar -C./ -czvf $(SERVER_NAME)-arm64-$(VERSION).tar.gz ./$(SERVER_NAME)-arm64-$(VERSION) && \
 		rm -rf ./$(SERVER_NAME)-arm64-$(VERSION); \
 	fi
@@ -107,14 +109,23 @@ package:
 		cp ./bin/$(SERVER_NAME)-linux-amd64 ./$(SERVER_NAME)-amd64-$(VERSION)/$(SERVER_NAME) && \
 		[ -d "./shell" ] && cp -r ./shell ./$(SERVER_NAME)-amd64-$(VERSION)/ && \
 		[ -d "./component" ] && cp -r ./component ./$(SERVER_NAME)-amd64-$(VERSION)/ && \
+		[ -d "./configs" ] && cp -r ./configs ./$(SERVER_NAME)-amd64-$(VERSION)/ && \
 		tar -C./ -czvf $(SERVER_NAME)-amd64-$(VERSION).tar.gz ./$(SERVER_NAME)-amd64-$(VERSION) && \
 		rm -rf ./$(SERVER_NAME)-amd64-$(VERSION); \
 	fi
+
+.PHONY: clean
+clean:
+	rm -rf ./resource-$(VERSION).tar.gz
+	rm -rf ./$(SERVER_NAME)-arm64-$(VERSION).tar.gz
+	rm -rf ./$(SERVER_NAME)-amd64-$(VERSION).tar.gz
+	rm -rf ./bin
 
 .PHONY: all
 all:
 	make api;
 	make generate;
+	make build-all;
 
 help:
 	@echo ''

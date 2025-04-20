@@ -16,88 +16,88 @@ service ClusterInterface {
             };
       }
 
-      rpc GetClusterProviders(google.protobuf.Empty) returns (cluster.v1alpha1.ClusterProviders) {
+      rpc GetClusterProviders(google.protobuf.Empty) returns (ClusterProviders) {
             option (google.api.http) = {
               get: "/api/v1alpha1/cluster/providers"
             };
       }
 
-      rpc GetClusterStatuses(google.protobuf.Empty) returns (cluster.v1alpha1.ClusterStatuses) {
+      rpc GetClusterStatuses(google.protobuf.Empty) returns (ClusterStatuses) {
             option (google.api.http) = {
               get: "/api/v1alpha1/cluster/statuses"
             };
       }
 
-      rpc GetClusterLevels(google.protobuf.Empty) returns (cluster.v1alpha1.ClusterLevels) {
+      rpc GetClusterLevels(google.protobuf.Empty) returns (ClusterLevels) {
             option (google.api.http) = {
               get: "/api/v1alpha1/cluster/levels"
             };
       }
 
-      rpc GetNodeRoles(google.protobuf.Empty) returns (cluster.v1alpha1.NodeRoles) {
+      rpc GetNodeRoles(google.protobuf.Empty) returns (NodeRoles) {
             option (google.api.http) = {
               get: "/api/v1alpha1/cluster/node/roles"
             };
       }
 
-      rpc GetNodeStatuses(google.protobuf.Empty) returns (cluster.v1alpha1.NodeStatuses) {
+      rpc GetNodeStatuses(google.protobuf.Empty) returns (NodeStatuses) {
             option (google.api.http) = {
               get: "/api/v1alpha1/cluster/node/statuses"
             };
       }
       
-      rpc GetNodeGroupTypes(google.protobuf.Empty) returns (cluster.v1alpha1.NodeGroupTypes) {
+      rpc GetNodeGroupTypes(google.protobuf.Empty) returns (NodeGroupTypes) {
             option (google.api.http) = {
               get: "/api/v1alpha1/cluster/node/group/types"
             };
       }
 
-      rpc GetResourceTypes(google.protobuf.Empty) returns (cluster.v1alpha1.ResourceTypes) {
+      rpc GetResourceTypes(google.protobuf.Empty) returns (ResourceTypes) {
             option (google.api.http) = {
               get: "/api/v1alpha1/cluster/resource/types"
             };
       }
       
-      rpc Get(cluster.v1alpha1.ClusterArgs) returns (cluster.v1alpha1.Cluster) {
+      rpc Get(ClusterArgs) returns (Cluster) {
             option (google.api.http) = {
               get: "/api/v1alpha1/cluster"
             };
       }
 
-      rpc Save(cluster.v1alpha1.ClusterSaveArgs) returns (cluster.v1alpha1.Cluster) {
+      rpc Save(ClusterSaveArgs) returns (Cluster) {
             option (google.api.http) = {
               post: "/api/v1alpha1/cluster"
               body: "*"
             };
       }
 
-      rpc List(cluster.v1alpha1.ClusterArgs) returns (cluster.v1alpha1.ClusterList) {
+      rpc List(ClusterArgs) returns (ClusterList) {
             option (google.api.http) = {
               get: "/api/v1alpha1/cluster/list"
             };
       }
 
-      rpc Delete(cluster.v1alpha1.ClusterArgs) returns (common.Msg) {
+      rpc Delete(ClusterArgs) returns (common.Msg) {
             option (google.api.http) = {
               delete: "/api/v1alpha1/cluster"
             };
       }
 
-      rpc Start(cluster.v1alpha1.ClusterArgs) returns (common.Msg) {
+      rpc Start(ClusterArgs) returns (common.Msg) {
             option (google.api.http) = {
               post: "/api/v1alpha1/cluster/start"
               body: "*"
             };
       }
 
-      rpc Stop(cluster.v1alpha1.ClusterArgs) returns (common.Msg) {
+      rpc Stop(ClusterArgs) returns (common.Msg) {
             option (google.api.http) = {
               post: "/api/v1alpha1/cluster/stop"
               body: "*"
             };
       }
 
-      rpc GetRegions(cluster.v1alpha1.ClusterRegionArgs) returns (cluster.v1alpha1.Regions) {
+      rpc GetRegions(ClusterRegionArgs) returns (Regions) {
             option (google.api.http) = {
               get: "/api/v1alpha1/cluster/regions"
             };

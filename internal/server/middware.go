@@ -133,7 +133,7 @@ func BizContext(clusterApi *interfaces.ClusterInterface, projectApi *interfaces.
 func NewWhiteListMatcher() selector.MatchFunc {
 	whiteList := []string{
 		"/user.v1alpha1.UserInterface/SignIn",
-		"/cluster.v1alpha1.ClusterInterface/GetLogs",
+		"/cluster.v1alpha1.ClusterInterface/UploadFile",
 	}
 	return func(ctx context.Context, operation string) bool {
 		for _, v := range whiteList {

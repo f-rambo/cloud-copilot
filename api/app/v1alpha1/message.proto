@@ -81,18 +81,6 @@ message AppList {
       repeated App items = 3;
 }
 
-message FileUploadRequest {
-      string icon = 1;
-      string file_name = 2;
-      string chunk = 3;
-      bool resume = 4;
-      bool finish = 5;
-}
-
-message FileUploadResponse {
-      string file_name = 1 [json_name="file_name"];
-}
-
 message AppType {
       int64 id = 1;
       string name = 2;
@@ -178,4 +166,10 @@ message AppReleaseResource {
       repeated string events = 3 [json_name="events"];
       string started_at = 4 [json_name="started_at"];
       repeated string status = 5 [json_name="status"];
+}
+
+message AppUploadRequest {
+      string filename = 1;
+      bytes content = 2;
+      string content_type = 3;
 }

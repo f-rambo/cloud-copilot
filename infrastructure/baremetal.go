@@ -35,7 +35,7 @@ func (b *Baremetal) getClusterNodeRemoteBash(cluster *biz.Cluster, node *biz.Nod
 		User:       node.User,
 		Port:       defaultSHHPort,
 		PrivateKey: cluster.PrivateKey,
-	}, Shell, b.log)
+	}, b.c.Infrastructure.ShellPath, b.log)
 }
 
 func (b *Baremetal) nodeInstallInit(cluster *biz.Cluster, node *biz.Node) error {
@@ -52,7 +52,8 @@ func (b *Baremetal) nodeInstallInit(cluster *biz.Cluster, node *biz.Node) error 
 	if cluster.Provider == biz.ClusterProvider_AliCloud {
 		k8sImageRepo = getAliyunKuberentesImageRepo()
 	}
-	err = remoteBash.ExecShellLogging(ComponentShell, filepath.Join(userHomePath, Resource), k8sImageRepo, getKubernetesVersion())
+	err = remoteBash.ExecShellLogging(ComponentShell,
+		filepath.Join(userHomePath, b.c.Infrastructure.ResourcePath), k8sImageRepo, getKubernetesVersion())
 	if err != nil {
 		return err
 	}
@@ -65,7 +66,7 @@ func (b *Baremetal) migrateResources(cluster *biz.Cluster, node *biz.Node) error
 	if err != nil {
 		return err
 	}
-	remoteResroucePath := filepath.Join(userHomePath, Resource)
+	remoteResroucePath := filepath.Join(userHomePath, b.c.Infrastructure.ResourcePath)
 	fileNumber, err := remoteBash.Run(fmt.Sprintf("ls %s | wc -l", remoteResroucePath))
 	if err != nil {
 		return err
@@ -106,7 +107,7 @@ func (b *Baremetal) GetNodesSystemInfo(ctx context.Context, cluster *biz.Cluster
 				User:       cluster.Username,
 				Port:       defaultSHHPort,
 				PrivateKey: cluster.PrivateKey,
-			}, Shell, b.log)
+			}, b.c.Infrastructure.ShellPath, b.log)
 			systemInfoOutput, err := remoteBash.ExecShell(SystemInfoShell)
 			if err != nil {
 				b.log.Errorf("node %s connection refused", ip)
@@ -216,7 +217,7 @@ func (b *Baremetal) ApplyCloudCopilot(ctx context.Context, cluster *biz.Cluster)
 	if ok {
 		arch = archMapVal
 	}
-	kubeCtlPath := filepath.Join(userHomePath, Resource, arch, "kubernetes", getKubernetesVersion(), "kubectl")
+	kubeCtlPath := filepath.Join(userHomePath, b.c.Infrastructure.ResourcePath, arch, "kubernetes", getKubernetesVersion(), "kubectl")
 	err = remoteBash.RunWithLogging("install -m 755", kubeCtlPath, "/usr/local/bin/kubectl")
 	if err != nil {
 		return err
@@ -281,8 +282,11 @@ func (b *Baremetal) PreInstall(cluster *biz.Cluster) error {
 	}
 	for _, node := range cluster.Nodes {
 		if node.Role == biz.NodeRole_MASTER {
-			// as cloud user data
-			err := b.getClusterNodeRemoteBash(cluster, node).ExecShellLogging(InstallShell)
+			realInstallShell, err := getRealInstallShell(b.c.Infrastructure.ShellPath, cluster)
+			if err != nil {
+				return err
+			}
+			err = b.getClusterNodeRemoteBash(cluster, node).ExecShellLogging(realInstallShell)
 			if err != nil {
 				return err
 			}
@@ -354,7 +358,7 @@ func (b *Baremetal) uninstallNode(cluster *biz.Cluster, node *biz.Node) error {
 		User:       node.User,
 		Port:       defaultSHHPort,
 		PrivateKey: cluster.PrivateKey,
-	}, Shell, b.log)
+	}, b.c.Infrastructure.ShellPath, b.log)
 	err := remoteBash.RunWithLogging("sudo kubeadm reset --force")
 	if err != nil {
 		return err

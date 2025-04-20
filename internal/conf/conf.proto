@@ -8,6 +8,7 @@ option go_package = "github.com/f-rambo/cloud-copilot/internal/conf;conf";
 message Infrastructure {
   string shell_path = 1;
   string resource_path = 2;
+  string cluster_path = 3;
 }
 
 message HTTPServer {

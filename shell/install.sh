@@ -24,6 +24,12 @@ x86_64)
       ;;
 esac
 
+clusterJsonData="{{clusterJsonData}}" # Here is the clusterJsonData from the template variable example: {"name": "test", "region": "ap-southeast-1"}
+if [ -z "$clusterJsonData" ]; then
+      log "Error: clusterJsonData is empty."
+      exit 1
+fi
+
 cloudCopilotVersion="v0.0.1"
 
 packageName="cloud-copilot-"$ARCH"-"$cloudCopilotVersion
@@ -45,6 +51,15 @@ function install_cloud_copilot() {
             log "Error: Failed to extract cloud copilot."
             exit 1
       fi
+      if ! sudo cp -r $packageName"/configs" $HOME/; then
+            log "Error: Failed to move cloud copilot."
+            exit 1
+      fi
+
+      echo "$clusterJsonData" >$HOME"/cluster.json"
+
+      sed -i "s#cluster_path: \"\"#cluster_path: \"$HOME/cluster.json\"#" $HOME"/configs/config.yaml"
+
       if ! sudo cp -r $packageName"/shell" $HOME/; then
             log "Error: Failed to move cloud copilot."
             exit 1

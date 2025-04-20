@@ -2,6 +2,8 @@ package biz
 
 import (
 	"context"
+	"slices"
+	"sort"
 	"sync"
 
 	"github.com/f-rambo/cloud-copilot/internal/conf"
@@ -178,6 +180,45 @@ func GetAppById(apps []*App, id int64) *App {
 	return nil
 }
 
+func (a *App) UpdateApp(app *App) {
+	a.Name = app.Name
+	a.Icon = app.Icon
+	a.AppTypeId = app.AppTypeId
+	a.Description = app.Description
+	a.AppRepoId = app.AppRepoId
+	a.AppTypeId = app.AppTypeId
+}
+
+func (a *App) SortVersions() {
+	if len(a.Versions) == 0 {
+		return
+	}
+	sort.Slice(a.Versions, func(i, j int) bool {
+		return a.Versions[i].Version < a.Versions[j].Version
+	})
+}
+
+func (a *App) GetLastVersion() *AppVersion {
+	if len(a.Versions) == 0 {
+		return nil
+	}
+	a.SortVersions()
+	return a.Versions[len(a.Versions)-1]
+}
+
+func (a *App) IsEmpty() bool {
+	return a.Id == 0
+}
+
+func (a *App) GetVersion(version string) *AppVersion {
+	for _, v := range a.Versions {
+		if v.Version == version {
+			return v
+		}
+	}
+	return nil
+}
+
 func (a *App) GetLabels() map[string]string {
 	return map[string]string{
 		"app": a.Name,
@@ -206,7 +247,7 @@ func (a *App) GetVersionById(id int64) *AppVersion {
 func (a *App) DeleteVersion(version string) {
 	for index, v := range a.Versions {
 		if v.Version == version {
-			a.Versions = append(a.Versions[:index], a.Versions[index+1:]...)
+			a.Versions = slices.Delete(a.Versions, index, index+1)
 			return
 		}
 	}

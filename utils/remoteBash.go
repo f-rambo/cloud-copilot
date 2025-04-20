@@ -32,15 +32,7 @@ type Server struct {
 	PrivateKey string `json:"private_key,omitempty"`
 }
 
-var shellDirName string = "shell"
-
 func NewRemoteBash(server Server, shellDir string, log *log.Helper) *RemoteBash {
-	if server.Port == 0 {
-		server.Port = 22
-	}
-	if shellDir == "" {
-		shellDir = shellDirName
-	}
 	return &RemoteBash{server: server, shellDir: shellDir, log: log}
 }
 
@@ -244,10 +236,6 @@ func (s *RemoteBash) ExecShell(shellName string, args ...string) (stdout string,
 		}
 	}
 	return s.Run(fmt.Sprintf("sudo bash %s", execShellPath), args...)
-}
-
-func GetShellPath(shellName string) string {
-	return filepath.Join(shellDirName, shellName)
 }
 
 func (s *RemoteBash) SftpDirectory(localDir, remoteDir string) error {

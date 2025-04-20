@@ -9,27 +9,27 @@ import "api/user/v1alpha1/message.proto";
 option go_package = "api/user/v1alpha1;v1alpha1";
 
 service UserInterface {
-      rpc SignIn(user.v1alpha1.SignIn) returns (user.v1alpha1.User) {
+      rpc SignIn(user.v1alpha1.SignIn) returns (User) {
             option (google.api.http) = {
               post: "/api/v1alpha1/user/signin"
               body: "*"
             };
       }
 
-      rpc GetUsers(user.v1alpha1.UsersRequest) returns (user.v1alpha1.Users) {
+      rpc GetUsers(UsersRequest) returns (Users) {
             option (google.api.http) = {
               get: "/api/v1alpha1/users"
             };
       }
 
-      rpc SaveUser(user.v1alpha1.User) returns (user.v1alpha1.User) {
+      rpc SaveUser(User) returns (User) {
             option (google.api.http) = {
               post: "/api/v1alpha1/user"
               body: "*"
             };
       }
 
-      rpc DeleteUser(user.v1alpha1.User) returns (common.Msg) {
+      rpc DeleteUser(User) returns (common.Msg) {
             option (google.api.http) = {
               delete: "/api/v1alpha1/user"
             };

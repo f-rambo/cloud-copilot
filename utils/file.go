@@ -1,20 +1,21 @@
 package utils
 
 import (
+	"bytes"
+	"context"
+
 	"fmt"
 	"io"
 	"math/rand"
+	"mime/multipart"
+	"net/http"
 	"os"
 	"path/filepath"
 	"time"
-)
 
-func GetServerStoragePathByNames(packageNames ...string) string {
-	if len(packageNames) == 0 {
-		return ""
-	}
-	return filepath.Join(packageNames...)
-}
+	kratosHttp "github.com/go-kratos/kratos/v2/transport/http"
+	"github.com/pkg/errors"
+)
 
 type File struct {
 	path       string
@@ -143,8 +144,114 @@ func (f *File) deleteFile() error {
 	return os.Remove(f.path + f.name)
 }
 
-func GetFilePathAndName(path string) (string, string) {
-	fileName := filepath.Base(path)
-	filePath := path[:len(path)-len(fileName)]
-	return filePath, fileName
+func GetServerStoragePathByNames(packageNames ...string) string {
+	if len(packageNames) == 0 {
+		return ""
+	}
+	return filepath.Join(packageNames...)
+}
+
+func AcceptingFile(ctx context.Context, uploadDir string) (string, error) {
+	httpReq, ok := kratosHttp.RequestFromServerContext(ctx)
+	if !ok {
+		return "", errors.New("failed to get http request")
+	}
+
+	// Parse multipart form
+	if err := httpReq.ParseMultipartForm(64 << 20); err != nil {
+		return "", errors.Wrap(err, "failed to parse multipart form")
+	}
+
+	// Get uploaded file
+	file, header, err := httpReq.FormFile("file")
+	if err != nil {
+		return "", errors.Wrap(err, "failed to get uploaded file")
+	}
+	defer file.Close()
+
+	if uploadDir != "" {
+		if err = os.MkdirAll(uploadDir, 0755); err != nil {
+			return "", errors.Wrap(err, "failed to create upload directory")
+		}
+	}
+
+	// Create destination file
+	dst, err := os.Create(filepath.Join(uploadDir, header.Filename))
+	if err != nil {
+		return "", errors.Wrap(err, "failed to create destination file")
+	}
+	defer dst.Close()
+
+	// Copy file content
+	if _, err := io.Copy(dst, file); err != nil {
+		return "", errors.Wrap(err, "failed to copy file content")
+	}
+
+	return header.Filename, nil
+}
+
+// async function uploadFile(file) {
+// 	const formData = new FormData();
+// 	formData.append('file', file);
+
+// 	const response = await fetch('/api/v1alpha1/cluster/upload', {
+// 		method: 'POST',
+// 		body: formData
+// 	});
+
+// 	const result = await response.json();
+// 	return result;
+// }
+//
+// curl -v -X POST http://localhost:8080/api/v1alpha1/cluster/upload \
+//   -F "file=@/path/to/your/file.txt" \
+
+func UploadFile(serverUrl, localFilepath string) error {
+
+	file, err := os.Open(localFilepath)
+	if err != nil {
+		return fmt.Errorf("failed to open file: %v", err)
+	}
+	defer file.Close()
+
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+
+	part, err := writer.CreateFormFile("file", filepath.Base(localFilepath))
+	if err != nil {
+		return fmt.Errorf("failed to create form field: %v", err)
+	}
+
+	if _, err = io.Copy(part, file); err != nil {
+		return fmt.Errorf("failed to copy file content: %v", err)
+	}
+
+	if err = writer.Close(); err != nil {
+		return fmt.Errorf("failed to close writer: %v", err)
+	}
+
+	req, err := http.NewRequest("POST", serverUrl, body)
+	if err != nil {
+		return fmt.Errorf("failed to create request: %v", err)
+	}
+
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to send request: %v", err)
+	}
+	defer resp.Body.Close()
+
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("failed to read response: %v", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("upload failed, status code: %d, response: %s", resp.StatusCode, string(respBody))
+	}
+
+	return nil
 }

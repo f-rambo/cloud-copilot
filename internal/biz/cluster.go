@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
+	"os"
 	"strings"
 	"sync"
 
@@ -607,8 +608,8 @@ type ClusterUsecase struct {
 	log                   *log.Helper
 }
 
-func NewClusterUseCase(conf *confPkg.Bootstrap, clusterData ClusterData, clusterInfrastructure ClusterInfrastructure, clusterRuntime ClusterRuntime, logger log.Logger) *ClusterUsecase {
-	return &ClusterUsecase{
+func NewClusterUseCase(conf *confPkg.Bootstrap, clusterData ClusterData, clusterInfrastructure ClusterInfrastructure, clusterRuntime ClusterRuntime, logger log.Logger) (*ClusterUsecase, error) {
+	clusterUc := &ClusterUsecase{
 		clusterData:           clusterData,
 		clusterInfrastructure: clusterInfrastructure,
 		clusterRuntime:        clusterRuntime,
@@ -617,6 +618,25 @@ func NewClusterUseCase(conf *confPkg.Bootstrap, clusterData ClusterData, cluster
 		locks:                 make(map[int64]*sync.Mutex),
 		eventChan:             make(chan *Cluster, ClusterPoolNumber),
 	}
+	if clusterUc.conf.Infrastructure.ClusterPath != "" {
+		if !utils.IsFileExist(clusterUc.conf.Infrastructure.ClusterPath) {
+			return nil, errors.New("cluster file not exist")
+		}
+		clusterJsonByte, err := os.ReadFile(clusterUc.conf.Infrastructure.ClusterPath)
+		if err != nil {
+			return nil, err
+		}
+		cluster := &Cluster{}
+		err = json.Unmarshal(clusterJsonByte, cluster)
+		if err != nil {
+			return nil, err
+		}
+		err = clusterUc.Apply(cluster)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return clusterUc, nil
 }
 
 func (c *Cluster) IsEmpty() bool {

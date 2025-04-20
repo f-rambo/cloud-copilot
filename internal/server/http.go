@@ -1,6 +1,8 @@
 package server
 
 import (
+	"strings"
+
 	appv1alpha1 "github.com/f-rambo/cloud-copilot/api/app/v1alpha1"
 	clusterv1alpha1 "github.com/f-rambo/cloud-copilot/api/cluster/v1alpha1"
 	projectv1alpha1 "github.com/f-rambo/cloud-copilot/api/project/v1alpha1"
@@ -13,6 +15,7 @@ import (
 	"github.com/go-kratos/kratos/v2/middleware/metadata"
 	"github.com/go-kratos/kratos/v2/middleware/recovery"
 	"github.com/go-kratos/kratos/v2/middleware/selector"
+	"github.com/go-kratos/kratos/v2/middleware/validate"
 	"github.com/go-kratos/kratos/v2/transport/http"
 	"github.com/gorilla/handlers"
 )
@@ -24,7 +27,15 @@ func NewHTTPServer(c *conf.Bootstrap, cluster *interfaces.ClusterInterface, app 
 			selector.Server(NewAuthServer(user, c), BizContext(cluster, project, workspace)).Match(NewWhiteListMatcher()).Build(),
 			recovery.Recovery(),
 			metadata.Server(),
+			validate.Validator(),
 		),
+		http.RequestDecoder(func(r *http.Request, v any) error {
+			if strings.HasPrefix(r.Header.Get("Content-Type"), "multipart/form-data") {
+				return nil
+			}
+			return http.DefaultRequestDecoder(r, v)
+		}),
+		http.ResponseEncoder(http.DefaultResponseEncoder),
 	}
 	cserver := c.Server
 	netWork := cserver.GetHttp().GetNetwork()
@@ -38,7 +49,7 @@ func NewHTTPServer(c *conf.Bootstrap, cluster *interfaces.ClusterInterface, app 
 	opts = append(opts, http.Filter(handlers.CORS(
 		handlers.AllowedOrigins([]string{"*"}),
 		handlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}),
-		handlers.AllowedHeaders([]string{"X-Requested-With", "Content-Type", "Authorization"}),
+		handlers.AllowedHeaders([]string{"X-Requested-With", "Content-Type", "Authorization", "Content-Length", "Content-Disposition"}),
 	)))
 
 	srv := http.NewServer(opts...)

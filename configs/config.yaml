@@ -21,3 +21,4 @@ auth:
 infrastructure:
   shell_path: "shell"
   resource_path: "resource"
+  cluster_path: ""

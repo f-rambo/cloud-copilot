@@ -9,20 +9,20 @@ import "api/workspace/v1alpha1/message.proto";
 option go_package = "api/workspace/v1alpha1;v1alpha1";
 
 service WorkspaceInterface {
-      rpc Save(workspace.v1alpha1.Workspace) returns (common.Msg) {
+      rpc Save(Workspace) returns (common.Msg) {
             option (google.api.http) = {
               post: "/api/v1alpha1/workspace/save"
               body: "*"
             };
       }
 
-      rpc Get(workspace.v1alpha1.WorkspaceParam) returns (workspace.v1alpha1.Workspace) {
+      rpc Get(WorkspaceParam) returns (Workspace) {
             option (google.api.http) = {
               get: "/api/v1alpha1/workspace/get"
             };
       }
       
-      rpc List(workspace.v1alpha1.WorkspaceParam) returns (workspace.v1alpha1.Workspaces) {
+      rpc List(WorkspaceParam) returns (Workspaces) {
             option (google.api.http) = {
               get: "/api/v1alpha1/workspace/list"
             };
