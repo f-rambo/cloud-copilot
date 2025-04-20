@@ -1,8 +1,6 @@
 package server
 
 import (
-	"time"
-
 	appv1alpha1 "github.com/f-rambo/cloud-copilot/api/app/v1alpha1"
 	clusterv1alpha1 "github.com/f-rambo/cloud-copilot/api/cluster/v1alpha1"
 	projectv1alpha1 "github.com/f-rambo/cloud-copilot/api/project/v1alpha1"
@@ -35,10 +33,6 @@ func NewGRPCServer(c *conf.Bootstrap, cluster *interfaces.ClusterInterface, app 
 	addr := cserver.GetGrpc().GetAddr()
 	if addr != "" {
 		opts = append(opts, grpc.Address(addr))
-	}
-	timeoutSecond := cserver.GetGrpc().GetTimeout()
-	if timeoutSecond != 0 {
-		opts = append(opts, grpc.Timeout(time.Duration(timeoutSecond)*time.Second))
 	}
 	srv := grpc.NewServer(opts...)
 	clusterv1alpha1.RegisterClusterInterfaceServer(srv, cluster)

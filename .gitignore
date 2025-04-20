@@ -47,3 +47,8 @@ temp/
 
 # package
 *.tar.gz
+
+# db
+*.db
+*.sql
+*.sqlite

@@ -15,7 +15,7 @@ type Workflows []*Workflow
 
 type WorkflowTask struct {
 	Id          int64         `json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
-	WorkflowId  int64         `json:"workflow_id,omitempty" gorm:"column:workflow_id;default:0;NOT NULL;index:idx_workflow_id"`
+	WorkflowId  int64         `json:"workflow_id,omitempty" gorm:"column:workflow_id;default:0;NOT NULL;index:idx_task_workflow_id"`
 	StepId      int64         `json:"step_id,omitempty" gorm:"column:step_id;default:0;NOT NULL"`
 	Name        string        `json:"name,omitempty" gorm:"column:name;default:'';NOT NULL"`
 	Order       int32         `json:"order,omitempty" gorm:"column:order;default:0;NOT NULL"`
@@ -27,7 +27,7 @@ type WorkflowTask struct {
 
 type WorkflowStep struct {
 	Id               int64            `json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
-	WorkflowId       int64            `json:"workflow_id,omitempty" gorm:"column:workflow_id;default:0;NOT NULL;index:idx_workflow_id"`
+	WorkflowId       int64            `json:"workflow_id,omitempty" gorm:"column:workflow_id;default:0;NOT NULL;index:idx_step_workflow_id"`
 	Order            int32            `json:"order,omitempty" gorm:"column:order;default:0;NOT NULL"`
 	Name             string           `json:"name,omitempty" gorm:"column:name;default:'';NOT NULL"`
 	Description      string           `json:"description,omitempty" gorm:"column:description;default:'';NOT NULL"`
@@ -45,7 +45,7 @@ type Workflow struct {
 	StorageClass  string          `json:"storage_class,omitempty" gorm:"column:storage_class;default:'';NOT NULL"`
 	Type          WorkflowType    `json:"type,omitempty" gorm:"column:type;default:0;NOT NULL"`
 	Description   string          `json:"description,omitempty" gorm:"column:description;default:'';NOT NULL"`
-	ServiceId     int64           `json:"service_id,omitempty" gorm:"column:service_id;default:0;NOT NULL;index:idx_service_id"`
+	ServiceId     int64           `json:"service_id,omitempty" gorm:"column:service_id;default:0;NOT NULL;index:idx_wf_service_id"`
 	WorkflowSteps []*WorkflowStep `json:"workflow_steps,omitempty" gorm:"-"`
 }
 

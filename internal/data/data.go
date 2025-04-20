@@ -8,9 +8,10 @@ import (
 
 	"github.com/f-rambo/cloud-copilot/internal/biz"
 	"github.com/f-rambo/cloud-copilot/internal/conf"
+	"github.com/f-rambo/cloud-copilot/utils"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/wire"
-	"gorm.io/driver/postgres"
+	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	gormlogger "gorm.io/gorm/logger"
 	"gorm.io/gorm/schema"
@@ -28,18 +29,27 @@ type Data struct {
 
 func NewData(c *conf.Bootstrap, logger log.Logger) (*Data, func(), error) {
 	var err error
+
 	data := &Data{
 		conf:          c,
 		log:           log.NewHelper(logger),
 		dbLoggerLevel: gormlogger.Warn,
 	}
+
 	cleanup := func() {
 		log.Info("closing the data resources")
 	}
-	gormDialector := postgres.Open(fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%d sslmode=disable TimeZone=Asia/Shanghai",
-		c.Data.GetHost(), c.Data.GetUsername(), c.Data.GetPassword(), c.Data.GetDatabase(), c.Data.GetPort()))
+
+	dbFile := fmt.Sprintf("%s.db", c.Data.GetDatabase())
+	if !utils.IsFileExist(dbFile) {
+		if err := utils.CreateFile(dbFile); err != nil {
+			return data, cleanup, fmt.Errorf("create db file %s failed: %w", dbFile, err)
+		}
+	}
+
 	tablePrefix := fmt.Sprintf("%s_", strings.ReplaceAll(c.Data.GetDatabase(), "-", ""))
-	data.db, err = gorm.Open(gormDialector, &gorm.Config{
+
+	data.db, err = gorm.Open(sqlite.Open(dbFile), &gorm.Config{
 		Logger: data,
 		NamingStrategy: schema.NamingStrategy{
 			TablePrefix:   tablePrefix,
@@ -49,6 +59,7 @@ func NewData(c *conf.Bootstrap, logger log.Logger) (*Data, func(), error) {
 	if err != nil {
 		return data, cleanup, err
 	}
+
 	err = data.db.AutoMigrate(
 		&biz.AppType{},
 		&biz.AppRepo{},

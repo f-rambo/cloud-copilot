@@ -4,17 +4,11 @@ server:
   http:
     network: tcp
     addr: 0.0.0.0:8000
-    timeout: 15
   grpc:
     network: tcp
     addr: 0.0.0.0:9000
-    timeout: 15
 data:
-  database: cloud-copilot
-  host: "localhost"
-  port: 5432
-  username: "postgres"
-  password: "123456"
+  database: cloudcopilot
 log:
   max_size: 500
   max_backups: 3
@@ -22,8 +16,8 @@ log:
 auth:
   exp: 24
   key: "S89XMkyGIpI0tgJkf7b8undK"
-  admin_email: "admin@eamil.com"
-  admin_password: "admin@eamil.com"
+  admin_email: "admin@email.com"
+  admin_password: "admin@email.com"
 infrastructure:
   shell_path: "shell"
   resource_path: "resource"

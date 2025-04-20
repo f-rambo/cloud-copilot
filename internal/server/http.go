@@ -1,8 +1,6 @@
 package server
 
 import (
-	"time"
-
 	appv1alpha1 "github.com/f-rambo/cloud-copilot/api/app/v1alpha1"
 	clusterv1alpha1 "github.com/f-rambo/cloud-copilot/api/cluster/v1alpha1"
 	projectv1alpha1 "github.com/f-rambo/cloud-copilot/api/project/v1alpha1"
@@ -36,10 +34,6 @@ func NewHTTPServer(c *conf.Bootstrap, cluster *interfaces.ClusterInterface, app 
 	addr := cserver.GetHttp().GetAddr()
 	if addr != "" {
 		opts = append(opts, http.Address(addr))
-	}
-	timeoutSecond := cserver.GetHttp().GetTimeout()
-	if timeoutSecond != 0 {
-		opts = append(opts, http.Timeout(time.Duration(timeoutSecond)*time.Second))
 	}
 	opts = append(opts, http.Filter(handlers.CORS(
 		handlers.AllowedOrigins([]string{"*"}),

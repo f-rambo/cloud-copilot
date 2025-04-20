@@ -105,8 +105,8 @@ type ContinuousIntegration struct {
 	Tag             string        `json:"tag,omitempty" gorm:"column:tag;default:'';NOT NULL"`
 	Status          WorkfloStatus `json:"status,omitempty" gorm:"column:status;default:0;NOT NULL"`
 	Description     string        `json:"description,omitempty" gorm:"column:description;default:'';NOT NULL"`
-	ServiceId       int64         `json:"service_id,omitempty" gorm:"column:service_id;default:0;NOT NULL;index:idx_service_id"`
-	UserId          int64         `json:"user_id,omitempty" gorm:"column:user_id;default:0;NOT NULL;index:idx_user_id"`
+	ServiceId       int64         `json:"service_id,omitempty" gorm:"column:service_id;default:0;NOT NULL;index:idx_ci_service_id"`
+	UserId          int64         `json:"user_id,omitempty" gorm:"column:user_id;default:0;NOT NULL;index:idx_ci_user_id"`
 	WorkflowRuntime string        `json:"workflow_runtime,omitempty" gorm:"column:workflow_runtime;default:'';NOT NULL"`
 	Logs            string        `json:"logs,omitempty" gorm:"-"`
 }
@@ -114,7 +114,7 @@ type ContinuousIntegration struct {
 type ContinuousDeployment struct {
 	Id               int64             `json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
 	CiId             int64             `json:"ci_id,omitempty" gorm:"column:ci_id;default:0;NOT NULL;index:idx_ci_id"`
-	ServiceId        int64             `json:"service_id,omitempty" gorm:"column:service_id;default:0;NOT NULL;index:idx_service_id"`
+	ServiceId        int64             `json:"service_id,omitempty" gorm:"column:service_id;default:0;NOT NULL;index:idx_cd_service_id"`
 	UserId           int64             `json:"user_id,omitempty" gorm:"column:user_id;default:0;NOT NULL"`
 	Status           WorkfloStatus     `json:"status,omitempty" gorm:"column:status;default:0;NOT NULL"`
 	Image            string            `json:"image,omitempty" gorm:"column:image;default:'';NOT NULL"`
@@ -139,7 +139,7 @@ type Port struct {
 	IngressPath   string `json:"ingress_path,omitempty" gorm:"column:ingress_path;default:'';NOT NULL"`
 	Protocol      string `json:"protocol,omitempty" gorm:"column:protocol;default:'';NOT NULL"`
 	ContainerPort int32  `json:"container_port,omitempty" gorm:"column:container_port;default:0;NOT NULL"`
-	ServiceId     int64  `json:"service_id,omitempty" gorm:"column:service_id;default:0;NOT NULL;index:idx_service_id"`
+	ServiceId     int64  `json:"service_id,omitempty" gorm:"column:service_id;default:0;NOT NULL;index:idx_port_service_id"`
 }
 
 type Volume struct {
@@ -148,7 +148,7 @@ type Volume struct {
 	MountPath    string `json:"mount_path,omitempty" gorm:"column:mount_path;default:'';NOT NULL"`
 	Storage      int32  `json:"storage,omitempty" gorm:"column:storage;default:0;NOT NULL"`
 	StorageClass string `json:"storage_class,omitempty" gorm:"column:storage_class;default:'';NOT NULL"`
-	ServiceId    int64  `json:"service_id,omitempty" gorm:"column:service_id;default:0;NOT NULL;index:idx_service_id"`
+	ServiceId    int64  `json:"service_id,omitempty" gorm:"column:service_id;default:0;NOT NULL;index:idx_volume_service_id"`
 }
 
 type Service struct {
@@ -170,7 +170,7 @@ type Service struct {
 	ProjectId     int64         `json:"project_id,omitempty" gorm:"column:project_id;default:0;NOT NULL;index:idx_project_id"`
 	WorkspaceId   int64         `json:"workspace_id,omitempty" gorm:"column:workspace_id;default:0;NOT NULL;index:idx_workspace_id"`
 	ClusterId     int64         `json:"cluster_id,omitempty" gorm:"column:cluster_id;default:0;NOT NULL;index:idx_cluster_id"`
-	UserId        int64         `json:"user_id,omitempty" gorm:"column:user_id;default:0;NOT NULL;index:idx_user_id"`
+	UserId        int64         `json:"user_id,omitempty" gorm:"column:user_id;default:0;NOT NULL;index:idx_service_user_id"`
 	Status        ServiceStatus `json:"status,omitempty" gorm:"column:status;default:0;NOT NULL"`
 	Description   string        `json:"description,omitempty" gorm:"column:description;default:'';NOT NULL"`
 	Log           string        `json:"log,omitempty" gorm:"-"`

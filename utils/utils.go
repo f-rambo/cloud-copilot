@@ -243,6 +243,17 @@ func IsFileExist(path string) bool {
 	return err == nil || os.IsExist(err)
 }
 
+// CreateFile
+// Create a file at the specified path. If the file already exists, it will be truncated.
+func CreateFile(path string) error {
+	file, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	return nil
+}
+
 func StringPtr(s string) *string {
 	return &s
 }
