@@ -81,7 +81,7 @@ function install_cloud_copilot() {
             log "Error: Failed to move cloud copilot."
             exit 1
       fi
-      if ! cp $packageName"/cloud-copilot-"$ARCH /usr/local/bin/cloud-copilot; then
+      if ! cp $packageName"/cloud-copilot" /usr/local/bin/cloud-copilot; then
             log "Error: Failed to install cloud copilot."
             exit 1
       fi
@@ -98,6 +98,7 @@ After=network.target
 [Service]
 Type=simple
 ExecStart=/usr/local/bin/cloud-copilot -conf $ORIGINAL_HOME/configs
+WorkingDirectory=$ORIGINAL_HOME
 Restart=always
 User=$ORIGINAL_USER
 
