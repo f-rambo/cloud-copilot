@@ -618,11 +618,14 @@ func NewClusterUseCase(conf *confPkg.Bootstrap, clusterData ClusterData, cluster
 		locks:                 make(map[int64]*sync.Mutex),
 		eventChan:             make(chan *Cluster, ClusterPoolNumber),
 	}
-	if clusterUc.conf.Infrastructure.ClusterPath != "" {
-		if !utils.IsFileExist(clusterUc.conf.Infrastructure.ClusterPath) {
+	err := clusterUc.clusterRuntime.CurrentCluster(context.Background(), &Cluster{})
+	if clusterUc.conf.Infrastructure.Cluster != "" && errors.Is(err, ErrClusterNotFound) {
+		clusterUc.log.Info("cluster file exist, load cluster")
+		return clusterUc, nil
+		if !utils.IsFileExist(clusterUc.conf.Infrastructure.Cluster) {
 			return nil, errors.New("cluster file not exist")
 		}
-		clusterJsonByte, err := os.ReadFile(clusterUc.conf.Infrastructure.ClusterPath)
+		clusterJsonByte, err := os.ReadFile(clusterUc.conf.Infrastructure.Cluster)
 		if err != nil {
 			return nil, err
 		}
@@ -1433,6 +1436,7 @@ func (uc *ClusterUsecase) StopCluster(ctx context.Context, clusterId int64) erro
 
 // Start the cluster handler server
 func (uc *ClusterUsecase) Start(ctx context.Context) error {
+	uc.log.Info("Starting cluster handler...")
 	for {
 		select {
 		case <-ctx.Done():
@@ -1452,6 +1456,7 @@ func (uc *ClusterUsecase) Start(ctx context.Context) error {
 }
 
 func (uc *ClusterUsecase) Stop(ctx context.Context) error {
+	uc.log.Info("Stopping cluster handler...")
 	close(uc.eventChan)
 	return nil
 }

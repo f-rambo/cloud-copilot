@@ -1,4 +1,13 @@
 #!/bin/bash
+set -e
+
+if [ -n "$SUDO_USER" ]; then
+      ORIGINAL_USER=$SUDO_USER
+      ORIGINAL_HOME=$(getent passwd "$SUDO_USER" | cut -d: -f6)
+else
+      ORIGINAL_USER=$USER
+      ORIGINAL_HOME=$HOME
+fi
 
 log() {
       local message="$1"
@@ -39,36 +48,40 @@ resourceName="resource"
 resourceNamePackage=$resourceName"-"$cloudCopilotVersion".tar.gz"
 
 cloudCopilotPackageUrl="https://github.com/f-rambo/cloud-copilot/releases/download/"$cloudCopilotVersion"/"$cloudCopilotPackage
-resroucePackageUrl="https://github.com/f-rambo/cloud-copilot/releases/download/v0.0.1/"$resourceNamePackage
+resourcePackageUrl="https://github.com/f-rambo/cloud-copilot/releases/download/"$cloudCopilotVersion"/"$resourceNamePackage
 
 function install_cloud_copilot() {
       log "Install cloud copilot..."
-      if ! curl -L $cloudCopilotPackageUrl -o $cloudCopilotPackage; then
-            log "Error: Failed to download cloud copilot."
-            exit 1
+      if [ -d "$packageName" ]; then
+            log "Package directory $packageName already exists, skipping download and extraction."
+      else
+            if ! curl -L $cloudCopilotPackageUrl -o $cloudCopilotPackage; then
+                  log "Error: Failed to download cloud copilot."
+                  exit 1
+            fi
+            if ! tar -zxvf $cloudCopilotPackage; then
+                  log "Error: Failed to extract cloud copilot."
+                  exit 1
+            fi
       fi
-      if ! tar -zxvf $cloudCopilotPackage; then
-            log "Error: Failed to extract cloud copilot."
-            exit 1
-      fi
-      if ! sudo cp -r $packageName"/configs" $HOME/; then
+      if ! cp -r $packageName"/configs" "$ORIGINAL_HOME/"; then
             log "Error: Failed to move cloud copilot."
             exit 1
       fi
 
-      echo "$clusterJsonData" >$HOME"/cluster.json"
+      echo "$clusterJsonData" >"$ORIGINAL_HOME/cluster.json"
 
-      sed -i "s#cluster_path: \"\"#cluster_path: \"$HOME/cluster.json\"#" $HOME"/configs/config.yaml"
+      sed -i "s#cluster: \"\"#cluster: \"$ORIGINAL_HOME/cluster.json\"#" "$ORIGINAL_HOME/configs/config.yaml"
 
-      if ! sudo cp -r $packageName"/shell" $HOME/; then
+      if ! cp -r $packageName"/shell" "$ORIGINAL_HOME/"; then
             log "Error: Failed to move cloud copilot."
             exit 1
       fi
-      if ! sudo cp -r $packageName"/component" $HOME/; then
+      if ! cp -r $packageName"/component" "$ORIGINAL_HOME/"; then
             log "Error: Failed to move cloud copilot."
             exit 1
       fi
-      if ! sudo cp $packageName"/cloud-copilot" /usr/local/bin/cloud-copilot; then
+      if ! cp $packageName"/cloud-copilot-"$ARCH /usr/local/bin/cloud-copilot; then
             log "Error: Failed to install cloud copilot."
             exit 1
       fi
@@ -77,27 +90,27 @@ function install_cloud_copilot() {
 
 function start_cloud_copilot() {
       log "Starting cloud copilot service..."
-      cat <<EOF | sudo tee /etc/systemd/system/cloud-copilot.service
+      cat <<EOF >/etc/systemd/system/cloud-copilot.service
 [Unit]
 Description=Cloud Copilot Service
 After=network.target
 
 [Service]
 Type=simple
-ExecStart=/usr/local/bin/cloud-copilot
+ExecStart=/usr/local/bin/cloud-copilot -conf $ORIGINAL_HOME/configs
 Restart=always
-User=$USER
+User=$ORIGINAL_USER
 
 [Install]
 WantedBy=multi-user.target
 EOF
 
-      if ! sudo systemctl daemon-reload; then
+      if ! systemctl daemon-reload; then
             log "Error: Failed to reload systemd configuration."
             exit 1
       fi
 
-      if ! sudo systemctl start cloud-copilot; then
+      if ! systemctl start cloud-copilot; then
             log "Error: Failed to start cloud-copilot service."
             exit 1
       fi
@@ -107,20 +120,20 @@ EOF
 
 function install_resource() {
       log "Install resource..."
-      if [ -d "$HOME/resource" ]; then
-            log "Warning: Resource directory already exists. Removing..."
-            rm -rf "$HOME/resource"
+      if [ -d "$ORIGINAL_HOME/$resourceName" ]; then
+            log "Resource directory already exists."
+            return 0
       fi
 
-      if ! curl -L $resroucePackageUrl -o $resourceNamePackage; then
+      if ! curl -L "$resourcePackageUrl" -o "$resourceNamePackage"; then
             log "Error: Failed to download resource."
             exit 1
       fi
-      if ! tar -zxvf $resourceNamePackage; then
+      if ! tar -zxvf "$resourceNamePackage"; then
             log "Error: Failed to extract resource."
             exit 1
       fi
-      if ! sudo mv $resourceName "$HOME/"; then
+      if ! mv "$resourceName" "$ORIGINAL_HOME/"; then
             log "Error: Failed to move resource."
             exit 1
       fi
@@ -131,5 +144,4 @@ install_cloud_copilot
 start_cloud_copilot
 install_resource
 
-log "Install success."
 exit 0

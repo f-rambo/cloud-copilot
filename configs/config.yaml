@@ -19,6 +19,7 @@ auth:
   admin_email: "admin@email.com"
   admin_password: "admin@email.com"
 infrastructure:
-  shell_path: "shell"
-  resource_path: "resource"
-  cluster_path: ""
+  shell: "shell"
+  resource: "resource"
+  component: "component"
+  cluster: ""

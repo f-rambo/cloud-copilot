@@ -615,7 +615,7 @@ func (a *AwsCloudUsecase) ManageInstance(ctx context.Context, cluster *biz.Clust
 				},
 			}
 			if cluster.Status == biz.ClusterStatus_STARTING && node.Role == biz.NodeRole_MASTER {
-				realInstallShell, realInstallShellErr := getRealInstallShell(a.c.Infrastructure.ShellPath, cluster)
+				realInstallShell, realInstallShellErr := getRealInstallShell(a.c.Infrastructure.Shell, cluster)
 				if realInstallShellErr != nil {
 					return realInstallShellErr
 				}
