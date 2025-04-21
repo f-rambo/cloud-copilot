@@ -449,15 +449,11 @@ func (a *AliCloudUsecase) ManageInstance(ctx context.Context, cluster *biz.Clust
 				},
 			}
 			if cluster.Status == biz.ClusterStatus_STARTING && node.Role == biz.NodeRole_MASTER {
-				realInstallShell, realInstallShellErr := getRealInstallShell(a.c.Infrastructure.Shell, cluster)
-				if realInstallShellErr != nil {
-					return realInstallShellErr
+				installShellData, installShellDataErr := getInstallShell(a.c.Infrastructure.Shell, cluster)
+				if installShellDataErr != nil {
+					return installShellDataErr
 				}
-				installShell, readShellErr := os.ReadFile(realInstallShell)
-				if readShellErr != nil {
-					return readShellErr
-				}
-				createInstanceRequest.UserData = tea.String(base64.StdEncoding.EncodeToString(installShell))
+				createInstanceRequest.UserData = tea.String(base64.StdEncoding.EncodeToString([]byte(installShellData)))
 			}
 			createInstanceRes, err := a.ecsClient.CreateInstance(createInstanceRequest)
 			if err != nil {
@@ -1802,8 +1798,8 @@ func (a *AliCloudUsecase) ManageSLB(_ context.Context, cluster *biz.Cluster) err
 }
 
 func (a *AliCloudUsecase) FindImage(regionId string, arch biz.NodeArchType) (*ecs.DescribeImagesResponseBodyImagesImage, error) {
-	archStr, ok := NodeArchToMagecloudType[arch]
-	if !ok {
+	archStr := getNodeArchToCloudType(arch)
+	if archStr == "" {
 		return nil, errors.New("unsupported arch")
 	}
 	pageNumber := 1
@@ -1949,11 +1945,18 @@ func (a *AliCloudUsecase) FindInstanceType(param FindInstanceTypeParam) ([]*ecs.
 	ecsSize := aliGenerateInstanceSize(param.CPU)
 	instanceTypeIds := aliGetInstanceIds(param.NodeGroupType, ecsSize)
 	instanceTypes := make([]*ecs.DescribeInstanceTypesResponseBodyInstanceTypesInstanceType, 0)
+	cpuArchitecture := ""
+	if param.Arch == biz.NodeArchType_AMD64 {
+		cpuArchitecture = "X86"
+	}
+	if param.Arch == biz.NodeArchType_ARM64 {
+		cpuArchitecture = "ARM"
+	}
 	nexttoken := ""
 	for {
 		instancesReq := &ecs.DescribeInstanceTypesRequest{
 			InstanceTypes:       tea.StringSlice(instanceTypeIds),
-			CpuArchitecture:     tea.String(NodeArchToCloudType[param.Arch]),
+			CpuArchitecture:     tea.String(cpuArchitecture),
 			MinimumCpuCoreCount: tea.Int32(param.CPU),
 			MaximumCpuCoreCount: tea.Int32(param.CPU),
 			NextToken:           tea.String(nexttoken),
@@ -1962,8 +1965,20 @@ func (a *AliCloudUsecase) FindInstanceType(param FindInstanceTypeParam) ([]*ecs.
 		if param.GPU > 0 {
 			instancesReq.MinimumGPUAmount = tea.Int32(param.GPU)
 			instancesReq.MaximumGPUAmount = tea.Int32(param.GPU)
-			if param.GPUSpec.String() != "" {
-				instancesReq.GPUSpec = tea.String(NodeGPUSpecToCloudSpec[param.GPUSpec])
+			if param.GPUSpec == biz.NodeGPUSpec_NVIDIA_A10 {
+				instancesReq.GPUSpec = tea.String("NVIDIA A10")
+			}
+			if param.GPUSpec == biz.NodeGPUSpec_NVIDIA_P100 {
+				instancesReq.GPUSpec = tea.String("NVIDIA P100")
+			}
+			if param.GPUSpec == biz.NodeGPUSpec_NVIDIA_P4 {
+				instancesReq.GPUSpec = tea.String("NVIDIA P4")
+			}
+			if param.GPUSpec == biz.NodeGPUSpec_NVIDIA_V100 {
+				instancesReq.GPUSpec = tea.String("NVIDIA V100")
+			}
+			if param.GPUSpec == biz.NodeGPUSpec_NVIDIA_T4 {
+				instancesReq.GPUSpec = tea.String("NVIDIA T4")
 			}
 		}
 		instancesRes, err := a.ecsClient.DescribeInstanceTypes(instancesReq)

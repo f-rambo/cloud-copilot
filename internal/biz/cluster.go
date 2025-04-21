@@ -21,6 +21,11 @@ const (
 	ClusterPoolNumber = 10
 
 	ClusterKey ContextKey = "cluster"
+
+	// local, jump, prod
+	Env_local = "local"
+	Env_jump  = "jump"
+	Env_prod  = "prod"
 )
 
 var ErrClusterNotFound error = errors.New("cluster not found")
@@ -333,7 +338,7 @@ func (n NodeGPUSpec) String() string {
 	case NodeGPUSpec_NVIDIA_P4:
 		return "nvidia-p4"
 	default:
-		return "unspecified"
+		return ""
 	}
 }
 
@@ -620,8 +625,6 @@ func NewClusterUseCase(conf *confPkg.Bootstrap, clusterData ClusterData, cluster
 	}
 	err := clusterUc.clusterRuntime.CurrentCluster(context.Background(), &Cluster{})
 	if clusterUc.conf.Infrastructure.Cluster != "" && errors.Is(err, ErrClusterNotFound) {
-		clusterUc.log.Info("cluster file exist, load cluster")
-		return clusterUc, nil
 		if !utils.IsFileExist(clusterUc.conf.Infrastructure.Cluster) {
 			return nil, errors.New("cluster file not exist")
 		}
@@ -634,6 +637,7 @@ func NewClusterUseCase(conf *confPkg.Bootstrap, clusterData ClusterData, cluster
 		if err != nil {
 			return nil, err
 		}
+		cluster.SetStatus(ClusterStatus_STARTING)
 		err = clusterUc.Apply(cluster)
 		if err != nil {
 			return nil, err
@@ -872,6 +876,32 @@ func (c *Cluster) GetNodeByNodeGroupId(nodeGroupId string) []*Node {
 		}
 	}
 	return nodes
+}
+
+func (c *Cluster) GetNodeByIp(ip string) *Node {
+	for _, node := range c.Nodes {
+		if node.Ip == ip {
+			return node
+		}
+	}
+	return nil
+}
+
+func (c *Cluster) SetNodeRole() {
+	isExistMaster := false
+	for _, node := range c.Nodes {
+		if node.Role == NodeRole_MASTER {
+			isExistMaster = true
+			continue
+		}
+		if node.Role != NodeRole_UNSPECIFIED {
+			continue
+		}
+		node.Role = NodeRole_WORKER
+	}
+	if !isExistMaster && len(c.Nodes) > 0 {
+		c.Nodes[0].Role = NodeRole_MASTER
+	}
 }
 
 func (c *Cluster) DistributeNodePrivateSubnets(nodeIndex int) *CloudResource {
@@ -1604,13 +1634,20 @@ func (uc *ClusterUsecase) handlerClusterNotInstalled(ctx context.Context, cluste
 	if err != nil {
 		return err
 	}
+	if len(cluster.Nodes) == 0 {
+		return nil
+	}
 	if !cluster.Provider.IsCloud() {
+		cluster.SetNodeRole()
 		cluster.SetNodeStatus(NodeStatus_UNSPECIFIED, NodeStatus_NODE_FINDING)
 	}
 	cluster.SetNodeStatus(NodeStatus_NODE_FINDING, NodeStatus_NODE_CREATING)
 	err = uc.clusterInfrastructure.ManageNodeResource(ctx, cluster)
 	if err != nil {
 		return err
+	}
+	if uc.conf.Server.Env == Env_local {
+		return nil
 	}
 	cluster.SetNodeStatus(NodeStatus_NODE_CREATING, NodeStatus_NODE_PENDING)
 	err = uc.clusterInfrastructure.Install(ctx, cluster)

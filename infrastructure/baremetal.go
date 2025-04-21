@@ -94,45 +94,52 @@ type SystemInfo struct {
 }
 
 func (b *Baremetal) GetNodesSystemInfo(ctx context.Context, cluster *biz.Cluster) error {
-	nodeIps := utils.RangeIps(cluster.NodeStartIp, cluster.NodeEndIp)
-	errGroup, _ := errgroup.WithContext(ctx)
-	errGroup.SetLimit(10)
-	lock := new(sync.Mutex)
-	systemInfos := make([]SystemInfo, 0)
-	for _, ip := range nodeIps {
-		errGroup.Go(func() error {
-			remoteBash := utils.NewRemoteBash(utils.Server{
-				Name:       ip,
-				Host:       ip,
-				User:       cluster.Username,
-				Port:       defaultSHHPort,
-				PrivateKey: cluster.PrivateKey,
-			}, b.c.Infrastructure.Shell, b.log)
-			systemInfoOutput, err := remoteBash.ExecShell(SystemInfoShell)
-			if err != nil {
-				b.log.Errorf("node %s connection refused", ip)
-				return nil
-			}
-			systemInfo := SystemInfo{}
-			if err := json.Unmarshal([]byte(systemInfoOutput), &systemInfo); err != nil {
-				return err
-			}
-			lock.Lock()
-			systemInfos = append(systemInfos, systemInfo)
-			lock.Unlock()
-			return nil
-		})
-	}
-	err := errGroup.Wait()
-	if err != nil {
-		return err
-	}
 	if cluster.Nodes == nil {
 		cluster.Nodes = make([]*biz.Node, 0)
 	}
 	if cluster.NodeGroups == nil {
 		cluster.NodeGroups = make([]*biz.NodeGroup, 0)
 	}
+
+	// get all node ip
+	eg := new(errgroup.Group)
+	eg.SetLimit(10)
+	mu := new(sync.Mutex)
+	nodeIps := utils.RangeIps(cluster.NodeStartIp, cluster.NodeEndIp)
+	systemInfos := make([]SystemInfo, 0)
+	for _, ip := range nodeIps {
+		if cluster.GetNodeByIp(ip) != nil {
+			continue
+		}
+		ip := ip
+		eg.Go(func() error {
+			systemInfoOutput, err := utils.NewRemoteBash(utils.Server{
+				Name:       ip,
+				Host:       ip,
+				User:       cluster.Username,
+				Port:       defaultSHHPort,
+				PrivateKey: cluster.PrivateKey,
+			}, b.c.Infrastructure.Shell, b.log).ExecShell(SystemInfoShell)
+			if err != nil {
+				b.log.Errorf("node %s connection refused", ip)
+				return nil
+			}
+			systemInfo := SystemInfo{Ip: ip}
+			if err := json.Unmarshal([]byte(systemInfoOutput), &systemInfo); err != nil {
+				b.log.Errorf("node %s connection refused", ip)
+				return nil
+			}
+			mu.Lock()
+			systemInfos = append(systemInfos, systemInfo)
+			mu.Unlock()
+			return nil
+		})
+	}
+	if err := eg.Wait(); err != nil {
+		return err
+	}
+
+	// group by os, arch, mem, cpu, gpu, gpu_info
 	groupMap := make(map[string]*biz.NodeGroup)
 	for _, info := range systemInfos {
 		groupKey := fmt.Sprintf("%s-%s-%s-%s-%s-%s",
@@ -140,38 +147,30 @@ func (b *Baremetal) GetNodesSystemInfo(ctx context.Context, cluster *biz.Cluster
 		if _, exists := groupMap[groupKey]; !exists {
 			groupMap[groupKey] = &biz.NodeGroup{
 				Id:     uuid.NewString(),
+				Type:   biz.NodeGroupType_NORMAL,
 				Name:   fmt.Sprintf("group-%s-%s-%s", info.Arch, info.Cpu, info.Mem),
 				Os:     info.Os,
-				Arch:   ArchMap[info.Arch],
+				Arch:   getNodeArchByBareMetal(info.Arch),
 				Memory: cast.ToInt32(info.Mem),
 				Cpu:    cast.ToInt32(info.Cpu),
 				Gpu:    cast.ToInt32(info.Gpu),
 			}
-			if cast.ToInt32(info.Gpu) > 0 && info.GpuInfo != "" {
-				if spec, ok := GPUSpecMap[strings.ToLower(info.GpuInfo)]; ok {
-					groupMap[groupKey].GpuSpec = spec
-				}
+			if cast.ToInt32(info.Gpu) > 0 {
+				groupMap[groupKey].Type = biz.NodeGroupType_GPU_ACCELERATERD
+				groupMap[groupKey].GpuSpec = getGPUSpecByBareMetal(strings.ToLower(info.GpuInfo))
 			}
 		}
-		node := &biz.Node{
+		cluster.Nodes = append(cluster.Nodes, &biz.Node{
 			Name:           info.Id,
 			Ip:             info.Ip,
 			User:           cluster.Username,
 			SystemDiskSize: cast.ToInt32(info.Disk),
 			NodeGroupId:    groupMap[groupKey].Id,
 			ClusterId:      cluster.Id,
-		}
-		isExist := false
-		for _, n := range cluster.Nodes {
-			if n.Ip == node.Ip {
-				isExist = true
-				break
-			}
-		}
-		if !isExist {
-			cluster.Nodes = append(cluster.Nodes, node)
-		}
+		})
 	}
+
+	// set node group target size
 	for _, group := range groupMap {
 		nodeNumber := int32(0)
 		for _, node := range cluster.Nodes {
@@ -212,11 +211,7 @@ func (b *Baremetal) ApplyCloudCopilot(ctx context.Context, cluster *biz.Cluster)
 	if err != nil {
 		return err
 	}
-	arch = strings.TrimSpace(strings.ToLower(arch))
-	archMapVal, ok := ARCH_MAP[arch]
-	if ok {
-		arch = archMapVal
-	}
+	arch = getNodeArchByBareMetal(strings.TrimSpace(strings.ToLower(arch))).String()
 	kubeCtlPath := filepath.Join(userHomePath, b.c.Infrastructure.Resource, arch, "kubernetes", getKubernetesVersion(), "kubectl")
 	err = remoteBash.RunWithLogging("install -m 755", kubeCtlPath, "/usr/local/bin/kubectl")
 	if err != nil {
@@ -283,11 +278,12 @@ func (b *Baremetal) PreInstall(cluster *biz.Cluster) error {
 	}
 	for _, node := range cluster.Nodes {
 		if node.Role == biz.NodeRole_MASTER {
-			realInstallShell, err := getRealInstallShell(b.c.Infrastructure.Shell, cluster)
+			clusterJsonByte, err := json.Marshal(cluster)
 			if err != nil {
 				return err
 			}
-			err = b.getClusterNodeRemoteBash(cluster, node).ExecShellLogging(realInstallShell)
+			err = b.getClusterNodeRemoteBash(cluster, node).ExecShellLogging(InstallShell,
+				fmt.Sprintf(`'%s'`, string(clusterJsonByte)))
 			if err != nil {
 				return err
 			}

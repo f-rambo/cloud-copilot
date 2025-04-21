@@ -33,9 +33,16 @@ x86_64)
       ;;
 esac
 
-clusterJsonData="{{clusterJsonData}}" # Here is the clusterJsonData from the template variable example: {"name": "test", "region": "ap-southeast-1"}
-if [ -z "$clusterJsonData" ]; then
-      log "Error: clusterJsonData is empty."
+clusterParam=$1
+
+clusterData='{{.ClusterJsonData}}'
+
+if [ ! -z "$clusterParam" ]; then
+      clusterData=$clusterParam
+fi
+
+if ! echo $clusterData | jq . >/dev/null 2>&1; then
+      log "Error: Invalid JSON format in cluster parameter"
       exit 1
 fi
 
@@ -69,7 +76,7 @@ function install_cloud_copilot() {
             exit 1
       fi
 
-      echo "$clusterJsonData" >"$ORIGINAL_HOME/cluster.json"
+      echo "$clusterData" >"$ORIGINAL_HOME/cluster.json"
 
       sed -i "s#cluster: \"\"#cluster: \"$ORIGINAL_HOME/cluster.json\"#" "$ORIGINAL_HOME/configs/config.yaml"
 

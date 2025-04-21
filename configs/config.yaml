@@ -1,6 +1,7 @@
 server:
   name: cloud-copilot
   version: "0.0.1"
+  env: local # local, jump, prod
   http:
     network: tcp
     addr: 0.0.0.0:8000
@@ -22,4 +23,4 @@ infrastructure:
   shell: "shell"
   resource: "resource"
   component: "component"
-  cluster: ""
+  cluster: "cluster.json"

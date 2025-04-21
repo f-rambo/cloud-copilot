@@ -9,54 +9,14 @@ import (
 	"github.com/f-rambo/cloud-copilot/utils"
 )
 
-const (
-	TimeoutPerInstance = 5 * time.Minute
-	TimeOutCountNumber = 10
-	TimeOutSecond      = 5
-)
-
-var NodeArchToMagecloudType = map[biz.NodeArchType]string{
-	biz.NodeArchType_UNSPECIFIED: "",
-	biz.NodeArchType_AMD64:       "x86_64",
-	biz.NodeArchType_ARM64:       "arm64",
-}
-
-var NodeArchToCloudType = map[biz.NodeArchType]string{
-	biz.NodeArchType_UNSPECIFIED: "",
-	biz.NodeArchType_AMD64:       "X86",
-	biz.NodeArchType_ARM64:       "ARM",
-}
-
-var NodeGPUSpecToCloudSpec = map[biz.NodeGPUSpec]string{
-	biz.NodeGPUSpec_UNSPECIFIED: "",
-	biz.NodeGPUSpec_NVIDIA_A10:  "NVIDIA A10",
-	biz.NodeGPUSpec_NVIDIA_P100: "NVIDIA P100",
-	biz.NodeGPUSpec_NVIDIA_P4:   "NVIDIA P4",
-	biz.NodeGPUSpec_NVIDIA_V100: "NVIDIA V100",
-	biz.NodeGPUSpec_NVIDIA_T4:   "NVIDIA T4",
-}
-
 const defaultSHHPort = 22
 
-var ARCH_MAP = map[string]string{
-	"x86_64":  "amd64",
-	"aarch64": "arm64",
-}
-
-var ArchMap = map[string]biz.NodeArchType{
-	"x86_64":  biz.NodeArchType_AMD64,
-	"aarch64": biz.NodeArchType_ARM64,
-}
-
-var GPUSpecMap = map[string]biz.NodeGPUSpec{
-	"nvidia-a10":  biz.NodeGPUSpec_NVIDIA_A10,
-	"nvidia-v100": biz.NodeGPUSpec_NVIDIA_V100,
-	"nvidia-t4":   biz.NodeGPUSpec_NVIDIA_T4,
-	"nvidia-p100": biz.NodeGPUSpec_NVIDIA_P100,
-	"nvidia-p4":   biz.NodeGPUSpec_NVIDIA_P4,
-}
-
 var (
+	TimeOutPerInstance time.Duration = 5 * time.Minute
+
+	TimeOutCountNumber               = 10 // 10 * 5s = 50s
+	TimeOutSecond      time.Duration = 5  // 5s
+
 	InstallShell    string = "install.sh"
 	NodeInitShell   string = "nodeinit.sh"
 	ComponentShell  string = "component.sh"
@@ -70,6 +30,49 @@ var (
 	ClusterJoinAction string = "join"
 	ClusterController string = "controller"
 )
+
+func getNodeArchToCloudType(arch biz.NodeArchType) string {
+	switch arch {
+	case biz.NodeArchType_AMD64:
+		return "x86_64"
+	case biz.NodeArchType_ARM64:
+		return "arm64"
+	default:
+		return ""
+	}
+}
+
+func getNodeArchByBareMetal(arch string) biz.NodeArchType {
+	switch arch {
+	case "x86_64":
+		return biz.NodeArchType_AMD64
+	case "aarch64":
+		return biz.NodeArchType_ARM64
+	case "arm":
+		return biz.NodeArchType_ARM64
+	case "arm64":
+		return biz.NodeArchType_ARM64
+	default:
+		return biz.NodeArchType_UNSPECIFIED
+	}
+}
+
+func getGPUSpecByBareMetal(gpuSpec string) biz.NodeGPUSpec {
+	var GPUSpecMap = map[string]biz.NodeGPUSpec{
+		"nvidia-a10":  biz.NodeGPUSpec_NVIDIA_A10,
+		"nvidia-v100": biz.NodeGPUSpec_NVIDIA_V100,
+		"nvidia-t4":   biz.NodeGPUSpec_NVIDIA_T4,
+		"nvidia-p100": biz.NodeGPUSpec_NVIDIA_P100,
+		"nvidia-p4":   biz.NodeGPUSpec_NVIDIA_P4,
+	}
+	if gpuSpec == "" {
+		return biz.NodeGPUSpec_UNSPECIFIED
+	}
+	if val, ok := GPUSpecMap[gpuSpec]; ok {
+		return val
+	}
+	return biz.NodeGPUSpec_UNSPECIFIED
+}
 
 type FindInstanceTypeParam struct {
 	Os            string
@@ -108,15 +111,11 @@ func getAliyunKuberentesImageRepo() string {
 	return "registry.aliyuncs.com/google_containers"
 }
 
-func getRealInstallShell(shellDir string, cluster *biz.Cluster) (string, error) {
+func getInstallShell(shellDir string, cluster *biz.Cluster) (string, error) {
 	clusterJsonByte, err := json.Marshal(cluster)
 	if err != nil {
 		return "", err
 	}
-	installShell, err := utils.TransferredMeaning(map[string]string{"clusterJsonData": string(clusterJsonByte)},
+	return utils.TransferredMeaningString(map[string]string{"ClusterJsonData": string(clusterJsonByte)},
 		filepath.Join(shellDir, InstallShell))
-	if err != nil {
-		return "", err
-	}
-	return installShell, nil
 }

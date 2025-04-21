@@ -52,3 +52,4 @@ temp/
 *.db
 *.sql
 *.sqlite
+*.json

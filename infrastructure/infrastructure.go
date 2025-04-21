@@ -184,22 +184,12 @@ func (i *Infrastructure) ManageNodeResource(ctx context.Context, cluster *biz.Cl
 
 func (i *Infrastructure) GetNodesSystemInfo(ctx context.Context, cluster *biz.Cluster) error {
 	if !cluster.Provider.IsCloud() {
-		// bare metal node
-		err := i.baremetal.GetNodesSystemInfo(ctx, cluster)
-		if err != nil {
-			return err
-		}
-		return nil
+		return i.baremetal.GetNodesSystemInfo(ctx, cluster)
 	}
-	// cloud node
-	err := i.GeCloudtNodesSystemInfo(ctx, cluster)
-	if err != nil {
-		return err
-	}
-	return nil
+	return i.GetCloudtNodesSystemInfo(ctx, cluster)
 }
 
-func (i *Infrastructure) GeCloudtNodesSystemInfo(ctx context.Context, cluster *biz.Cluster) error {
+func (i *Infrastructure) GetCloudtNodesSystemInfo(ctx context.Context, cluster *biz.Cluster) error {
 	for _, nodeGroup := range cluster.NodeGroups {
 		isFindNode := false
 		for _, node := range cluster.Nodes {

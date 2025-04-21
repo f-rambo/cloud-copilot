@@ -23,7 +23,7 @@ if command -v nvidia-smi &>/dev/null; then
       gpu_count=$(nvidia-smi --query-gpu=name --format=csv,noheader | wc -l)
       gpu_info=$(nvidia-smi --query-gpu=name --format=csv,noheader)
 else
-      gpu_info="No NVIDIA GPU found"
+      gpu_info=""
       gpu_count=0
 fi
 

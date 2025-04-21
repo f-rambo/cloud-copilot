@@ -201,11 +201,11 @@ func (s *RemoteBash) ExecShellLogging(shellName string, args ...string) error {
 	if err != nil {
 		return err
 	}
-	shellExits, err := s.Run(fmt.Sprintf("ls %s | wc -l", execShellPath))
+	shellExists, err := s.Run("test -f " + execShellPath + " && echo 1 || echo 0")
 	if err != nil {
 		return err
 	}
-	if strings.TrimSpace(shellExits) == "0" {
+	if strings.TrimSpace(shellExists) == "0" {
 		s.log.Info(fmt.Sprintf("shell %s not exists, copy from %s", execShellPath, localShellPath))
 		if err := s.SftpFile(localShellPath, execShellPath); err != nil {
 			return err
@@ -225,11 +225,11 @@ func (s *RemoteBash) ExecShell(shellName string, args ...string) (stdout string,
 	if err != nil {
 		return "", err
 	}
-	shellExits, err := s.Run(fmt.Sprintf("ls %s | wc -l", execShellPath))
+	shellExists, err := s.Run("test -f " + execShellPath + " && echo 1 || echo 0")
 	if err != nil {
 		return "", err
 	}
-	if strings.TrimSpace(shellExits) == "0" {
+	if strings.TrimSpace(shellExists) == "0" {
 		s.log.Info(fmt.Sprintf("shell %s not exists, copy from %s", execShellPath, localShellPath))
 		if err := s.SftpFile(localShellPath, execShellPath); err != nil {
 			return "", err
