@@ -6,6 +6,8 @@
 package main
 
 import (
+	"context"
+
 	"github.com/f-rambo/cloud-copilot/infrastructure"
 	"github.com/f-rambo/cloud-copilot/internal/biz"
 	"github.com/f-rambo/cloud-copilot/internal/conf"
@@ -19,6 +21,6 @@ import (
 )
 
 // wireApp init kratos application.
-func wireApp(*conf.Bootstrap, log.Logger) (*kratos.App, func(), error) {
+func wireApp(context.Context, *conf.Bootstrap, log.Logger) (*kratos.App, func(), error) {
 	panic(wire.Build(data.ProviderSet, infrastructure.ProviderSet, runtime.ProviderSet, biz.ProviderSet, interfaces.ProviderSet, server.ProviderSet, newApp))
 }

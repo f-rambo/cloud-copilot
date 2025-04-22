@@ -32,7 +32,7 @@ func (b *Baremetal) getClusterNodeRemoteBash(cluster *biz.Cluster, node *biz.Nod
 	return utils.NewRemoteBash(utils.Server{
 		Name:       node.Name,
 		Host:       node.Ip,
-		User:       node.User,
+		User:       node.Username,
 		Port:       defaultSHHPort,
 		PrivateKey: cluster.PrivateKey,
 	}, b.c.Infrastructure.Shell, b.log)
@@ -105,18 +105,17 @@ func (b *Baremetal) GetNodesSystemInfo(ctx context.Context, cluster *biz.Cluster
 	eg := new(errgroup.Group)
 	eg.SetLimit(10)
 	mu := new(sync.Mutex)
-	nodeIps := utils.RangeIps(cluster.NodeStartIp, cluster.NodeEndIp)
 	systemInfos := make([]SystemInfo, 0)
-	for _, ip := range nodeIps {
-		if cluster.GetNodeByIp(ip) != nil {
+	for _, node := range cluster.Nodes {
+		if node.Status != biz.NodeStatus_NODE_FINDING {
 			continue
 		}
-		ip := ip
+		ip := node.Ip
 		eg.Go(func() error {
 			systemInfoOutput, err := utils.NewRemoteBash(utils.Server{
 				Name:       ip,
 				Host:       ip,
-				User:       cluster.Username,
+				User:       cluster.NodeUsername,
 				Port:       defaultSHHPort,
 				PrivateKey: cluster.PrivateKey,
 			}, b.c.Infrastructure.Shell, b.log).ExecShell(SystemInfoShell)
@@ -140,49 +139,36 @@ func (b *Baremetal) GetNodesSystemInfo(ctx context.Context, cluster *biz.Cluster
 	}
 
 	// group by os, arch, mem, cpu, gpu, gpu_info
-	groupMap := make(map[string]*biz.NodeGroup)
 	for _, info := range systemInfos {
-		groupKey := fmt.Sprintf("%s-%s-%s-%s-%s-%s",
-			info.Os, info.Arch, info.Mem, info.Cpu, info.Gpu, info.GpuInfo)
-		if _, exists := groupMap[groupKey]; !exists {
-			groupMap[groupKey] = &biz.NodeGroup{
-				Id:     uuid.NewString(),
-				Type:   biz.NodeGroupType_NORMAL,
-				Name:   fmt.Sprintf("group-%s-%s-%s", info.Arch, info.Cpu, info.Mem),
-				Os:     info.Os,
-				Arch:   getNodeArchByBareMetal(info.Arch),
-				Memory: cast.ToInt32(info.Mem),
-				Cpu:    cast.ToInt32(info.Cpu),
-				Gpu:    cast.ToInt32(info.Gpu),
-			}
-			if cast.ToInt32(info.Gpu) > 0 {
-				groupMap[groupKey].Type = biz.NodeGroupType_GPU_ACCELERATERD
-				groupMap[groupKey].GpuSpec = getGPUSpecByBareMetal(strings.ToLower(info.GpuInfo))
-			}
+		nodeGroupId := uuid.NewString()
+		nodeGroup := &biz.NodeGroup{
+			Id:     nodeGroupId,
+			Type:   biz.NodeGroupType_NORMAL,
+			Name:   fmt.Sprintf("group-%s-%s-%s", info.Arch, info.Cpu, info.Mem),
+			Os:     info.Os,
+			Arch:   getNodeArchByBareMetal(info.Arch),
+			Memory: cast.ToInt32(info.Mem),
+			Cpu:    cast.ToInt32(info.Cpu),
+			Gpu:    cast.ToInt32(info.Gpu),
 		}
-		cluster.Nodes = append(cluster.Nodes, &biz.Node{
-			Name:           info.Id,
-			Ip:             info.Ip,
-			User:           cluster.Username,
-			SystemDiskSize: cast.ToInt32(info.Disk),
-			NodeGroupId:    groupMap[groupKey].Id,
-			ClusterId:      cluster.Id,
-		})
+		if cast.ToInt32(info.Gpu) > 0 {
+			nodeGroup.Type = biz.NodeGroupType_GPU_ACCELERATERD
+			nodeGroup.GpuSpec = getGPUSpecByBareMetal(strings.ToLower(info.GpuInfo))
+		}
+		clusterNg := cluster.GetNodeGroupByUniqueKey(nodeGroup.UniqueKey())
+		if clusterNg == nil {
+			cluster.AddNodeGroup(nodeGroup)
+		} else {
+			nodeGroup.Id = clusterNg.Id
+		}
+		clusterNode := cluster.GetNodeByIp(info.Ip)
+		clusterNode.DiskSize = cast.ToInt32(info.Disk)
+		clusterNode.NodeGroupId = nodeGroup.Id
 	}
-
-	// set node group target size
-	for _, group := range groupMap {
-		nodeNumber := int32(0)
-		for _, node := range cluster.Nodes {
-			if node.NodeGroupId == group.Id {
-				nodeNumber++
-			}
+	for _, node := range cluster.Nodes {
+		if node.NodeGroupId == "" {
+			cluster.DeleteNode(node)
 		}
-		group.TargetSize = nodeNumber
-		group.MinSize = nodeNumber
-		group.MaxSize = nodeNumber
-		group.ClusterId = cluster.Id
-		cluster.NodeGroups = append(cluster.NodeGroups, group)
 	}
 	return nil
 }
@@ -305,7 +291,7 @@ func (b *Baremetal) UnInstall(cluster *biz.Cluster) error {
 
 func (b *Baremetal) HandlerNodes(cluster *biz.Cluster) error {
 	for _, node := range cluster.Nodes {
-		if node.Status == biz.NodeStatus_NODE_CREATING {
+		if node.Status == biz.NodeStatus_NODE_PENDING {
 			err := b.joinCluster(cluster, node)
 			if err != nil {
 				return err
@@ -352,7 +338,7 @@ func (b *Baremetal) uninstallNode(cluster *biz.Cluster, node *biz.Node) error {
 	remoteBash := utils.NewRemoteBash(utils.Server{
 		Name:       node.Name,
 		Host:       node.Ip,
-		User:       node.User,
+		User:       node.Username,
 		Port:       defaultSHHPort,
 		PrivateKey: cluster.PrivateKey,
 	}, b.c.Infrastructure.Shell, b.log)

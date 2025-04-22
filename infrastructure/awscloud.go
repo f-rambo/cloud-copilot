@@ -605,9 +605,9 @@ func (a *AwsCloudUsecase) ManageInstance(ctx context.Context, cluster *biz.Clust
 				SubnetId:         aws.String(privateSubnet.RefId),
 				BlockDeviceMappings: []ec2Types.BlockDeviceMapping{
 					{
-						DeviceName: aws.String(node.SystemDiskName),
+						DeviceName: aws.String(node.DiskName),
 						Ebs: &ec2Types.EbsBlockDevice{
-							VolumeSize:          aws.Int32(node.SystemDiskSize),
+							VolumeSize:          aws.Int32(node.DiskSize),
 							VolumeType:          ec2Types.VolumeType(ec2Types.VolumeTypeGp3),
 							DeleteOnTermination: aws.Bool(true),
 						},
@@ -712,8 +712,9 @@ func (a *AwsCloudUsecase) createVPC(ctx context.Context, cluster *biz.Cluster) e
 		return errors.Wrap(err, "failed to wait for VPC availability")
 	}
 	_, err = a.ec2Client.ModifyVpcAttribute(ctx, &ec2.ModifyVpcAttributeInput{
-		VpcId:            vpcOutput.Vpc.VpcId,
-		EnableDnsSupport: &ec2Types.AttributeBooleanValue{Value: aws.Bool(true)},
+		VpcId:              vpcOutput.Vpc.VpcId,
+		EnableDnsSupport:   &ec2Types.AttributeBooleanValue{Value: aws.Bool(true)},
+		EnableDnsHostnames: &ec2Types.AttributeBooleanValue{Value: aws.Bool(true)},
 	})
 	if err != nil {
 		return errors.Wrap(err, "failed to enable DNS support for VPC, but vpc is created")
@@ -1147,6 +1148,7 @@ func (a *AwsCloudUsecase) createRouteTables(ctx context.Context, cluster *biz.Cl
 		return errors.New("vpc not found")
 	}
 
+	// find all route table
 	nextToken := ""
 	routeTableExits := make([]ec2Types.RouteTable, 0)
 	for {
@@ -1279,6 +1281,9 @@ func (a *AwsCloudUsecase) createRouteTables(ctx context.Context, cluster *biz.Cl
 		routeTable.AssociatedId = natGateway.RefId
 		time.Sleep(time.Second * TimeOutSecond)
 	}
+
+	// Create public route table
+	// Associate public subnets with private route table
 	return nil
 }
 
@@ -1374,7 +1379,7 @@ func (a *AwsCloudUsecase) ManageSecurityGroup(ctx context.Context, cluster *biz.
 			continue
 		}
 		exits := false
-		for _, clusterSgRule := range cluster.IngressControllerRules {
+		for _, clusterSgRule := range cluster.Securitys {
 			clusterSgRuelVals := strings.Join([]string{
 				clusterSgRule.Protocol, clusterSgRule.IpCidr,
 				fmt.Sprintf("%d/%d", clusterSgRule.StartPort, clusterSgRule.EndPort)},
@@ -1406,7 +1411,7 @@ func (a *AwsCloudUsecase) ManageSecurityGroup(ctx context.Context, cluster *biz.
 	}
 
 	// add new ingress rules
-	for _, sgRule := range cluster.IngressControllerRules {
+	for _, sgRule := range cluster.Securitys {
 		sgRuelVals := strings.Join([]string{
 			sgRule.Protocol, sgRule.IpCidr,
 			fmt.Sprintf("%d/%d", sgRule.StartPort, sgRule.EndPort)},
@@ -1526,8 +1531,8 @@ func (a *AwsCloudUsecase) ManageSLB(ctx context.Context, cluster *biz.Cluster) e
 	}
 
 	ports := make([]int32, 0)
-	for _, v := range cluster.IngressControllerRules {
-		if v.Access != biz.IngressControllerRuleAccess_PUBLIC {
+	for _, v := range cluster.Securitys {
+		if v.Access != biz.SecurityAccess_PUBLIC {
 			continue
 		}
 		for port := v.StartPort; port <= v.EndPort; port++ {
@@ -1610,6 +1615,7 @@ func (a *AwsCloudUsecase) ManageSLB(ctx context.Context, cluster *biz.Cluster) e
 			instanceTargets = append(instanceTargets, elasticloadbalancingv2Types.TargetDescription{
 				Id:   aws.String(node.InstanceId),
 				Port: aws.Int32(port),
+				// AvailabilityZone: aws.String(node.Zone),
 			})
 		}
 		_, err = a.elbv2Client.RegisterTargets(ctx, &elasticloadbalancingv2.RegisterTargetsInput{

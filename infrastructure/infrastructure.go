@@ -144,7 +144,6 @@ func (i *Infrastructure) DeleteCloudBasicResource(ctx context.Context, cluster *
 }
 
 func (i *Infrastructure) ManageNodeResource(ctx context.Context, cluster *biz.Cluster) error {
-	// Slb resource from cloud and metallb
 	if cluster.Provider == biz.ClusterProvider_Aws {
 		err := i.awsCloud.Connections(ctx, cluster.AccessId, cluster.AccessKey)
 		if err != nil {
@@ -155,6 +154,10 @@ func (i *Infrastructure) ManageNodeResource(ctx context.Context, cluster *biz.Cl
 			return err
 		}
 		err = i.awsCloud.ManageInstance(ctx, cluster)
+		if err != nil {
+			return err
+		}
+		err = i.awsCloud.ManageSLB(ctx, cluster)
 		if err != nil {
 			return err
 		}
@@ -169,6 +172,10 @@ func (i *Infrastructure) ManageNodeResource(ctx context.Context, cluster *biz.Cl
 			return err
 		}
 		err = i.aliCloud.ManageInstance(ctx, cluster)
+		if err != nil {
+			return err
+		}
+		err = i.aliCloud.ManageSLB(ctx, cluster)
 		if err != nil {
 			return err
 		}
@@ -282,9 +289,9 @@ func (i *Infrastructure) GetCloudtNodesSystemInfo(ctx context.Context, cluster *
 			if node.NodeGroupId != nodeGroup.Id {
 				continue
 			}
-			node.User = nodeUser
+			node.Username = nodeUser
 			node.ImageId = imageId
-			node.SystemDiskName = systemDiskName
+			node.DiskName = systemDiskName
 			node.InstanceType = instanceTypeId
 			node.BackupInstanceIds = strings.Join(backupInstanceTypeIds, ",")
 		}
@@ -310,4 +317,8 @@ func (i *Infrastructure) UnInstall(_ context.Context, cluster *biz.Cluster) erro
 
 func (i *Infrastructure) HandlerNodes(_ context.Context, cluster *biz.Cluster) error {
 	return i.baremetal.HandlerNodes(cluster)
+}
+
+func (i *Infrastructure) WaitClusterSlbReady(_ context.Context, cluster *biz.Cluster) error {
+	return nil
 }

@@ -7,6 +7,7 @@
 package main
 
 import (
+	"context"
 	"github.com/f-rambo/cloud-copilot/infrastructure"
 	"github.com/f-rambo/cloud-copilot/internal/biz"
 	"github.com/f-rambo/cloud-copilot/internal/conf"
@@ -26,7 +27,7 @@ import (
 // Injectors from wire.go:
 
 // wireApp init kratos application.
-func wireApp(bootstrap *conf.Bootstrap, logger log.Logger) (*kratos.App, func(), error) {
+func wireApp(contextContext context.Context, bootstrap *conf.Bootstrap, logger log.Logger) (*kratos.App, func(), error) {
 	dataData, cleanup, err := data.NewData(bootstrap, logger)
 	if err != nil {
 		return nil, nil, err
@@ -37,7 +38,7 @@ func wireApp(bootstrap *conf.Bootstrap, logger log.Logger) (*kratos.App, func(),
 	awsCloudUsecase := infrastructure.NewAwsCloudUseCase(bootstrap, logger)
 	clusterInfrastructure := infrastructure.NewInfrastructure(bootstrap, baremetal, aliCloudUsecase, awsCloudUsecase, logger)
 	clusterRuntime := runtime.NewClusterRuntime(logger)
-	clusterUsecase, err := biz.NewClusterUseCase(bootstrap, clusterData, clusterInfrastructure, clusterRuntime, logger)
+	clusterUsecase, err := biz.NewClusterUseCase(contextContext, bootstrap, clusterData, clusterInfrastructure, clusterRuntime, logger)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
@@ -65,7 +66,7 @@ func wireApp(bootstrap *conf.Bootstrap, logger log.Logger) (*kratos.App, func(),
 	grpcServer := server.NewGRPCServer(bootstrap, clusterInterface, appInterface, servicesInterface, userInterface, workspaceInterface, projectInterface, logger)
 	httpServer := server.NewHTTPServer(bootstrap, clusterInterface, appInterface, servicesInterface, userInterface, workspaceInterface, projectInterface, logger)
 	bizBiz := biz.NewBiz(clusterUsecase, appUsecase)
-	app := newApp(logger, grpcServer, httpServer, bizBiz)
+	app := newApp(contextContext, logger, grpcServer, httpServer, bizBiz)
 	return app, func() {
 		cleanup()
 	}, nil

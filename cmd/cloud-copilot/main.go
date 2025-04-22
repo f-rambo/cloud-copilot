@@ -37,12 +37,12 @@ func init() {
 	flag.StringVar(&flagconf, "conf", "configs", "config path, eg: -conf config.yaml")
 }
 
-func newApp(logger log.Logger, gs *grpc.Server, hs *http.Server, b *biz.Biz) *kratos.App {
+func newApp(ctx context.Context, logger log.Logger, gs *grpc.Server, hs *http.Server, b *biz.Biz) *kratos.App {
 	servers := []transport.Server{gs, hs}
 	servers = append(servers, b.BizRunners()...)
 	return kratos.New(
 		kratos.ID(id),
-		kratos.Context(context.Background()),
+		kratos.Context(ctx),
 		kratos.Name(Name),
 		kratos.Version(Version),
 		kratos.Metadata(map[string]string{
@@ -95,6 +95,7 @@ func main() {
 	log.SetLogger(logger)
 
 	app, cleanup, err := wireApp(
+		context.Background(),
 		&bc,
 		logger,
 	)

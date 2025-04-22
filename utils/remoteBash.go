@@ -48,7 +48,7 @@ func (s *RemoteBash) connections() (*ssh.Session, error) {
 			// ssh.Password("your_password"),
 			ssh.PublicKeys(signer),
 		},
-		Timeout: 5 * time.Second,
+		Timeout: 3 * time.Second,
 	})
 	if err != nil {
 		return nil, err

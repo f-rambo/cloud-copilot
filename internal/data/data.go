@@ -67,7 +67,7 @@ func NewData(c *conf.Bootstrap, logger log.Logger) (*Data, func(), error) {
 		&biz.Node{},
 		&biz.NodeGroup{},
 		&biz.CloudResource{},
-		&biz.IngressControllerRule{},
+		&biz.Security{},
 		&biz.Project{},
 		&biz.Workflow{},
 		&biz.WorkflowStep{},

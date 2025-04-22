@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"slices"
 	"strings"
 	"sync"
 
@@ -366,19 +367,16 @@ const (
 	ResourceType_UNSPECIFIED        ResourceType = 0
 	ResourceType_VPC                ResourceType = 1
 	ResourceType_SUBNET             ResourceType = 2
-	ResourceType_INTERNET_GATEWAY   ResourceType = 3
-	ResourceType_NAT_GATEWAY        ResourceType = 4
-	ResourceType_ROUTE_TABLE        ResourceType = 5
-	ResourceType_SECURITY_GROUP     ResourceType = 6
-	ResourceType_LOAD_BALANCER      ResourceType = 7
-	ResourceType_ELASTIC_IP         ResourceType = 8
-	ResourceType_AVAILABILITY_ZONES ResourceType = 9
-	ResourceType_KEY_PAIR           ResourceType = 10
-	ResourceType_DATA_DEVICE        ResourceType = 11
-	ResourceType_INSTANCE           ResourceType = 12
-	ResourceType_REGION             ResourceType = 13
-	ResourceType_GATEWAY_CLASS      ResourceType = 14
-	ResourceType_STORAGE_CLASS      ResourceType = 15
+	ResourceType_NAT_GATEWAY        ResourceType = 3
+	ResourceType_ROUTE_TABLE        ResourceType = 4
+	ResourceType_SECURITY_GROUP     ResourceType = 5
+	ResourceType_LOAD_BALANCER      ResourceType = 6
+	ResourceType_ELASTIC_IP         ResourceType = 7
+	ResourceType_AVAILABILITY_ZONES ResourceType = 8
+	ResourceType_KEY_PAIR           ResourceType = 9
+	ResourceType_REGION             ResourceType = 10
+	ResourceType_STORAGE            ResourceType = 11
+	ResourceType_INTERNET_GATEWAY   ResourceType = 12
 )
 
 // ResourceType to string
@@ -388,8 +386,6 @@ func (rt ResourceType) String() string {
 		return "vpc"
 	case ResourceType_SUBNET:
 		return "subnet"
-	case ResourceType_INTERNET_GATEWAY:
-		return "internet_gateway"
 	case ResourceType_NAT_GATEWAY:
 		return "nat_gateway"
 	case ResourceType_ROUTE_TABLE:
@@ -404,16 +400,12 @@ func (rt ResourceType) String() string {
 		return "availability_zones"
 	case ResourceType_KEY_PAIR:
 		return "key_pair"
-	case ResourceType_DATA_DEVICE:
-		return "data_device"
-	case ResourceType_INSTANCE:
-		return "instance"
 	case ResourceType_REGION:
 		return "region"
-	case ResourceType_GATEWAY_CLASS:
-		return "gateway_class"
-	case ResourceType_STORAGE_CLASS:
-		return "storage_class"
+	case ResourceType_STORAGE:
+		return "storage"
+	case ResourceType_INTERNET_GATEWAY:
+		return "internet_gateway"
 	default:
 		return "unspecified"
 	}
@@ -422,18 +414,13 @@ func (rt ResourceType) String() string {
 type ResourceTypeKeyValue int32
 
 const (
-	ResourceTypeKeyValue_UNSPECIFIED      ResourceTypeKeyValue = 0
-	ResourceTypeKeyValue_NAME             ResourceTypeKeyValue = 1
-	ResourceTypeKeyValue_ACCESS           ResourceTypeKeyValue = 2
-	ResourceTypeKeyValue_ZONE_ID          ResourceTypeKeyValue = 3
-	ResourceTypeKeyValue_REGION_ID        ResourceTypeKeyValue = 4
-	ResourceTypeKeyValue_ACCESS_PRIVATE   ResourceTypeKeyValue = 5
-	ResourceTypeKeyValue_ACCESS_PUBLIC    ResourceTypeKeyValue = 6
-	ResourceTypeKeyValue_EXTERNAL_GATEWAY ResourceTypeKeyValue = 7
-	ResourceTypeKeyValue_INTERNAL_GATEWAY ResourceTypeKeyValue = 8
-	ResourceTypeKeyValue_BLOCK_STORAGE    ResourceTypeKeyValue = 9
-	ResourceTypeKeyValue_FILE_STORAGE     ResourceTypeKeyValue = 10
-	ResourceTypeKeyValue_OBJECT_STORAGE   ResourceTypeKeyValue = 11
+	ResourceTypeKeyValue_UNSPECIFIED    ResourceTypeKeyValue = 0
+	ResourceTypeKeyValue_NAME           ResourceTypeKeyValue = 1
+	ResourceTypeKeyValue_ACCESS         ResourceTypeKeyValue = 2
+	ResourceTypeKeyValue_ZONE_ID        ResourceTypeKeyValue = 3
+	ResourceTypeKeyValue_REGION_ID      ResourceTypeKeyValue = 4
+	ResourceTypeKeyValue_ACCESS_PRIVATE ResourceTypeKeyValue = 5
+	ResourceTypeKeyValue_ACCESS_PUBLIC  ResourceTypeKeyValue = 6
 )
 
 // ResourceTypeKeyValue to string
@@ -451,27 +438,17 @@ func (kv ResourceTypeKeyValue) String() string {
 		return "access_private"
 	case ResourceTypeKeyValue_ACCESS_PUBLIC:
 		return "access_public"
-	case ResourceTypeKeyValue_EXTERNAL_GATEWAY:
-		return "external_gateway"
-	case ResourceTypeKeyValue_INTERNAL_GATEWAY:
-		return "internal_gateway"
-	case ResourceTypeKeyValue_BLOCK_STORAGE:
-		return "block_storage"
-	case ResourceTypeKeyValue_FILE_STORAGE:
-		return "file_storage"
-	case ResourceTypeKeyValue_OBJECT_STORAGE:
-		return "object_storage"
 	default:
 		return "unspecified"
 	}
 }
 
-type IngressControllerRuleAccess int32
+type SecurityAccess int32
 
 const (
-	IngressControllerRuleAccess_UNSPECIFIED IngressControllerRuleAccess = 0
-	IngressControllerRuleAccess_PRIVATE     IngressControllerRuleAccess = 1
-	IngressControllerRuleAccess_PUBLIC      IngressControllerRuleAccess = 2
+	SecurityAccess_UNSPECIFIED SecurityAccess = 0
+	SecurityAccess_PRIVATE     SecurityAccess = 1
+	SecurityAccess_PUBLIC      SecurityAccess = 2 // use slb
 )
 
 type NodeErrorType int32
@@ -483,31 +460,31 @@ const (
 )
 
 type Cluster struct {
-	Id                     int64                    `gorm:"column:id;primaryKey;AUTO_INCREMENT" json:"id,omitempty"`
-	Name                   string                   `gorm:"column:name;default:'';NOT NULL" json:"name,omitempty"`
-	ApiServerAddress       string                   `gorm:"column:api_server_address;default:'';NOT NULL" json:"api_server_address,omitempty"`
-	Config                 string                   `gorm:"column:config;default:'';NOT NULL" json:"config,omitempty"`
-	Status                 ClusterStatus            `gorm:"column:status;default:0;NOT NULL" json:"status,omitempty"`
-	Provider               ClusterProvider          `gorm:"column:provider;default:0;NOT NULL" json:"provider,omitempty"`
-	Level                  ClusterLevel             `gorm:"column:level;default:0;NOT NULL" json:"level,omitempty"`
-	PublicKey              string                   `gorm:"column:public_key;default:'';NOT NULL" json:"public_key,omitempty"`
-	PrivateKey             string                   `gorm:"column:private_key;default:'';NOT NULL" json:"private_key,omitempty"`
-	Region                 string                   `gorm:"column:region;default:'';NOT NULL" json:"region,omitempty"`
-	UserId                 int64                    `gorm:"column:user_id;default:0;NOT NULL" json:"user_id,omitempty"` // action user
-	AccessId               string                   `gorm:"column:access_id;default:'';NOT NULL" json:"access_id,omitempty"`
-	AccessKey              string                   `gorm:"column:access_key;default:'';NOT NULL" json:"access_key,omitempty"`
-	Username               string                   `gorm:"column:username;default:'';NOT NULL" json:"username,omitempty"` // ssh username
-	NodeStartIp            string                   `gorm:"column:node_start_ip;default:'';NOT NULL" json:"node_start_ip,omitempty"`
-	NodeEndIp              string                   `gorm:"column:node_end_ip;default:'';NOT NULL" json:"node_end_ip,omitempty"`
-	Domain                 string                   `gorm:"column:domain;default:'';NOT NULL" json:"domain,omitempty"`
-	VpcCidr                string                   `gorm:"column:vpc_cidr;default:'';NOT NULL" json:"vpc_cidr,omitempty"`
-	ServiceCidr            string                   `gorm:"column:service_cidr;default:'';NOT NULL" json:"service_cidr,omitempty"`
-	PodCidr                string                   `gorm:"column:pod_cidr;default:'';NOT NULL" json:"pod_cidr,omitempty"`
-	SubnetCidrs            string                   `gorm:"column:subnet_cidrs;default:'';NOT NULL" json:"subnet_cidrs,omitempty"` // 多个子网cidr，逗号分隔
-	NodeGroups             []*NodeGroup             `gorm:"-" json:"node_groups,omitempty"`
-	Nodes                  []*Node                  `gorm:"-" json:"nodes,omitempty"`
-	CloudResources         []*CloudResource         `gorm:"-" json:"cloud_resources,omitempty"`
-	IngressControllerRules []*IngressControllerRule `gorm:"-" json:"ingress_controller_rules,omitempty"`
+	Id               int64            `gorm:"column:id;primaryKey;AUTO_INCREMENT" json:"id,omitempty"`
+	Name             string           `gorm:"column:name;default:'';NOT NULL" json:"name,omitempty"`
+	ApiServerAddress string           `gorm:"column:api_server_address;default:'';NOT NULL" json:"api_server_address,omitempty"`
+	Config           string           `gorm:"column:config;default:'';NOT NULL" json:"config,omitempty"`
+	Status           ClusterStatus    `gorm:"column:status;default:0;NOT NULL" json:"status,omitempty"`
+	Provider         ClusterProvider  `gorm:"column:provider;default:0;NOT NULL" json:"provider,omitempty"`
+	Level            ClusterLevel     `gorm:"column:level;default:0;NOT NULL" json:"level,omitempty"`
+	PublicKey        string           `gorm:"column:public_key;default:'';NOT NULL" json:"public_key,omitempty"`
+	PrivateKey       string           `gorm:"column:private_key;default:'';NOT NULL" json:"private_key,omitempty"`
+	Region           string           `gorm:"column:region;default:'';NOT NULL" json:"region,omitempty"`
+	UserId           int64            `gorm:"column:user_id;default:0;NOT NULL" json:"user_id,omitempty"` // action user
+	AccessId         string           `gorm:"column:access_id;default:'';NOT NULL" json:"access_id,omitempty"`
+	AccessKey        string           `gorm:"column:access_key;default:'';NOT NULL" json:"access_key,omitempty"`
+	NodeUsername     string           `gorm:"column:node_username;default:'';NOT NULL" json:"node_username,omitempty"`
+	NodeStartIp      string           `gorm:"column:node_start_ip;default:'';NOT NULL" json:"node_start_ip,omitempty"`
+	NodeEndIp        string           `gorm:"column:node_end_ip;default:'';NOT NULL" json:"node_end_ip,omitempty"`
+	Domain           string           `gorm:"column:domain;default:'';NOT NULL" json:"domain,omitempty"`
+	VpcCidr          string           `gorm:"column:vpc_cidr;default:'';NOT NULL" json:"vpc_cidr,omitempty"`
+	ServiceCidr      string           `gorm:"column:service_cidr;default:'';NOT NULL" json:"service_cidr,omitempty"`
+	PodCidr          string           `gorm:"column:pod_cidr;default:'';NOT NULL" json:"pod_cidr,omitempty"`
+	SubnetCidrs      string           `gorm:"column:subnet_cidrs;default:'';NOT NULL" json:"subnet_cidrs,omitempty"` // 多个子网cidr，逗号分隔
+	NodeGroups       []*NodeGroup     `gorm:"-" json:"node_groups,omitempty"`
+	Nodes            []*Node          `gorm:"-" json:"nodes,omitempty"`
+	CloudResources   []*CloudResource `gorm:"-" json:"cloud_resources,omitempty"`
+	Securitys        []*Security      `gorm:"-" json:"securitys,omitempty"`
 }
 
 type NodeGroup struct {
@@ -533,17 +510,15 @@ type Node struct {
 	Name              string        `gorm:"column:name;default:'';NOT NULL" json:"name,omitempty"`
 	Labels            string        `gorm:"column:labels;default:'';NOT NULL" json:"labels,omitempty"`
 	Ip                string        `gorm:"column:ip;default:'';NOT NULL" json:"ip,omitempty"`
-	User              string        `gorm:"column:user;default:'';NOT NULL" json:"user,omitempty"`
+	Username          string        `gorm:"column:username;default:'';NOT NULL" json:"username,omitempty"`
 	Role              NodeRole      `gorm:"column:role;default:0;NOT NULL" json:"role,omitempty"`
 	Status            NodeStatus    `gorm:"column:status;default:0;NOT NULL" json:"status,omitempty"`
 	InstanceId        string        `gorm:"column:instance_id;default:'';NOT NULL" json:"instance_id,omitempty"`
 	ImageId           string        `gorm:"column:image_id;default:'';NOT NULL" json:"image_id,omitempty"`
 	BackupInstanceIds string        `gorm:"column:backup_instance_ids;default:'';NOT NULL" json:"backup_instance_ids,omitempty"`
 	InstanceType      string        `gorm:"column:instance_type;default:'';NOT NULL" json:"instance_type,omitempty"`
-	SystemDiskSize    int32         `gorm:"column:system_disk_size;default:0;NOT NULL" json:"system_disk_size,omitempty"`
-	SystemDiskName    string        `gorm:"column:system_disk_name;default:'';NOT NULL" json:"system_disk_name,omitempty"`
-	DataDiskSize      int32         `gorm:"column:data_disk_size;default:0;NOT NULL" json:"data_disk_size,omitempty"`
-	DataDiskName      string        `gorm:"column:data_disk_name;default:'';NOT NULL" json:"data_disk_name,omitempty"`
+	DiskSize          int32         `gorm:"column:disk_size;default:0;NOT NULL" json:"disk_size,omitempty"`
+	DiskName          string        `gorm:"column:disk_name;default:'';NOT NULL" json:"disk_name,omitempty"`
 	ClusterId         int64         `gorm:"column:cluster_id;default:0;NOT NULL" json:"cluster_id,omitempty"`
 	NodeGroupId       string        `gorm:"column:node_group_id;default:'';NOT NULL" json:"node_group_id,omitempty"`
 	NodeInfo          string        `gorm:"column:node_info;default:'';NOT NULL" json:"node_info,omitempty"`
@@ -562,15 +537,15 @@ type CloudResource struct {
 	ClusterId    int64        `gorm:"column:cluster_id;default:0;NOT NULL" json:"cluster_id,omitempty"`
 }
 
-type IngressControllerRule struct {
-	Id        string                      `gorm:"column:id;primaryKey;NOT NULL" json:"id,omitempty"`
-	Name      string                      `gorm:"column:name;default:'';NOT NULL" json:"name,omitempty"`
-	StartPort int32                       `gorm:"column:start_port;default:0;NOT NULL" json:"start_port,omitempty"`
-	EndPort   int32                       `gorm:"column:end_port;default:0;NOT NULL" json:"end_port,omitempty"`
-	Protocol  string                      `gorm:"column:protocol;default:'';NOT NULL" json:"protocol,omitempty"`
-	IpCidr    string                      `gorm:"column:ip_cidr;default:'';NOT NULL" json:"ip_cidr,omitempty"`
-	Access    IngressControllerRuleAccess `gorm:"column:access;default:0;NOT NULL" json:"access,omitempty"`
-	ClusterId int64                       `gorm:"column:cluster_id;default:0;NOT NULL" json:"cluster_id,omitempty"`
+type Security struct {
+	Id        string         `gorm:"column:id;primaryKey;NOT NULL" json:"id,omitempty"`
+	Name      string         `gorm:"column:name;default:'';NOT NULL" json:"name,omitempty"`
+	StartPort int32          `gorm:"column:start_port;default:0;NOT NULL" json:"start_port,omitempty"`
+	EndPort   int32          `gorm:"column:end_port;default:0;NOT NULL" json:"end_port,omitempty"`
+	Protocol  string         `gorm:"column:protocol;default:'';NOT NULL" json:"protocol,omitempty"`
+	IpCidr    string         `gorm:"column:ip_cidr;default:'';NOT NULL" json:"ip_cidr,omitempty"`
+	Access    SecurityAccess `gorm:"column:access;default:0;NOT NULL" json:"access,omitempty"`
+	ClusterId int64          `gorm:"column:cluster_id;default:0;NOT NULL" json:"cluster_id,omitempty"`
 }
 
 type ClusterData interface {
@@ -591,6 +566,7 @@ type ClusterInfrastructure interface {
 	Install(context.Context, *Cluster) error
 	UnInstall(context.Context, *Cluster) error
 	HandlerNodes(context.Context, *Cluster) error
+	WaitClusterSlbReady(context.Context, *Cluster) error
 }
 
 type ClusterRuntime interface {
@@ -600,6 +576,14 @@ type ClusterRuntime interface {
 
 func WithCluster(ctx context.Context, cluster *Cluster) context.Context {
 	return context.WithValue(ctx, ClusterKey, cluster)
+}
+
+func GetCluster(ctx context.Context) *Cluster {
+	cluster, ok := ctx.Value(ClusterKey).(*Cluster)
+	if !ok {
+		return nil
+	}
+	return cluster
 }
 
 type ClusterUsecase struct {
@@ -613,7 +597,7 @@ type ClusterUsecase struct {
 	log                   *log.Helper
 }
 
-func NewClusterUseCase(conf *confPkg.Bootstrap, clusterData ClusterData, clusterInfrastructure ClusterInfrastructure, clusterRuntime ClusterRuntime, logger log.Logger) (*ClusterUsecase, error) {
+func NewClusterUseCase(ctx context.Context, conf *confPkg.Bootstrap, clusterData ClusterData, clusterInfrastructure ClusterInfrastructure, clusterRuntime ClusterRuntime, logger log.Logger) (*ClusterUsecase, error) {
 	clusterUc := &ClusterUsecase{
 		clusterData:           clusterData,
 		clusterInfrastructure: clusterInfrastructure,
@@ -623,10 +607,10 @@ func NewClusterUseCase(conf *confPkg.Bootstrap, clusterData ClusterData, cluster
 		locks:                 make(map[int64]*sync.Mutex),
 		eventChan:             make(chan *Cluster, ClusterPoolNumber),
 	}
-	err := clusterUc.clusterRuntime.CurrentCluster(context.Background(), &Cluster{})
+	err := clusterUc.clusterRuntime.CurrentCluster(ctx, &Cluster{})
 	if clusterUc.conf.Infrastructure.Cluster != "" && errors.Is(err, ErrClusterNotFound) {
 		if !utils.IsFileExist(clusterUc.conf.Infrastructure.Cluster) {
-			return nil, errors.New("cluster file not exist")
+			return nil, ErrClusterNotFound
 		}
 		clusterJsonByte, err := os.ReadFile(clusterUc.conf.Infrastructure.Cluster)
 		if err != nil {
@@ -637,8 +621,11 @@ func NewClusterUseCase(conf *confPkg.Bootstrap, clusterData ClusterData, cluster
 		if err != nil {
 			return nil, err
 		}
-		cluster.SetStatus(ClusterStatus_STARTING)
-		err = clusterUc.Apply(cluster)
+		err = clusterUc.clusterData.Save(ctx, cluster)
+		if err != nil {
+			return nil, err
+		}
+		err = clusterUc.StartCluster(ctx, cluster.Id)
 		if err != nil {
 			return nil, err
 		}
@@ -887,23 +874,6 @@ func (c *Cluster) GetNodeByIp(ip string) *Node {
 	return nil
 }
 
-func (c *Cluster) SetNodeRole() {
-	isExistMaster := false
-	for _, node := range c.Nodes {
-		if node.Role == NodeRole_MASTER {
-			isExistMaster = true
-			continue
-		}
-		if node.Role != NodeRole_UNSPECIFIED {
-			continue
-		}
-		node.Role = NodeRole_WORKER
-	}
-	if !isExistMaster && len(c.Nodes) > 0 {
-		c.Nodes[0].Role = NodeRole_MASTER
-	}
-}
-
 func (c *Cluster) DistributeNodePrivateSubnets(nodeIndex int) *CloudResource {
 	tags := c.GetTags()
 	tags[ResourceTypeKeyValue_ACCESS] = ResourceTypeKeyValue_ACCESS_PRIVATE
@@ -934,26 +904,6 @@ func (c *Cluster) UpdateCluster() bool {
 
 func (c *Cluster) DeleteCluster() bool {
 	return c.Status == ClusterStatus_STOPPING || c.Status == ClusterStatus_DELETED
-}
-
-func (g *NodeGroup) CreateOrUpdateNodeGroup() bool {
-	return g.TargetSize > 0
-}
-
-func (g *NodeGroup) DeleteNodeGroup() bool {
-	return g.TargetSize == 0
-}
-
-func (n *Node) CreateNode() bool {
-	return n.Status == NodeStatus_NODE_CREATING
-}
-
-func (n *Node) UpdateNode() bool {
-	return n.Status == NodeStatus_NODE_RUNNING || n.Status == NodeStatus_NODE_PENDING
-}
-
-func (n *Node) DeleteNode() bool {
-	return n.Status == NodeStatus_NODE_DELETING || n.Status == NodeStatus_NODE_DELETED
 }
 
 func (c *Cluster) GetVpcName() string {
@@ -992,12 +942,18 @@ func (c *Cluster) GetLoadBalancerName() string {
 	return strings.ReplaceAll(fmt.Sprintf("%s-slb", c.Name), "_", "-")
 }
 
-func GetCluster(ctx context.Context) *Cluster {
-	cluster, ok := ctx.Value(ClusterKey).(*Cluster)
-	if !ok {
-		return nil
+func (c *Cluster) AddNodeGroup(nodeGroup *NodeGroup) {
+	if c.NodeGroups == nil {
+		c.NodeGroups = make([]*NodeGroup, 0)
 	}
-	return cluster
+	c.NodeGroups = append(c.NodeGroups, nodeGroup)
+}
+
+func (c *Cluster) AddNode(node *Node) {
+	if c.Nodes == nil {
+		c.Nodes = make([]*Node, 0)
+	}
+	c.Nodes = append(c.Nodes, node)
 }
 
 func (c *Cluster) GetLabels() map[string]string {
@@ -1086,31 +1042,60 @@ func (c *Cluster) SetZoneByLevel(zones []*CloudResource) {
 	}
 }
 
-func (c *Cluster) SettingDefaultNodeGroup() {
-	targetNodeSize := int32(5)
-	nodeGroupId := uuid.NewString()
-	c.NodeGroups = []*NodeGroup{
-		{
-			Id:         nodeGroupId,
-			Name:       c.Name,
-			ClusterId:  c.Id,
-			Type:       NodeGroupType_NORMAL,
-			TargetSize: targetNodeSize,
-			MaxSize:    100,
-			MinSize:    targetNodeSize,
-			Arch:       NodeArchType_AMD64,
-			Cpu:        4,
-			Memory:     8,
-		},
+func (c *Cluster) SetBareMetalNode() {
+	nodeIps := utils.RangeIps(c.NodeStartIp, c.NodeEndIp)
+	for i, nodeIp := range nodeIps {
+		if c.GetNodeByIp(nodeIp) != nil {
+			continue
+		}
+		c.Nodes = append(c.Nodes, &Node{
+			Name:      fmt.Sprintf("node%d", i+1),
+			Ip:        nodeIp,
+			Status:    NodeStatus_NODE_FINDING,
+			Role:      NodeRole_WORKER,
+			ClusterId: c.Id,
+		})
 	}
+	isExistMasterNodeRole := false
+	for _, node := range c.Nodes {
+		if node.Role == NodeRole_MASTER {
+			isExistMasterNodeRole = true
+			break
+		}
+	}
+	if !isExistMasterNodeRole && len(c.Nodes) > 0 {
+		c.Nodes[0].Role = NodeRole_MASTER
+	}
+	for _, node := range c.Nodes {
+		if !slices.Contains(nodeIps, node.Ip) {
+			node.SetStatus(NodeStatus_NODE_DELETING)
+		}
+	}
+}
+
+func (c *Cluster) InitCloudNodeAndNodeGroup() {
+	targetNodeSize := int32(3)
+	nodeGroup := &NodeGroup{
+		Id:         uuid.NewString(),
+		Name:       c.Name,
+		ClusterId:  c.Id,
+		Type:       NodeGroupType_NORMAL,
+		TargetSize: targetNodeSize,
+		MaxSize:    100,
+		MinSize:    targetNodeSize,
+		Arch:       NodeArchType_AMD64,
+		Cpu:        4,
+		Memory:     8,
+	}
+	c.AddNodeGroup(nodeGroup)
 	for i := range make([]struct{}, targetNodeSize) {
 		c.Nodes = append(c.Nodes, &Node{
-			Name:           fmt.Sprintf("node%d", i+1),
-			Status:         NodeStatus_NODE_FINDING,
-			Role:           NodeRole_WORKER,
-			NodeGroupId:    c.NodeGroups[0].Id,
-			SystemDiskSize: 30,
-			ClusterId:      c.Id,
+			Name:        fmt.Sprintf("node%d", i+1),
+			Status:      NodeStatus_NODE_FINDING,
+			Role:        NodeRole_WORKER,
+			NodeGroupId: nodeGroup.Id,
+			DiskSize:    30,
+			ClusterId:   c.Id,
 		})
 		if i == 0 {
 			c.Nodes[i].Role = NodeRole_MASTER
@@ -1118,8 +1103,8 @@ func (c *Cluster) SettingDefaultNodeGroup() {
 	}
 }
 
-func (c *Cluster) settingDefatultIngressRules() {
-	c.IngressControllerRules = []*IngressControllerRule{
+func (c *Cluster) InitSecuritys() {
+	c.Securitys = []*Security{
 		{
 			Id:        uuid.NewString(),
 			ClusterId: c.Id,
@@ -1128,7 +1113,7 @@ func (c *Cluster) settingDefatultIngressRules() {
 			EndPort:   6443,
 			Protocol:  "TCP",
 			IpCidr:    "0.0.0.0/0",
-			Access:    IngressControllerRuleAccess_PRIVATE,
+			Access:    SecurityAccess_PRIVATE,
 		},
 		{
 			Id:        uuid.NewString(),
@@ -1138,7 +1123,7 @@ func (c *Cluster) settingDefatultIngressRules() {
 			EndPort:   10255,
 			Protocol:  "TCP",
 			IpCidr:    "0.0.0.0/0",
-			Access:    IngressControllerRuleAccess_PRIVATE,
+			Access:    SecurityAccess_PRIVATE,
 		},
 		{
 			Id:        uuid.NewString(),
@@ -1148,7 +1133,7 @@ func (c *Cluster) settingDefatultIngressRules() {
 			EndPort:   22,
 			Protocol:  "TCP",
 			IpCidr:    "0.0.0.0/0",
-			Access:    IngressControllerRuleAccess_PRIVATE,
+			Access:    SecurityAccess_PRIVATE,
 		},
 		{
 			Id:        uuid.NewString(),
@@ -1158,7 +1143,7 @@ func (c *Cluster) settingDefatultIngressRules() {
 			EndPort:   443,
 			Protocol:  "TCP",
 			IpCidr:    "0.0.0.0/0",
-			Access:    IngressControllerRuleAccess_PUBLIC,
+			Access:    SecurityAccess_PUBLIC,
 		},
 	}
 }
@@ -1171,10 +1156,24 @@ func (c *Cluster) SetRegion(region string) {
 	c.Region = region
 }
 
-func (c *Cluster) SetNodeStatus(fromStatus, toStatus NodeStatus) {
+func (c *Cluster) SetNodeStatusFromTo(fromStatus, toStatus NodeStatus) {
 	for _, node := range c.Nodes {
 		if node.Status == fromStatus {
-			node.SetNodeStatus(toStatus)
+			node.SetStatus(toStatus)
+		}
+	}
+}
+
+func (c *Cluster) SetNodeStatus(status NodeStatus) {
+	for _, node := range c.Nodes {
+		node.SetStatus(status)
+	}
+}
+
+func (c *Cluster) DeleteNode(node *Node) {
+	for i, v := range c.Nodes {
+		if v.Ip == node.Ip {
+			c.Nodes = slices.Delete(c.Nodes, i, i+1)
 		}
 	}
 }
@@ -1212,20 +1211,12 @@ func (c *Cluster) GetDiskSizeCount() int32 {
 		if node.Status != NodeStatus_NODE_RUNNING {
 			continue
 		}
-		diskSizeCount += node.DataDiskSize + node.SystemDiskSize
+		diskSizeCount += node.DiskSize
 	}
 	return diskSizeCount
 }
 
-func (ng *NodeGroup) SetTargetSize(size int32) {
-	ng.TargetSize = size
-}
-
-func (n *Node) SetNodeStatus(status NodeStatus) {
-	n.Status = status
-}
-
-func (c *Cluster) generateNodeLables(nodeGroup *NodeGroup) string {
+func (c *Cluster) GenerateNodeLables(nodeGroup *NodeGroup) string {
 	lableMap := make(map[string]string)
 	lableMap["cluster"] = c.Name
 	lableMap["cluster_id"] = cast.ToString(c.Id)
@@ -1235,6 +1226,47 @@ func (c *Cluster) generateNodeLables(nodeGroup *NodeGroup) string {
 	lableMap["nodegroup_type"] = nodeGroup.Type.String()
 	lablebytes, _ := json.Marshal(lableMap)
 	return string(lablebytes)
+}
+
+func (c *Cluster) GetNodeGroupByUniqueKey(key string) *NodeGroup {
+	for _, nodeGroup := range c.NodeGroups {
+		if nodeGroup.UniqueKey() == key {
+			return nodeGroup
+		}
+	}
+	return nil
+}
+
+func (g *NodeGroup) CreateOrUpdateNodeGroup() bool {
+	return g.TargetSize > 0
+}
+
+func (g *NodeGroup) DeleteNodeGroup() bool {
+	return g.TargetSize == 0
+}
+
+func (n *Node) CreateNode() bool {
+	return n.Status == NodeStatus_NODE_CREATING
+}
+
+func (ng *NodeGroup) UniqueKey() string {
+	return fmt.Sprintf("%s-%s-%d-%d-%d-%s", ng.Os, ng.Arch, ng.Memory, ng.Cpu, ng.Gpu, ng.GpuSpec)
+}
+
+func (ng *NodeGroup) SetTargetSize(size int32) {
+	ng.TargetSize = size
+}
+
+func (n *Node) UpdateNode() bool {
+	return n.Status == NodeStatus_NODE_RUNNING || n.Status == NodeStatus_NODE_PENDING
+}
+
+func (n *Node) DeleteNode() bool {
+	return n.Status == NodeStatus_NODE_DELETING || n.Status == NodeStatus_NODE_DELETED
+}
+
+func (n *Node) SetStatus(status NodeStatus) {
+	n.Status = status
 }
 
 func (uc *ClusterUsecase) NodeGroupIncreaseSize(ctx context.Context, cluster *Cluster, nodeGroup *NodeGroup, size int32) error {
@@ -1270,7 +1302,7 @@ func (uc *ClusterUsecase) NodeGroupTemplateNodeInfo(ctx context.Context, cluster
 		Status:      NodeStatus_NODE_CREATING,
 		ClusterId:   cluster.Id,
 		NodeGroupId: nodeGroup.Id,
-		Labels:      cluster.generateNodeLables(nodeGroup),
+		Labels:      cluster.GenerateNodeLables(nodeGroup),
 	}, nil
 }
 
@@ -1361,7 +1393,6 @@ func (uc *ClusterUsecase) GetResourceTypes() []ResourceType {
 	return []ResourceType{
 		ResourceType_VPC,
 		ResourceType_SUBNET,
-		ResourceType_INTERNET_GATEWAY,
 		ResourceType_NAT_GATEWAY,
 		ResourceType_ROUTE_TABLE,
 		ResourceType_SECURITY_GROUP,
@@ -1369,11 +1400,9 @@ func (uc *ClusterUsecase) GetResourceTypes() []ResourceType {
 		ResourceType_ELASTIC_IP,
 		ResourceType_AVAILABILITY_ZONES,
 		ResourceType_KEY_PAIR,
-		ResourceType_DATA_DEVICE,
-		ResourceType_INSTANCE,
 		ResourceType_REGION,
-		ResourceType_GATEWAY_CLASS,
-		ResourceType_STORAGE_CLASS,
+		ResourceType_STORAGE,
+		ResourceType_INTERNET_GATEWAY,
 	}
 }
 
@@ -1432,6 +1461,12 @@ func (uc *ClusterUsecase) StartCluster(ctx context.Context, clusterId int64) err
 	}
 	cluster.SetCidr()
 	cluster.SetDomain()
+	if cluster.Provider.IsCloud() {
+		cluster.InitCloudNodeAndNodeGroup()
+		cluster.InitSecuritys()
+	} else {
+		cluster.SetBareMetalNode()
+	}
 	cluster.SetStatus(ClusterStatus_STARTING)
 	err = uc.clusterData.Save(ctx, cluster)
 	if err != nil {
@@ -1529,8 +1564,6 @@ func (uc *ClusterUsecase) handleEvent(ctx context.Context, cluster *Cluster) (er
 		if err != nil {
 			cluster.SetStatus(ClusterStatus_ERROR)
 			uc.log.Errorf("cluster handle event error: %v", err)
-		} else {
-			cluster.SetStatus(ClusterStatus_RUNNING)
 		}
 		err = uc.clusterData.Save(ctx, cluster)
 		if err != nil {
@@ -1542,7 +1575,7 @@ func (uc *ClusterUsecase) handleEvent(ctx context.Context, cluster *Cluster) (er
 			if node.Status == NodeStatus_UNSPECIFIED || node.Status == NodeStatus_NODE_DELETED {
 				continue
 			}
-			node.SetNodeStatus(NodeStatus_NODE_DELETING)
+			node.SetStatus(NodeStatus_NODE_DELETING)
 		}
 		err = uc.clusterRuntime.ReloadCluster(ctx, cluster)
 		if err != nil && !errors.Is(err, ErrClusterNotFound) {
@@ -1567,7 +1600,7 @@ func (uc *ClusterUsecase) handleEvent(ctx context.Context, cluster *Cluster) (er
 			}
 		}
 		for _, node := range cluster.Nodes {
-			node.SetNodeStatus(NodeStatus_NODE_DELETED)
+			node.SetStatus(NodeStatus_NODE_DELETED)
 		}
 		return nil
 	}
@@ -1590,14 +1623,17 @@ func (uc *ClusterUsecase) handleEvent(ctx context.Context, cluster *Cluster) (er
 			return err
 		}
 	}
+	if !cluster.Provider.IsCloud() {
+		cluster.SetBareMetalNode()
+	}
 	err = uc.clusterInfrastructure.GetNodesSystemInfo(ctx, cluster)
 	if err != nil {
 		return err
 	}
 	if !cluster.Provider.IsCloud() {
-		cluster.SetNodeStatus(NodeStatus_UNSPECIFIED, NodeStatus_NODE_FINDING)
+		cluster.SetNodeStatusFromTo(NodeStatus_UNSPECIFIED, NodeStatus_NODE_FINDING)
 	}
-	cluster.SetNodeStatus(NodeStatus_NODE_FINDING, NodeStatus_NODE_CREATING)
+	cluster.SetNodeStatusFromTo(NodeStatus_NODE_FINDING, NodeStatus_NODE_CREATING)
 	err = uc.clusterRuntime.ReloadCluster(ctx, cluster)
 	if err != nil {
 		return err
@@ -1606,18 +1642,19 @@ func (uc *ClusterUsecase) handleEvent(ctx context.Context, cluster *Cluster) (er
 	if err != nil {
 		return err
 	}
+	cluster.SetNodeStatusFromTo(NodeStatus_NODE_CREATING, NodeStatus_NODE_PENDING)
 	err = uc.clusterInfrastructure.HandlerNodes(ctx, cluster)
 	if err != nil {
 		return err
 	}
-	cluster.SetNodeStatus(NodeStatus_NODE_CREATING, NodeStatus_NODE_RUNNING)
+	cluster.SetNodeStatusFromTo(NodeStatus_NODE_PENDING, NodeStatus_NODE_RUNNING)
+	cluster.SetNodeStatusFromTo(NodeStatus_NODE_DELETING, NodeStatus_NODE_DELETED)
 	return
 }
 
 func (uc *ClusterUsecase) handlerClusterNotInstalled(ctx context.Context, cluster *Cluster) error {
-	if len(cluster.NodeGroups) == 0 && cluster.Provider.IsCloud() {
-		cluster.SettingDefaultNodeGroup()
-		cluster.settingDefatultIngressRules()
+	if cluster.Status != ClusterStatus_STARTING {
+		return nil
 	}
 	if cluster.Provider.IsCloud() && cluster.SettingClusterLevelByNodeNumber() {
 		zoneResources, err := uc.clusterInfrastructure.GetZones(ctx, cluster)
@@ -1637,23 +1674,20 @@ func (uc *ClusterUsecase) handlerClusterNotInstalled(ctx context.Context, cluste
 	if len(cluster.Nodes) == 0 {
 		return nil
 	}
-	if !cluster.Provider.IsCloud() {
-		cluster.SetNodeRole()
-		cluster.SetNodeStatus(NodeStatus_UNSPECIFIED, NodeStatus_NODE_FINDING)
-	}
-	cluster.SetNodeStatus(NodeStatus_NODE_FINDING, NodeStatus_NODE_CREATING)
-	err = uc.clusterInfrastructure.ManageNodeResource(ctx, cluster)
-	if err != nil {
-		return err
-	}
+	cluster.SetNodeStatusFromTo(NodeStatus_NODE_FINDING, NodeStatus_NODE_CREATING)
 	if uc.conf.Server.Env == Env_local {
-		return nil
+		err = uc.clusterInfrastructure.ManageNodeResource(ctx, cluster)
+		if err != nil {
+			return err
+		}
+		return uc.clusterInfrastructure.WaitClusterSlbReady(ctx, cluster)
 	}
-	cluster.SetNodeStatus(NodeStatus_NODE_CREATING, NodeStatus_NODE_PENDING)
+	cluster.SetNodeStatusFromTo(NodeStatus_NODE_CREATING, NodeStatus_NODE_PENDING)
 	err = uc.clusterInfrastructure.Install(ctx, cluster)
 	if err != nil {
 		return err
 	}
-	cluster.SetNodeStatus(NodeStatus_NODE_PENDING, NodeStatus_NODE_RUNNING)
+	cluster.SetNodeStatusFromTo(NodeStatus_NODE_PENDING, NodeStatus_NODE_RUNNING)
+	cluster.SetStatus(ClusterStatus_RUNNING)
 	return nil
 }

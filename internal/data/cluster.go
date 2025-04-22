@@ -40,7 +40,7 @@ func (c *clusterRepo) Save(ctx context.Context, cluster *biz.Cluster) (err error
 		c.saveNodeGroup,
 		c.saveNode,
 		c.saveCloudResources,
-		c.saveIngressControllerRules,
+		c.saveSecuritys,
 	}
 	for _, f := range funcs {
 		getErr := f(ctx, cluster, tx)
@@ -148,29 +148,29 @@ func (c *clusterRepo) saveCloudResources(_ context.Context, cluster *biz.Cluster
 	return nil
 }
 
-func (c *clusterRepo) saveIngressControllerRules(_ context.Context, cluster *biz.Cluster, tx *gorm.DB) error {
-	for _, v := range cluster.IngressControllerRules {
+func (c *clusterRepo) saveSecuritys(_ context.Context, cluster *biz.Cluster, tx *gorm.DB) error {
+	for _, v := range cluster.Securitys {
 		v.ClusterId = cluster.Id
-		err := tx.Model(&biz.IngressControllerRule{}).Where("id = ?", v.Id).Save(v).Error
+		err := tx.Model(&biz.Security{}).Where("id = ?", v.Id).Save(v).Error
 		if err != nil {
 			return err
 		}
 	}
-	sgs := make([]*biz.IngressControllerRule, 0)
-	err := tx.Model(&biz.IngressControllerRule{}).Where("cluster_id = ?", cluster.Id).Find(&sgs).Error
+	sgs := make([]*biz.Security, 0)
+	err := tx.Model(&biz.Security{}).Where("cluster_id = ?", cluster.Id).Find(&sgs).Error
 	if err != nil {
 		return err
 	}
 	for _, v := range sgs {
 		isExist := false
-		for _, v1 := range cluster.IngressControllerRules {
+		for _, v1 := range cluster.Securitys {
 			if v.Id == v1.Id {
 				isExist = true
 				break
 			}
 		}
 		if !isExist {
-			err := tx.Model(&biz.IngressControllerRule{}).Where("id = ?", v.Id).Delete(v).Error
+			err := tx.Model(&biz.Security{}).Where("id = ?", v.Id).Delete(v).Error
 			if err != nil {
 				return err
 			}
@@ -212,13 +212,13 @@ func (c *clusterRepo) Get(ctx context.Context, id int64) (*biz.Cluster, error) {
 	if len(cloudResources) != 0 {
 		cluster.CloudResources = cloudResources
 	}
-	ingressRules := make([]*biz.IngressControllerRule, 0)
-	err = c.data.db.Model(&biz.IngressControllerRule{}).Where("cluster_id = ?", cluster.Id).Find(&ingressRules).Error
+	securitys := make([]*biz.Security, 0)
+	err = c.data.db.Model(&biz.Security{}).Where("cluster_id = ?", cluster.Id).Find(&securitys).Error
 	if err != nil {
 		return nil, err
 	}
-	if len(ingressRules) != 0 {
-		cluster.IngressControllerRules = ingressRules
+	if len(securitys) != 0 {
+		cluster.Securitys = securitys
 	}
 	return cluster, nil
 }
@@ -282,7 +282,7 @@ func (c *clusterRepo) Delete(ctx context.Context, id int64) (err error) {
 	if err != nil {
 		return err
 	}
-	err = tx.Model(&biz.IngressControllerRule{}).Where("cluster_id = ?", id).Delete(&biz.IngressControllerRule{}).Error
+	err = tx.Model(&biz.Security{}).Where("cluster_id = ?", id).Delete(&biz.Security{}).Error
 	if err != nil {
 		return err
 	}

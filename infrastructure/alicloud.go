@@ -445,7 +445,7 @@ func (a *AliCloudUsecase) ManageInstance(ctx context.Context, cluster *biz.Clust
 				VSwitchId:          tea.String(privateSubnet.RefId),
 				SystemDisk: &ecs.CreateInstanceRequestSystemDisk{
 					Category: tea.String("cloud_ssd"),
-					Size:     tea.Int32(node.SystemDiskSize),
+					Size:     tea.Int32(node.DiskSize),
 				},
 			}
 			if cluster.Status == biz.ClusterStatus_STARTING && node.Role == biz.NodeRole_MASTER {
@@ -547,7 +547,7 @@ func (a *AliCloudUsecase) ManageInstance(ctx context.Context, cluster *biz.Clust
 			return errors.New("network interface not found")
 		}
 		node.Ip = tea.StringValue(netWorkInterface.Body.NetworkInterfaceSets.NetworkInterfaceSet[0].PrivateIpAddress)
-		node.User = "root"
+		node.Username = "root"
 		time.Sleep(time.Second)
 	}
 	return nil
@@ -1556,7 +1556,7 @@ func (a *AliCloudUsecase) ManageSecurityGroup(ctx context.Context, cluster *biz.
 	exitsRules := make([]string, 0)
 	for _, sgRule := range sgRuleRes.Body.Permissions.Permission {
 		exits := false
-		for _, clusterSgRule := range cluster.IngressControllerRules {
+		for _, clusterSgRule := range cluster.Securitys {
 			clusterSgRuelVals := strings.Join([]string{
 				clusterSgRule.Protocol, clusterSgRule.IpCidr,
 				fmt.Sprintf("%d/%d", clusterSgRule.StartPort, clusterSgRule.EndPort)},
@@ -1587,7 +1587,7 @@ func (a *AliCloudUsecase) ManageSecurityGroup(ctx context.Context, cluster *biz.
 		time.Sleep(time.Second)
 	}
 
-	for _, sgRule := range cluster.IngressControllerRules {
+	for _, sgRule := range cluster.Securitys {
 		sgRuelVals := strings.Join([]string{
 			sgRule.Protocol, sgRule.IpCidr,
 			fmt.Sprintf("%d/%d", sgRule.StartPort, sgRule.EndPort)},
@@ -1681,9 +1681,9 @@ func (a *AliCloudUsecase) ManageSLB(_ context.Context, cluster *biz.Cluster) err
 	vServerNames := make([]string, 0)
 	vServerNameProtMap := make(map[string]int32)
 	vServerBackendServerMap := make(map[string][]map[string]string)
-	if len(masterNodes) > 0 && len(cluster.IngressControllerRules) > 0 {
-		for _, v := range cluster.IngressControllerRules {
-			if v.Access != biz.IngressControllerRuleAccess_PUBLIC {
+	if len(masterNodes) > 0 && len(cluster.Securitys) > 0 {
+		for _, v := range cluster.Securitys {
+			if v.Access != biz.SecurityAccess_PUBLIC {
 				continue
 			}
 			for port := v.StartPort; port <= v.EndPort; port++ {

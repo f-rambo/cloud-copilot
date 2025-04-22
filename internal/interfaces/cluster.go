@@ -161,18 +161,18 @@ func (c *ClusterInterface) Save(ctx context.Context, clusterArgs *v1alpha1.Clust
 		}
 	}
 	cluster := &biz.Cluster{
-		Id:          clusterArgs.Id,
-		Name:        clusterArgs.Name,
-		Provider:    biz.ClusterProviderFromString(clusterArgs.Provider),
-		PublicKey:   clusterArgs.PublicKey,
-		PrivateKey:  clusterArgs.PrivateKey,
-		AccessId:    clusterArgs.AccessId,
-		AccessKey:   clusterArgs.AccessKey,
-		Region:      clusterArgs.Region,
-		Username:    clusterArgs.NodeUsername,
-		NodeStartIp: clusterArgs.NodeStartIp,
-		NodeEndIp:   clusterArgs.NodeEndIp,
-		UserId:      biz.GetUserInfo(ctx).Id,
+		Id:           clusterArgs.Id,
+		Name:         clusterArgs.Name,
+		Provider:     biz.ClusterProviderFromString(clusterArgs.Provider),
+		PublicKey:    clusterArgs.PublicKey,
+		PrivateKey:   clusterArgs.PrivateKey,
+		AccessId:     clusterArgs.AccessId,
+		AccessKey:    clusterArgs.AccessKey,
+		Region:       clusterArgs.Region,
+		NodeUsername: clusterArgs.NodeUsername,
+		NodeStartIp:  clusterArgs.NodeStartIp,
+		NodeEndIp:    clusterArgs.NodeEndIp,
+		UserId:       biz.GetUserInfo(ctx).Id,
 	}
 	err := c.clusterUc.Save(ctx, cluster)
 	if err != nil {
@@ -273,7 +273,7 @@ func (c *ClusterInterface) bizCLusterToCluster(bizCluster *biz.Cluster) *v1alpha
 		Region:           bizCluster.Region,
 		AccessId:         bizCluster.AccessId,
 		AccessKey:        bizCluster.AccessKey,
-		NodeUsername:     bizCluster.Username,
+		NodeUsername:     bizCluster.NodeUsername,
 		NodeStartIp:      bizCluster.NodeStartIp,
 		NodeEndIp:        bizCluster.NodeEndIp,
 		Nodes:            nodes,
@@ -293,7 +293,7 @@ func (c *ClusterInterface) bizNodeToNode(node *biz.Node) *v1alpha1.Node {
 		Ip:         node.Ip,
 		Name:       node.Name,
 		Role:       node.Role.String(),
-		User:       node.User,
+		User:       node.Username,
 		Status:     node.Status.String(),
 		InstanceId: node.InstanceId,
 	}
