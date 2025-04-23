@@ -1,7 +1,7 @@
 server:
   name: cloud-copilot
   version: "0.0.1"
-  env: local # local, jump, prod
+  env: jump # local, jump, prod
   http:
     network: tcp
     addr: 0.0.0.0:8000

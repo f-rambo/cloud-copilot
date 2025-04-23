@@ -33,6 +33,12 @@ x86_64)
       ;;
 esac
 
+OS="$(uname -s | tr '[:upper:]' '[:lower:]')"
+if [[ "$OS" != "linux" ]]; then
+      log "Error: Unsupported OS $OS"
+      exit 1
+fi
+
 clusterParam=$1
 
 clusterData='{{.ClusterJsonData}}'

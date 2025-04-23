@@ -3,7 +3,6 @@ package infrastructure
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -38,7 +37,7 @@ func (b *Baremetal) getClusterNodeRemoteBash(cluster *biz.Cluster, node *biz.Nod
 	}, b.c.Infrastructure.Shell, b.log)
 }
 
-func (b *Baremetal) nodeInstallInit(cluster *biz.Cluster, node *biz.Node) error {
+func (b *Baremetal) initNode(cluster *biz.Cluster, node *biz.Node) error {
 	remoteBash := b.getClusterNodeRemoteBash(cluster, node)
 	err := remoteBash.ExecShellLogging(NodeInitShell, node.Name)
 	if err != nil {
@@ -48,12 +47,13 @@ func (b *Baremetal) nodeInstallInit(cluster *biz.Cluster, node *biz.Node) error 
 	if err != nil {
 		return err
 	}
-	k8sImageRepo := getDefaultKuberentesImageRepo()
-	if cluster.Provider == biz.ClusterProvider_AliCloud {
-		k8sImageRepo = getAliyunKuberentesImageRepo()
-	}
 	err = remoteBash.ExecShellLogging(ComponentShell,
-		filepath.Join(userHomePath, b.c.Infrastructure.Resource), k8sImageRepo, getKubernetesVersion())
+		filepath.Join(userHomePath, b.c.Infrastructure.Resource),
+		cluster.ImageRepository,
+		getKubernetesVersion(b.c.Infrastructure.Resource),
+		getContainerdVersion(b.c.Infrastructure.Resource),
+		getRuncVersion(b.c.Infrastructure.Resource),
+	)
 	if err != nil {
 		return err
 	}
@@ -67,7 +67,7 @@ func (b *Baremetal) migrateResources(cluster *biz.Cluster, node *biz.Node) error
 		return err
 	}
 	remoteResroucePath := filepath.Join(userHomePath, b.c.Infrastructure.Resource)
-	fileNumber, err := remoteBash.Run(fmt.Sprintf("ls %s | wc -l", remoteResroucePath))
+	fileNumber, err := remoteBash.Run(fmt.Sprintf("test -d %s && echo 1 || echo 0", remoteResroucePath))
 	if err != nil {
 		return err
 	}
@@ -94,13 +94,6 @@ type SystemInfo struct {
 }
 
 func (b *Baremetal) GetNodesSystemInfo(ctx context.Context, cluster *biz.Cluster) error {
-	if cluster.Nodes == nil {
-		cluster.Nodes = make([]*biz.Node, 0)
-	}
-	if cluster.NodeGroups == nil {
-		cluster.NodeGroups = make([]*biz.NodeGroup, 0)
-	}
-
 	// get all node ip
 	eg := new(errgroup.Group)
 	eg.SetLimit(10)
@@ -173,85 +166,21 @@ func (b *Baremetal) GetNodesSystemInfo(ctx context.Context, cluster *biz.Cluster
 	return nil
 }
 
-func (b *Baremetal) ApplyCloudCopilot(ctx context.Context, cluster *biz.Cluster) error {
-	var node *biz.Node
-	for _, v := range cluster.Nodes {
-		if v.Role == biz.NodeRole_MASTER {
-			node = v
-			break
-		}
-	}
-	if node == nil {
-		return errors.New("no master node found")
-	}
-	if cluster.Provider.IsCloud() {
-		slb := cluster.GetSingleCloudResource(biz.ResourceType_LOAD_BALANCER)
-		node.Ip = slb.Value
-	}
-	remoteBash := b.getClusterNodeRemoteBash(cluster, node)
-	userHomePath, err := remoteBash.GetUserHome()
-	if err != nil {
-		return err
-	}
-	arch, err := remoteBash.Run("uname", "-m")
-	if err != nil {
-		return err
-	}
-	arch = getNodeArchByBareMetal(strings.TrimSpace(strings.ToLower(arch))).String()
-	kubeCtlPath := filepath.Join(userHomePath, b.c.Infrastructure.Resource, arch, "kubernetes", getKubernetesVersion(), "kubectl")
-	err = remoteBash.RunWithLogging("install -m 755", kubeCtlPath, "/usr/local/bin/kubectl")
-	if err != nil {
-		return err
-	}
-	installfile, err := utils.TransferredMeaning(cluster, filepath.Join(b.c.Infrastructure.Component, Install))
-	if err != nil {
-		return err
-	}
-	err = remoteBash.SftpFile(installfile, filepath.Join(userHomePath, Install))
-	if err != nil {
-		return err
-	}
-	err = remoteBash.RunWithLogging("kubectl apply -f", filepath.Join(userHomePath, Install))
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 func (b *Baremetal) Install(ctx context.Context, cluster *biz.Cluster) error {
-	var node *biz.Node
-	for _, v := range cluster.Nodes {
-		if v.Role == biz.NodeRole_MASTER {
-			node = v
-			break
-		}
-	}
-	if node == nil {
-		return errors.New("no master node found")
-	}
-	if cluster.Provider.IsCloud() {
-		slb := cluster.GetSingleCloudResource(biz.ResourceType_LOAD_BALANCER)
-		node.Ip = slb.Value
-	}
-	remoteBash := b.getClusterNodeRemoteBash(cluster, node)
-	err := b.migrateResources(cluster, node)
+	masterNode := cluster.GetSingleMasterNode()
+	err := b.migrateResources(cluster, masterNode)
 	if err != nil {
 		return err
 	}
-	err = b.nodeInstallInit(cluster, node)
+	err = b.initNode(cluster, masterNode)
 	if err != nil {
 		return err
 	}
-	cluster.Config, err = utils.TransferredMeaningString(cluster,
-		filepath.Join(b.c.Infrastructure.Component, ClusterConfiguration))
-	if err != nil {
-		return err
-	}
-	clusterYaml, err := yaml.Marshal(cluster)
-	if err != nil {
-		return err
-	}
-	err = remoteBash.ExecShellLogging(ClusterInstall, ClusterInitAction, string(clusterYaml))
+	err = b.getClusterNodeRemoteBash(cluster, masterNode).ExecShellLogging(
+		ClusterInstall,
+		getKubernetesVersion(b.c.Infrastructure.Resource),
+		ClusterInitAction,
+	)
 	if err != nil {
 		return err
 	}
@@ -268,7 +197,7 @@ func (b *Baremetal) PreInstall(cluster *biz.Cluster) error {
 			if err != nil {
 				return err
 			}
-			err = b.getClusterNodeRemoteBash(cluster, node).ExecShellLogging(InstallShell,
+			err = b.getClusterNodeRemoteBash(cluster, node).ExecShellLogging(CloudCopilotInstallShell,
 				fmt.Sprintf(`'%s'`, string(clusterJsonByte)))
 			if err != nil {
 				return err
@@ -312,7 +241,7 @@ func (b *Baremetal) joinCluster(cluster *biz.Cluster, node *biz.Node) error {
 	if err != nil {
 		return err
 	}
-	err = b.nodeInstallInit(cluster, node)
+	err = b.initNode(cluster, node)
 	if err != nil {
 		return err
 	}
@@ -321,13 +250,24 @@ func (b *Baremetal) joinCluster(cluster *biz.Cluster, node *biz.Node) error {
 		return err
 	}
 	if node.Role != biz.NodeRole_MASTER {
-		err = b.getClusterNodeRemoteBash(cluster, node).ExecShellLogging(ClusterInstall, ClusterJoinAction, string(clusterYaml))
+		err = b.getClusterNodeRemoteBash(cluster, node).ExecShellLogging(
+			getKubernetesVersion(b.c.Infrastructure.Resource),
+			ClusterInstall,
+			ClusterJoinAction,
+			string(clusterYaml),
+		)
 		if err != nil {
 			return err
 		}
 		return nil
 	}
-	err = b.getClusterNodeRemoteBash(cluster, node).ExecShellLogging(ClusterInstall, ClusterJoinAction, string(clusterYaml), ClusterController)
+	err = b.getClusterNodeRemoteBash(cluster, node).ExecShellLogging(
+		getKubernetesVersion(b.c.Infrastructure.Resource),
+		ClusterInstall,
+		ClusterJoinAction,
+		string(clusterYaml),
+		ClusterController,
+	)
 	if err != nil {
 		return err
 	}

@@ -3,13 +3,19 @@ package infrastructure
 import (
 	"encoding/json"
 	"path/filepath"
+	"slices"
 	"time"
 
 	"github.com/f-rambo/cloud-copilot/internal/biz"
 	"github.com/f-rambo/cloud-copilot/utils"
 )
 
-const defaultSHHPort = 22
+const (
+	defaultSHHPort                = 22
+	KubernetesResrouceName string = "kubernetes"
+	ContainerdResrouceName string = "containerd"
+	RuncResrouceName       string = "runc"
+)
 
 var (
 	TimeOutPerInstance time.Duration = 5 * time.Minute
@@ -17,14 +23,13 @@ var (
 	TimeOutCountNumber               = 10 // 10 * 5s = 50s
 	TimeOutSecond      time.Duration = 5  // 5s
 
-	InstallShell    string = "install.sh"
-	NodeInitShell   string = "nodeinit.sh"
-	ComponentShell  string = "component.sh"
-	SystemInfoShell string = "systeminfo.sh"
-	ClusterInstall  string = "clusterinstall.sh"
+	CloudCopilotInstallShell string = "cloud-copilot-install.sh"
+	NodeInitShell            string = "nodeinit.sh"
+	ComponentShell           string = "component.sh"
+	SystemInfoShell          string = "systeminfo.sh"
+	ClusterInstall           string = "clusterinstall.sh"
 
 	ClusterConfiguration string = "cluster-config.yaml"
-	Install              string = "install.yaml"
 
 	ClusterInitAction string = "init"
 	ClusterJoinAction string = "join"
@@ -84,24 +89,41 @@ type FindInstanceTypeParam struct {
 	NodeGroupType biz.NodeGroupType
 }
 
-// kubernetes_version: "v1.31.2"
-// containerd_version: "v2.0.0"
-// runc_version: "v1.2.1"
-
-func getKubernetesVersion() string {
-	// todo find resource file version
-	return "v1.31.2"
+func getKubernetesVersion(resourcePath string) string {
+	versionNames, err := utils.ListDirectories(filepath.Join(resourcePath, biz.NodeArchType_ARM64.String(), KubernetesResrouceName))
+	if err != nil {
+		return ""
+	}
+	if len(versionNames) > 0 {
+		slices.Sort(versionNames)
+		return versionNames[len(versionNames)-1]
+	}
+	return ""
 }
 
-// func getContainerdVersion() string {
-// 	// todo find resource file version
-// 	return "v2.0.0"
-// }
+func getContainerdVersion(resourcePath string) string {
+	versionNames, err := utils.ListDirectories(filepath.Join(resourcePath, biz.NodeArchType_ARM64.String(), ContainerdResrouceName))
+	if err != nil {
+		return ""
+	}
+	if len(versionNames) > 0 {
+		slices.Sort(versionNames)
+		return versionNames[len(versionNames)-1]
+	}
+	return ""
+}
 
-// func getRuncVersion() string {
-// 	// todo find resource file version
-// 	return "v1.2.1"
-// }
+func getRuncVersion(resourcePath string) string {
+	versionNames, err := utils.ListDirectories(filepath.Join(resourcePath, biz.NodeArchType_ARM64.String(), RuncResrouceName))
+	if err != nil {
+		return ""
+	}
+	if len(versionNames) > 0 {
+		slices.Sort(versionNames)
+		return versionNames[len(versionNames)-1]
+	}
+	return ""
+}
 
 func getDefaultKuberentesImageRepo() string {
 	return "registry.k8s.io"
@@ -117,5 +139,5 @@ func getInstallShell(shellDir string, cluster *biz.Cluster) (string, error) {
 		return "", err
 	}
 	return utils.TransferredMeaningString(map[string]string{"ClusterJsonData": string(clusterJsonByte)},
-		filepath.Join(shellDir, InstallShell))
+		filepath.Join(shellDir, CloudCopilotInstallShell))
 }

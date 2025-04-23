@@ -245,9 +245,9 @@ func (a *App) GetVersionById(id int64) *AppVersion {
 }
 
 func (a *App) DeleteVersion(version string) {
-	for index, v := range a.Versions {
+	for i, v := range a.Versions {
 		if v.Version == version {
-			a.Versions = slices.Delete(a.Versions, index, index+1)
+			a.Versions = slices.Delete(a.Versions, i, i+1)
 			return
 		}
 	}

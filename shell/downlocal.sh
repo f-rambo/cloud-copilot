@@ -1,7 +1,15 @@
 #!/bin/bash
 set -e
 
-RESOURCE=${1:-"$HOME/resource"}
+if [ -n "$SUDO_USER" ]; then
+      ORIGINAL_USER=$SUDO_USER
+      ORIGINAL_HOME=$(getent passwd "$SUDO_USER" | cut -d: -f6)
+else
+      ORIGINAL_USER=$USER
+      ORIGINAL_HOME=$HOME
+fi
+
+RESOURCE=${1:-"$ORIGINAL_HOME/resource"}
 KUBERNETES_VERSION=${2:-"v1.31.2"}
 CONTAINERD_VERSION=${3:-"v2.0.0"}
 RUNC_VERSION=${4:-"v1.2.1"}

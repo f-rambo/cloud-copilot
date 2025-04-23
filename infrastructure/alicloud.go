@@ -1848,7 +1848,6 @@ func aliGenerateInstanceSize(cpu int32) string {
 	if cpu >= 4 {
 		if cpu%4 != 0 {
 			cpu = (cpu/4 + 1) * 4
-			fmt.Println(cpu)
 		}
 		size = fmt.Sprintf("%dxlarge", cpu/4)
 	}

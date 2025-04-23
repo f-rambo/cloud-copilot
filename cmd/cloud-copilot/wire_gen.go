@@ -37,7 +37,7 @@ func wireApp(contextContext context.Context, bootstrap *conf.Bootstrap, logger l
 	aliCloudUsecase := infrastructure.NewAliCloudUseCase(bootstrap, logger)
 	awsCloudUsecase := infrastructure.NewAwsCloudUseCase(bootstrap, logger)
 	clusterInfrastructure := infrastructure.NewInfrastructure(bootstrap, baremetal, aliCloudUsecase, awsCloudUsecase, logger)
-	clusterRuntime := runtime.NewClusterRuntime(logger)
+	clusterRuntime := runtime.NewClusterRuntime(bootstrap, logger)
 	clusterUsecase, err := biz.NewClusterUseCase(contextContext, bootstrap, clusterData, clusterInfrastructure, clusterRuntime, logger)
 	if err != nil {
 		cleanup()

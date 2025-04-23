@@ -31,6 +31,8 @@ const (
 	DefaultNamespace = "default"
 
 	WaitTimeout = 10 * time.Minute
+
+	Install string = "install.yaml"
 )
 
 func NewUnstructured(kindName string) *unstructured.Unstructured {
@@ -121,49 +123,58 @@ func WaitForCRDStatus(ctx context.Context, dynamicClient *dynamic.DynamicClient,
 	})
 }
 
-func CreateYAMLFile(ctx context.Context, dynamicClient *dynamic.DynamicClient, namespace, resource, filePath string) error {
-	file, err := os.Open(filePath)
+func CreateResourceByYaml(ctx context.Context, yamlFilePath string) error {
+	objs, err := ParseYaml(yamlFilePath)
 	if err != nil {
-		return errors.Wrap(err, "open file failed")
+		return err
 	}
-	defer file.Close()
-	decoder := k8syaml.NewYAMLOrJSONDecoder(file, 1024)
-	for {
-		unstructuredObj := &unstructured.Unstructured{}
-		if getErr := decoder.Decode(unstructuredObj); err != nil {
-			if getErr.Error() == "EOF" {
-				break
-			}
-			return errors.Wrap(err, "decode yaml failed")
-		}
-		gvr := unstructuredObj.GroupVersionKind().GroupVersion().WithResource(resource)
-		resourceClient := dynamicClient.Resource(gvr).Namespace(namespace)
-		_, err = resourceClient.Create(ctx, unstructuredObj, metav1.CreateOptions{})
+	dynamicClient, err := GetKubeDynamicClient()
+	if err != nil {
+		return err
+	}
+	for _, obj := range objs.Items {
+		err = CreateResource(ctx, dynamicClient, &obj)
 		if err != nil {
-			return errors.Wrap(err, "failed to create resource")
+			return err
 		}
 	}
 	return nil
 }
 
-func ParseYAML(filename string) (*unstructured.UnstructuredList, error) {
+func ParseYaml(filename string) (*unstructured.UnstructuredList, error) {
 	data, err := os.ReadFile(filename)
 	if err != nil {
 		return nil, err
 	}
+
+	if len(data) == 0 {
+		return nil, errors.Errorf("empty yaml file: %s", filename)
+	}
+
 	list := &unstructured.UnstructuredList{Items: make([]unstructured.Unstructured, 0)}
 	decoder := k8syaml.NewYAMLOrJSONDecoder(bytes.NewReader(data), 4096)
+
 	for {
 		var obj map[string]any
 		err = decoder.Decode(&obj)
 		if err != nil {
-			if err.Error() == "EOF" {
+			if err == io.EOF {
 				break
 			}
-			return nil, err
+			return nil, errors.Errorf("failed to decode yaml: %v", err)
 		}
+
+		if len(obj) == 0 {
+			continue
+		}
+
 		list.Items = append(list.Items, unstructured.Unstructured{Object: obj})
 	}
+
+	if len(list.Items) == 0 {
+		return nil, errors.Errorf("no valid kubernetes objects found in %s", filename)
+	}
+
 	return list, nil
 }
 
@@ -329,16 +340,6 @@ func GetObjResrouce(ctx context.Context, obj *unstructured.Unstructured, success
 }
 
 // kubectl describe resource -n namespace
-func DescribeResource(ctx context.Context, client *kubernetes.Clientset, namespace, resourceName string) (string, error) {
-	return "", nil
-}
-
-// kubectl logs -n namespace podName
-func Logs(ctx context.Context, client *kubernetes.Clientset, namespace, podName string) (string, error) {
-	return "", nil
-}
-
-// kubectl describe resource -n namespace
 func PodInfo(ctx context.Context, client *kubernetes.Clientset, namespace, podName string) (string, error) {
 	pod, err := client.CoreV1().Pods(namespace).Get(ctx, podName, metav1.GetOptions{})
 	if err != nil {
@@ -393,7 +394,7 @@ func EventsInfo(ctx context.Context, client *kubernetes.Clientset, namespace, ki
 			name, namespace, kind),
 	})
 	if err != nil {
-		return "", fmt.Errorf("failed to get events: %v", err)
+		return "", errors.Errorf("failed to get events: %v", err)
 	}
 
 	if len(events.Items) > 0 {

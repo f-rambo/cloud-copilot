@@ -1,9 +1,9 @@
 apiVersion: kubeadm.k8s.io/v1beta4
 kind: ClusterConfiguration
 clusterName: "{{.Name}}"
-kubernetesVersion: "{{.Version}}"
+kubernetesVersion: "{{.KubernetesVersion}}"
 certificatesDir: "/etc/kubernetes/pki"
-imageRepository: "{{.ImageRepo}}"
+imageRepository: "{{.ImageRepository}}"
 dns:
   disabled: false
 proxy:
@@ -16,6 +16,3 @@ networking:
   serviceSubnet: "{{.ServiceCidr}}"
   podSubnet: "{{.PodCidr}}"
   dnsDomain: "{{.Domain}}"
-controllerManager:
-  extraArgs:
-    cloud-provider: "external"

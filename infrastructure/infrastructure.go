@@ -2,12 +2,15 @@ package infrastructure
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/f-rambo/cloud-copilot/internal/biz"
 	"github.com/f-rambo/cloud-copilot/internal/conf"
+	"github.com/f-rambo/cloud-copilot/utils"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/wire"
 	"github.com/pkg/errors"
@@ -299,12 +302,34 @@ func (i *Infrastructure) GetCloudtNodesSystemInfo(ctx context.Context, cluster *
 	return nil
 }
 
-func (i *Infrastructure) Install(ctx context.Context, cluster *biz.Cluster) error {
-	err := i.baremetal.Install(ctx, cluster)
+func (i *Infrastructure) Install(ctx context.Context, cluster *biz.Cluster) (err error) {
+	cluster.SetApiServerAddress()
+	if cluster.ApiServerAddress == "" {
+		return errors.New("api server address is empty")
+	}
+	cluster.SetKubernetesVersion(getKubernetesVersion(i.c.Infrastructure.Resource))
+	if cluster.KubernetesVersion == "" {
+		return errors.New("kubernetes version is empty")
+	}
+	k8sImageRepo := getDefaultKuberentesImageRepo()
+	if cluster.Provider == biz.ClusterProvider_AliCloud || cluster.Provider == biz.ClusterProvider_BareMetal {
+		k8sImageRepo = getAliyunKuberentesImageRepo()
+	}
+	cluster.SetImageRepository(k8sImageRepo)
+	cluster.Config, err = utils.TransferredMeaningString(cluster,
+		filepath.Join(i.c.Infrastructure.Component, ClusterConfiguration))
 	if err != nil {
 		return err
 	}
-	err = i.baremetal.ApplyCloudCopilot(ctx, cluster)
+	err = os.WriteFile(
+		filepath.Join(i.c.Infrastructure.Resource, ClusterConfiguration),
+		[]byte(cluster.Config),
+		os.ModePerm,
+	)
+	if err != nil {
+		return err
+	}
+	err = i.baremetal.Install(ctx, cluster)
 	if err != nil {
 		return err
 	}

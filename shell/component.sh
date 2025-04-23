@@ -6,19 +6,19 @@ log() {
   echo "$(date +'%Y-%m-%d %H:%M:%S') - $message"
 }
 
-parse_yaml() {
-  local yaml_string="$1"
-  local query_path="$2"
-  echo "$yaml_string" | yq eval "$query_path" -
-}
+if [ -n "$SUDO_USER" ]; then
+  ORIGINAL_USER=$SUDO_USER
+  ORIGINAL_HOME=$(getent passwd "$SUDO_USER" | cut -d: -f6)
+else
+  ORIGINAL_USER=$USER
+  ORIGINAL_HOME=$HOME
+fi
 
-cluster_data=$1
-
-RESOURCE=$(parse_yaml "$cluster_data" '.resrouce_path')
-IMAGE_REPO=$(parse_yaml "$cluster_data" '.image_repo')
-KUBERNETES_VERSION=$(parse_yaml "$cluster_data" '.kuberentes_version')
-CONTAINERD_VERSION=$(parse_yaml "$cluster_data" '.containerd_version')
-RUNC_VERSION=$(parse_yaml "$cluster_data" '.runc_version')
+RESOURCE=${1:-"$ORIGINAL_HOME/resource"}
+IMAGE_REPO=${2:-"registry.k8s.io"}
+KUBERNETES_VERSION=${3:-"v1.31.2"}
+CONTAINERD_VERSION=${4:-"v2.0.0"}
+RUNC_VERSION=${5:-"v1.2.1"}
 
 if [ ! -d "$RESOURCE" ] || [ ! -r "$RESOURCE" ]; then
   log "Error: RESOURCE directory $RESOURCE does not exist or is not readable"
@@ -149,28 +149,11 @@ function install_containerd() {
     exit 1
   fi
 
-  # sleep 10
-
-  # if ! ctr namespace list | grep -q "k8s.io"; then
-  #   ctr namespace create k8s.io
-  # fi
-
-  # sleep 10
-
-  # kubernetes_image_path="$RESOURCE/$ARCH/kubernetes/$KUBERNETES_VERSION/kubernetes-images.tar"
-  # if [ ! -f "$kubernetes_image_path" ] || [ ! -r "$kubernetes_image_path" ]; then
-  #   log "Error: File $kubernetes_image_path does not exist or is not readable"
-  #   exit 1
-  # fi
-
-  # ctr -n k8s.io images import "$kubernetes_image_path"
 }
 
 install_containerd
 
 install_kubernetes_software
-
-# todo install HAProxy + Keepalived load balance
 
 log "kubernetes software and containerd installation completed successfully."
 

@@ -73,8 +73,6 @@ func GenerateSubnets(vpcCIDR string, subnetCount int) ([]string, error) {
 	requiredBits := int(math.Ceil(math.Log2(float64(subnetCount))))
 	newPrefix := subnetMaskSize + requiredBits
 
-	fmt.Println(totalMaskSize, newPrefix)
-
 	if newPrefix > totalMaskSize {
 		return nil, fmt.Errorf("subnet count too large for the given VPC CIDR. Maximum subnets that can be generated: %d", 1<<(totalMaskSize-subnetMaskSize))
 	}

@@ -2,8 +2,11 @@ package runtime
 
 import (
 	"context"
+	"path/filepath"
 
 	"github.com/f-rambo/cloud-copilot/internal/biz"
+	"github.com/f-rambo/cloud-copilot/internal/conf"
+	"github.com/f-rambo/cloud-copilot/utils"
 	"github.com/go-kratos/kratos/v2/log"
 	k8sErr "k8s.io/apimachinery/pkg/api/errors"
 )
@@ -13,12 +16,14 @@ const (
 )
 
 type ClusterRuntime struct {
-	log *log.Helper
+	conf *conf.Bootstrap
+	log  *log.Helper
 }
 
-func NewClusterRuntime(logger log.Logger) biz.ClusterRuntime {
+func NewClusterRuntime(conf *conf.Bootstrap, logger log.Logger) biz.ClusterRuntime {
 	return &ClusterRuntime{
-		log: log.NewHelper(logger),
+		conf: conf,
+		log:  log.NewHelper(logger),
 	}
 }
 
@@ -64,4 +69,15 @@ func (c *ClusterRuntime) CurrentCluster(ctx context.Context, cluster *biz.Cluste
 		return err
 	}
 	return nil
+}
+
+func (c *ClusterRuntime) Install(ctx context.Context, cluster *biz.Cluster) error {
+	installYaml, err := utils.TransferredMeaning(
+		cluster,
+		filepath.Join(c.conf.Infrastructure.Component, Install),
+	)
+	if err != nil {
+		return err
+	}
+	return CreateResourceByYaml(ctx, installYaml)
 }

@@ -6,6 +6,26 @@ log() {
     echo "$(date +'%Y-%m-%d %H:%M:%S') - $message"
 }
 
+ARCH=$(uname -m)
+case $ARCH in
+aarch64)
+    ARCH="arm64"
+    ;;
+x86_64)
+    ARCH="amd64"
+    ;;
+*)
+    log "Error: Unsupported architecture $ARCH. Supported architectures are: aarch64, x86_64"
+    exit 1
+    ;;
+esac
+
+OS="$(uname -s | tr '[:upper:]' '[:lower:]')"
+if [[ "$OS" != "linux" ]]; then
+    log "Error: Unsupported OS $OS"
+    exit 1
+fi
+
 if [ -z "$1" ]; then
     log "Error: Hostname is required."
     exit 1
