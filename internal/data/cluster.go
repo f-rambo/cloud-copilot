@@ -41,6 +41,7 @@ func (c *clusterRepo) Save(ctx context.Context, cluster *biz.Cluster) (err error
 		c.saveNode,
 		c.saveCloudResources,
 		c.saveSecuritys,
+		c.saveDisk,
 	}
 	for _, f := range funcs {
 		getErr := f(ctx, cluster, tx)
@@ -53,6 +54,135 @@ func (c *clusterRepo) Save(ctx context.Context, cluster *biz.Cluster) (err error
 		return err
 	}
 	return nil
+}
+
+func (c *clusterRepo) Get(ctx context.Context, id int64) (*biz.Cluster, error) {
+	cluster := &biz.Cluster{}
+	err := c.data.db.Model(&biz.Cluster{}).Where("id = ?", id).First(cluster).Error
+	if err != nil && err != gorm.ErrRecordNotFound {
+		return nil, err
+	}
+	if cluster.Id == 0 {
+		return nil, nil
+	}
+	nodeGroups := make([]*biz.NodeGroup, 0)
+	err = c.data.db.Model(&biz.NodeGroup{}).Where("cluster_id = ?", cluster.Id).Find(&nodeGroups).Error
+	if err != nil {
+		return nil, err
+	}
+	if len(nodeGroups) != 0 {
+		cluster.NodeGroups = nodeGroups
+	}
+	nodes := make([]*biz.Node, 0)
+	err = c.data.db.Model(&biz.Node{}).Where("cluster_id = ?", cluster.Id).Find(&nodes).Error
+	if err != nil {
+		return nil, err
+	}
+	if len(nodes) != 0 {
+		cluster.Nodes = nodes
+	}
+	cloudResources := make([]*biz.CloudResource, 0)
+	err = c.data.db.Model(&biz.CloudResource{}).Where("cluster_id = ?", cluster.Id).Find(&cloudResources).Error
+	if err != nil {
+		return nil, err
+	}
+	if len(cloudResources) != 0 {
+		cluster.CloudResources = cloudResources
+	}
+	securitys := make([]*biz.Security, 0)
+	err = c.data.db.Model(&biz.Security{}).Where("cluster_id = ?", cluster.Id).Find(&securitys).Error
+	if err != nil {
+		return nil, err
+	}
+	if len(securitys) != 0 {
+		cluster.Securitys = securitys
+	}
+	disks := make([]*biz.Disk, 0)
+	err = c.data.db.Model(&biz.Disk{}).Where("cluster_id =?", cluster.Id).Find(&disks).Error
+	if err != nil {
+		return nil, err
+	}
+	if len(disks) != 0 {
+		for _, node := range nodes {
+			node.Disks = make([]*biz.Disk, 0)
+			for _, disk := range disks {
+				if disk.NodeId == node.Id {
+					node.Disks = append(node.Disks, disk)
+				}
+			}
+		}
+	}
+	return cluster, nil
+}
+
+func (c *clusterRepo) GetByName(ctx context.Context, name string) (*biz.Cluster, error) {
+	cluster := &biz.Cluster{}
+	err := c.data.db.Model(&biz.Cluster{}).Where("name = ?", name).First(cluster).Error
+	if err != nil && err != gorm.ErrRecordNotFound {
+		return nil, err
+	}
+	if cluster.Id != 0 {
+		return c.Get(ctx, cluster.Id)
+	}
+	return cluster, nil
+}
+
+func (c *clusterRepo) List(ctx context.Context, name string, page, pageSize int32) ([]*biz.Cluster, int64, error) {
+	var clusters []*biz.Cluster
+	var total int64
+
+	query := c.data.db.Model(&biz.Cluster{})
+
+	if name != "" {
+		query = query.Where("name LIKE ?", "%"+name+"%")
+	}
+
+	err := query.Count(&total).Error
+	if err != nil {
+		return nil, 0, err
+	}
+
+	offset := (page - 1) * pageSize
+	err = query.Offset(int(offset)).Limit(int(pageSize)).Find(&clusters).Error
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return clusters, total, nil
+}
+
+func (c *clusterRepo) Delete(ctx context.Context, id int64) (err error) {
+	tx := c.data.db.Begin()
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+		}
+	}()
+	err = tx.Model(&biz.Cluster{}).Where("id = ?", id).Delete(&biz.Cluster{}).Error
+	if err != nil {
+		return err
+	}
+	err = tx.Model(&biz.Node{}).Where("cluster_id = ?", id).Delete(&biz.Node{}).Error
+	if err != nil {
+		return err
+	}
+	err = tx.Model(&biz.NodeGroup{}).Where("cluster_id = ?", id).Delete(&biz.NodeGroup{}).Error
+	if err != nil {
+		return err
+	}
+	err = tx.Model(&biz.CloudResource{}).Where("cluster_id = ?", id).Delete(&biz.CloudResource{}).Error
+	if err != nil {
+		return err
+	}
+	err = tx.Model(&biz.Security{}).Where("cluster_id = ?", id).Delete(&biz.Security{}).Error
+	if err != nil {
+		return err
+	}
+	err = tx.Model(&biz.Disk{}).Where("cluster_id =?", id).Delete(&biz.Disk{}).Error
+	if err != nil {
+		return err
+	}
+	return tx.Commit().Error
 }
 
 func (c *clusterRepo) saveNodeGroup(_ context.Context, cluster *biz.Cluster, tx *gorm.DB) error {
@@ -179,112 +309,39 @@ func (c *clusterRepo) saveSecuritys(_ context.Context, cluster *biz.Cluster, tx 
 	return nil
 }
 
-func (c *clusterRepo) Get(ctx context.Context, id int64) (*biz.Cluster, error) {
-	cluster := &biz.Cluster{}
-	err := c.data.db.Model(&biz.Cluster{}).Where("id = ?", id).First(cluster).Error
-	if err != nil && err != gorm.ErrRecordNotFound {
-		return nil, err
-	}
-	if cluster.Id == 0 {
-		return nil, nil
-	}
-	nodeGroups := make([]*biz.NodeGroup, 0)
-	err = c.data.db.Model(&biz.NodeGroup{}).Where("cluster_id = ?", cluster.Id).Find(&nodeGroups).Error
-	if err != nil {
-		return nil, err
-	}
-	if len(nodeGroups) != 0 {
-		cluster.NodeGroups = nodeGroups
-	}
-	nodes := make([]*biz.Node, 0)
-	err = c.data.db.Model(&biz.Node{}).Where("cluster_id = ?", cluster.Id).Find(&nodes).Error
-	if err != nil {
-		return nil, err
-	}
-	if len(nodes) != 0 {
-		cluster.Nodes = nodes
-	}
-	cloudResources := make([]*biz.CloudResource, 0)
-	err = c.data.db.Model(&biz.CloudResource{}).Where("cluster_id = ?", cluster.Id).Find(&cloudResources).Error
-	if err != nil {
-		return nil, err
-	}
-	if len(cloudResources) != 0 {
-		cluster.CloudResources = cloudResources
-	}
-	securitys := make([]*biz.Security, 0)
-	err = c.data.db.Model(&biz.Security{}).Where("cluster_id = ?", cluster.Id).Find(&securitys).Error
-	if err != nil {
-		return nil, err
-	}
-	if len(securitys) != 0 {
-		cluster.Securitys = securitys
-	}
-	return cluster, nil
-}
-
-func (c *clusterRepo) GetByName(ctx context.Context, name string) (*biz.Cluster, error) {
-	cluster := &biz.Cluster{}
-	err := c.data.db.Model(&biz.Cluster{}).Where("name = ?", name).First(cluster).Error
-	if err != nil && err != gorm.ErrRecordNotFound {
-		return nil, err
-	}
-	if cluster.Id != 0 {
-		return c.Get(ctx, cluster.Id)
-	}
-	return cluster, nil
-}
-
-func (c *clusterRepo) List(ctx context.Context, name string, page, pageSize int32) ([]*biz.Cluster, int64, error) {
-	var clusters []*biz.Cluster
-	var total int64
-
-	query := c.data.db.Model(&biz.Cluster{})
-
-	if name != "" {
-		query = query.Where("name LIKE ?", "%"+name+"%")
-	}
-
-	err := query.Count(&total).Error
-	if err != nil {
-		return nil, 0, err
-	}
-
-	offset := (page - 1) * pageSize
-	err = query.Offset(int(offset)).Limit(int(pageSize)).Find(&clusters).Error
-	if err != nil {
-		return nil, 0, err
-	}
-
-	return clusters, total, nil
-}
-
-func (c *clusterRepo) Delete(ctx context.Context, id int64) (err error) {
-	tx := c.data.db.Begin()
-	defer func() {
-		if err != nil {
-			tx.Rollback()
+// save disk
+func (c *clusterRepo) saveDisk(_ context.Context, cluster *biz.Cluster, tx *gorm.DB) error {
+	for _, node := range cluster.Nodes {
+		for _, disk := range node.Disks {
+			disk.NodeId = node.Id
+			disk.ClusterId = cluster.Id
+			err := tx.Model(&biz.Disk{}).Where("id =?", disk.Id).Save(disk).Error
+			if err != nil {
+				return err
+			}
 		}
-	}()
-	err = tx.Model(&biz.Cluster{}).Where("id = ?", id).Delete(&biz.Cluster{}).Error
+	}
+	disks := make([]*biz.Disk, 0)
+	err := tx.Model(&biz.Disk{}).Where("cluster_id =?", cluster.Id).Find(&disks).Error
 	if err != nil {
 		return err
 	}
-	err = tx.Model(&biz.Node{}).Where("cluster_id = ?", id).Delete(&biz.Node{}).Error
-	if err != nil {
-		return err
+	for _, disk := range disks {
+		ok := false
+		for _, node := range cluster.Nodes {
+			for _, disk2 := range node.Disks {
+				if disk.Id == disk2.Id {
+					ok = true
+					break
+				}
+			}
+		}
+		if !ok {
+			err = tx.Model(&biz.Disk{}).Where("id =?", disk.Id).Delete(disk).Error
+			if err != nil {
+				return err
+			}
+		}
 	}
-	err = tx.Model(&biz.NodeGroup{}).Where("cluster_id = ?", id).Delete(&biz.NodeGroup{}).Error
-	if err != nil {
-		return err
-	}
-	err = tx.Model(&biz.CloudResource{}).Where("cluster_id = ?", id).Delete(&biz.CloudResource{}).Error
-	if err != nil {
-		return err
-	}
-	err = tx.Model(&biz.Security{}).Where("cluster_id = ?", id).Delete(&biz.Security{}).Error
-	if err != nil {
-		return err
-	}
-	return tx.Commit().Error
+	return nil
 }

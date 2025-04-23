@@ -603,16 +603,16 @@ func (a *AwsCloudUsecase) ManageInstance(ctx context.Context, cluster *biz.Clust
 				InstanceType:     ec2Types.InstanceType(node.InstanceType),
 				ImageId:          aws.String(node.ImageId),
 				SubnetId:         aws.String(privateSubnet.RefId),
-				BlockDeviceMappings: []ec2Types.BlockDeviceMapping{
-					{
-						DeviceName: aws.String(node.DiskName),
-						Ebs: &ec2Types.EbsBlockDevice{
-							VolumeSize:          aws.Int32(node.DiskSize),
-							VolumeType:          ec2Types.VolumeType(ec2Types.VolumeTypeGp3),
-							DeleteOnTermination: aws.Bool(true),
-						},
-					},
-				},
+				// BlockDeviceMappings: []ec2Types.BlockDeviceMapping{
+				// 	{
+				// 		DeviceName: aws.String(node.DiskName),
+				// 		Ebs: &ec2Types.EbsBlockDevice{
+				// 			VolumeSize:          aws.Int32(node.DiskSize),
+				// 			VolumeType:          ec2Types.VolumeType(ec2Types.VolumeTypeGp3),
+				// 			DeleteOnTermination: aws.Bool(true),
+				// 		},
+				// 	},
+				// },
 			}
 			if cluster.Status == biz.ClusterStatus_STARTING && node.Role == biz.NodeRole_MASTER {
 				installShellData, installShellDataErr := getInstallShell(a.c.Infrastructure.Shell, cluster)

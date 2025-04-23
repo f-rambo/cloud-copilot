@@ -15,7 +15,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/spf13/cast"
 	"golang.org/x/sync/errgroup"
-	yaml "gopkg.in/yaml.v3"
 )
 
 type Baremetal struct {
@@ -47,7 +46,8 @@ func (b *Baremetal) initNode(cluster *biz.Cluster, node *biz.Node) error {
 	if err != nil {
 		return err
 	}
-	err = remoteBash.ExecShellLogging(ComponentShell,
+	err = remoteBash.ExecShellLogging(
+		ComponentShell,
 		filepath.Join(userHomePath, b.c.Infrastructure.Resource),
 		cluster.ImageRepository,
 		getKubernetesVersion(b.c.Infrastructure.Resource),
@@ -82,15 +82,21 @@ func (b *Baremetal) migrateResources(cluster *biz.Cluster, node *biz.Node) error
 }
 
 type SystemInfo struct {
-	Id      string `json:"id"`
-	Os      string `json:"os"`
-	Arch    string `json:"arch"`
-	Mem     string `json:"mem"`
-	Cpu     string `json:"cpu"`
-	Gpu     string `json:"gpu"`
-	GpuInfo string `json:"gpu_info"`
-	Disk    string `json:"disk"`
-	Ip      string `json:"ip"`
+	Id                 string              `json:"id"`
+	Os                 string              `json:"os"`
+	Arch               string              `json:"arch"`
+	Mem                string              `json:"mem"`
+	Cpu                string              `json:"cpu"`
+	Gpu                string              `json:"gpu"`
+	GpuInfo            string              `json:"gpu_info"`
+	Ip                 string              `json:"ip"`
+	UnpartitionedDisks []UnpartitionedDisk `json:"unpartitioned_disks"`
+}
+
+type UnpartitionedDisk struct {
+	Name   string `json:"name"`
+	Device string `json:"device"`
+	Size   string `json:"size"`
 }
 
 func (b *Baremetal) GetNodesSystemInfo(ctx context.Context, cluster *biz.Cluster) error {
@@ -155,7 +161,13 @@ func (b *Baremetal) GetNodesSystemInfo(ctx context.Context, cluster *biz.Cluster
 			nodeGroup.Id = clusterNg.Id
 		}
 		clusterNode := cluster.GetNodeByIp(info.Ip)
-		clusterNode.DiskSize = cast.ToInt32(info.Disk)
+		for _, disk := range info.UnpartitionedDisks {
+			clusterNode.AddDisk(&biz.Disk{
+				Name:   disk.Name,
+				Device: disk.Device,
+				Size:   cast.ToInt32(disk.Size),
+			})
+		}
 		clusterNode.NodeGroupId = nodeGroup.Id
 	}
 	for _, node := range cluster.Nodes {
@@ -177,12 +189,20 @@ func (b *Baremetal) Install(ctx context.Context, cluster *biz.Cluster) error {
 		return err
 	}
 	err = b.getClusterNodeRemoteBash(cluster, masterNode).ExecShellLogging(
-		ClusterInstall,
+		ClusterInitShell,
 		getKubernetesVersion(b.c.Infrastructure.Resource),
-		ClusterInitAction,
 	)
 	if err != nil {
 		return err
+	}
+	for _, node := range cluster.Nodes {
+		if node.Ip == masterNode.Ip {
+			continue
+		}
+		err = b.joinCluster(cluster, node)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -245,58 +265,29 @@ func (b *Baremetal) joinCluster(cluster *biz.Cluster, node *biz.Node) error {
 	if err != nil {
 		return err
 	}
-	clusterYaml, err := yaml.Marshal(cluster)
+	var token, caHash string
+	masterNode := cluster.GetSingleMasterNode()
+	masterNodeRemoteBash := b.getClusterNodeRemoteBash(cluster, masterNode)
+	caHash, err = masterNodeRemoteBash.ExecShell(CluasterCaTokenShell, GetCaHash)
 	if err != nil {
 		return err
 	}
-	if node.Role != biz.NodeRole_MASTER {
-		err = b.getClusterNodeRemoteBash(cluster, node).ExecShellLogging(
-			getKubernetesVersion(b.c.Infrastructure.Resource),
-			ClusterInstall,
-			ClusterJoinAction,
-			string(clusterYaml),
-		)
-		if err != nil {
-			return err
-		}
-		return nil
-	}
-	err = b.getClusterNodeRemoteBash(cluster, node).ExecShellLogging(
-		getKubernetesVersion(b.c.Infrastructure.Resource),
-		ClusterInstall,
-		ClusterJoinAction,
-		string(clusterYaml),
-		ClusterController,
-	)
+	token, err = masterNodeRemoteBash.ExecShell(CluasterCaTokenShell, GetToken)
 	if err != nil {
 		return err
 	}
-	return nil
+	if node.Role == biz.NodeRole_MASTER {
+		return b.getClusterNodeRemoteBash(cluster, node).ExecShellLogging(ClusterJoinShell, caHash, token)
+	}
+	return b.getClusterNodeRemoteBash(cluster, node).ExecShellLogging(ClusterJoinShell, caHash, token, ClusterController)
 }
 
 func (b *Baremetal) uninstallNode(cluster *biz.Cluster, node *biz.Node) error {
-	remoteBash := utils.NewRemoteBash(utils.Server{
+	return utils.NewRemoteBash(utils.Server{
 		Name:       node.Name,
 		Host:       node.Ip,
 		User:       node.Username,
 		Port:       defaultSHHPort,
 		PrivateKey: cluster.PrivateKey,
-	}, b.c.Infrastructure.Shell, b.log)
-	err := remoteBash.RunWithLogging("sudo kubeadm reset --force")
-	if err != nil {
-		return err
-	}
-	err = remoteBash.RunWithLogging("sudo rm -rf $HOME/.kube && rm -rf /etc/kubernetes && rm -rf /etc/cni")
-	if err != nil {
-		return err
-	}
-	err = remoteBash.RunWithLogging("sudo systemctl stop containerd && systemctl disable containerd && rm -rf /var/lib/containerd")
-	if err != nil {
-		return err
-	}
-	err = remoteBash.RunWithLogging("sudo systemctl stop kubelet && systemctl disable kubelet && rm -rf /var/lib/kubelet")
-	if err != nil {
-		return err
-	}
-	return nil
+	}, b.c.Infrastructure.Shell, b.log).ExecShellLogging(ClusterResetShell)
 }

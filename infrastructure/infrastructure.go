@@ -215,9 +215,8 @@ func (i *Infrastructure) GetCloudtNodesSystemInfo(ctx context.Context, cluster *
 			continue
 		}
 		imageId := ""
-		systemDiskName := ""
 		instanceTypeId := ""
-		nodeUser := "root"
+		nodeUser := DefaultRootUser
 		backupInstanceTypeIds := make([]string, 0)
 		if cluster.Provider == biz.ClusterProvider_Aws {
 			err := i.awsCloud.Connections(ctx, cluster.AccessId, cluster.AccessKey)
@@ -230,7 +229,6 @@ func (i *Infrastructure) GetCloudtNodesSystemInfo(ctx context.Context, cluster *
 			}
 			imageId = aws.ToString(image.ImageId)
 			nodeUser = AwsDetermineUsername(aws.ToString(image.Name), aws.ToString(image.Description))
-			systemDiskName = aws.ToString(image.RootDeviceName)
 			instanceTypes, err := i.awsCloud.FindInstanceType(ctx, FindInstanceTypeParam{
 				Os:            nodeGroup.Os,
 				CPU:           nodeGroup.Cpu,
@@ -294,7 +292,6 @@ func (i *Infrastructure) GetCloudtNodesSystemInfo(ctx context.Context, cluster *
 			}
 			node.Username = nodeUser
 			node.ImageId = imageId
-			node.DiskName = systemDiskName
 			node.InstanceType = instanceTypeId
 			node.BackupInstanceIds = strings.Join(backupInstanceTypeIds, ",")
 		}

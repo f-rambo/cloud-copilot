@@ -443,10 +443,10 @@ func (a *AliCloudUsecase) ManageInstance(ctx context.Context, cluster *biz.Clust
 				ImageId:            tea.String(node.ImageId),
 				InstanceType:       tea.String(node.InstanceType),
 				VSwitchId:          tea.String(privateSubnet.RefId),
-				SystemDisk: &ecs.CreateInstanceRequestSystemDisk{
-					Category: tea.String("cloud_ssd"),
-					Size:     tea.Int32(node.DiskSize),
-				},
+				// SystemDisk: &ecs.CreateInstanceRequestSystemDisk{
+				// 	Category: tea.String("cloud_ssd"),
+				// 	Size:     tea.Int32(node.DiskSize),
+				// },
 			}
 			if cluster.Status == biz.ClusterStatus_STARTING && node.Role == biz.NodeRole_MASTER {
 				installShellData, installShellDataErr := getInstallShell(a.c.Infrastructure.Shell, cluster)

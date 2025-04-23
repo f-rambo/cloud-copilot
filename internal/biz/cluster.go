@@ -519,13 +519,21 @@ type Node struct {
 	ImageId           string        `gorm:"column:image_id;default:'';NOT NULL" json:"image_id,omitempty"`
 	BackupInstanceIds string        `gorm:"column:backup_instance_ids;default:'';NOT NULL" json:"backup_instance_ids,omitempty"`
 	InstanceType      string        `gorm:"column:instance_type;default:'';NOT NULL" json:"instance_type,omitempty"`
-	DiskSize          int32         `gorm:"column:disk_size;default:0;NOT NULL" json:"disk_size,omitempty"`
-	DiskName          string        `gorm:"column:disk_name;default:'';NOT NULL" json:"disk_name,omitempty"`
+	Disks             []*Disk       `gorm:"-" json:"disks,omitempty"`
 	ClusterId         int64         `gorm:"column:cluster_id;default:0;NOT NULL" json:"cluster_id,omitempty"`
 	NodeGroupId       string        `gorm:"column:node_group_id;default:'';NOT NULL" json:"node_group_id,omitempty"`
 	NodeInfo          string        `gorm:"column:node_info;default:'';NOT NULL" json:"node_info,omitempty"`
 	ErrorType         NodeErrorType `gorm:"column:error_type;default:0;NOT NULL" json:"error_type,omitempty"`
 	ErrorMessage      string        `gorm:"column:error_message;default:'';NOT NULL" json:"error_message,omitempty"`
+}
+
+type Disk struct {
+	Id        string `gorm:"column:id;primaryKey;NOT NULL" json:"id,omitempty"`
+	Name      string `gorm:"column:name;default:'';NOT NULL" json:"name,omitempty"`
+	Size      int32  `gorm:"column:size;default:0;NOT NULL" json:"size,omitempty"`
+	Device    string `gorm:"column:device;default:'';NOT NULL" json:"device,omitempty"`
+	NodeId    int64  `gorm:"column:node_id;default:0;NOT NULL" json:"node_id,omitempty"`
+	ClusterId int64  `gorm:"column:cluster_id;default:0;NOT NULL" json:"cluster_id,omitempty"`
 }
 
 type CloudResource struct {
@@ -1134,11 +1142,12 @@ func (c *Cluster) InitCloudNodeAndNodeGroup() {
 			Status:      NodeStatus_NODE_FINDING,
 			Role:        NodeRole_WORKER,
 			NodeGroupId: nodeGroup.Id,
-			DiskSize:    30,
 			ClusterId:   c.Id,
 		})
 		if i == 0 {
 			c.Nodes[i].Role = NodeRole_MASTER
+		} else {
+			c.Nodes[i].Disks = []*Disk{{Size: 100}}
 		}
 	}
 }
@@ -1252,7 +1261,9 @@ func (c *Cluster) GetDiskSizeCount() int32 {
 		if node.Status != NodeStatus_NODE_RUNNING {
 			continue
 		}
-		diskSizeCount += node.DiskSize
+		for _, disk := range node.Disks {
+			diskSizeCount += disk.Size
+		}
 	}
 	return diskSizeCount
 }
@@ -1308,6 +1319,13 @@ func (n *Node) DeleteNode() bool {
 
 func (n *Node) SetStatus(status NodeStatus) {
 	n.Status = status
+}
+
+func (n *Node) AddDisk(disk *Disk) {
+	if n.Disks == nil {
+		n.Disks = make([]*Disk, 0)
+	}
+	n.Disks = append(n.Disks, disk)
 }
 
 func (uc *ClusterUsecase) NodeGroupIncreaseSize(ctx context.Context, cluster *Cluster, nodeGroup *NodeGroup, size int32) error {
@@ -1670,9 +1688,6 @@ func (uc *ClusterUsecase) handleEvent(ctx context.Context, cluster *Cluster) (er
 	err = uc.clusterInfrastructure.GetNodesSystemInfo(ctx, cluster)
 	if err != nil {
 		return err
-	}
-	if !cluster.Provider.IsCloud() {
-		cluster.SetNodeStatusFromTo(NodeStatus_UNSPECIFIED, NodeStatus_NODE_FINDING)
 	}
 	cluster.SetNodeStatusFromTo(NodeStatus_NODE_FINDING, NodeStatus_NODE_CREATING)
 	err = uc.clusterRuntime.ReloadCluster(ctx, cluster)

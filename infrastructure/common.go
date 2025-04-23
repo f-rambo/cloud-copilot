@@ -24,16 +24,21 @@ var (
 	TimeOutSecond      time.Duration = 5  // 5s
 
 	CloudCopilotInstallShell string = "cloud-copilot-install.sh"
+	CluasterCaTokenShell     string = "cluster-ca-token.sh"
+	ClusterInitShell         string = "cluster-init.sh"
+	ClusterJoinShell         string = "cluster-join.sh"
+	ClusterResetShell        string = "cluster-reset.sh"
 	NodeInitShell            string = "nodeinit.sh"
 	ComponentShell           string = "component.sh"
 	SystemInfoShell          string = "systeminfo.sh"
-	ClusterInstall           string = "clusterinstall.sh"
 
 	ClusterConfiguration string = "cluster-config.yaml"
 
-	ClusterInitAction string = "init"
-	ClusterJoinAction string = "join"
 	ClusterController string = "controller"
+	GetCaHash         string = "get-ca-hash"
+	GetToken          string = "get-token"
+
+	DefaultRootUser string = "root"
 )
 
 func getNodeArchToCloudType(arch biz.NodeArchType) string {
