@@ -8,6 +8,7 @@ import (
 	"github.com/f-rambo/cloud-copilot/internal/conf"
 	"github.com/f-rambo/cloud-copilot/utils"
 	"github.com/go-kratos/kratos/v2/log"
+	"github.com/pkg/errors"
 	k8sErr "k8s.io/apimachinery/pkg/api/errors"
 )
 
@@ -33,7 +34,7 @@ func (c *ClusterRuntime) ReloadCluster(ctx context.Context, cluster *biz.Cluster
 	SetSpec(obj, cluster)
 	dynamicClient, err := GetKubeDynamicClient()
 	if err != nil {
-		return biz.ErrClusterNotFound
+		return err
 	}
 	_, err = GetResource(ctx, dynamicClient, obj)
 	if k8sErr.IsNotFound(err) {
@@ -54,15 +55,18 @@ func (c *ClusterRuntime) ReloadCluster(ctx context.Context, cluster *biz.Cluster
 }
 
 func (c *ClusterRuntime) CurrentCluster(ctx context.Context, cluster *biz.Cluster) error {
-	obj := NewUnstructured(CloudClusterKind)
-	obj.SetName(cluster.Name)
+	if cluster.Name == "" {
+		return errors.New("cluster name is empty")
+	}
 	dynamicClient, err := GetKubeDynamicClient()
 	if err != nil {
-		return biz.ErrClusterNotFound
+		return err
 	}
+	obj := NewUnstructured(CloudClusterKind)
+	obj.SetName(cluster.Name)
 	res, err := GetResource(ctx, dynamicClient, obj)
 	if err != nil && k8sErr.IsNotFound(err) {
-		return biz.ErrClusterNotFound
+		return err
 	}
 	err = GetSpec(res, cluster)
 	if err != nil {
@@ -79,5 +83,18 @@ func (c *ClusterRuntime) Install(ctx context.Context, cluster *biz.Cluster) erro
 	if err != nil {
 		return err
 	}
-	return CreateResourceByYaml(ctx, installYaml)
+	err = CreateResourceByYaml(ctx, installYaml)
+	if err != nil {
+		return err
+	}
+	return c.ReloadCluster(ctx, cluster)
+}
+
+func (c *ClusterRuntime) ClusterIsExist(ctx context.Context) bool {
+	err := CheckKubernetesConnection(ctx)
+	if err != nil {
+		c.log.Errorf("check kubernetes connection failed: %v", err)
+		return false
+	}
+	return true
 }

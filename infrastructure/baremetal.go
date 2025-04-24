@@ -199,7 +199,7 @@ func (b *Baremetal) Install(ctx context.Context, cluster *biz.Cluster) error {
 		if node.Ip == masterNode.Ip {
 			continue
 		}
-		err = b.joinCluster(cluster, node)
+		err := b.joinCluster(cluster, node)
 		if err != nil {
 			return err
 		}
@@ -277,9 +277,16 @@ func (b *Baremetal) joinCluster(cluster *biz.Cluster, node *biz.Node) error {
 		return err
 	}
 	if node.Role == biz.NodeRole_MASTER {
-		return b.getClusterNodeRemoteBash(cluster, node).ExecShellLogging(ClusterJoinShell, caHash, token)
+		return b.getClusterNodeRemoteBash(cluster, node).ExecShellLogging(
+			ClusterJoinShell,
+			cluster.ApiServerAddress,
+			caHash, token)
 	}
-	return b.getClusterNodeRemoteBash(cluster, node).ExecShellLogging(ClusterJoinShell, caHash, token, ClusterController)
+	return b.getClusterNodeRemoteBash(cluster, node).ExecShellLogging(
+		ClusterJoinShell,
+		cluster.ApiServerAddress,
+		caHash, token,
+		ClusterController)
 }
 
 func (b *Baremetal) uninstallNode(cluster *biz.Cluster, node *biz.Node) error {

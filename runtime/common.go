@@ -475,3 +475,19 @@ func formatUnstructuredField(builder *strings.Builder, field any, indent int) {
 		builder.WriteString(fmt.Sprintf("%s%v\n", indentStr, v))
 	}
 }
+
+func CheckKubernetesConnection(ctx context.Context) error {
+	client, err := GetKubeDynamicClient()
+	if err != nil {
+		return errors.Wrap(err, "get kubernetes by kubeconfig client failed")
+	}
+	_, err = client.Resource(schema.GroupVersionResource{
+		Group:    "",
+		Version:  "v1",
+		Resource: "namespaces",
+	}).List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return errors.Wrap(err, "failed to list namespaces")
+	}
+	return nil
+}

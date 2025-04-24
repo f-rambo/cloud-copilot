@@ -29,8 +29,6 @@ const (
 	Env_prod  = "prod"
 )
 
-var ErrClusterNotFound error = errors.New("cluster not found")
-
 type EventSource int32
 
 const (
@@ -583,6 +581,7 @@ type ClusterRuntime interface {
 	CurrentCluster(context.Context, *Cluster) error
 	ReloadCluster(context.Context, *Cluster) error
 	Install(context.Context, *Cluster) error
+	ClusterIsExist(ctx context.Context) bool
 }
 
 func WithCluster(ctx context.Context, cluster *Cluster) context.Context {
@@ -618,39 +617,44 @@ func NewClusterUseCase(ctx context.Context, conf *confPkg.Bootstrap, clusterData
 		locks:                 make(map[int64]*sync.Mutex),
 		eventChan:             make(chan *Cluster, ClusterPoolNumber),
 	}
-	err := clusterUc.clusterRuntime.CurrentCluster(ctx, &Cluster{})
-	if clusterUc.conf.Infrastructure.Cluster != "" && errors.Is(err, ErrClusterNotFound) {
-		if !utils.IsFileExist(clusterUc.conf.Infrastructure.Cluster) {
-			return nil, ErrClusterNotFound
-		}
-		clusterJsonByte, err := os.ReadFile(clusterUc.conf.Infrastructure.Cluster)
+	if clusterUc.clusterRuntime.ClusterIsExist(ctx) {
+		return clusterUc, nil
+	}
+	if clusterUc.conf.Infrastructure.Cluster == "" {
+		return clusterUc, nil
+	}
+	if !utils.IsFileExist(clusterUc.conf.Infrastructure.Cluster) {
+		return clusterUc, nil
+	}
+	clusterJsonByte, err := os.ReadFile(clusterUc.conf.Infrastructure.Cluster)
+	if err != nil {
+		clusterUc.log.Errorf("read cluster file error: %v", err)
+		return clusterUc, nil
+	}
+	cluster := &Cluster{}
+	err = json.Unmarshal(clusterJsonByte, cluster)
+	if err != nil {
+		clusterUc.log.Errorf("unmarshal cluster file error: %v", err)
+		return clusterUc, nil
+	}
+	clusterRes, err := clusterUc.GetByName(ctx, cluster.Name)
+	if err != nil {
+		return nil, err
+	}
+	if !clusterRes.IsEmpty() {
+		err = clusterUc.StartCluster(ctx, clusterRes.Id)
 		if err != nil {
 			return nil, err
 		}
-		cluster := &Cluster{}
-		err = json.Unmarshal(clusterJsonByte, cluster)
-		if err != nil {
-			return nil, err
-		}
-		clusterData, err := clusterUc.GetByName(ctx, cluster.Name)
-		if err != nil {
-			return nil, err
-		}
-		if !clusterData.IsEmpty() {
-			err = clusterUc.StartCluster(ctx, clusterData.Id)
-			if err != nil {
-				return nil, err
-			}
-		} else {
-			err = clusterUc.clusterData.Save(ctx, cluster)
-			if err != nil {
-				return nil, err
-			}
-			err = clusterUc.StartCluster(ctx, cluster.Id)
-			if err != nil {
-				return nil, err
-			}
-		}
+		return clusterUc, nil
+	}
+	err = clusterUc.clusterData.Save(ctx, cluster)
+	if err != nil {
+		return nil, err
+	}
+	err = clusterUc.StartCluster(ctx, cluster.Id)
+	if err != nil {
+		return nil, err
 	}
 	return clusterUc, nil
 }
@@ -664,6 +668,9 @@ func (c *Cluster) IsEmpty() bool {
 
 func (c *Cluster) GetSingleMasterNode() *Node {
 	for _, node := range c.Nodes {
+		if c.ApiServerAddress != "" && node.Ip == c.ApiServerAddress && node.Role == NodeRole_MASTER {
+			return node
+		}
 		if node != nil && node.Role == NodeRole_MASTER {
 			return node
 		}
@@ -1491,7 +1498,7 @@ func (uc *ClusterUsecase) Delete(ctx context.Context, clusterID int64) error {
 		return err
 	}
 	if cluster.IsEmpty() {
-		return ErrClusterNotFound
+		return nil
 	}
 	if cluster.Status == ClusterStatus_RUNNING {
 		return errors.New("cluster is running")
@@ -1516,7 +1523,7 @@ func (uc *ClusterUsecase) StartCluster(ctx context.Context, clusterId int64) err
 		return err
 	}
 	if cluster.IsEmpty() {
-		return ErrClusterNotFound
+		return nil
 	}
 	cluster.SetCidr()
 	cluster.SetDomain()
@@ -1637,7 +1644,7 @@ func (uc *ClusterUsecase) handleEvent(ctx context.Context, cluster *Cluster) (er
 			node.SetStatus(NodeStatus_NODE_DELETING)
 		}
 		err = uc.clusterRuntime.ReloadCluster(ctx, cluster)
-		if err != nil && !errors.Is(err, ErrClusterNotFound) {
+		if err != nil {
 			return err
 		}
 		err = uc.clusterInfrastructure.HandlerNodes(ctx, cluster)
@@ -1663,12 +1670,11 @@ func (uc *ClusterUsecase) handleEvent(ctx context.Context, cluster *Cluster) (er
 		}
 		return nil
 	}
-	err = uc.clusterRuntime.CurrentCluster(ctx, cluster)
-	if errors.Is(err, ErrClusterNotFound) {
+	if uc.clusterRuntime.ClusterIsExist(ctx) {
 		return uc.handlerClusterNotInstalled(ctx, cluster)
 	}
-	if err != nil {
-		return err
+	if cluster.Status != ClusterStatus_RUNNING {
+		cluster.SetStatus(ClusterStatus_STARTING)
 	}
 	if cluster.Provider.IsCloud() && cluster.SettingClusterLevelByNodeNumber() {
 		var zoneResources []*CloudResource
