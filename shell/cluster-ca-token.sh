@@ -39,6 +39,19 @@ if [[ "$OS" != "linux" ]]; then
 fi
 
 function getCaHash() {
+      if ! command -v openssl &>/dev/null; then
+            log "Error: openssl is not installed."
+            exit 1
+      fi
+      if [ -d "/etc/kubernetes/pki" ]; then
+            if [ ! -f "/etc/kubernetes/pki/ca.crt" ]; then
+                  log "Error: ca.crt is not found."
+                  exit 1
+            fi
+      else
+            log "Error: /etc/kubernetes/pki is not found."
+            exit 1
+      fi
       openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt | openssl rsa -pubin -outform der 2>/dev/null | sha256sum | awk '{print $1}'
 }
 
@@ -55,13 +68,14 @@ function getToken() {
             token=$(kubeadm token generate)
             if [ -z "$token" ]; then
                   log "Error: Failed to generate token"
-                  return 1
+                  exit 1
             fi
 
             if ! kubeadm token create "$token" --ttl 24h; then
                   log "Error: Failed to create token"
-                  return 1
+                  exit 1
             fi
+            exit 0
       fi
 
       echo "$token"
@@ -75,3 +89,5 @@ get-token)
       getToken
       ;;
 esac
+
+exit 0

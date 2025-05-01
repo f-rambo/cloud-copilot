@@ -41,7 +41,7 @@ func NewAppRuntime(logger log.Logger) biz.AppRuntime {
 }
 
 func (a *AppRuntime) DeleteApp(ctx context.Context, app *biz.App) error {
-	appPath := utils.GetServerStoragePathByNames(biz.AppsDir)
+	appPath := utils.GetServerStoragePathByNames("apps")
 	err := os.Remove(appPath)
 	if err != nil {
 		return err
@@ -50,7 +50,7 @@ func (a *AppRuntime) DeleteApp(ctx context.Context, app *biz.App) error {
 }
 
 func (a *AppRuntime) DeleteAppVersion(ctx context.Context, app *biz.App, appVersion *biz.AppVersion) error {
-	appPath := utils.GetServerStoragePathByNames(biz.AppsDir)
+	appPath := utils.GetServerStoragePathByNames("apps")
 	for _, v := range app.Versions {
 		if v.Chart == "" || appVersion.Id != v.Id {
 			continue

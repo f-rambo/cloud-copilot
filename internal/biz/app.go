@@ -4,16 +4,10 @@ import (
 	"context"
 	"slices"
 	"sort"
-	"sync"
 
 	"github.com/f-rambo/cloud-copilot/internal/conf"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/pkg/errors"
-)
-
-const (
-	AppsDir       = "apps"
-	AppPoolNumber = 100
 )
 
 type AppReleaseSatus int32
@@ -153,9 +147,6 @@ type AppRuntime interface {
 type AppUsecase struct {
 	appData    AppData
 	appRuntime AppRuntime
-	locks      map[int64]*sync.Mutex
-	locksMux   sync.Mutex
-	eventChan  chan *AppRelease
 	conf       *conf.Bootstrap
 	log        *log.Helper
 }
@@ -166,8 +157,6 @@ func NewAppUsecase(appData AppData, appRuntime AppRuntime, logger log.Logger, co
 		appRuntime: appRuntime,
 		conf:       conf,
 		log:        log.NewHelper(logger),
-		locks:      make(map[int64]*sync.Mutex),
-		eventChan:  make(chan *AppRelease, AppPoolNumber),
 	}
 }
 
@@ -376,84 +365,6 @@ func (uc *AppUsecase) GetAppReleaseResourcesInCluster(ctx context.Context, appRe
 }
 
 func (uc *AppUsecase) CreateAppRelease(ctx context.Context, appRelease *AppRelease) error {
-	err := uc.appData.SaveAppRelease(ctx, appRelease)
-	if err != nil {
-		return err
-	}
-	appRelease.Status = AppReleaseSatus_PENDING
-	uc.apply(appRelease)
-	return nil
-}
-
-func (uc *AppUsecase) DeleteAppRelease(ctx context.Context, id int64) error {
-	err := uc.appData.DeleteAppRelease(ctx, id)
-	if err != nil {
-		return err
-	}
-	appRelease, err := uc.appData.GetAppRelease(ctx, id)
-	if err != nil {
-		return err
-	}
-	uc.apply(appRelease)
-	return nil
-}
-
-func (uc *AppUsecase) GetAppReleaseResourceByProject(ctx context.Context, projectId int64) (*AlreadyResource, error) {
-	return nil, nil
-}
-
-func (uc *AppUsecase) apply(appRelease *AppRelease) {
-	uc.eventChan <- appRelease
-}
-
-func (uc *AppUsecase) Start(ctx context.Context) error {
-	for {
-		select {
-		case <-ctx.Done():
-			return nil
-		case data, ok := <-uc.eventChan:
-			if !ok {
-				return nil
-			}
-			err := uc.handleEvent(ctx, data)
-			if err != nil {
-				return err
-			}
-		}
-	}
-}
-
-func (uc *AppUsecase) Stop(ctx context.Context) error {
-	close(uc.eventChan)
-	return nil
-}
-
-func (uc *AppUsecase) getLock(appID int64) *sync.Mutex {
-	uc.locksMux.Lock()
-	defer uc.locksMux.Unlock()
-	if appID < 0 {
-		uc.log.Errorf("Invalid appID: %d", appID)
-		return &sync.Mutex{}
-	}
-	if _, exists := uc.locks[appID]; !exists {
-		uc.locks[appID] = &sync.Mutex{}
-	}
-	return uc.locks[appID]
-}
-
-func (uc *AppUsecase) handleEvent(ctx context.Context, appRelease *AppRelease) (err error) {
-	lock := uc.getLock(appRelease.Id)
-	lock.Lock()
-	defer func() {
-		uc.appData.SaveAppRelease(ctx, appRelease)
-		lock.Unlock()
-	}()
-	if appRelease.IsDeleted() {
-		err = uc.appRuntime.DeleteAppRelease(ctx, appRelease)
-		if err != nil {
-			return err
-		}
-	}
 	app, err := uc.appData.Get(ctx, appRelease.AppId)
 	if err != nil {
 		return err
@@ -462,9 +373,34 @@ func (uc *AppUsecase) handleEvent(ctx context.Context, appRelease *AppRelease) (
 	if appVersion == nil {
 		return errors.New("app version not found")
 	}
+	appRelease.Status = AppReleaseSatus_PENDING
 	err = uc.appRuntime.AppRelease(ctx, appRelease)
 	if err != nil {
 		return err
 	}
+	err = uc.appData.SaveAppRelease(ctx, appRelease)
+	if err != nil {
+		return err
+	}
 	return nil
+}
+
+func (uc *AppUsecase) DeleteAppRelease(ctx context.Context, id int64) error {
+	appRelease, err := uc.appData.GetAppRelease(ctx, id)
+	if err != nil {
+		return err
+	}
+	err = uc.appRuntime.DeleteAppRelease(ctx, appRelease)
+	if err != nil {
+		return err
+	}
+	err = uc.appData.DeleteAppRelease(ctx, id)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (uc *AppUsecase) GetAppReleaseResourceByProject(ctx context.Context, projectId int64) (*AlreadyResource, error) {
+	return nil, nil
 }

@@ -30,8 +30,27 @@ message Server {
   GRPCServer grpc = 5;
 }
 
+message ES {
+  repeated string hosts = 1;
+  string serviceaccount_token = 2;
+  string api_key = 3;
+}
+
+message Kafka {
+  repeated string brokers = 1;
+  repeated string topics = 2;
+  string group_id = 3;
+}
+
+message Prometheus {
+  string base_url = 1;
+}
+
 message Database {
   string database = 1;
+  Kafka kafka = 2;
+  ES es = 3;
+  Prometheus prometheus = 4;
 }
 
 message Log {

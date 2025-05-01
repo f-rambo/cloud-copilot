@@ -142,39 +142,27 @@ func CreateResourceByYaml(ctx context.Context, yamlFilePath string) error {
 }
 
 func ParseYaml(filename string) (*unstructured.UnstructuredList, error) {
-	data, err := os.ReadFile(filename)
+	file, err := os.Open(filename)
 	if err != nil {
 		return nil, err
 	}
+	defer file.Close()
 
-	if len(data) == 0 {
-		return nil, errors.Errorf("empty yaml file: %s", filename)
-	}
-
+	decoder := k8syaml.NewYAMLOrJSONDecoder(file, 4096)
 	list := &unstructured.UnstructuredList{Items: make([]unstructured.Unstructured, 0)}
-	decoder := k8syaml.NewYAMLOrJSONDecoder(bytes.NewReader(data), 4096)
-
 	for {
 		var obj map[string]any
-		err = decoder.Decode(&obj)
-		if err != nil {
+		if err := decoder.Decode(&obj); err != nil {
 			if err == io.EOF {
 				break
 			}
-			return nil, errors.Errorf("failed to decode yaml: %v", err)
+			continue
 		}
-
 		if len(obj) == 0 {
 			continue
 		}
-
 		list.Items = append(list.Items, unstructured.Unstructured{Object: obj})
 	}
-
-	if len(list.Items) == 0 {
-		return nil, errors.Errorf("no valid kubernetes objects found in %s", filename)
-	}
-
 	return list, nil
 }
 

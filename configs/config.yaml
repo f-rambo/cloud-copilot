@@ -23,4 +23,4 @@ infrastructure:
   shell: "shell"
   resource: "resource"
   component: "component"
-  cluster: "cluster.json"
+  cluster: ""

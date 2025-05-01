@@ -7,14 +7,13 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"github.com/f-rambo/cloud-copilot/internal/biz"
 	"github.com/f-rambo/cloud-copilot/internal/conf"
+	"github.com/f-rambo/cloud-copilot/internal/data"
 	"github.com/f-rambo/cloud-copilot/utils"
 	"github.com/go-kratos/kratos/v2"
 	"github.com/go-kratos/kratos/v2/config"
 	"github.com/go-kratos/kratos/v2/config/file"
 	"github.com/go-kratos/kratos/v2/log"
-	"github.com/go-kratos/kratos/v2/transport"
 	"github.com/go-kratos/kratos/v2/transport/grpc"
 	"github.com/go-kratos/kratos/v2/transport/http"
 	_ "github.com/joho/godotenv/autoload"
@@ -37,9 +36,7 @@ func init() {
 	flag.StringVar(&flagconf, "conf", "configs", "config path, eg: -conf config.yaml")
 }
 
-func newApp(ctx context.Context, logger log.Logger, gs *grpc.Server, hs *http.Server, b *biz.Biz) *kratos.App {
-	servers := []transport.Server{gs, hs}
-	servers = append(servers, b.BizRunners()...)
+func newApp(ctx context.Context, logger log.Logger, gs *grpc.Server, hs *http.Server, dr *data.Data) *kratos.App {
 	return kratos.New(
 		kratos.ID(id),
 		kratos.Context(ctx),
@@ -55,7 +52,7 @@ func newApp(ctx context.Context, logger log.Logger, gs *grpc.Server, hs *http.Se
 			utils.ConfDirKey.String():        filepath.Dir(flagconf),
 		}),
 		kratos.Logger(logger),
-		kratos.Server(servers...),
+		kratos.Server(gs, hs, dr),
 	)
 }
 

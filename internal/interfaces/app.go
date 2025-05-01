@@ -408,7 +408,7 @@ func (a *AppInterface) DeleteAppRelease(ctx context.Context, appReleaseReq *v1al
 }
 
 func (a *AppInterface) UploadApp(ctx context.Context, _ *emptypb.Empty) (*common.Msg, error) {
-	appPath := utils.GetServerStoragePathByNames(biz.AppsDir)
+	appPath := utils.GetServerStoragePathByNames("apps")
 	appFileName, err := utils.AcceptingFile(ctx, appPath)
 	if err != nil {
 		return nil, err

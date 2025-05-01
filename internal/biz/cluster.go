@@ -8,7 +8,6 @@ import (
 	"os"
 	"slices"
 	"strings"
-	"sync"
 
 	confPkg "github.com/f-rambo/cloud-copilot/internal/conf"
 	"github.com/f-rambo/cloud-copilot/utils"
@@ -27,6 +26,15 @@ const (
 	Env_local = "local"
 	Env_jump  = "jump"
 	Env_prod  = "prod"
+)
+
+type LogType int32
+
+const (
+	LogType_UNSPECIFIED LogType = 0
+	LogType_POD         LogType = 1
+	LogType_Service     LogType = 2
+	LogType_Trace       LogType = 3
 )
 
 type EventSource int32
@@ -481,6 +489,8 @@ type Cluster struct {
 	ServiceCidr       string           `gorm:"column:service_cidr;default:'';NOT NULL" json:"service_cidr,omitempty"`
 	PodCidr           string           `gorm:"column:pod_cidr;default:'';NOT NULL" json:"pod_cidr,omitempty"`
 	SubnetCidrs       string           `gorm:"column:subnet_cidrs;default:'';NOT NULL" json:"subnet_cidrs,omitempty"` // 多个子网cidr，逗号分隔
+	GatewayClass      string           `gorm:"column:gateway_class;default:'';NOT NULL" json:"gateway_class,omitempty"`
+	StorageClass      string           `gorm:"column:storage_class;default:'';NOT NULL" json:"storage_class,omitempty"`
 	NodeGroups        []*NodeGroup     `gorm:"-" json:"node_groups,omitempty"`
 	Nodes             []*Node          `gorm:"-" json:"nodes,omitempty"`
 	CloudResources    []*CloudResource `gorm:"-" json:"cloud_resources,omitempty"`
@@ -562,6 +572,10 @@ type ClusterData interface {
 	GetByName(context.Context, string) (*Cluster, error)
 	List(ctx context.Context, name string, page, pageSize int32) ([]*Cluster, int64, error)
 	Delete(context.Context, int64) error
+	RegisterHandlerClusterEvent(handler func(ctx context.Context, cluster *Cluster) error)
+	RegisterHandlerLogs(handler func(key LogType, msg string) error)
+	Apply(context.Context, *Cluster) error
+	CommitLogs(LogType, string) error
 }
 
 type ClusterInfrastructure interface {
@@ -600,9 +614,6 @@ type ClusterUsecase struct {
 	clusterData           ClusterData
 	clusterInfrastructure ClusterInfrastructure
 	clusterRuntime        ClusterRuntime
-	locks                 map[int64]*sync.Mutex
-	locksMux              sync.Mutex
-	eventChan             chan *Cluster
 	conf                  *confPkg.Bootstrap
 	log                   *log.Helper
 }
@@ -614,28 +625,27 @@ func NewClusterUseCase(ctx context.Context, conf *confPkg.Bootstrap, clusterData
 		clusterRuntime:        clusterRuntime,
 		conf:                  conf,
 		log:                   log.NewHelper(logger),
-		locks:                 make(map[int64]*sync.Mutex),
-		eventChan:             make(chan *Cluster, ClusterPoolNumber),
 	}
-	if clusterUc.clusterRuntime.ClusterIsExist(ctx) {
-		return clusterUc, nil
-	}
+	clusterUc.clusterData.RegisterHandlerClusterEvent(clusterUc.HandleClusterEvent)
+	clusterUc.clusterData.RegisterHandlerLogs(clusterUc.Handlerlogs)
+
 	if clusterUc.conf.Infrastructure.Cluster == "" {
 		return clusterUc, nil
 	}
 	if !utils.IsFileExist(clusterUc.conf.Infrastructure.Cluster) {
 		return clusterUc, nil
 	}
+	if clusterUc.clusterRuntime.ClusterIsExist(ctx) {
+		return clusterUc, nil
+	}
 	clusterJsonByte, err := os.ReadFile(clusterUc.conf.Infrastructure.Cluster)
 	if err != nil {
-		clusterUc.log.Errorf("read cluster file error: %v", err)
-		return clusterUc, nil
+		return nil, err
 	}
 	cluster := &Cluster{}
 	err = json.Unmarshal(clusterJsonByte, cluster)
 	if err != nil {
-		clusterUc.log.Errorf("unmarshal cluster file error: %v", err)
-		return clusterUc, nil
+		return nil, err
 	}
 	clusterRes, err := clusterUc.GetByName(ctx, cluster.Name)
 	if err != nil {
@@ -1538,7 +1548,7 @@ func (uc *ClusterUsecase) StartCluster(ctx context.Context, clusterId int64) err
 	if err != nil {
 		return err
 	}
-	err = uc.Apply(cluster)
+	err = uc.clusterData.Apply(ctx, cluster)
 	if err != nil {
 		return err
 	}
@@ -1558,83 +1568,19 @@ func (uc *ClusterUsecase) StopCluster(ctx context.Context, clusterId int64) erro
 	if err != nil {
 		return err
 	}
-	err = uc.Apply(cluster)
+	err = uc.clusterData.Apply(ctx, cluster)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-// Start the cluster handler server
-func (uc *ClusterUsecase) Start(ctx context.Context) error {
-	uc.log.Info("Starting cluster handler...")
-	for {
-		select {
-		case <-ctx.Done():
-			return nil
-		case data, ok := <-uc.eventChan:
-			if !ok {
-				return nil
-			}
-			err := uc.handleEvent(ctx, data)
-			if err != nil {
-				// todo alert
-				uc.log.Errorf("cluster handle event error: %v", err)
-				return nil
-			}
-		}
-	}
-}
-
-func (uc *ClusterUsecase) Stop(ctx context.Context) error {
-	uc.log.Info("Stopping cluster handler...")
-	close(uc.eventChan)
-	return nil
-}
-
-func (uc *ClusterUsecase) Apply(cluster *Cluster) error {
-	if cluster.IsEmpty() {
-		return errors.New("invalid cluster")
-	}
-	if uc.eventChan == nil {
-		return errors.New("cluster event channel is nil")
-	}
-	select {
-	case uc.eventChan <- cluster:
-		return nil
-	default:
-		return errors.New("cluster event channel is either full or closed")
-	}
-}
-
-func (uc *ClusterUsecase) getLock(clusterID int64) *sync.Mutex {
-	uc.locksMux.Lock()
-	defer uc.locksMux.Unlock()
-
-	if clusterID < 0 {
-		uc.log.Errorf("Invalid clusterID: %d", clusterID)
-		return &sync.Mutex{}
-	}
-
-	if _, exists := uc.locks[clusterID]; !exists {
-		uc.locks[clusterID] = &sync.Mutex{}
-	}
-	return uc.locks[clusterID]
-}
-
-func (uc *ClusterUsecase) handleEvent(ctx context.Context, cluster *Cluster) (err error) {
-	lock := uc.getLock(cluster.Id)
-	lock.Lock()
+func (uc *ClusterUsecase) HandleClusterEvent(ctx context.Context, cluster *Cluster) (err error) {
 	defer func() {
-		lock.Unlock()
 		if err != nil {
 			cluster.SetStatus(ClusterStatus_ERROR)
-			uc.log.Errorf("cluster handle event error: %v", err)
 		}
-		err = uc.clusterData.Save(ctx, cluster)
-		if err != nil {
-			uc.log.Errorf("cluster save error: %v", err)
-		}
+		_ = uc.clusterData.Save(ctx, cluster)
 	}()
 	if cluster.Status == ClusterStatus_STOPPING {
 		for _, node := range cluster.Nodes {
@@ -1671,7 +1617,7 @@ func (uc *ClusterUsecase) handleEvent(ctx context.Context, cluster *Cluster) (er
 		return nil
 	}
 	if uc.clusterRuntime.ClusterIsExist(ctx) {
-		return uc.handlerClusterNotInstalled(ctx, cluster)
+		return uc.HandlerClusterNotInstalled(ctx, cluster)
 	}
 	if cluster.Status != ClusterStatus_RUNNING {
 		cluster.SetStatus(ClusterStatus_STARTING)
@@ -1714,7 +1660,7 @@ func (uc *ClusterUsecase) handleEvent(ctx context.Context, cluster *Cluster) (er
 	return
 }
 
-func (uc *ClusterUsecase) handlerClusterNotInstalled(ctx context.Context, cluster *Cluster) error {
+func (uc *ClusterUsecase) HandlerClusterNotInstalled(ctx context.Context, cluster *Cluster) error {
 	if cluster.Status != ClusterStatus_STARTING {
 		return nil
 	}
@@ -1756,4 +1702,8 @@ func (uc *ClusterUsecase) handlerClusterNotInstalled(ctx context.Context, cluste
 	}
 	cluster.SetStatus(ClusterStatus_RUNNING)
 	return nil
+}
+
+func (uc *ClusterUsecase) Handlerlogs(key LogType, msg string) error {
+	return uc.clusterData.CommitLogs(key, msg)
 }

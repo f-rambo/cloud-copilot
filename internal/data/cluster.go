@@ -2,25 +2,122 @@ package data
 
 import (
 	"context"
+	"sync"
 
 	"github.com/f-rambo/cloud-copilot/internal/biz"
+	"github.com/f-rambo/cloud-copilot/lib"
 	"github.com/go-kratos/kratos/v2/log"
+	"github.com/pkg/errors"
 	"gorm.io/gorm"
 )
 
-type clusterRepo struct {
+type ClusterRepo struct {
+	handlerClusterEvent func(ctx context.Context, cluster *biz.Cluster) error
+	handlerLogs         func(key biz.LogType, msg string) error
+
+	locks     map[int64]*sync.Mutex
+	locksMux  sync.Mutex
+	eventChan chan *biz.Cluster
+
 	data *Data
 	log  *log.Helper
 }
 
 func NewClusterRepo(data *Data, logger log.Logger) biz.ClusterData {
-	return &clusterRepo{
-		data: data,
-		log:  log.NewHelper(logger),
+	c := &ClusterRepo{
+		data:      data,
+		log:       log.NewHelper(logger),
+		locks:     make(map[int64]*sync.Mutex),
+		locksMux:  sync.Mutex{},
+		eventChan: make(chan *biz.Cluster, 1024),
+	}
+	data.registerRunner(c)
+	return c
+}
+
+func (c *ClusterRepo) RegisterHandlerClusterEvent(handler func(ctx context.Context, cluster *biz.Cluster) error) {
+	c.handlerClusterEvent = handler
+}
+
+func (c *ClusterRepo) RegisterHandlerLogs(handler func(key biz.LogType, msg string) error) {
+	c.handlerLogs = handler
+}
+
+func (c *ClusterRepo) getLock(clusterID int64) *sync.Mutex {
+	c.locksMux.Lock()
+	defer c.locksMux.Unlock()
+
+	if clusterID < 0 {
+		c.log.Errorf("Invalid clusterID: %d", clusterID)
+		return &sync.Mutex{}
+	}
+
+	if _, exists := c.locks[clusterID]; !exists {
+		c.locks[clusterID] = &sync.Mutex{}
+	}
+	return c.locks[clusterID]
+}
+
+func (c *ClusterRepo) Apply(ctx context.Context, cluster *biz.Cluster) error {
+	if cluster.IsEmpty() {
+		return errors.New("invalid cluster")
+	}
+	select {
+	case c.eventChan <- cluster:
+		return nil
+	default:
+		return errors.New("cluster event channel is either full or closed")
 	}
 }
 
-func (c *clusterRepo) Save(ctx context.Context, cluster *biz.Cluster) (err error) {
+func (c *ClusterRepo) Start(ctx context.Context) error {
+	if c.data.kafkaConsumer != nil {
+		go func() {
+			err := c.data.kafkaConsumer.ConsumeMessages(ctx, lib.NewDefaultMessageHandler(c.HandlerLogMsg))
+			if err != nil {
+				c.data.addRunnerError(err)
+			}
+		}()
+	}
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
+		case cluster, ok := <-c.eventChan:
+			if !ok {
+				return nil
+			}
+			c.getLock(cluster.Id).Lock()
+			err := c.handlerClusterEvent(ctx, cluster)
+			c.getLock(cluster.Id).Unlock()
+			if err != nil {
+				return err
+			}
+		}
+	}
+}
+
+func (c *ClusterRepo) Stop(ctx context.Context) error {
+	close(c.eventChan)
+	return nil
+}
+
+func (c *ClusterRepo) getLogType(_ string) biz.LogType {
+	return biz.LogType_UNSPECIFIED
+}
+
+func (c *ClusterRepo) HandlerLogMsg(key, val []byte) error {
+	return c.handlerLogs(c.getLogType(string(key)), string(val))
+}
+
+func (c *ClusterRepo) CommitLogs(key biz.LogType, msg string) error {
+	if c.data.eSClient == nil {
+		return errors.New("es client is nil")
+	}
+	return c.data.eSClient.IndexDocument("", "", msg)
+}
+
+func (c *ClusterRepo) Save(ctx context.Context, cluster *biz.Cluster) (err error) {
 	tx := c.data.db.Begin()
 	defer func() {
 		if err != nil {
@@ -56,7 +153,7 @@ func (c *clusterRepo) Save(ctx context.Context, cluster *biz.Cluster) (err error
 	return nil
 }
 
-func (c *clusterRepo) Get(ctx context.Context, id int64) (*biz.Cluster, error) {
+func (c *ClusterRepo) Get(ctx context.Context, id int64) (*biz.Cluster, error) {
 	cluster := &biz.Cluster{}
 	err := c.data.db.Model(&biz.Cluster{}).Where("id = ?", id).First(cluster).Error
 	if err != nil && err != gorm.ErrRecordNotFound {
@@ -115,7 +212,7 @@ func (c *clusterRepo) Get(ctx context.Context, id int64) (*biz.Cluster, error) {
 	return cluster, nil
 }
 
-func (c *clusterRepo) GetByName(ctx context.Context, name string) (*biz.Cluster, error) {
+func (c *ClusterRepo) GetByName(ctx context.Context, name string) (*biz.Cluster, error) {
 	cluster := &biz.Cluster{}
 	err := c.data.db.Model(&biz.Cluster{}).Where("name = ?", name).First(cluster).Error
 	if err != nil && err != gorm.ErrRecordNotFound {
@@ -127,7 +224,7 @@ func (c *clusterRepo) GetByName(ctx context.Context, name string) (*biz.Cluster,
 	return cluster, nil
 }
 
-func (c *clusterRepo) List(ctx context.Context, name string, page, pageSize int32) ([]*biz.Cluster, int64, error) {
+func (c *ClusterRepo) List(ctx context.Context, name string, page, pageSize int32) ([]*biz.Cluster, int64, error) {
 	var clusters []*biz.Cluster
 	var total int64
 
@@ -151,7 +248,7 @@ func (c *clusterRepo) List(ctx context.Context, name string, page, pageSize int3
 	return clusters, total, nil
 }
 
-func (c *clusterRepo) Delete(ctx context.Context, id int64) (err error) {
+func (c *ClusterRepo) Delete(ctx context.Context, id int64) (err error) {
 	tx := c.data.db.Begin()
 	defer func() {
 		if err != nil {
@@ -185,7 +282,7 @@ func (c *clusterRepo) Delete(ctx context.Context, id int64) (err error) {
 	return tx.Commit().Error
 }
 
-func (c *clusterRepo) saveNodeGroup(_ context.Context, cluster *biz.Cluster, tx *gorm.DB) error {
+func (c *ClusterRepo) saveNodeGroup(_ context.Context, cluster *biz.Cluster, tx *gorm.DB) error {
 	for _, nodeGroup := range cluster.NodeGroups {
 		nodeGroup.ClusterId = cluster.Id
 		err := tx.Model(&biz.NodeGroup{}).Where("id = ?", nodeGroup.Id).Save(nodeGroup).Error
@@ -216,7 +313,7 @@ func (c *clusterRepo) saveNodeGroup(_ context.Context, cluster *biz.Cluster, tx 
 	return nil
 }
 
-func (c *clusterRepo) saveNode(_ context.Context, cluster *biz.Cluster, tx *gorm.DB) error {
+func (c *ClusterRepo) saveNode(_ context.Context, cluster *biz.Cluster, tx *gorm.DB) error {
 	for _, node := range cluster.Nodes {
 		node.ClusterId = cluster.Id
 		err := tx.Model(&biz.Node{}).Where("id = ?", node.Id).Save(node).Error
@@ -247,7 +344,7 @@ func (c *clusterRepo) saveNode(_ context.Context, cluster *biz.Cluster, tx *gorm
 	return nil
 }
 
-func (c *clusterRepo) saveCloudResources(_ context.Context, cluster *biz.Cluster, tx *gorm.DB) error {
+func (c *ClusterRepo) saveCloudResources(_ context.Context, cluster *biz.Cluster, tx *gorm.DB) error {
 	for _, cloudResource := range cluster.CloudResources {
 		cloudResource.ClusterId = cluster.Id
 		err := tx.Model(&biz.CloudResource{}).Where("id = ?", cloudResource.Id).Save(cloudResource).Error
@@ -278,7 +375,7 @@ func (c *clusterRepo) saveCloudResources(_ context.Context, cluster *biz.Cluster
 	return nil
 }
 
-func (c *clusterRepo) saveSecuritys(_ context.Context, cluster *biz.Cluster, tx *gorm.DB) error {
+func (c *ClusterRepo) saveSecuritys(_ context.Context, cluster *biz.Cluster, tx *gorm.DB) error {
 	for _, v := range cluster.Securitys {
 		v.ClusterId = cluster.Id
 		err := tx.Model(&biz.Security{}).Where("id = ?", v.Id).Save(v).Error
@@ -310,7 +407,7 @@ func (c *clusterRepo) saveSecuritys(_ context.Context, cluster *biz.Cluster, tx 
 }
 
 // save disk
-func (c *clusterRepo) saveDisk(_ context.Context, cluster *biz.Cluster, tx *gorm.DB) error {
+func (c *ClusterRepo) saveDisk(_ context.Context, cluster *biz.Cluster, tx *gorm.DB) error {
 	for _, node := range cluster.Nodes {
 		for _, disk := range node.Disks {
 			disk.NodeId = node.Id

@@ -65,8 +65,7 @@ func wireApp(contextContext context.Context, bootstrap *conf.Bootstrap, logger l
 	projectInterface := interfaces.NewProjectInterface(projectUsecase, userUseCase, bootstrap, logger)
 	grpcServer := server.NewGRPCServer(bootstrap, clusterInterface, appInterface, servicesInterface, userInterface, workspaceInterface, projectInterface, logger)
 	httpServer := server.NewHTTPServer(bootstrap, clusterInterface, appInterface, servicesInterface, userInterface, workspaceInterface, projectInterface, logger)
-	bizBiz := biz.NewBiz(clusterUsecase, appUsecase)
-	app := newApp(contextContext, logger, grpcServer, httpServer, bizBiz)
+	app := newApp(contextContext, logger, grpcServer, httpServer, dataData)
 	return app, func() {
 		cleanup()
 	}, nil

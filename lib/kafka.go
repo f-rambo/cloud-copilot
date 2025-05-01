@@ -1,0 +1,136 @@
+package lib
+
+import (
+	"context"
+	"sync"
+
+	"github.com/IBM/sarama"
+	"github.com/pkg/errors"
+)
+
+/*
+	consumer, err := NewKafkaConsumer(
+		[]string{"localhost:9092"},
+		[]string{"test-topic"},
+		"test-group",
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer consumer.Close()
+
+	handler := NewDefaultMessageHandler(func(key, val []byte) error {
+		fmt.Printf("message: %s\n", string(val))
+		return nil
+	})
+
+	ctx := context.Background()
+	if err := consumer.ConsumeMessages(ctx, handler); err != nil {
+		log.Fatal(err)
+	}
+*/
+
+type KafkaConsumer struct {
+	consumer sarama.Consumer
+	group    sarama.ConsumerGroup
+	config   *sarama.Config
+	brokers  []string
+	topics   []string
+	groupID  string
+	mu       sync.Mutex
+}
+
+func NewKafkaConsumer(brokers []string, topics []string, groupID string) (*KafkaConsumer, error) {
+	config := sarama.NewConfig()
+	config.Consumer.Group.Rebalance.Strategy = sarama.NewBalanceStrategyRoundRobin()
+	config.Consumer.Offsets.Initial = sarama.OffsetNewest
+
+	consumer, err := sarama.NewConsumer(brokers, config)
+	if err != nil {
+		return nil, errors.Wrap(err, "NewKafkaConsumer")
+	}
+
+	group, err := sarama.NewConsumerGroup(brokers, groupID, config)
+	if err != nil {
+		consumer.Close()
+		return nil, errors.Wrap(err, "NewKafkaConsumer")
+	}
+
+	return &KafkaConsumer{
+		consumer: consumer,
+		group:    group,
+		config:   config,
+		brokers:  brokers,
+		topics:   topics,
+		groupID:  groupID,
+	}, nil
+}
+
+func (k *KafkaConsumer) Close() error {
+	k.mu.Lock()
+	defer k.mu.Unlock()
+
+	if err := k.consumer.Close(); err != nil {
+		return errors.Wrap(err, "Close")
+	}
+
+	if err := k.group.Close(); err != nil {
+		return errors.Wrap(err, "Close")
+	}
+
+	return nil
+}
+
+func (k *KafkaConsumer) ConsumeMessages(ctx context.Context, handler MessageHandler) error {
+	k.mu.Lock()
+	defer k.mu.Unlock()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
+		default:
+			err := k.group.Consume(ctx, k.topics, handler)
+			if err != nil {
+				return errors.Wrap(err, "ConsumeMessages")
+			}
+		}
+	}
+}
+
+type MessageHandler interface {
+	Setup(sarama.ConsumerGroupSession) error
+	Cleanup(sarama.ConsumerGroupSession) error
+	ConsumeClaim(session sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error
+}
+
+type DefaultMessageHandler struct {
+	handleMessage func(key, val []byte) error
+}
+
+func NewDefaultMessageHandler(handleMessage func(key, val []byte) error) *DefaultMessageHandler {
+	return &DefaultMessageHandler{handleMessage: handleMessage}
+}
+
+// Before
+func (h *DefaultMessageHandler) Setup(sarama.ConsumerGroupSession) error { return nil }
+
+// After
+func (h *DefaultMessageHandler) Cleanup(sarama.ConsumerGroupSession) error { return nil }
+
+func (h *DefaultMessageHandler) ConsumeClaim(session sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
+	for {
+		select {
+		case <-session.Context().Done():
+			return nil
+		case msg, ok := <-claim.Messages():
+			if !ok {
+				return nil
+			}
+			if err := h.handleMessage(msg.Key, msg.Value); err != nil {
+				return err
+			}
+			session.MarkMessage(msg, "")
+		}
+	}
+}

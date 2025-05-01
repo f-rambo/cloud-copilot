@@ -7,6 +7,7 @@ import (
 
 	"github.com/f-rambo/cloud-copilot/internal/biz"
 	"github.com/f-rambo/cloud-copilot/internal/conf"
+	"github.com/f-rambo/cloud-copilot/lib"
 	"github.com/f-rambo/cloud-copilot/utils"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/wire"
@@ -17,6 +18,11 @@ import (
 	"gorm.io/gorm/schema"
 )
 
+type Datarunner interface {
+	Start(ctx context.Context) error
+	Stop(ctx context.Context) error
+}
+
 // ProviderSet is data providers.
 var ProviderSet = wire.NewSet(NewData, NewClusterRepo, NewAppRepo, NewServicesRepo, NewUserRepo, NewProjectRepo, NewWorkspaceRepo)
 
@@ -25,19 +31,42 @@ type Data struct {
 	log           *log.Helper
 	db            *gorm.DB
 	dbLoggerLevel gormlogger.LogLevel
+
+	kafkaConsumer    *lib.KafkaConsumer
+	prometheusClient *lib.PrometheusClient
+	eSClient         *lib.ESClient
+
+	runner        []Datarunner
+	runnerChan    chan Datarunner
+	runnerErrChan chan error
 }
 
 func NewData(c *conf.Bootstrap, logger log.Logger) (*Data, func(), error) {
 	var err error
-
+	if c.Data == nil {
+		return nil, func() {}, errors.New("data config is nil")
+	}
 	data := &Data{
 		conf:          c,
 		log:           log.NewHelper(logger),
 		dbLoggerLevel: gormlogger.Warn,
+		runner:        make([]Datarunner, 0),
+		runnerChan:    make(chan Datarunner, 1024),
+		runnerErrChan: make(chan error, 1),
 	}
 
 	cleanup := func() {
-		log.Info("closing the data resources")
+		log.NewHelper(logger).Info("closing the data resources")
+		if data.db != nil {
+			sqlDB, dbErr := data.db.DB()
+			if dbErr != nil {
+				data.log.Errorf("failed to close db: %v", dbErr)
+			}
+			sqlDB.Close()
+		}
+		if data.kafkaConsumer != nil {
+			data.kafkaConsumer.Close()
+		}
 	}
 
 	dbFile := fmt.Sprintf("%s.db", c.Server.Name)
@@ -85,7 +114,90 @@ func NewData(c *conf.Bootstrap, logger log.Logger) (*Data, func(), error) {
 	if err != nil {
 		return data, cleanup, err
 	}
+
+	if c.Data.Kafka != nil && len(c.Data.Kafka.Brokers) > 0 && len(c.Data.Kafka.Topics) > 0 {
+		if c.Data.Kafka.GroupId == "" {
+			c.Data.Kafka.GroupId = c.Server.Name
+		}
+		data.kafkaConsumer, err = lib.NewKafkaConsumer(c.Data.Kafka.Brokers, c.Data.Kafka.Topics, c.Data.Kafka.GroupId)
+		if err != nil {
+			return data, cleanup, err
+		}
+	}
+
+	if c.Data.Prometheus != nil && c.Data.Prometheus.BaseUrl != "" {
+		data.prometheusClient, err = lib.NewPrometheusClient(c.Data.Prometheus.BaseUrl)
+		if err != nil {
+			return data, cleanup, err
+		}
+	}
+
+	if c.Data.Es != nil && len(c.Data.Es.Hosts) != 0 && (c.Data.Es.ApiKey != "" || c.Data.Es.ServiceaccountToken != "") {
+		esConfig := lib.ESConfig{
+			Addresses:    c.Data.Es.Hosts,
+			APIKey:       c.Data.Es.ApiKey,
+			ServiceToken: c.Data.Es.ServiceaccountToken,
+		}
+		data.eSClient, err = lib.NewESClient(esConfig)
+		if err != nil {
+			return data, cleanup, err
+		}
+	}
+
 	return data, cleanup, nil
+}
+
+func (d *Data) registerRunner(runner Datarunner) {
+	select {
+	case d.runnerChan <- runner:
+	default:
+	}
+}
+
+func (d *Data) addRunnerError(err error) {
+	select {
+	case d.runnerErrChan <- err:
+	default:
+	}
+}
+
+func (d *Data) Start(ctx context.Context) error {
+	for {
+		select {
+		case runner, ok := <-d.runnerChan:
+			if !ok {
+				return nil
+			}
+			go func() {
+				err := runner.Start(ctx)
+				if err != nil {
+					d.addRunnerError(err)
+				}
+			}()
+			d.runner = append(d.runner, runner)
+		case <-ctx.Done():
+			return nil
+		case err, ok := <-d.runnerErrChan:
+			if !ok {
+				return nil
+			}
+			if err != nil {
+				return err
+			}
+		}
+	}
+}
+
+func (d *Data) Stop(ctx context.Context) error {
+	for _, runner := range d.runner {
+		err := runner.Stop(ctx)
+		if err != nil {
+			return err
+		}
+	}
+	close(d.runnerChan)
+	close(d.runnerErrChan)
+	return nil
 }
 
 func (d *Data) LogMode(level gormlogger.LogLevel) gormlogger.Interface {
