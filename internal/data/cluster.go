@@ -2,12 +2,17 @@ package data
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"slices"
+	"strings"
 	"sync"
 
 	"github.com/f-rambo/cloud-copilot/internal/biz"
 	"github.com/f-rambo/cloud-copilot/lib"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/pkg/errors"
+	"github.com/spf13/cast"
 	"gorm.io/gorm"
 )
 
@@ -33,6 +38,92 @@ func NewClusterRepo(data *Data, logger log.Logger) biz.ClusterData {
 	}
 	data.registerRunner(c)
 	return c
+}
+
+type FilebeatLog struct {
+	Host struct {
+		Name string `json:"name"`
+	} `json:"host"`
+	Agent struct {
+		Name    string `json:"name"`
+		Type    string `json:"type"`
+		ID      string `json:"id"`
+		Version string `json:"version"`
+	} `json:"agent"`
+	Message string `json:"message"`
+	Log     struct {
+		Offset int64 `json:"offset"`
+		File   struct {
+			Path string `json:"path"`
+		} `json:"file"`
+	} `json:"log"`
+	Input struct {
+		Type string `json:"type"`
+	}
+	Timestamp string `json:"@timestamp"`
+}
+
+type HubbleLog struct {
+	Flow struct {
+		Time     string `json:"time"`
+		UUID     string `json:"uuid"`
+		Verdict  string `json:"verdict"`
+		Ethernet struct {
+			Source      string `json:"source"`
+			Destination string `json:"destination"`
+		} `json:"ethernet"`
+		IP struct {
+			Source      string `json:"source"`
+			Destination string `json:"destination"`
+			IPVersion   string `json:"ipVersion"`
+		} `json:"IP"`
+		L4 struct {
+			TCP struct {
+				SourcePort      int `json:"source_port"`
+				DestinationPort int `json:"destination_port"`
+				Flags           struct {
+					ACK bool `json:"ACK"`
+				} `json:"flags"`
+			} `json:"TCP"`
+		} `json:"l4"`
+		Source struct {
+			ID          int      `json:"ID"`
+			Identity    int      `json:"identity"`
+			ClusterName string   `json:"cluster_name"`
+			Namespace   string   `json:"namespace"`
+			Labels      []string `json:"labels"`
+			PodName     string   `json:"pod_name"`
+		} `json:"source"`
+		Destination struct {
+			ID          int      `json:"ID"`
+			Identity    int      `json:"identity"`
+			ClusterName string   `json:"cluster_name"`
+			Namespace   string   `json:"namespace"`
+			Labels      []string `json:"labels"`
+			PodName     string   `json:"pod_name"`
+			Workloads   []struct {
+				Name string `json:"name"`
+				Kind string `json:"kind"`
+			} `json:"workloads"`
+		} `json:"destination"`
+		Type       string   `json:"Type"`
+		NodeName   string   `json:"node_name"`
+		NodeLabels []string `json:"node_labels"`
+		EventType  struct {
+			Type int `json:"type"`
+		} `json:"event_type"`
+		TrafficDirection      string `json:"traffic_direction"`
+		TraceObservationPoint string `json:"trace_observation_point"`
+		TraceReason           string `json:"trace_reason"`
+		IsReply               bool   `json:"is_reply"`
+		Interface             struct {
+			Index int    `json:"index"`
+			Name  string `json:"name"`
+		} `json:"interface"`
+		Summary string `json:"Summary"`
+	} `json:"flow"`
+	NodeName string `json:"node_name"`
+	Time     string `json:"time"`
 }
 
 func (c *ClusterRepo) RegisterHandlerClusterEvent(handler func(ctx context.Context, cluster *biz.Cluster) error) {
@@ -102,19 +193,164 @@ func (c *ClusterRepo) Stop(ctx context.Context) error {
 	return nil
 }
 
-func (c *ClusterRepo) getLogType(_ string) biz.LogType {
+func (c *ClusterRepo) getLogType(filebeatLog *FilebeatLog) biz.LogType {
+	if filebeatLog == nil {
+		return biz.LogType_UNSPECIFIED
+	}
+	if filebeatLog.Input.Type == "container" {
+		return biz.LogType_POD
+	}
+	dirName := strings.Split(filebeatLog.Log.File.Path, "/")
+	if slices.Contains(dirName, "hubble") {
+		return biz.LogType_Trace
+	}
+	if slices.Contains(dirName, "service") {
+		return biz.LogType_Service
+	}
 	return biz.LogType_UNSPECIFIED
 }
 
-func (c *ClusterRepo) HandlerLogMsg(key, val []byte) error {
-	return c.handlerLogs(c.getLogType(string(key)), string(val))
+func (c *ClusterRepo) HandlerLogMsg(_, val []byte) error {
+	filebeatLog := &FilebeatLog{}
+	err := json.Unmarshal(val, filebeatLog)
+	if err != nil {
+		return err
+	}
+	return c.handlerLogs(c.getLogType(filebeatLog), string(val))
 }
 
 func (c *ClusterRepo) CommitLogs(key biz.LogType, msg string) error {
-	if c.data.eSClient == nil {
-		return errors.New("es client is nil")
+	if key == biz.LogType_UNSPECIFIED {
+		return errors.New("invalid log type")
 	}
-	return c.data.eSClient.IndexDocument("", "", msg)
+	if key == biz.LogType_POD {
+		return c.commitPodLogs(msg)
+	}
+	if key == biz.LogType_Service {
+		return c.commitServiceLogs(msg)
+	}
+	if key == biz.LogType_Trace {
+		return c.commitTraceLogs(msg)
+	}
+	return nil
+
+}
+
+func (c *ClusterRepo) commitTraceLogs(msg string) error {
+	filebeatLog := &FilebeatLog{}
+	err := json.Unmarshal([]byte(msg), filebeatLog)
+	if err != nil {
+		return err
+	}
+	hubbleLog := &HubbleLog{}
+	err = json.Unmarshal([]byte(filebeatLog.Message), hubbleLog)
+	if err != nil {
+		return err
+	}
+	if hubbleLog.Flow.Verdict != "FORWARDED" || hubbleLog.Flow.IsReply {
+		return nil
+	}
+	LablePrefix := "k8s:"
+	var sourceServiceId int64 = 0
+	for _, label := range hubbleLog.Flow.Source.Labels {
+		if strings.HasPrefix(label, LablePrefix) {
+			kv := strings.Split(label, "=")
+			if len(kv) != 2 {
+				continue
+			}
+			if kv[0] == "k8s:service_id" {
+				sourceServiceId = cast.ToInt64(kv[1])
+				break
+			}
+		}
+	}
+	var destinationServiceId int64 = 0
+	for _, label := range hubbleLog.Flow.Destination.Labels {
+		if strings.HasPrefix(label, LablePrefix) {
+			kv := strings.Split(label, "=")
+			if len(kv) != 2 {
+				continue
+			}
+			if kv[0] == "k8s:service_id" {
+				destinationServiceId = cast.ToInt64(kv[1])
+				break
+			}
+		}
+	}
+	if sourceServiceId == 0 || destinationServiceId == 0 {
+		return nil
+	}
+	trace := &biz.Trace{
+		FromServiceId:   sourceServiceId,
+		ToServiceId:     destinationServiceId,
+		FromLabel:       strings.Join(hubbleLog.Flow.Source.Labels, ","),
+		ToLabel:         strings.Join(hubbleLog.Flow.Destination.Labels, ","),
+		RequestCount:    1,
+		NodeName:        hubbleLog.Flow.NodeName,
+		LastRequestTime: hubbleLog.Flow.Time,
+	}
+	dataTrace := &biz.Trace{}
+	err = c.data.db.Model(&biz.Trace{}).Select("request_count").
+		Where("from_service_id =? and to_service_id =?", sourceServiceId, destinationServiceId).First(&dataTrace).Error
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return c.data.db.Model(&biz.Trace{}).Create(trace).Error
+		}
+		return err
+	}
+	trace.RequestCount += dataTrace.RequestCount
+	return c.data.db.Model(&biz.Trace{}).Where("from_service_id =? and to_service_id =?", sourceServiceId, destinationServiceId).Updates(trace).Error
+}
+
+func (c *ClusterRepo) commitPodLogs(msg string) error {
+	if c.data.esClient == nil {
+		return nil
+	}
+	filebeatLog := &FilebeatLog{}
+	err := json.Unmarshal([]byte(msg), filebeatLog)
+	if err != nil {
+		return err
+	}
+	parts := strings.Split(filebeatLog.Log.File.Path, "/") // /var/log/pods/toolkit_cert-manager-54f9c9456d-h6lvf_3f45aa70-b311-47a6-bd8b-8f5e938126c4/cert-manager-controller/0.log
+	if len(parts) < 5 {
+		return nil
+	}
+	namespacePodName := parts[4]
+	namespacePodNameParts := strings.Split(namespacePodName, "_")
+	if len(namespacePodNameParts) < 2 {
+		return nil
+	}
+	namespace := namespacePodNameParts[0]
+	podName := namespacePodNameParts[1]
+	msgMap := map[string]any{
+		"message":   filebeatLog.Message,
+		"host":      filebeatLog.Host.Name,
+		"pod":       podName,
+		"namespace": namespace,
+	}
+	msgBytes, err := json.Marshal(msgMap)
+	if err != nil {
+		return err
+	}
+	return c.data.esClient.IndexDocument(PodIndexName, "", string(msgBytes))
+}
+
+func (c *ClusterRepo) commitServiceLogs(msg string) error {
+	if c.data.esClient == nil {
+		return nil
+	}
+	filebeatLog := &FilebeatLog{}
+	err := json.Unmarshal([]byte(msg), filebeatLog)
+	if err != nil {
+		return err
+	}
+	var serviceId int64 = 0
+	parts := strings.Split(filebeatLog.Log.File.Path, "/") // /var/log/service/1/log.log
+	if len(parts) < 5 {
+		return nil
+	}
+	serviceId = cast.ToInt64(parts[4])
+	return c.data.esClient.IndexDocument(fmt.Sprintf("service-%d", serviceId), "", filebeatLog.Message)
 }
 
 func (c *ClusterRepo) Save(ctx context.Context, cluster *biz.Cluster) (err error) {

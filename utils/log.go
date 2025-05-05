@@ -19,7 +19,7 @@ type logtool struct {
 func NewLog(conf *conf.Bootstrap) *logtool {
 	logConf := conf.Log
 	lumberjackLogger := &lumberjack.Logger{
-		Filename:   GetLogFilePath(),
+		Filename:   filepath.Join(GetServerStoragePathByNames("log"), conf.Server.Name+".log"),
 		MaxSize:    int(logConf.MaxSize),
 		MaxBackups: int(logConf.MaxBackups),
 		MaxAge:     int(logConf.MaxAge),
@@ -32,7 +32,7 @@ func NewLog(conf *conf.Bootstrap) *logtool {
 	}
 }
 
-func (l *logtool) Log(level log.Level, keyvals ...interface{}) error {
+func (l *logtool) Log(level log.Level, keyvals ...any) error {
 	return l.logger.Log(level, keyvals...)
 }
 
@@ -41,15 +41,4 @@ func (l *logtool) Close() error {
 		return l.lumberjackLogger.Close()
 	}
 	return nil
-}
-
-func (l *logtool) GetLogContenteKeyvals() []interface{} {
-	return []interface{}{
-		"ts", log.DefaultTimestamp,
-		"caller", log.DefaultCaller,
-	}
-}
-
-func GetLogFilePath() string {
-	return filepath.Join(GetServerStoragePathByNames("log"), "log.log")
 }

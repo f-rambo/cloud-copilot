@@ -133,6 +133,13 @@ func (es *ESClient) SearchByKeyword(indexName string, field string, keyword stri
 				field: keyword,
 			},
 		},
+		"sort": []map[string]any{
+			{
+				"@timestamp": map[string]any{
+					"order": "desc",
+				},
+			},
+		},
 	}
 
 	return es.search(indexName, query)
@@ -248,4 +255,27 @@ func (es *ESClient) BulkIndex(indexName string, documents []map[string]any) erro
 	}
 
 	return nil
+}
+
+// IndexExists checks if an index exists
+func (es *ESClient) IndexExists(indexName string) (bool, error) {
+	req := esapi.IndicesExistsRequest{
+		Index: []string{indexName},
+	}
+
+	res, err := req.Do(context.Background(), es.client)
+	if err != nil {
+		return false, errors.Wrap(err, "failed to check index existence")
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode == 404 {
+		return false, nil
+	}
+
+	if res.StatusCode == 200 {
+		return true, nil
+	}
+
+	return false, errors.New("failed to check index existence: " + res.String())
 }

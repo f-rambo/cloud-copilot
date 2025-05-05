@@ -2,6 +2,8 @@ package data
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 
 	"github.com/f-rambo/cloud-copilot/internal/biz"
 	"github.com/go-kratos/kratos/v2/log"
@@ -21,7 +23,45 @@ func NewServicesRepo(data *Data, logger log.Logger) biz.ServicesData {
 }
 
 func (s *servicesRepo) Save(ctx context.Context, service *biz.Service) error {
-	return s.data.db.Where("id = ?", service.Id).Save(service).Error
+	err := s.data.db.Where("id = ?", service.Id).Save(service).Error
+	if err != nil {
+		return err
+	}
+	if s.data.esClient == nil {
+		return nil
+	}
+	ok, err := s.data.esClient.IndexExists(fmt.Sprintf("service-%d", service.Id))
+	if err != nil {
+		return err
+	}
+	if !ok {
+		serviceMapping := map[string]any{
+			"properties": map[string]any{
+				"level": map[string]any{
+					"type": "keyword",
+				},
+				"trace_id": map[string]any{
+					"type": "keyword",
+				},
+				"span_id": map[string]any{
+					"type": "keyword",
+				},
+				"message": map[string]any{
+					"type":  "text",
+					"index": false,
+				},
+			},
+		}
+		serviceMappingBytes, err := json.Marshal(serviceMapping)
+		if err != nil {
+			return err
+		}
+		err = s.data.esClient.CreateIndex(fmt.Sprintf("service-%d", service.Id), string(serviceMappingBytes))
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (s *servicesRepo) Get(ctx context.Context, id int64) (*biz.Service, error) {

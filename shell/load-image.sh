@@ -6,7 +6,6 @@ log() {
       echo "$(date +'%Y-%m-%d %H:%M:%S') - $message"
 }
 
-# 检查必要的参数
 if [ "$#" -lt 3 ]; then
       echo "Usage: $0 <image_pattern> <remote_host> <remote_user>"
       echo "Example: $0 'nginx*' remote.server.com username"

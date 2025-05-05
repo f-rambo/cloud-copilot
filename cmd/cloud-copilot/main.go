@@ -87,7 +87,7 @@ func main() {
 	// logger
 	utilLog := utils.NewLog(&bc)
 	defer utilLog.Close()
-	logger := log.With(utilLog, utilLog.GetLogContenteKeyvals()...)
+	logger := log.With(utilLog, "ts", log.DefaultTimestamp, "caller", log.DefaultCaller)
 
 	log.SetLogger(logger)
 

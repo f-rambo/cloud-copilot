@@ -176,6 +176,19 @@ type Service struct {
 	Log           string        `json:"log,omitempty" gorm:"-"`
 }
 
+type Trace struct {
+	Id              int64  `json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
+	FromServiceId   int64  `json:"from_service_id,omitempty" gorm:"column:from_service_id;default:0;NOT NULL;index:idx_from_service_id"`
+	FromServiceName string `json:"from_service_name,omitempty" gorm:"column:from_service_name;default:'';NOT NULL;index:idx_from_service_id"`
+	ToServiceId     int64  `json:"to_service_id,omitempty" gorm:"column:to_service_id;default:0;NOT NULL"`
+	ToServiceName   string `json:"to_service_name,omitempty" gorm:"column:to_service_name;default:'';NOT NULL"`
+	FromLabel       string `json:"from_label,omitempty" gorm:"column:from_label;default:'';NOT NULL"`
+	ToLabel         string `json:"to_label,omitempty" gorm:"column:to_label;default:'';NOT NULL"`
+	NodeName        string `json:"node_name,omitempty" gorm:"column:node_name;default:'';NOT NULL"`
+	RequestCount    int64  `json:"request_count,omitempty" gorm:"column:request_count;default:0;NOT NULL"`
+	LastRequestTime string `json:"last_request_time,omitempty" gorm:"column:last_request_time;default:'';NOT NULL"`
+}
+
 type ServicesData interface {
 	Save(ctx context.Context, service *Service) error
 	Get(ctx context.Context, id int64) (*Service, error)

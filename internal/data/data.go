@@ -2,6 +2,7 @@ package data
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -16,6 +17,10 @@ import (
 	"gorm.io/gorm"
 	gormlogger "gorm.io/gorm/logger"
 	"gorm.io/gorm/schema"
+)
+
+const (
+	PodIndexName string = "pod"
 )
 
 type Datarunner interface {
@@ -34,7 +39,7 @@ type Data struct {
 
 	kafkaConsumer    *lib.KafkaConsumer
 	prometheusClient *lib.PrometheusClient
-	eSClient         *lib.ESClient
+	esClient         *lib.ESClient
 
 	runner        []Datarunner
 	runnerChan    chan Datarunner
@@ -106,6 +111,7 @@ func NewData(c *conf.Bootstrap, logger log.Logger) (*Data, func(), error) {
 		&biz.WorkflowTask{},
 		&biz.ContinuousIntegration{},
 		&biz.ContinuousDeployment{},
+		&biz.Trace{},
 		&biz.User{},
 		&biz.Role{},
 		&biz.UserRole{},
@@ -138,9 +144,39 @@ func NewData(c *conf.Bootstrap, logger log.Logger) (*Data, func(), error) {
 			APIKey:       c.Data.Es.ApiKey,
 			ServiceToken: c.Data.Es.ServiceaccountToken,
 		}
-		data.eSClient, err = lib.NewESClient(esConfig)
+		data.esClient, err = lib.NewESClient(esConfig)
 		if err != nil {
 			return data, cleanup, err
+		}
+		ok, err := data.esClient.IndexExists(PodIndexName)
+		if err != nil {
+			return data, cleanup, err
+		}
+		if !ok {
+			mapping := map[string]any{
+				"mappings": map[string]any{
+					"properties": map[string]any{
+						"host": map[string]any{
+							"type": "keyword",
+						},
+						"pod": map[string]any{
+							"type": "keyword",
+						},
+						"namespace": map[string]any{
+							"type": "keyword",
+						},
+						"message": map[string]any{
+							"type":  "text",
+							"index": false,
+						},
+					},
+				},
+			}
+			mapBytes, err := json.Marshal(mapping)
+			if err != nil {
+				return data, cleanup, err
+			}
+			err = data.esClient.CreateIndex(PodIndexName, string(mapBytes))
 		}
 	}
 
