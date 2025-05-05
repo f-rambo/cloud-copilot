@@ -10,6 +10,7 @@ import (
 	"github.com/f-rambo/cloud-copilot/internal/conf"
 	"github.com/f-rambo/cloud-copilot/internal/data"
 	"github.com/f-rambo/cloud-copilot/utils"
+	kratoszap "github.com/go-kratos/kratos/contrib/log/zap/v2"
 	"github.com/go-kratos/kratos/v2"
 	"github.com/go-kratos/kratos/v2/config"
 	"github.com/go-kratos/kratos/v2/config/file"
@@ -18,6 +19,9 @@ import (
 	"github.com/go-kratos/kratos/v2/transport/http"
 	_ "github.com/joho/godotenv/autoload"
 	_ "go.uber.org/automaxprocs"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 // go build -ldflags "-X main.Version=x.y.z"
@@ -85,12 +89,24 @@ func main() {
 	Version = bc.Server.Version
 
 	// logger
-	utilLog := utils.NewLog(&bc)
-	defer utilLog.Close()
-	logger := log.With(utilLog, "ts", log.DefaultTimestamp, "caller", log.DefaultCaller)
+	lumberjackLogger := &lumberjack.Logger{
+		Filename:   filepath.Join(utils.GetServerStoragePathByNames("log"), bc.Server.Name+".log"),
+		MaxSize:    int(bc.Log.MaxSize),
+		MaxBackups: int(bc.Log.MaxBackups),
+		MaxAge:     int(bc.Log.MaxAge),
+		LocalTime:  true,
+	}
+	defer lumberjackLogger.Close()
+
+	logger := log.With(kratoszap.NewLogger(zap.New(zapcore.NewCore(
+		zapcore.NewJSONEncoder(zap.NewProductionEncoderConfig()),
+		zapcore.AddSync(lumberjackLogger),
+		zapcore.InfoLevel,
+	))))
 
 	log.SetLogger(logger)
 
+	// app
 	app, cleanup, err := wireApp(
 		context.Background(),
 		&bc,
