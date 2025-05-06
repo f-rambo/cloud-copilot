@@ -2,11 +2,11 @@ package data
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
+	"strings"
 
 	"github.com/f-rambo/cloud-copilot/internal/biz"
 	"github.com/go-kratos/kratos/v2/log"
+	"github.com/spf13/cast"
 	"gorm.io/gorm"
 )
 
@@ -26,40 +26,6 @@ func (s *servicesRepo) Save(ctx context.Context, service *biz.Service) error {
 	err := s.data.db.Where("id = ?", service.Id).Save(service).Error
 	if err != nil {
 		return err
-	}
-	if s.data.esClient == nil {
-		return nil
-	}
-	ok, err := s.data.esClient.IndexExists(fmt.Sprintf("service-%d", service.Id))
-	if err != nil {
-		return err
-	}
-	if !ok {
-		serviceMapping := map[string]any{
-			"properties": map[string]any{
-				"level": map[string]any{
-					"type": "keyword",
-				},
-				"trace_id": map[string]any{
-					"type": "keyword",
-				},
-				"span_id": map[string]any{
-					"type": "keyword",
-				},
-				"message": map[string]any{
-					"type":  "text",
-					"index": false,
-				},
-			},
-		}
-		serviceMappingBytes, err := json.Marshal(serviceMapping)
-		if err != nil {
-			return err
-		}
-		err = s.data.esClient.CreateIndex(fmt.Sprintf("service-%d", service.Id), string(serviceMappingBytes))
-		if err != nil {
-			return err
-		}
 	}
 	return nil
 }
@@ -278,4 +244,101 @@ func (s *servicesRepo) GetContinuousDeployments(ctx context.Context, serviceId i
 		return nil, 0, err
 	}
 	return cds, itemCount, nil
+}
+
+func (s *servicesRepo) GetContinuousIntegrationLog(ctx context.Context, ci *biz.ContinuousIntegration, page, pageSize int) ([]string, error) {
+	pods := strings.Split(ci.Pods, ",")
+	if len(pods) == 0 || s.data.esClient == nil {
+		return []string{}, nil
+	}
+	podLogRes, err := s.data.esClient.SearchByKeyword(
+		ctx,
+		s.data.esClient.GetIndexPatternName(PodLogIndexName),
+		map[string][]string{
+			PodKeyWord: pods,
+		},
+		page,
+		pageSize,
+	)
+	if err != nil {
+		return nil, err
+	}
+	logs := make([]string, 0)
+	for _, log := range podLogRes {
+		logs = append(logs, cast.ToString(log))
+	}
+	return nil, nil
+}
+
+// ContinuousDeployment log
+func (s *servicesRepo) GetContinuousDeploymentLog(ctx context.Context, cd *biz.ContinuousDeployment, page, pageSize int) ([]string, error) {
+	pods := strings.Split(cd.Pods, ",")
+	if len(pods) == 0 || s.data.esClient == nil {
+		return []string{}, nil
+	}
+	podLogRes, err := s.data.esClient.SearchByKeyword(
+		ctx,
+		s.data.esClient.GetIndexPatternName(PodLogIndexName),
+		map[string][]string{
+			PodKeyWord: pods,
+		},
+		page,
+		pageSize,
+	)
+	if err != nil {
+		return nil, err
+	}
+	logs := make([]string, 0)
+	for _, log := range podLogRes {
+		logs = append(logs, cast.ToString(log))
+	}
+	return nil, nil
+}
+
+// Service log
+func (s *servicesRepo) GetServicePodLog(ctx context.Context, service *biz.Service, page, pageSize int) ([]string, error) {
+	pods := strings.Split(service.Pods, ",")
+	if len(pods) == 0 || s.data.esClient == nil {
+		return []string{}, nil
+	}
+	podLogRes, err := s.data.esClient.SearchByKeyword(
+		ctx,
+		s.data.esClient.GetIndexPatternName(PodLogIndexName),
+		map[string][]string{
+			PodKeyWord: pods,
+		},
+		page,
+		pageSize,
+	)
+	if err != nil {
+		return nil, err
+	}
+	logs := make([]string, 0)
+	for _, log := range podLogRes {
+		logs = append(logs, cast.ToString(log))
+	}
+	return nil, nil
+}
+
+func (s *servicesRepo) GetServiceLog(ctx context.Context, service *biz.Service, page, pageSize int) ([]string, error) {
+	if s.data.esClient == nil {
+		return []string{}, nil
+	}
+	podLogRes, err := s.data.esClient.SearchByKeyword(
+		ctx,
+		s.data.esClient.GetIndexPatternName(ServiceLogIndexName),
+		map[string][]string{
+			ServiceIdKeyWord: {cast.ToString(service.Id)},
+		},
+		page,
+		pageSize,
+	)
+	if err != nil {
+		return nil, err
+	}
+	logs := make([]string, 0)
+	for _, log := range podLogRes {
+		logs = append(logs, cast.ToString(log))
+	}
+	return nil, nil
 }

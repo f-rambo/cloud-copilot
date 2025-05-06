@@ -3,7 +3,6 @@ package data
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"slices"
 	"strings"
 	"sync"
@@ -18,7 +17,7 @@ import (
 
 type ClusterRepo struct {
 	handlerClusterEvent func(ctx context.Context, cluster *biz.Cluster) error
-	handlerLogs         func(key biz.LogType, msg string) error
+	handlerLogs         func(ctx context.Context, key biz.LogType, msg string) error
 
 	locks     map[int64]*sync.Mutex
 	locksMux  sync.Mutex
@@ -130,7 +129,7 @@ func (c *ClusterRepo) RegisterHandlerClusterEvent(handler func(ctx context.Conte
 	c.handlerClusterEvent = handler
 }
 
-func (c *ClusterRepo) RegisterHandlerLogs(handler func(key biz.LogType, msg string) error) {
+func (c *ClusterRepo) RegisterHandlerLogs(handler func(ctx context.Context, key biz.LogType, msg string) error) {
 	c.handlerLogs = handler
 }
 
@@ -210,33 +209,33 @@ func (c *ClusterRepo) getLogType(filebeatLog *FilebeatLog) biz.LogType {
 	return biz.LogType_UNSPECIFIED
 }
 
-func (c *ClusterRepo) HandlerLogMsg(_, val []byte) error {
+func (c *ClusterRepo) HandlerLogMsg(ctx context.Context, _, val []byte) error {
 	filebeatLog := &FilebeatLog{}
 	err := json.Unmarshal(val, filebeatLog)
 	if err != nil {
 		return err
 	}
-	return c.handlerLogs(c.getLogType(filebeatLog), string(val))
+	return c.handlerLogs(ctx, c.getLogType(filebeatLog), string(val))
 }
 
-func (c *ClusterRepo) CommitLogs(key biz.LogType, msg string) error {
+func (c *ClusterRepo) CommitLogs(ctx context.Context, key biz.LogType, msg string) error {
 	if key == biz.LogType_UNSPECIFIED {
 		return errors.New("invalid log type")
 	}
 	if key == biz.LogType_POD {
-		return c.commitPodLogs(msg)
+		return c.commitPodLogs(ctx, msg)
 	}
 	if key == biz.LogType_Service {
-		return c.commitServiceLogs(msg)
+		return c.commitServiceLogs(ctx, msg)
 	}
 	if key == biz.LogType_Trace {
-		return c.commitTraceLogs(msg)
+		return c.commitTraceLogs(ctx, msg)
 	}
 	return nil
 
 }
 
-func (c *ClusterRepo) commitTraceLogs(msg string) error {
+func (c *ClusterRepo) commitTraceLogs(_ context.Context, msg string) error {
 	filebeatLog := &FilebeatLog{}
 	err := json.Unmarshal([]byte(msg), filebeatLog)
 	if err != nil {
@@ -302,7 +301,8 @@ func (c *ClusterRepo) commitTraceLogs(msg string) error {
 	return c.data.db.Model(&biz.Trace{}).Where("from_service_id =? and to_service_id =?", sourceServiceId, destinationServiceId).Updates(trace).Error
 }
 
-func (c *ClusterRepo) commitPodLogs(msg string) error {
+// /var/log/pods/toolkit_cert-manager-54f9c9456d-h6lvf_3f45aa70-b311-47a6-bd8b-8f5e938126c4/cert-manager-controller/0.log
+func (c *ClusterRepo) commitPodLogs(ctx context.Context, msg string) error {
 	if c.data.esClient == nil {
 		return nil
 	}
@@ -311,7 +311,7 @@ func (c *ClusterRepo) commitPodLogs(msg string) error {
 	if err != nil {
 		return err
 	}
-	parts := strings.Split(filebeatLog.Log.File.Path, "/") // /var/log/pods/toolkit_cert-manager-54f9c9456d-h6lvf_3f45aa70-b311-47a6-bd8b-8f5e938126c4/cert-manager-controller/0.log
+	parts := strings.Split(filebeatLog.Log.File.Path, "/")
 	if len(parts) < 5 {
 		return nil
 	}
@@ -332,10 +332,11 @@ func (c *ClusterRepo) commitPodLogs(msg string) error {
 	if err != nil {
 		return err
 	}
-	return c.data.esClient.IndexDocument(PodIndexName, "", string(msgBytes))
+	return c.data.esClient.IndexDocument(ctx, c.data.esClient.GetIndexWrite(PodLogIndexName), string(msgBytes))
 }
 
-func (c *ClusterRepo) commitServiceLogs(msg string) error {
+// /var/log/service/workspace_project_service_id/log.log
+func (c *ClusterRepo) commitServiceLogs(ctx context.Context, msg string) error {
 	if c.data.esClient == nil {
 		return nil
 	}
@@ -344,13 +345,44 @@ func (c *ClusterRepo) commitServiceLogs(msg string) error {
 	if err != nil {
 		return err
 	}
-	var serviceId int64 = 0
-	parts := strings.Split(filebeatLog.Log.File.Path, "/") // /var/log/service/1/log.log
+	parts := strings.Split(filebeatLog.Log.File.Path, "/")
 	if len(parts) < 5 {
 		return nil
 	}
-	serviceId = cast.ToInt64(parts[4])
-	return c.data.esClient.IndexDocument(fmt.Sprintf("service-%d", serviceId), "", filebeatLog.Message)
+	serviceInfoParts := strings.Split(parts[4], "_")
+	if len(serviceInfoParts) < 4 {
+		return nil
+	}
+	serviceId := serviceInfoParts[3]
+	if serviceId == "" {
+		return nil
+	}
+	serviceName := serviceInfoParts[2]
+	if serviceName == "" {
+		return nil
+	}
+	projectName := serviceInfoParts[1]
+	if projectName == "" {
+		return nil
+	}
+	workspaceName := serviceInfoParts[0]
+	if workspaceName == "" {
+		return nil
+	}
+	msgMap := make(map[string]any)
+	err = json.Unmarshal([]byte(filebeatLog.Message), &msgMap)
+	if err != nil {
+		return err
+	}
+	msgMap[HostKeyWord] = filebeatLog.Host.Name
+	msgMap[ServiceIdKeyWord] = serviceId
+	msgMap[ServiceNameKeyWord] = serviceName
+	msgMap[ProjectKeyWord] = projectName
+	msgMap[WorkspaceKeyWord] = workspaceName
+	return c.data.esClient.IndexDocument(
+		ctx,
+		c.data.esClient.GetIndexWrite(ServiceLogIndexName),
+		filebeatLog.Message)
 }
 
 func (c *ClusterRepo) Save(ctx context.Context, cluster *biz.Cluster) (err error) {

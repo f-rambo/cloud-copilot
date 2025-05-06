@@ -32,8 +32,8 @@ message Server {
 
 message ES {
   repeated string hosts = 1;
-  string serviceaccount_token = 2;
-  string api_key = 3;
+  string username = 2;
+  string password = 3;
 }
 
 message Kafka {

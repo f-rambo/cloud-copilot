@@ -2,7 +2,6 @@ package data
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"time"
 
@@ -20,7 +19,20 @@ import (
 )
 
 const (
-	PodIndexName string = "pod"
+	PodLogIndexName string = "pod-log"
+
+	PodKeyWord       string = "pod"
+	HostKeyWord      string = "host"
+	NamespaceKeyWord string = "namespace"
+
+	ServiceLogIndexName string = "service-log"
+
+	LevelKeyWord       string = "level"
+	TraceIdKeyWord     string = "trace_id"
+	ServiceIdKeyWord   string = "service_id"
+	ServiceNameKeyWord string = "service_name"
+	ProjectKeyWord     string = "project"
+	WorkspaceKeyWord   string = "workspace"
 )
 
 type Datarunner interface {
@@ -46,7 +58,7 @@ type Data struct {
 	runnerErrChan chan error
 }
 
-func NewData(c *conf.Bootstrap, logger log.Logger) (*Data, func(), error) {
+func NewData(ctx context.Context, c *conf.Bootstrap, logger log.Logger) (*Data, func(), error) {
 	var err error
 	if c.Data == nil {
 		return nil, func() {}, errors.New("data config is nil")
@@ -138,45 +150,62 @@ func NewData(c *conf.Bootstrap, logger log.Logger) (*Data, func(), error) {
 		}
 	}
 
-	if c.Data.Es != nil && len(c.Data.Es.Hosts) != 0 && (c.Data.Es.ApiKey != "" || c.Data.Es.ServiceaccountToken != "") {
+	if c.Data.Es != nil && len(c.Data.Es.Hosts) != 0 && (c.Data.Es.Username != "" || c.Data.Es.Password != "") {
 		esConfig := lib.ESConfig{
-			Addresses:    c.Data.Es.Hosts,
-			APIKey:       c.Data.Es.ApiKey,
-			ServiceToken: c.Data.Es.ServiceaccountToken,
+			Addresses: c.Data.Es.Hosts,
+			Username:  c.Data.Es.Username,
+			Password:  c.Data.Es.Password,
 		}
 		data.esClient, err = lib.NewESClient(esConfig)
 		if err != nil {
 			return data, cleanup, err
 		}
-		ok, err := data.esClient.IndexExists(PodIndexName)
+		_, err = data.esClient.Info()
 		if err != nil {
 			return data, cleanup, err
 		}
-		if !ok {
-			mapping := map[string]any{
-				"mappings": map[string]any{
-					"properties": map[string]any{
-						"host": map[string]any{
-							"type": "keyword",
-						},
-						"pod": map[string]any{
-							"type": "keyword",
-						},
-						"namespace": map[string]any{
-							"type": "keyword",
-						},
-						"message": map[string]any{
-							"type":  "text",
-							"index": false,
-						},
-					},
+		err = data.esClient.CreateIndex(ctx, PodLogIndexName, map[string]any{
+			"properties": map[string]any{
+				HostKeyWord: map[string]any{
+					"type": "keyword",
 				},
-			}
-			mapBytes, err := json.Marshal(mapping)
-			if err != nil {
-				return data, cleanup, err
-			}
-			err = data.esClient.CreateIndex(PodIndexName, string(mapBytes))
+				PodKeyWord: map[string]any{
+					"type": "keyword",
+				},
+				NamespaceKeyWord: map[string]any{
+					"type": "keyword",
+				},
+				"message": map[string]any{
+					"type":  "text",
+					"index": false,
+				},
+			},
+		})
+		if err != nil {
+			return data, cleanup, err
+		}
+		err = data.esClient.CreateIndex(ctx, ServiceLogIndexName, map[string]any{
+			"properties": map[string]any{
+				LevelKeyWord: map[string]any{
+					"type": "keyword",
+				},
+				TraceIdKeyWord: map[string]any{
+					"type": "keyword",
+				},
+				ServiceIdKeyWord: map[string]any{
+					"type": "keyword",
+				},
+				HostKeyWord: map[string]any{
+					"type": "keyword",
+				},
+				"message": map[string]any{
+					"type":  "text",
+					"index": false,
+				},
+			},
+		})
+		if err != nil {
+			return data, cleanup, err
 		}
 	}
 

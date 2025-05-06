@@ -28,7 +28,7 @@ import (
 
 // wireApp init kratos application.
 func wireApp(contextContext context.Context, bootstrap *conf.Bootstrap, logger log.Logger) (*kratos.App, func(), error) {
-	dataData, cleanup, err := data.NewData(bootstrap, logger)
+	dataData, cleanup, err := data.NewData(contextContext, bootstrap, logger)
 	if err != nil {
 		return nil, nil, err
 	}

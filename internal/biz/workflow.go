@@ -14,15 +14,15 @@ import (
 type Workflows []*Workflow
 
 type WorkflowTask struct {
-	Id          int64         `json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
-	WorkflowId  int64         `json:"workflow_id,omitempty" gorm:"column:workflow_id;default:0;NOT NULL;index:idx_task_workflow_id"`
-	StepId      int64         `json:"step_id,omitempty" gorm:"column:step_id;default:0;NOT NULL"`
-	Name        string        `json:"name,omitempty" gorm:"column:name;default:'';NOT NULL"`
-	Order       int32         `json:"order,omitempty" gorm:"column:order;default:0;NOT NULL"`
-	TaskCommand string        `json:"task_command,omitempty" gorm:"column:task_command;default:'';NOT NULL"`
-	Description string        `json:"description,omitempty" gorm:"column:description;default:'';NOT NULL"`
-	Status      WorkfloStatus `json:"status,omitempty" gorm:"column:status;default:0;NOT NULL"`
-	Log         string        `json:"log,omitempty" gorm:"-"`
+	Id          int64          `json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
+	WorkflowId  int64          `json:"workflow_id,omitempty" gorm:"column:workflow_id;default:0;NOT NULL;index:idx_task_workflow_id"`
+	StepId      int64          `json:"step_id,omitempty" gorm:"column:step_id;default:0;NOT NULL"`
+	Name        string         `json:"name,omitempty" gorm:"column:name;default:'';NOT NULL"`
+	Order       int32          `json:"order,omitempty" gorm:"column:order;default:0;NOT NULL"`
+	TaskCommand string         `json:"task_command,omitempty" gorm:"column:task_command;default:'';NOT NULL"`
+	Description string         `json:"description,omitempty" gorm:"column:description;default:'';NOT NULL"`
+	Status      WorkflowStatus `json:"status,omitempty" gorm:"column:status;default:0;NOT NULL"`
+	Log         string         `json:"log,omitempty" gorm:"-"`
 }
 
 type WorkflowStep struct {
@@ -93,13 +93,13 @@ func WorkflowTypeFindByString(w string) WorkflowType {
 	return WorkflowType_UNSPECIFIED
 }
 
-type WorkfloStatus int32
+type WorkflowStatus int32
 
 const (
-	WorkfloStatus_UNSPECIFIED WorkfloStatus = 0
-	WorkfloStatus_Pending     WorkfloStatus = 1
-	WorkfloStatus_Success     WorkfloStatus = 2
-	WorkfloStatus_Failure     WorkfloStatus = 3
+	WorkflowStatus_UNSPECIFIED WorkflowStatus = 0
+	WorkflowStatus_Pending     WorkflowStatus = 1
+	WorkflowStatus_Success     WorkflowStatus = 2
+	WorkflowStatus_Failure     WorkflowStatus = 3
 )
 
 type WorkflowStepType int32

@@ -2,6 +2,7 @@ package biz
 
 import (
 	"context"
+	"encoding/json"
 	"slices"
 	"sort"
 
@@ -75,40 +76,37 @@ type AppReleaseResource struct {
 }
 
 type AppRelease struct {
-	Id          int64                 `json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
-	ReleaseName string                `json:"release_name,omitempty" gorm:"column:release_name;default:'';NOT NULL"`
-	Namespace   string                `json:"namespace,omitempty" gorm:"column:namespace;default:'';NOT NULL"`
-	Config      string                `json:"config,omitempty" gorm:"column:config;default:'';NOT NULL"`
-	ConfigFile  string                `json:"config_file,omitempty" gorm:"column:config_file;default:'';NOT NULL"`
-	Status      AppReleaseSatus       `json:"status,omitempty" gorm:"column:status;default:0;NOT NULL"`
-	Notes       string                `json:"notes,omitempty" gorm:"column:notes;default:'';NOT NULL"`
-	Logs        string                `json:"logs,omitempty" gorm:"column:logs;default:'';NOT NULL"`
-	Dryrun      bool                  `json:"dryrun,omitempty" gorm:"column:dryrun;default:false;NOT NULL"`
-	Atomic      bool                  `json:"atomic,omitempty" gorm:"column:atomic;default:false;NOT NULL"`
-	Wait        bool                  `json:"wait,omitempty" gorm:"column:wait;default:false;NOT NULL"`
-	Replicas    int32                 `json:"replicas,omitempty" gorm:"column:replicas;default:0;NOT NULL"`
-	Cpu         int32                 `json:"cpu,omitempty" gorm:"column:cpu;default:0;NOT NULL"`
-	LimitCpu    int32                 `json:"limit_cpu,omitempty" gorm:"column:limit_cpu;default:0;NOT NULL"`
-	Memory      int32                 `json:"memory,omitempty" gorm:"column:memory;default:0;NOT NULL"`
-	LimitMemory int32                 `json:"limit_memory,omitempty" gorm:"column:limit_memory;default:0;NOT NULL"`
-	Gpu         int32                 `json:"gpu,omitempty" gorm:"column:gpu;default:0;NOT NULL"`
-	LimitGpu    int32                 `json:"limit_gpu,omitempty" gorm:"column:limit_gpu;default:0;NOT NULL"`
-	Storage     int32                 `json:"storage,omitempty" gorm:"column:storage;default:0;NOT NULL"`
-	Resources   []*AppReleaseResource `json:"resources,omitempty" gorm:"-"`
-	AppId       int64                 `json:"app_id,omitempty" gorm:"column:app_id;default:0;NOT NULL;index"`
-	VersionId   int64                 `json:"version_id,omitempty" gorm:"column:version_id;default:0;NOT NULL;index"`
-	ClusterId   int64                 `json:"cluster_id,omitempty" gorm:"column:cluster_id;default:0;NOT NULL;index"`
-	ProjectId   int64                 `json:"project_id,omitempty" gorm:"column:project_id;default:0;NOT NULL;index"`
-	UserId      int64                 `json:"user_id,omitempty" gorm:"column:user_id;default:0;NOT NULL;index"`
-	WorkspaceId int64                 `json:"workspace_id,omitempty" gorm:"column:workspace_id;default:0;NOT NULL;index"`
-	Chart       string                `json:"chart,omitempty" gorm:"column:chart;default:'';NOT NULL"`
-	RepoName    string                `json:"repo_name,omitempty" gorm:"column:repo_name;default:'';NOT NULL"`
-	AppVersion  string                `json:"app_version,omitempty" gorm:"column:app_version;default:'';NOT NULL"`
-	AppName     string                `json:"app_name,omitempty" gorm:"column:app_name;default:'';NOT NULL"`
-}
-
-func (a *AppRelease) IsDeleted() bool {
-	return false
+	Id                 int64                 `json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
+	ReleaseName        string                `json:"release_name,omitempty" gorm:"column:release_name;default:'';NOT NULL"`
+	Namespace          string                `json:"namespace,omitempty" gorm:"column:namespace;default:'';NOT NULL"`
+	Config             string                `json:"config,omitempty" gorm:"column:config;default:'';NOT NULL"`
+	ConfigFile         string                `json:"config_file,omitempty" gorm:"column:config_file;default:'';NOT NULL"`
+	Status             AppReleaseSatus       `json:"status,omitempty" gorm:"column:status;default:0;NOT NULL"`
+	Notes              string                `json:"notes,omitempty" gorm:"column:notes;default:'';NOT NULL"`
+	Logs               string                `json:"logs,omitempty" gorm:"column:logs;default:'';NOT NULL"`
+	Dryrun             bool                  `json:"dryrun,omitempty" gorm:"column:dryrun;default:false;NOT NULL"`
+	Atomic             bool                  `json:"atomic,omitempty" gorm:"column:atomic;default:false;NOT NULL"`
+	Wait               bool                  `json:"wait,omitempty" gorm:"column:wait;default:false;NOT NULL"`
+	Replicas           int32                 `json:"replicas,omitempty" gorm:"column:replicas;default:0;NOT NULL"`
+	Cpu                int32                 `json:"cpu,omitempty" gorm:"column:cpu;default:0;NOT NULL"`
+	LimitCpu           int32                 `json:"limit_cpu,omitempty" gorm:"column:limit_cpu;default:0;NOT NULL"`
+	Memory             int32                 `json:"memory,omitempty" gorm:"column:memory;default:0;NOT NULL"`
+	LimitMemory        int32                 `json:"limit_memory,omitempty" gorm:"column:limit_memory;default:0;NOT NULL"`
+	Gpu                int32                 `json:"gpu,omitempty" gorm:"column:gpu;default:0;NOT NULL"`
+	LimitGpu           int32                 `json:"limit_gpu,omitempty" gorm:"column:limit_gpu;default:0;NOT NULL"`
+	Storage            int32                 `json:"storage,omitempty" gorm:"column:storage;default:0;NOT NULL"`
+	Resources          []*AppReleaseResource `json:"resources,omitempty" gorm:"-"`
+	AppId              int64                 `json:"app_id,omitempty" gorm:"column:app_id;default:0;NOT NULL;index"`
+	VersionId          int64                 `json:"version_id,omitempty" gorm:"column:version_id;default:0;NOT NULL;index"`
+	ClusterId          int64                 `json:"cluster_id,omitempty" gorm:"column:cluster_id;default:0;NOT NULL;index"`
+	ProjectId          int64                 `json:"project_id,omitempty" gorm:"column:project_id;default:0;NOT NULL;index"`
+	UserId             int64                 `json:"user_id,omitempty" gorm:"column:user_id;default:0;NOT NULL;index"`
+	WorkspaceId        int64                 `json:"workspace_id,omitempty" gorm:"column:workspace_id;default:0;NOT NULL;index"`
+	Chart              string                `json:"chart,omitempty" gorm:"column:chart;default:'';NOT NULL"`
+	RepoName           string                `json:"repo_name,omitempty" gorm:"column:repo_name;default:'';NOT NULL"`
+	AppVersion         string                `json:"app_version,omitempty" gorm:"column:app_version;default:'';NOT NULL"`
+	AppName            string                `json:"app_name,omitempty" gorm:"column:app_name;default:'';NOT NULL"`
+	ExtendedParameters string                `json:"extended_parameters,omitempty" gorm:"column:extended_parameters;default:'';NOT NULL"` // this val is json string
 }
 
 type AppData interface {
@@ -142,31 +140,6 @@ type AppRuntime interface {
 	AppRelease(context.Context, *AppRelease) error
 	DeleteAppRelease(context.Context, *AppRelease) error
 	ReloadAppRepo(context.Context, *AppRepo) error
-}
-
-type AppUsecase struct {
-	appData    AppData
-	appRuntime AppRuntime
-	conf       *conf.Bootstrap
-	log        *log.Helper
-}
-
-func NewAppUsecase(appData AppData, appRuntime AppRuntime, logger log.Logger, conf *conf.Bootstrap) *AppUsecase {
-	return &AppUsecase{
-		appData:    appData,
-		appRuntime: appRuntime,
-		conf:       conf,
-		log:        log.NewHelper(logger),
-	}
-}
-
-func GetAppById(apps []*App, id int64) *App {
-	for _, v := range apps {
-		if v.Id == id {
-			return v
-		}
-	}
-	return nil
 }
 
 func (a *App) UpdateApp(app *App) {
@@ -239,6 +212,37 @@ func (a *App) DeleteVersion(version string) {
 			a.Versions = slices.Delete(a.Versions, i, i+1)
 			return
 		}
+	}
+}
+
+func (a *AppRelease) GetExtendedParameters(key string) string {
+	if a.ExtendedParameters == "" {
+		return ""
+	}
+	var extendedParameters map[string]string
+	if err := json.Unmarshal([]byte(a.ExtendedParameters), &extendedParameters); err != nil {
+		return ""
+	}
+	val, found := extendedParameters[key]
+	if !found {
+		return ""
+	}
+	return val
+}
+
+type AppUsecase struct {
+	appData    AppData
+	appRuntime AppRuntime
+	conf       *conf.Bootstrap
+	log        *log.Helper
+}
+
+func NewAppUsecase(appData AppData, appRuntime AppRuntime, logger log.Logger, conf *conf.Bootstrap) *AppUsecase {
+	return &AppUsecase{
+		appData:    appData,
+		appRuntime: appRuntime,
+		conf:       conf,
+		log:        log.NewHelper(logger),
 	}
 }
 

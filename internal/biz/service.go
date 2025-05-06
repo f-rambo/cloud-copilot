@@ -88,6 +88,26 @@ const (
 	AccessExternal_False       AccessExternal = 2
 )
 
+type ContinuousIntegrationStatus int32
+
+const (
+	ContinuousIntegrationStatus_UNSPECIFIED ContinuousIntegrationStatus = 0
+	ContinuousIntegrationStatus_PENDING     ContinuousIntegrationStatus = 1
+	ContinuousIntegrationStatus_RUNNING     ContinuousIntegrationStatus = 2
+	ContinuousIntegrationStatus_SUCCESS     ContinuousIntegrationStatus = 3
+	ContinuousIntegrationStatus_FAILED      ContinuousIntegrationStatus = 4
+)
+
+type ContinuousDeploymentStatus int32
+
+const (
+	ContinuousDeploymentStatus_UNSPECIFIED ContinuousDeploymentStatus = 0
+	ContinuousDeploymentStatus_PENDING     ContinuousDeploymentStatus = 1
+	ContinuousDeploymentStatus_RUNNING     ContinuousDeploymentStatus = 2
+	ContinuousDeploymentStatus_SUCCESS     ContinuousDeploymentStatus = 3
+	ContinuousDeploymentStatus_FAILED      ContinuousDeploymentStatus = 4
+)
+
 type ServiceStatus int32
 
 const (
@@ -98,31 +118,31 @@ const (
 )
 
 type ContinuousIntegration struct {
-	Id              int64         `json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
-	Version         string        `json:"version,omitempty" gorm:"column:version;default:'';NOT NULL"`
-	Branch          string        `json:"branch,omitempty" gorm:"column:branch;default:'';NOT NULL"`
-	CommitId        string        `json:"commit_id,omitempty" gorm:"column:commit_id;default:'';NOT NULL"`
-	Tag             string        `json:"tag,omitempty" gorm:"column:tag;default:'';NOT NULL"`
-	Status          WorkfloStatus `json:"status,omitempty" gorm:"column:status;default:0;NOT NULL"`
-	Description     string        `json:"description,omitempty" gorm:"column:description;default:'';NOT NULL"`
-	ServiceId       int64         `json:"service_id,omitempty" gorm:"column:service_id;default:0;NOT NULL;index:idx_ci_service_id"`
-	UserId          int64         `json:"user_id,omitempty" gorm:"column:user_id;default:0;NOT NULL;index:idx_ci_user_id"`
-	WorkflowRuntime string        `json:"workflow_runtime,omitempty" gorm:"column:workflow_runtime;default:'';NOT NULL"`
-	Logs            string        `json:"logs,omitempty" gorm:"-"`
+	Id              int64                       `json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
+	Version         string                      `json:"version,omitempty" gorm:"column:version;default:'';NOT NULL"`
+	Branch          string                      `json:"branch,omitempty" gorm:"column:branch;default:'';NOT NULL"`
+	CommitId        string                      `json:"commit_id,omitempty" gorm:"column:commit_id;default:'';NOT NULL"`
+	Tag             string                      `json:"tag,omitempty" gorm:"column:tag;default:'';NOT NULL"`
+	Status          ContinuousIntegrationStatus `json:"status,omitempty" gorm:"column:status;default:0;NOT NULL"`
+	Description     string                      `json:"description,omitempty" gorm:"column:description;default:'';NOT NULL"`
+	ServiceId       int64                       `json:"service_id,omitempty" gorm:"column:service_id;default:0;NOT NULL;index:idx_ci_service_id"`
+	UserId          int64                       `json:"user_id,omitempty" gorm:"column:user_id;default:0;NOT NULL;index:idx_ci_user_id"`
+	WorkflowRuntime string                      `json:"workflow_runtime,omitempty" gorm:"column:workflow_runtime;default:'';NOT NULL"`
+	Pods            string                      `json:"pods,omitempty" gorm:"column:pods;default:'';NOT NULL"`
 }
 
 type ContinuousDeployment struct {
-	Id               int64             `json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
-	CiId             int64             `json:"ci_id,omitempty" gorm:"column:ci_id;default:0;NOT NULL;index:idx_ci_id"`
-	ServiceId        int64             `json:"service_id,omitempty" gorm:"column:service_id;default:0;NOT NULL;index:idx_cd_service_id"`
-	UserId           int64             `json:"user_id,omitempty" gorm:"column:user_id;default:0;NOT NULL"`
-	Status           WorkfloStatus     `json:"status,omitempty" gorm:"column:status;default:0;NOT NULL"`
-	Image            string            `json:"image,omitempty" gorm:"column:image;default:'';NOT NULL"`
-	WorkflowRuntime  string            `json:"workflow_runtime,omitempty" gorm:"column:workflow_runtime;default:'';NOT NULL"`
-	Config           map[string]string `json:"config,omitempty" gorm:"-"` // key: filename, value: content
-	CanaryDeployment *CanaryDeployment `json:"canary_deployment,omitempty" gorm:"-"`
-	IsAccessExternal AccessExternal    `json:"is_access_external,omitempty" gorm:"column:is_access_external;default:0;NOT NULL"`
-	Logs             string            `json:"logs,omitempty" gorm:"-"`
+	Id               int64                      `json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
+	CiId             int64                      `json:"ci_id,omitempty" gorm:"column:ci_id;default:0;NOT NULL;index:idx_ci_id"`
+	ServiceId        int64                      `json:"service_id,omitempty" gorm:"column:service_id;default:0;NOT NULL;index:idx_cd_service_id"`
+	UserId           int64                      `json:"user_id,omitempty" gorm:"column:user_id;default:0;NOT NULL"`
+	Status           ContinuousDeploymentStatus `json:"status,omitempty" gorm:"column:status;default:0;NOT NULL"`
+	Image            string                     `json:"image,omitempty" gorm:"column:image;default:'';NOT NULL"`
+	WorkflowRuntime  string                     `json:"workflow_runtime,omitempty" gorm:"column:workflow_runtime;default:'';NOT NULL"`
+	Config           map[string]string          `json:"config,omitempty" gorm:"-"` // key: filename, value: content
+	CanaryDeployment *CanaryDeployment          `json:"canary_deployment,omitempty" gorm:"-"`
+	IsAccessExternal AccessExternal             `json:"is_access_external,omitempty" gorm:"column:is_access_external;default:0;NOT NULL"`
+	Pods             string                     `json:"pods,omitempty" gorm:"column:pods;default:'';NOT NULL"`
 }
 
 type CanaryDeployment struct {
@@ -163,9 +183,10 @@ type Service struct {
 	LimitGpu      int32         `json:"limit_gpu,omitempty" gorm:"column:limit_gpu;default:0;NOT NULL"`
 	RequestMemory int32         `json:"request_memory,omitempty" gorm:"column:request_memory;default:0;NOT NULL"`
 	LimitMemory   int32         `json:"limit_memory,omitempty" gorm:"column:limit_memory;default:0;NOT NULL"`
+	Pods          string        `json:"pods,omitempty" gorm:"column:pods;default:'';NOT NULL"`
 	Volumes       []*Volume     `json:"volumes,omitempty" gorm:"-"`
-	Gateway       string        `json:"gateway,omitempty" gorm:"column:gateway;default:'';NOT NULL"`
 	Ports         []*Port       `json:"ports,omitempty" gorm:"-"`
+	Gateway       string        `json:"gateway,omitempty" gorm:"column:gateway;default:'';NOT NULL"`
 	StorageClass  string        `json:"storage_class,omitempty" gorm:"column:storage_class;default:'';NOT NULL"`
 	ProjectId     int64         `json:"project_id,omitempty" gorm:"column:project_id;default:0;NOT NULL;index:idx_project_id"`
 	WorkspaceId   int64         `json:"workspace_id,omitempty" gorm:"column:workspace_id;default:0;NOT NULL;index:idx_workspace_id"`
@@ -173,7 +194,6 @@ type Service struct {
 	UserId        int64         `json:"user_id,omitempty" gorm:"column:user_id;default:0;NOT NULL;index:idx_service_user_id"`
 	Status        ServiceStatus `json:"status,omitempty" gorm:"column:status;default:0;NOT NULL"`
 	Description   string        `json:"description,omitempty" gorm:"column:description;default:'';NOT NULL"`
-	Log           string        `json:"log,omitempty" gorm:"-"`
 }
 
 type Trace struct {
@@ -206,6 +226,10 @@ type ServicesData interface {
 	GetContinuousDeployment(context.Context, int64) (*ContinuousDeployment, error)
 	DeleteContinuousDeployment(context.Context, int64) error
 	GetContinuousDeployments(ctx context.Context, serviceId int64, page, pageSize int32) ([]*ContinuousDeployment, int64, error)
+	GetContinuousIntegrationLog(ctx context.Context, ci *ContinuousIntegration, page, pageSize int) ([]string, error)
+	GetContinuousDeploymentLog(ctx context.Context, cd *ContinuousDeployment, page, pageSize int) ([]string, error)
+	GetServicePodLog(ctx context.Context, service *Service, page, pageSize int) ([]string, error)
+	GetServiceLog(ctx context.Context, service *Service, page, pageSize int) ([]string, error)
 }
 
 type ServiceRuntime interface {
@@ -346,7 +370,7 @@ func (uc *ServicesUseCase) CreateContinuousIntegration(ctx context.Context, ci *
 	if err != nil {
 		return err
 	}
-	ci.Status = WorkfloStatus_Pending
+	ci.Status = ContinuousIntegrationStatus_PENDING
 	return uc.serviceData.SaveContinuousIntegration(ctx, ci)
 }
 
@@ -375,24 +399,24 @@ func (uc *ServicesUseCase) UpdateContinuousIntegration(ctx context.Context, ciId
 	if err != nil {
 		return err
 	}
-	defaultStatus := WorkfloStatus_Pending
+	defaultStatus := WorkflowStatus_Pending
 	taskPendingNumber := 0
 	for _, step := range workflow.WorkflowSteps {
 		for _, task := range step.WorkflowTasks {
-			if task.Status == WorkfloStatus_Failure {
-				defaultStatus = WorkfloStatus_Failure
+			if task.Status == WorkflowStatus_Failure {
+				defaultStatus = WorkflowStatus_Failure
 				break
 			}
-			if task.Status == WorkfloStatus_Pending {
+			if task.Status == WorkflowStatus_Pending {
 				taskPendingNumber++
 			}
 		}
 	}
-	if defaultStatus == WorkfloStatus_Failure {
-		ci.Status = WorkfloStatus_Failure
+	if defaultStatus == WorkflowStatus_Failure {
+		ci.Status = ContinuousIntegrationStatus_FAILED
 	}
-	if defaultStatus != WorkfloStatus_Failure && taskPendingNumber == 0 {
-		ci.Status = WorkfloStatus_Success
+	if defaultStatus != WorkflowStatus_Failure && taskPendingNumber == 0 {
+		ci.Status = ContinuousIntegrationStatus_SUCCESS
 	}
 	return uc.serviceData.SaveContinuousIntegration(ctx, ci)
 }
@@ -438,7 +462,7 @@ func (uc *ServicesUseCase) CreateContinuousDeployment(ctx context.Context, cd *C
 	if err != nil {
 		return err
 	}
-	cd.Status = WorkfloStatus_Pending
+	cd.Status = ContinuousDeploymentStatus_PENDING
 	return uc.serviceData.SaveContinuousDeployment(ctx, cd)
 }
 
@@ -467,24 +491,24 @@ func (uc *ServicesUseCase) UpdateContinuousDeployment(ctx context.Context, cdId 
 	if err != nil {
 		return err
 	}
-	defaultStatus := WorkfloStatus_Pending
+	defaultStatus := WorkflowStatus_Pending
 	taskPendingNumber := 0
 	for _, step := range workflow.WorkflowSteps {
 		for _, task := range step.WorkflowTasks {
-			if task.Status == WorkfloStatus_Failure {
-				defaultStatus = WorkfloStatus_Failure
+			if task.Status == WorkflowStatus_Failure {
+				defaultStatus = WorkflowStatus_Failure
 				break
 			}
-			if task.Status == WorkfloStatus_Pending {
+			if task.Status == WorkflowStatus_Pending {
 				taskPendingNumber++
 			}
 		}
 	}
-	if defaultStatus == WorkfloStatus_Failure {
-		cd.Status = WorkfloStatus_Failure
+	if defaultStatus == WorkflowStatus_Failure {
+		cd.Status = ContinuousDeploymentStatus_FAILED
 	}
-	if defaultStatus != WorkfloStatus_Failure && taskPendingNumber == 0 {
-		cd.Status = WorkfloStatus_Success
+	if defaultStatus != WorkflowStatus_Failure && taskPendingNumber == 0 {
+		cd.Status = ContinuousDeploymentStatus_SUCCESS
 	}
 	return uc.serviceData.SaveContinuousDeployment(ctx, cd)
 }
@@ -512,4 +536,36 @@ func (uc *ServicesUseCase) ApplyService(ctx context.Context, serviceId, ciId, cd
 		return err
 	}
 	return nil
+}
+
+func (uc *ServicesUseCase) GetContinuousIntegrationLog(ctx context.Context, ciId int64, page, pageSize int) ([]string, error) {
+	ci, err := uc.serviceData.GetContinuousIntegration(ctx, ciId)
+	if err != nil {
+		return nil, err
+	}
+	return uc.serviceData.GetContinuousIntegrationLog(ctx, ci, page, pageSize)
+}
+
+func (uc *ServicesUseCase) GetContinuousDeploymentLog(ctx context.Context, cdId int64, page, pageSize int) ([]string, error) {
+	cd, err := uc.serviceData.GetContinuousDeployment(ctx, cdId)
+	if err != nil {
+		return nil, err
+	}
+	return uc.serviceData.GetContinuousDeploymentLog(ctx, cd, page, pageSize)
+}
+
+func (uc *ServicesUseCase) GetServicePodLog(ctx context.Context, serviceId int64, page, pageSize int) ([]string, error) {
+	service, err := uc.Get(ctx, serviceId)
+	if err != nil {
+		return nil, err
+	}
+	return uc.serviceData.GetServicePodLog(ctx, service, page, pageSize)
+}
+
+func (uc *ServicesUseCase) GetServiceLog(ctx context.Context, serviceId int64, page, pageSize int) ([]string, error) {
+	service, err := uc.Get(ctx, serviceId)
+	if err != nil {
+		return nil, err
+	}
+	return uc.serviceData.GetServiceLog(ctx, service, page, pageSize)
 }

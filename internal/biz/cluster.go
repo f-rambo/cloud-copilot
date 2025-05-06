@@ -573,9 +573,9 @@ type ClusterData interface {
 	List(ctx context.Context, name string, page, pageSize int32) ([]*Cluster, int64, error)
 	Delete(context.Context, int64) error
 	RegisterHandlerClusterEvent(handler func(ctx context.Context, cluster *Cluster) error)
-	RegisterHandlerLogs(handler func(key LogType, msg string) error)
+	RegisterHandlerLogs(handler func(ctx context.Context, key LogType, msg string) error)
 	Apply(context.Context, *Cluster) error
-	CommitLogs(LogType, string) error
+	CommitLogs(context.Context, LogType, string) error
 }
 
 type ClusterInfrastructure interface {
@@ -1704,6 +1704,6 @@ func (uc *ClusterUsecase) HandlerClusterNotInstalled(ctx context.Context, cluste
 	return nil
 }
 
-func (uc *ClusterUsecase) Handlerlogs(key LogType, msg string) error {
-	return uc.clusterData.CommitLogs(key, msg)
+func (uc *ClusterUsecase) Handlerlogs(ctx context.Context, key LogType, msg string) error {
+	return uc.clusterData.CommitLogs(ctx, key, msg)
 }

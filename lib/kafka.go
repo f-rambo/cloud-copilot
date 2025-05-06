@@ -47,13 +47,13 @@ func NewKafkaConsumer(brokers []string, topics []string, groupID string) (*Kafka
 
 	consumer, err := sarama.NewConsumer(brokers, config)
 	if err != nil {
-		return nil, errors.Wrap(err, "NewKafkaConsumer")
+		return nil, err
 	}
 
 	group, err := sarama.NewConsumerGroup(brokers, groupID, config)
 	if err != nil {
 		consumer.Close()
-		return nil, errors.Wrap(err, "NewKafkaConsumer")
+		return nil, err
 	}
 
 	return &KafkaConsumer{
@@ -71,11 +71,11 @@ func (k *KafkaConsumer) Close() error {
 	defer k.mu.Unlock()
 
 	if err := k.consumer.Close(); err != nil {
-		return errors.Wrap(err, "Close")
+		return err
 	}
 
 	if err := k.group.Close(); err != nil {
-		return errors.Wrap(err, "Close")
+		return err
 	}
 
 	return nil
@@ -105,10 +105,10 @@ type MessageHandler interface {
 }
 
 type DefaultMessageHandler struct {
-	handleMessage func(key, val []byte) error
+	handleMessage func(ctx context.Context, key, val []byte) error
 }
 
-func NewDefaultMessageHandler(handleMessage func(key, val []byte) error) *DefaultMessageHandler {
+func NewDefaultMessageHandler(handleMessage func(ctx context.Context, key, val []byte) error) MessageHandler {
 	return &DefaultMessageHandler{handleMessage: handleMessage}
 }
 
@@ -127,7 +127,7 @@ func (h *DefaultMessageHandler) ConsumeClaim(session sarama.ConsumerGroupSession
 			if !ok {
 				return nil
 			}
-			if err := h.handleMessage(msg.Key, msg.Value); err != nil {
+			if err := h.handleMessage(session.Context(), msg.Key, msg.Value); err != nil {
 				return err
 			}
 			session.MarkMessage(msg, "")
