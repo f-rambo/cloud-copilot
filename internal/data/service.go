@@ -22,18 +22,123 @@ func NewServicesRepo(data *Data, logger log.Logger) biz.ServicesData {
 	}
 }
 
-func (s *servicesRepo) Save(ctx context.Context, service *biz.Service) error {
-	err := s.data.db.Where("id = ?", service.Id).Save(service).Error
+func (s *servicesRepo) Save(ctx context.Context, service *biz.Service) (err error) {
+	tx := s.data.db.Begin()
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+			return
+		}
+	}()
+	err = tx.Where("id = ?", service.Id).Save(service).Error
+	if err != nil {
+		return err
+	}
+	err = s.saveVolume(ctx, tx, service)
+	if err != nil {
+		return err
+	}
+	err = s.savePort(ctx, tx, service)
+	if err != nil {
+		return err
+	}
+	err = tx.Commit().Error
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
+// save Volume
+func (s *servicesRepo) saveVolume(_ context.Context, tx *gorm.DB, service *biz.Service) (err error) {
+	// Get existing volumes
+	existingVolumes := make([]*biz.Volume, 0)
+	if err = tx.Where("service_id = ?", service.Id).Find(&existingVolumes).Error; err != nil {
+		return err
+	}
+
+	// Track volumes to keep by ID
+	volumesToKeep := make(map[int64]bool)
+
+	// Save or update volumes
+	for _, volume := range service.Volumes {
+		volume.ServiceId = service.Id
+		if volume.Id > 0 {
+			// Update existing volume
+			if err = tx.Where("id = ?", volume.Id).Save(volume).Error; err != nil {
+				return err
+			}
+			volumesToKeep[volume.Id] = true
+		} else {
+			// Create new volume
+			if err = tx.Create(volume).Error; err != nil {
+				return err
+			}
+		}
+	}
+
+	// Delete volumes that are no longer needed
+	for _, existingVolume := range existingVolumes {
+		if !volumesToKeep[existingVolume.Id] {
+			if err = tx.Delete(&biz.Volume{}, existingVolume.Id).Error; err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+// save Port
+func (s *servicesRepo) savePort(_ context.Context, tx *gorm.DB, service *biz.Service) (err error) {
+	// Get existing ports
+	existingPorts := make([]*biz.Port, 0)
+	if err = tx.Where("service_id =?", service.Id).Find(&existingPorts).Error; err != nil {
+		return err
+	}
+	// Track ports to keep by ID
+	portsToKeep := make(map[int64]bool)
+	// Save or update ports
+	for _, port := range service.Ports {
+		port.ServiceId = service.Id
+		if port.Id > 0 {
+			// Update existing port
+			if err = tx.Where("id =?", port.Id).Save(port).Error; err != nil {
+				return err
+			}
+		} else {
+			// Create new port
+			if err = tx.Create(port).Error; err != nil {
+				return err
+			}
+		}
+	}
+	// Delete ports that are no longer needed
+	for _, existingPort := range existingPorts {
+		if !portsToKeep[existingPort.Id] {
+			if err = tx.Delete(&biz.Port{}, existingPort.Id).Error; err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 func (s *servicesRepo) Get(ctx context.Context, id int64) (*biz.Service, error) {
-	service := &biz.Service{}
+	service := &biz.Service{
+		Volumes: make([]*biz.Volume, 0),
+		Ports:   make([]*biz.Port, 0),
+	}
 	err := s.data.db.Where("id = ?", id).First(service).Error
 	if err != nil {
+		return nil, err
+	}
+	// Get volumes
+	if err = s.data.db.Where("service_id =?", id).Find(&service.Volumes).Error; err != nil {
+		return nil, err
+	}
+	// Get ports
+	if err = s.data.db.Where("service_id =?", id).Find(&service.Ports).Error; err != nil {
 		return nil, err
 	}
 	return service, nil
