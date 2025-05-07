@@ -33,6 +33,9 @@ const (
 	ServiceNameKeyWord string = "service_name"
 	ProjectKeyWord     string = "project"
 	WorkspaceKeyWord   string = "workspace"
+
+	TimestampDate string = "@timestamp"
+	MessageText   string = "message"
 )
 
 type Datarunner interface {
@@ -175,7 +178,10 @@ func NewData(ctx context.Context, c *conf.Bootstrap, logger log.Logger) (*Data, 
 				NamespaceKeyWord: map[string]any{
 					"type": "keyword",
 				},
-				"message": map[string]any{
+				TimestampDate: map[string]any{
+					"type": "date",
+				},
+				MessageText: map[string]any{
 					"type":  "text",
 					"index": false,
 				},
@@ -198,7 +204,10 @@ func NewData(ctx context.Context, c *conf.Bootstrap, logger log.Logger) (*Data, 
 				HostKeyWord: map[string]any{
 					"type": "keyword",
 				},
-				"message": map[string]any{
+				TimestampDate: map[string]any{
+					"type": "date",
+				},
+				MessageText: map[string]any{
 					"type":  "text",
 					"index": false,
 				},

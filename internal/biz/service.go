@@ -2,6 +2,7 @@ package biz
 
 import (
 	"context"
+	"math"
 
 	"github.com/f-rambo/cloud-copilot/utils"
 	"github.com/go-kratos/kratos/v2/log"
@@ -209,6 +210,11 @@ type Trace struct {
 	LastRequestTime string `json:"last_request_time,omitempty" gorm:"column:last_request_time;default:'';NOT NULL"`
 }
 
+type LogResponse struct {
+	Log   []map[string]any `json:"log"`
+	Total int              `json:"total"`
+}
+
 type ServicesData interface {
 	Save(ctx context.Context, service *Service) error
 	Get(ctx context.Context, id int64) (*Service, error)
@@ -226,10 +232,10 @@ type ServicesData interface {
 	GetContinuousDeployment(context.Context, int64) (*ContinuousDeployment, error)
 	DeleteContinuousDeployment(context.Context, int64) error
 	GetContinuousDeployments(ctx context.Context, serviceId int64, page, pageSize int32) ([]*ContinuousDeployment, int64, error)
-	GetContinuousIntegrationLog(ctx context.Context, ci *ContinuousIntegration, page, pageSize int) ([]string, error)
-	GetContinuousDeploymentLog(ctx context.Context, cd *ContinuousDeployment, page, pageSize int) ([]string, error)
-	GetServicePodLog(ctx context.Context, service *Service, page, pageSize int) ([]string, error)
-	GetServiceLog(ctx context.Context, service *Service, page, pageSize int) ([]string, error)
+	GetContinuousIntegrationLog(ctx context.Context, ci *ContinuousIntegration, page, pageSize int) (LogResponse, error)
+	GetContinuousDeploymentLog(ctx context.Context, cd *ContinuousDeployment, page, pageSize int) (LogResponse, error)
+	GetServicePodLog(ctx context.Context, service *Service, page, pageSize int) (LogResponse, error)
+	GetServiceLog(ctx context.Context, service *Service, page, pageSize int) (LogResponse, error)
 }
 
 type ServiceRuntime interface {
@@ -246,6 +252,13 @@ type ServicesUseCase struct {
 
 func NewServicesUseCase(serviceData ServicesData, serviceRuntime ServiceRuntime, wfRuntime WorkflowRuntime, logger log.Logger) *ServicesUseCase {
 	return &ServicesUseCase{serviceData: serviceData, serviceRuntime: serviceRuntime, workflowRuntime: wfRuntime, log: log.NewHelper(logger)}
+}
+
+func (l LogResponse) GetPageCount(pageSize int) int {
+	if pageSize == 0 {
+		pageSize = 10
+	}
+	return int(math.Ceil(float64(l.Total) / float64(pageSize)))
 }
 
 func (s *Service) GetLabels() map[string]string {
@@ -538,34 +551,34 @@ func (uc *ServicesUseCase) ApplyService(ctx context.Context, serviceId, ciId, cd
 	return nil
 }
 
-func (uc *ServicesUseCase) GetContinuousIntegrationLog(ctx context.Context, ciId int64, page, pageSize int) ([]string, error) {
+func (uc *ServicesUseCase) GetContinuousIntegrationLog(ctx context.Context, ciId int64, page, pageSize int) (LogResponse, error) {
 	ci, err := uc.serviceData.GetContinuousIntegration(ctx, ciId)
 	if err != nil {
-		return nil, err
+		return LogResponse{}, err
 	}
 	return uc.serviceData.GetContinuousIntegrationLog(ctx, ci, page, pageSize)
 }
 
-func (uc *ServicesUseCase) GetContinuousDeploymentLog(ctx context.Context, cdId int64, page, pageSize int) ([]string, error) {
+func (uc *ServicesUseCase) GetContinuousDeploymentLog(ctx context.Context, cdId int64, page, pageSize int) (LogResponse, error) {
 	cd, err := uc.serviceData.GetContinuousDeployment(ctx, cdId)
 	if err != nil {
-		return nil, err
+		return LogResponse{}, err
 	}
 	return uc.serviceData.GetContinuousDeploymentLog(ctx, cd, page, pageSize)
 }
 
-func (uc *ServicesUseCase) GetServicePodLog(ctx context.Context, serviceId int64, page, pageSize int) ([]string, error) {
+func (uc *ServicesUseCase) GetServicePodLog(ctx context.Context, serviceId int64, page, pageSize int) (LogResponse, error) {
 	service, err := uc.Get(ctx, serviceId)
 	if err != nil {
-		return nil, err
+		return LogResponse{}, err
 	}
 	return uc.serviceData.GetServicePodLog(ctx, service, page, pageSize)
 }
 
-func (uc *ServicesUseCase) GetServiceLog(ctx context.Context, serviceId int64, page, pageSize int) ([]string, error) {
+func (uc *ServicesUseCase) GetServiceLog(ctx context.Context, serviceId int64, page, pageSize int) (LogResponse, error) {
 	service, err := uc.Get(ctx, serviceId)
 	if err != nil {
-		return nil, err
+		return LogResponse{}, err
 	}
 	return uc.serviceData.GetServiceLog(ctx, service, page, pageSize)
 }

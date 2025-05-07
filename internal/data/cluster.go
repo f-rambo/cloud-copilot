@@ -322,17 +322,13 @@ func (c *ClusterRepo) commitPodLogs(ctx context.Context, msg string) error {
 	}
 	namespace := namespacePodNameParts[0]
 	podName := namespacePodNameParts[1]
-	msgMap := map[string]any{
-		"message":   filebeatLog.Message,
-		"host":      filebeatLog.Host.Name,
-		"pod":       podName,
-		"namespace": namespace,
-	}
-	msgBytes, err := json.Marshal(msgMap)
-	if err != nil {
-		return err
-	}
-	return c.data.esClient.IndexDocument(ctx, c.data.esClient.GetIndexWrite(PodLogIndexName), string(msgBytes))
+	return c.data.esClient.IndexDocument(ctx, c.data.esClient.GetIndexWrite(PodLogIndexName),
+		map[string]any{
+			"message":   filebeatLog.Message,
+			"host":      filebeatLog.Host.Name,
+			"pod":       podName,
+			"namespace": namespace,
+		})
 }
 
 // /var/log/service/workspace_project_service_id/log.log
@@ -379,10 +375,7 @@ func (c *ClusterRepo) commitServiceLogs(ctx context.Context, msg string) error {
 	msgMap[ServiceNameKeyWord] = serviceName
 	msgMap[ProjectKeyWord] = projectName
 	msgMap[WorkspaceKeyWord] = workspaceName
-	return c.data.esClient.IndexDocument(
-		ctx,
-		c.data.esClient.GetIndexWrite(ServiceLogIndexName),
-		filebeatLog.Message)
+	return c.data.esClient.IndexDocument(ctx, c.data.esClient.GetIndexWrite(ServiceLogIndexName), msgMap)
 }
 
 func (c *ClusterRepo) Save(ctx context.Context, cluster *biz.Cluster) (err error) {

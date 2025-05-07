@@ -246,10 +246,11 @@ func (s *servicesRepo) GetContinuousDeployments(ctx context.Context, serviceId i
 	return cds, itemCount, nil
 }
 
-func (s *servicesRepo) GetContinuousIntegrationLog(ctx context.Context, ci *biz.ContinuousIntegration, page, pageSize int) ([]string, error) {
+func (s *servicesRepo) GetContinuousIntegrationLog(ctx context.Context, ci *biz.ContinuousIntegration, page, pageSize int) (biz.LogResponse, error) {
+	logResponse := biz.LogResponse{}
 	pods := strings.Split(ci.Pods, ",")
 	if len(pods) == 0 || s.data.esClient == nil {
-		return []string{}, nil
+		return logResponse, nil
 	}
 	podLogRes, err := s.data.esClient.SearchByKeyword(
 		ctx,
@@ -261,20 +262,19 @@ func (s *servicesRepo) GetContinuousIntegrationLog(ctx context.Context, ci *biz.
 		pageSize,
 	)
 	if err != nil {
-		return nil, err
+		return logResponse, err
 	}
-	logs := make([]string, 0)
-	for _, log := range podLogRes {
-		logs = append(logs, cast.ToString(log))
-	}
-	return nil, nil
+	logResponse.Total = podLogRes.Total
+	logResponse.Log = podLogRes.Data
+	return logResponse, nil
 }
 
 // ContinuousDeployment log
-func (s *servicesRepo) GetContinuousDeploymentLog(ctx context.Context, cd *biz.ContinuousDeployment, page, pageSize int) ([]string, error) {
+func (s *servicesRepo) GetContinuousDeploymentLog(ctx context.Context, cd *biz.ContinuousDeployment, page, pageSize int) (biz.LogResponse, error) {
+	logResponse := biz.LogResponse{}
 	pods := strings.Split(cd.Pods, ",")
 	if len(pods) == 0 || s.data.esClient == nil {
-		return []string{}, nil
+		return logResponse, nil
 	}
 	podLogRes, err := s.data.esClient.SearchByKeyword(
 		ctx,
@@ -286,20 +286,19 @@ func (s *servicesRepo) GetContinuousDeploymentLog(ctx context.Context, cd *biz.C
 		pageSize,
 	)
 	if err != nil {
-		return nil, err
+		return logResponse, err
 	}
-	logs := make([]string, 0)
-	for _, log := range podLogRes {
-		logs = append(logs, cast.ToString(log))
-	}
-	return nil, nil
+	logResponse.Total = podLogRes.Total
+	logResponse.Log = podLogRes.Data
+	return logResponse, nil
 }
 
 // Service log
-func (s *servicesRepo) GetServicePodLog(ctx context.Context, service *biz.Service, page, pageSize int) ([]string, error) {
+func (s *servicesRepo) GetServicePodLog(ctx context.Context, service *biz.Service, page, pageSize int) (biz.LogResponse, error) {
+	logResponse := biz.LogResponse{}
 	pods := strings.Split(service.Pods, ",")
 	if len(pods) == 0 || s.data.esClient == nil {
-		return []string{}, nil
+		return logResponse, nil
 	}
 	podLogRes, err := s.data.esClient.SearchByKeyword(
 		ctx,
@@ -311,18 +310,17 @@ func (s *servicesRepo) GetServicePodLog(ctx context.Context, service *biz.Servic
 		pageSize,
 	)
 	if err != nil {
-		return nil, err
+		return logResponse, err
 	}
-	logs := make([]string, 0)
-	for _, log := range podLogRes {
-		logs = append(logs, cast.ToString(log))
-	}
-	return nil, nil
+	logResponse.Total = podLogRes.Total
+	logResponse.Log = podLogRes.Data
+	return logResponse, nil
 }
 
-func (s *servicesRepo) GetServiceLog(ctx context.Context, service *biz.Service, page, pageSize int) ([]string, error) {
+func (s *servicesRepo) GetServiceLog(ctx context.Context, service *biz.Service, page, pageSize int) (biz.LogResponse, error) {
+	logResponse := biz.LogResponse{}
 	if s.data.esClient == nil {
-		return []string{}, nil
+		return logResponse, nil
 	}
 	podLogRes, err := s.data.esClient.SearchByKeyword(
 		ctx,
@@ -334,11 +332,9 @@ func (s *servicesRepo) GetServiceLog(ctx context.Context, service *biz.Service, 
 		pageSize,
 	)
 	if err != nil {
-		return nil, err
+		return logResponse, err
 	}
-	logs := make([]string, 0)
-	for _, log := range podLogRes {
-		logs = append(logs, cast.ToString(log))
-	}
-	return nil, nil
+	logResponse.Total = podLogRes.Total
+	logResponse.Log = podLogRes.Data
+	return logResponse, nil
 }

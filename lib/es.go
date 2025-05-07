@@ -87,17 +87,93 @@ func (es *ESClient) Info() (map[string]any, error) {
 	return result, nil
 }
 
+// IndexDocument indexes a document
+func (es *ESClient) IndexDocument(ctx context.Context, indexName string, document map[string]any) error {
+	if _, exists := document["@timestamp"]; !exists {
+		document["@timestamp"] = time.Now().UTC()
+	}
+	documentBytes, err := json.Marshal(document)
+	if err != nil {
+		return errors.Wrap(err, "failed to serialize document")
+	}
+
+	req := esapi.IndexRequest{
+		Index:   es.GetIndexWrite(indexName),
+		Body:    bytes.NewReader(documentBytes),
+		Refresh: "true",
+	}
+
+	res, err := req.Do(ctx, es.client)
+	if err != nil {
+		return errors.Wrap(err, "failed to index document request")
+	}
+	defer res.Body.Close()
+
+	if res.IsError() {
+		return errors.New("failed to index document: " + res.String())
+	}
+	return nil
+}
+
+// BulkIndex performs bulk indexing of documents
+func (es *ESClient) BulkIndex(ctx context.Context, indexName string, documents []map[string]any) error {
+	var buf bytes.Buffer
+
+	indexName = es.GetIndexWrite(indexName)
+	for _, doc := range documents {
+		if _, exists := doc["@timestamp"]; !exists {
+			doc["@timestamp"] = time.Now().UTC()
+		}
+		meta := map[string]any{
+			"index": map[string]any{
+				"_index": indexName,
+			},
+		}
+
+		if err := json.NewEncoder(&buf).Encode(meta); err != nil {
+			return errors.Wrap(err, "failed to encode metadata")
+		}
+
+		if err := json.NewEncoder(&buf).Encode(doc); err != nil {
+			return errors.Wrap(err, "failed to encode document")
+		}
+	}
+
+	req := esapi.BulkRequest{
+		Body:    &buf,
+		Refresh: "true",
+	}
+
+	res, err := req.Do(ctx, es.client)
+	if err != nil {
+		return errors.Wrap(err, "failed to execute bulk index request")
+	}
+	defer res.Body.Close()
+
+	if res.IsError() {
+		return errors.New("bulk indexing failed: " + res.String())
+	}
+
+	var result map[string]any
+	if err := json.NewDecoder(res.Body).Decode(&result); err != nil {
+		return errors.Wrap(err, "failed to parse bulk index results")
+	}
+
+	if val, ok := result["errors"]; ok && val.(bool) {
+		return errors.New("some documents failed to index")
+	}
+
+	return nil
+}
+
 // CreateIndex creates an index using template with 7-day deletion lifecycle policy
 func (es *ESClient) CreateIndex(ctx context.Context, indexName string, mappings map[string]any) error {
-	// 创建模板名称
 	templateName := fmt.Sprintf("%s-template", indexName)
 
-	// 使用模板创建
 	if err := es.CreateIndexTemplate(ctx, templateName, indexName, mappings); err != nil {
 		return errors.Wrap(err, "failed to create index template")
 	}
 
-	// 创建第一个索引
 	firstIndex := es.GetFirstIndexName(indexName)
 
 	exists, err := es.IndexExists(ctx, firstIndex)
@@ -122,7 +198,15 @@ func (es *ESClient) CreateIndex(ctx context.Context, indexName string, mappings 
 		}
 	}
 
-	// 创建别名
+	aliasExistsReq := esapi.IndicesGetAliasRequest{
+		Name: []string{indexName, es.GetIndexWrite(indexName)},
+	}
+
+	aliasExistsRes, err := aliasExistsReq.Do(ctx, es.client)
+	if err == nil && !aliasExistsRes.IsError() {
+		return nil
+	}
+
 	aliasReq := esapi.IndicesUpdateAliasesRequest{
 		Body: strings.NewReader(fmt.Sprintf(`{
             "actions": [
@@ -145,7 +229,7 @@ func (es *ESClient) CreateIndex(ctx context.Context, indexName string, mappings 
 
 	aliasRes, err := aliasReq.Do(ctx, es.client)
 	if err != nil {
-		return errors.Wrap(err, "failed to create aliases")
+		return err
 	}
 	defer aliasRes.Body.Close()
 
@@ -156,40 +240,28 @@ func (es *ESClient) CreateIndex(ctx context.Context, indexName string, mappings 
 	return nil
 }
 
-// IndexDocument indexes a document
-func (es *ESClient) IndexDocument(ctx context.Context, indexName string, document any) error {
-	documentBytes, err := json.Marshal(document)
-	if err != nil {
-		return errors.Wrap(err, "failed to serialize document")
-	}
-
-	req := esapi.IndexRequest{
-		Index:   indexName,
-		Body:    bytes.NewReader(documentBytes),
-		Refresh: "true",
-	}
-
-	res, err := req.Do(ctx, es.client)
-	if err != nil {
-		return errors.Wrap(err, "failed to index document request")
-	}
-	defer res.Body.Close()
-
-	if res.IsError() {
-		return errors.New("failed to index document: " + res.String())
-	}
-	return nil
-}
-
 // SearchByKeyword performs fuzzy search map[string]string field keyword with pagination
-func (es *ESClient) SearchByKeyword(ctx context.Context, indexName string, fieldKeyword map[string][]string, page, size int) ([]map[string]any, error) {
+func (es *ESClient) SearchByKeyword(ctx context.Context, indexName string, fieldKeyword map[string][]string, page, size int) (SearchResult, error) {
 	from := (page - 1) * size
 	from = max(0, from)
 	size = max(1, size)
 
+	shouldClauses := make([]map[string]any, 0)
+	for field, values := range fieldKeyword {
+		if len(values) > 0 {
+			shouldClauses = append(shouldClauses, map[string]any{
+				"terms": map[string]any{
+					field: values,
+				},
+			})
+		}
+	}
+
 	query := map[string]any{
 		"query": map[string]any{
-			"terms": fieldKeyword,
+			"bool": map[string]any{
+				"should": shouldClauses,
+			},
 		},
 		"from": from,
 		"size": size,
@@ -205,7 +277,7 @@ func (es *ESClient) SearchByKeyword(ctx context.Context, indexName string, field
 	return es.search(ctx, indexName, query)
 }
 
-func (es *ESClient) SearchByMatch(ctx context.Context, indexName string, matchMap map[string]string, page, size int) ([]map[string]any, error) {
+func (es *ESClient) SearchByMatch(ctx context.Context, indexName string, matchMap map[string]string, page, size int) (SearchResult, error) {
 	from := (page - 1) * size
 	from = max(0, from)
 	size = max(1, size)
@@ -228,7 +300,7 @@ func (es *ESClient) SearchByMatch(ctx context.Context, indexName string, matchMa
 	return es.search(ctx, indexName, query)
 }
 
-func (es *ESClient) SearchByKeywordAndMatch(ctx context.Context, indexName string, keywordMap map[string][]string, matchMap map[string]string, page, size int) ([]map[string]any, error) {
+func (es *ESClient) SearchByKeywordAndMatch(ctx context.Context, indexName string, keywordMap map[string][]string, matchMap map[string]string, page, size int) (SearchResult, error) {
 	from := (page - 1) * size
 	from = max(0, from)
 	size = max(1, size)
@@ -275,108 +347,121 @@ func (es *ESClient) SearchByKeywordAndMatch(ctx context.Context, indexName strin
 	return es.search(ctx, indexName, query)
 }
 
-// search internal search method
-func (es *ESClient) search(ctx context.Context, indexName string, query map[string]any) ([]map[string]any, error) {
+type SearchResponse struct {
+	Hits struct {
+		Total struct {
+			Value    int    `json:"value"`
+			Relation string `json:"relation"`
+		} `json:"total"`
+		MaxScore float64     `json:"max_score"`
+		Hits     []SearchHit `json:"hits"`
+	} `json:"hits"`
+	TimedOut bool   `json:"timed_out"`
+	Took     int    `json:"took"`
+	Shards   Shards `json:"_shards"`
+}
+
+type SearchHit struct {
+	Index  string          `json:"_index"`
+	ID     string          `json:"_id"`
+	Score  float64         `json:"_score"`
+	Source json.RawMessage `json:"_source"`
+}
+
+type Shards struct {
+	Total      int `json:"total"`
+	Successful int `json:"successful"`
+	Skipped    int `json:"skipped"`
+	Failed     int `json:"failed"`
+}
+
+type SearchResult struct {
+	Total int              `json:"total"`
+	Data  []map[string]any `json:"data"`
+}
+
+func (es *ESClient) search(ctx context.Context, indexName string, query map[string]any) (SearchResult, error) {
+	searchResult := SearchResult{}
 	queryBytes, err := json.Marshal(query)
 	if err != nil {
-		return nil, err
+		return searchResult, err
 	}
 
 	req := esapi.SearchRequest{
-		Index: []string{indexName},
+		Index: []string{es.GetIndexPatternName(indexName)},
 		Body:  bytes.NewReader(queryBytes),
 	}
 
 	res, err := req.Do(ctx, es.client)
 	if err != nil {
-		return nil, err
+		return searchResult, err
 	}
 	defer res.Body.Close()
 
 	if res.IsError() {
-		return nil, errors.New("search failed: " + res.String())
+		return searchResult, errors.New("search failed: " + res.String())
 	}
 
-	var result map[string]any
-	if err := json.NewDecoder(res.Body).Decode(&result); err != nil {
-		return nil, errors.Wrap(err, "failed to parse search results")
+	var searchResponse SearchResponse
+	if err := json.NewDecoder(res.Body).Decode(&searchResponse); err != nil {
+		return searchResult, errors.Wrap(err, "failed to parse search results")
 	}
 
-	hits, found := result["hits"].(map[string]any)["hits"].([]any)
-	if !found {
-		return make([]map[string]any, 0), nil
+	documents := make([]map[string]any, len(searchResponse.Hits.Hits))
+	for i, hit := range searchResponse.Hits.Hits {
+		var doc map[string]any
+		if err := json.Unmarshal(hit.Source, &doc); err != nil {
+			return searchResult, errors.Wrap(err, "failed to parse document source")
+		}
+		documents[i] = doc
 	}
-
-	documents := make([]map[string]any, len(hits))
-	for i, hit := range hits {
-		hitMap := hit.(map[string]any)
-		documents[i] = hitMap["_source"].(map[string]any)
-	}
-
-	return documents, nil
+	searchResult.Data = documents
+	searchResult.Total = searchResponse.Hits.Total.Value
+	return searchResult, nil
 }
 
 // DeleteIndex deletes an index
-func (es *ESClient) DeleteIndex(indexName string) error {
-	req := esapi.IndicesDeleteRequest{
-		Index: []string{indexName},
+func (es *ESClient) DeleteIndex(ctx context.Context, indexName string) error {
+	req := esapi.IndicesGetRequest{
+		Index: []string{es.GetIndexPatternName(indexName)},
 	}
 
-	res, err := req.Do(context.Background(), es.client)
+	res, err := req.Do(ctx, es.client)
 	if err != nil {
-		return errors.Wrap(err, "failed to delete index request")
+		return errors.Wrap(err, "failed to get indices")
 	}
 	defer res.Body.Close()
 
 	if res.IsError() {
-		return errors.New("failed to delete index: " + res.String())
+		return errors.New("failed to get indices: " + res.String())
 	}
 
-	return nil
-}
-
-// BulkIndex performs bulk indexing of documents
-func (es *ESClient) BulkIndex(indexName string, documents []map[string]any) error {
-	var buf bytes.Buffer
-
-	for _, doc := range documents {
-		meta := map[string]any{
-			"index": map[string]any{
-				"_index": indexName,
-			},
-		}
-
-		if err := json.NewEncoder(&buf).Encode(meta); err != nil {
-			return errors.Wrap(err, "failed to encode metadata")
-		}
-
-		if err := json.NewEncoder(&buf).Encode(doc); err != nil {
-			return errors.Wrap(err, "failed to encode document")
-		}
+	var indices map[string]any
+	if err = json.NewDecoder(res.Body).Decode(&indices); err != nil {
+		return errors.Wrap(err, "failed to parse indices response")
 	}
 
-	req := esapi.BulkRequest{
-		Body:    &buf,
-		Refresh: "true",
+	var actualIndices []string
+	for index := range indices {
+		actualIndices = append(actualIndices, index)
 	}
 
-	res, err := req.Do(context.Background(), es.client)
+	if len(actualIndices) == 0 {
+		return nil
+	}
+
+	deleteReq := esapi.IndicesDeleteRequest{
+		Index: actualIndices,
+	}
+
+	deleteRes, err := deleteReq.Do(ctx, es.client)
 	if err != nil {
-		return errors.Wrap(err, "failed to execute bulk index request")
+		return errors.Wrap(err, "failed to delete indices")
 	}
-	defer res.Body.Close()
+	defer deleteRes.Body.Close()
 
-	if res.IsError() {
-		return errors.New("bulk indexing failed: " + res.String())
-	}
-
-	var result map[string]any
-	if err := json.NewDecoder(res.Body).Decode(&result); err != nil {
-		return errors.Wrap(err, "failed to parse bulk index results")
-	}
-
-	if result["errors"].(bool) {
-		return errors.New("some documents failed to index")
+	if deleteRes.IsError() {
+		return errors.New("failed to delete indices: " + deleteRes.String())
 	}
 
 	return nil
@@ -430,14 +515,13 @@ func (es *ESClient) ILMPolicyExists(ctx context.Context, policyName string) (boo
 
 // CreateSevenDaysILMPolicy creates an ILM policy that deletes indices after 7 days
 func (es *ESClient) CreateSevenDaysILMPolicy(ctx context.Context, policyName string) error {
-	// 首先检查策略是否已存在
 	exists, err := es.ILMPolicyExists(ctx, policyName)
 	if err != nil {
 		return errors.Wrap(err, "failed to check ILM policy existence")
 	}
 
 	if exists {
-		return nil // 策略已存在，无需重复创建
+		return nil
 	}
 
 	policy := map[string]any{
