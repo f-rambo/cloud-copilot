@@ -34,6 +34,10 @@ func (s *servicesRepo) Save(ctx context.Context, service *biz.Service) (err erro
 	if err != nil {
 		return err
 	}
+	err = s.savePods(ctx, tx, service)
+	if err != nil {
+		return err
+	}
 	err = s.saveVolume(ctx, tx, service)
 	if err != nil {
 		return err
@@ -45,6 +49,41 @@ func (s *servicesRepo) Save(ctx context.Context, service *biz.Service) (err erro
 	err = tx.Commit().Error
 	if err != nil {
 		return err
+	}
+	return nil
+}
+
+// save pods
+func (s *servicesRepo) savePods(_ context.Context, tx *gorm.DB, service *biz.Service) (err error) {
+	// Get existing pods
+	existingPods := make([]*biz.Pod, 0)
+	if err = tx.Where("service_id =?", service.Id).Find(&existingPods).Error; err != nil {
+		return err
+	}
+	// Track pods to keep by ID
+	podsToKeep := make(map[int64]bool)
+	// Save or update pods
+	for _, pod := range service.Pods {
+		pod.ServiceId = service.Id
+		if pod.Id > 0 {
+			// Update existing pod
+			if err = tx.Where("id =?", pod.Id).Save(pod).Error; err != nil {
+				return err
+			}
+		} else {
+			// Create new pod
+			if err = tx.Create(pod).Error; err != nil {
+				return err
+			}
+		}
+	}
+	// Delete pods that are no longer needed
+	for _, existingPod := range existingPods {
+		if !podsToKeep[existingPod.Id] {
+			if err = tx.Delete(&biz.Pod{}, existingPod.Id).Error; err != nil {
+				return err
+			}
+		}
 	}
 	return nil
 }
@@ -401,15 +440,18 @@ func (s *servicesRepo) GetContinuousDeploymentLog(ctx context.Context, cd *biz.C
 // Service log
 func (s *servicesRepo) GetServicePodLog(ctx context.Context, service *biz.Service, page, pageSize int) (biz.LogResponse, error) {
 	logResponse := biz.LogResponse{}
-	pods := strings.Split(service.Pods, ",")
-	if len(pods) == 0 || s.data.esClient == nil {
+	if len(service.Pods) == 0 || s.data.esClient == nil {
 		return logResponse, nil
+	}
+	podNames := make([]string, 0)
+	for _, pod := range service.Pods {
+		podNames = append(podNames, pod.Name)
 	}
 	podLogRes, err := s.data.esClient.SearchByKeyword(
 		ctx,
 		s.data.esClient.GetIndexPatternName(PodLogIndexName),
 		map[string][]string{
-			PodKeyWord: pods,
+			PodKeyWord: podNames,
 		},
 		page,
 		pageSize,

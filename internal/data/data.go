@@ -151,6 +151,10 @@ func NewData(ctx context.Context, c *conf.Bootstrap, logger log.Logger) (*Data, 
 		if err != nil {
 			return data, cleanup, err
 		}
+		_, err = data.prometheusClient.QueryServerInfo(ctx)
+		if err != nil {
+			return data, cleanup, err
+		}
 	}
 
 	if c.Data.Es != nil && len(c.Data.Es.Hosts) != 0 && (c.Data.Es.Username != "" || c.Data.Es.Password != "") {

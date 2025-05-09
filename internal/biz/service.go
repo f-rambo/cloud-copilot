@@ -3,6 +3,7 @@ package biz
 import (
 	"context"
 	"math"
+	"time"
 
 	"github.com/f-rambo/cloud-copilot/utils"
 	"github.com/go-kratos/kratos/v2/log"
@@ -118,6 +119,70 @@ const (
 	ServiceStatus_Terminated  ServiceStatus = 3
 )
 
+type PodStatus int32
+
+const (
+	PodStatus_UNSPECIFIED PodStatus = 0
+	PodStatus_PENDING     PodStatus = 1
+	PodStatus_RUNNING     PodStatus = 2
+	PodStatus_SUCCEEDED   PodStatus = 3
+	PodStatus_FAILED      PodStatus = 4
+)
+
+type TimeRange string
+
+const (
+	TimeRangeHalfHour  TimeRange = "30m"
+	TimeRangeOneHour   TimeRange = "1h"
+	TimeRangeOneDay    TimeRange = "24h"
+	TimeRangeThreeDays TimeRange = "72h"
+)
+
+type MetricPoints []MetricPoint
+
+type MetricsResult struct {
+	CPU        MetricPoints `json:"cpu"`
+	Memory     MetricPoints `json:"memory"`
+	Disk       MetricPoints `json:"disk"`
+	NetworkIn  MetricPoints `json:"network_in"`
+	NetworkOut MetricPoints `json:"network_out"`
+	GPU        MetricPoints `json:"gpu,omitempty"`
+	GPUMem     MetricPoints `json:"gpu_mem,omitempty"`
+	QPS        MetricPoints `json:"qps"`
+}
+
+type MetricPoint struct {
+	Timestamp time.Time `json:"timestamp"`
+	Value     float64   `json:"value"`
+}
+
+func (m MetricPoints) GetFirstValue() float64 {
+	if len(m) == 0 {
+		return 0
+	}
+	return m[0].Value
+}
+
+func (tr TimeRange) CalculateMetricPointsStep() time.Duration {
+	switch tr {
+	case TimeRangeHalfHour:
+		return time.Minute
+	case TimeRangeOneHour:
+		return 2 * time.Minute
+	case TimeRangeOneDay:
+		return 30 * time.Minute
+	case TimeRangeThreeDays:
+		return time.Hour
+	default:
+		return 5 * time.Minute
+	}
+}
+
+func (tr TimeRange) MustParseDuration() time.Duration {
+	d, _ := time.ParseDuration(string(tr))
+	return d
+}
+
 type ContinuousIntegration struct {
 	Id              int64                       `json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
 	Version         string                      `json:"version,omitempty" gorm:"column:version;default:'';NOT NULL"`
@@ -172,6 +237,14 @@ type Volume struct {
 	ServiceId    int64  `json:"service_id,omitempty" gorm:"column:service_id;default:0;NOT NULL;index:idx_volume_service_id"`
 }
 
+type Pod struct {
+	Id        int64     `json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
+	Name      string    `json:"name,omitempty" gorm:"column:name;default:'';NOT NULL"`
+	NodeName  string    `json:"node_name,omitempty" gorm:"column:node_name;default:'';NOT NULL"`
+	Status    PodStatus `json:"status,omitempty" gorm:"column:status;default:0;NOT NULL"`
+	ServiceId int64     `json:"service_id,omitempty" gorm:"column:service_id;default:0;NOT NULL;index:idx_pod_service_id"`
+}
+
 type Service struct {
 	Id            int64         `json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
 	Name          string        `json:"name,omitempty" gorm:"column:name;default:'';NOT NULL"`
@@ -184,7 +257,7 @@ type Service struct {
 	LimitGpu      int32         `json:"limit_gpu,omitempty" gorm:"column:limit_gpu;default:0;NOT NULL"`
 	RequestMemory int32         `json:"request_memory,omitempty" gorm:"column:request_memory;default:0;NOT NULL"`
 	LimitMemory   int32         `json:"limit_memory,omitempty" gorm:"column:limit_memory;default:0;NOT NULL"`
-	Pods          string        `json:"pods,omitempty" gorm:"column:pods;default:'';NOT NULL"`
+	Pods          []*Pod        `json:"pods,omitempty" gorm:"-"`
 	Volumes       []*Volume     `json:"volumes,omitempty" gorm:"-"`
 	Ports         []*Port       `json:"ports,omitempty" gorm:"-"`
 	Gateway       string        `json:"gateway,omitempty" gorm:"column:gateway;default:'';NOT NULL"`

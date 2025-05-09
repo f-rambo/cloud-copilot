@@ -26,6 +26,15 @@ const (
 	Env_local = "local"
 	Env_jump  = "jump"
 	Env_prod  = "prod"
+
+	// resource type
+	CpuKey     string = "cpu"
+	MemKey     string = "memory"
+	DiskKey    string = "disk"
+	GpuKey     string = "gpu"
+	GpuMemKey  string = "gpu_mem"
+	NetworkIn  string = "network_in"
+	NetworkOut string = "network_out"
 )
 
 type LogType int32
@@ -536,12 +545,13 @@ type Node struct {
 }
 
 type Disk struct {
-	Id        string `gorm:"column:id;primaryKey;NOT NULL" json:"id,omitempty"`
-	Name      string `gorm:"column:name;default:'';NOT NULL" json:"name,omitempty"`
-	Size      int32  `gorm:"column:size;default:0;NOT NULL" json:"size,omitempty"`
-	Device    string `gorm:"column:device;default:'';NOT NULL" json:"device,omitempty"`
-	NodeId    int64  `gorm:"column:node_id;default:0;NOT NULL" json:"node_id,omitempty"`
-	ClusterId int64  `gorm:"column:cluster_id;default:0;NOT NULL" json:"cluster_id,omitempty"`
+	Id         string `gorm:"column:id;primaryKey;NOT NULL" json:"id,omitempty"`
+	Name       string `gorm:"column:name;default:'';NOT NULL" json:"name,omitempty"`
+	Size       int32  `gorm:"column:size;default:0;NOT NULL" json:"size,omitempty"`
+	Device     string `gorm:"column:device;default:'';NOT NULL" json:"device,omitempty"`
+	Mountpoint string `gorm:"column:mountpoint;default:'';NOT NULL" json:"mountpoint,omitempty"`
+	NodeId     int64  `gorm:"column:node_id;default:0;NOT NULL" json:"node_id,omitempty"`
+	ClusterId  int64  `gorm:"column:cluster_id;default:0;NOT NULL" json:"cluster_id,omitempty"`
 }
 
 type CloudResource struct {
