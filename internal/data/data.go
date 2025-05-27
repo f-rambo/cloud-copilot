@@ -8,11 +8,10 @@ import (
 	"github.com/f-rambo/cloud-copilot/internal/biz"
 	"github.com/f-rambo/cloud-copilot/internal/conf"
 	"github.com/f-rambo/cloud-copilot/lib"
-	"github.com/f-rambo/cloud-copilot/utils"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/wire"
 	"github.com/pkg/errors"
-	"gorm.io/driver/sqlite"
+	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	gormlogger "gorm.io/gorm/logger"
 	"gorm.io/gorm/schema"
@@ -63,7 +62,7 @@ type Data struct {
 
 func NewData(ctx context.Context, c *conf.Bootstrap, logger log.Logger) (*Data, func(), error) {
 	var err error
-	if c.Data == nil {
+	if c.Persistence == nil {
 		return nil, func() {}, errors.New("data config is nil")
 	}
 	data := &Data{
@@ -89,15 +88,9 @@ func NewData(ctx context.Context, c *conf.Bootstrap, logger log.Logger) (*Data, 
 		}
 	}
 
-	dbFile := fmt.Sprintf("%s.db", c.Server.Name)
-	if !utils.IsFileExist(dbFile) {
-		err = utils.CreateFile(dbFile)
-		if err != nil {
-			return data, cleanup, errors.New("create db file failed")
-		}
-	}
-
-	data.db, err = gorm.Open(sqlite.Open(dbFile), &gorm.Config{
+	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%d sslmode=disable TimeZone=Asia/Shanghai",
+		c.Persistence.Database.Host, c.Persistence.Database.Username, c.Persistence.Database.Password, c.Persistence.Database.Database, c.Persistence.Database.Port)
+	data.db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{
 		Logger:         data,
 		NamingStrategy: schema.NamingStrategy{SingularTable: true},
 	})
@@ -136,18 +129,18 @@ func NewData(ctx context.Context, c *conf.Bootstrap, logger log.Logger) (*Data, 
 		return data, cleanup, err
 	}
 
-	if c.Data.Kafka != nil && len(c.Data.Kafka.Brokers) > 0 && len(c.Data.Kafka.Topics) > 0 {
-		if c.Data.Kafka.GroupId == "" {
-			c.Data.Kafka.GroupId = c.Server.Name
+	if c.Persistence.Kafka != nil && len(c.Persistence.Kafka.Brokers) > 0 && len(c.Persistence.Kafka.Topics) > 0 {
+		if c.Persistence.Kafka.GroupId == "" {
+			c.Persistence.Kafka.GroupId = c.Server.Name
 		}
-		data.kafkaConsumer, err = lib.NewKafkaConsumer(c.Data.Kafka.Brokers, c.Data.Kafka.Topics, c.Data.Kafka.GroupId)
+		data.kafkaConsumer, err = lib.NewKafkaConsumer(c.Persistence.Kafka.Brokers, c.Persistence.Kafka.Topics, c.Persistence.Kafka.GroupId)
 		if err != nil {
 			return data, cleanup, err
 		}
 	}
 
-	if c.Data.Prometheus != nil && c.Data.Prometheus.BaseUrl != "" {
-		data.prometheusClient, err = lib.NewPrometheusClient(c.Data.Prometheus.BaseUrl)
+	if c.Persistence.Prometheus != nil && c.Persistence.Prometheus.BaseUrl != "" {
+		data.prometheusClient, err = lib.NewPrometheusClient(c.Persistence.Prometheus.BaseUrl)
 		if err != nil {
 			return data, cleanup, err
 		}
@@ -157,11 +150,11 @@ func NewData(ctx context.Context, c *conf.Bootstrap, logger log.Logger) (*Data, 
 		}
 	}
 
-	if c.Data.Es != nil && len(c.Data.Es.Hosts) != 0 && (c.Data.Es.Username != "" || c.Data.Es.Password != "") {
+	if c.Persistence.ElasticSearch != nil && len(c.Persistence.ElasticSearch.Hosts) != 0 && (c.Persistence.ElasticSearch.Username != "" || c.Persistence.ElasticSearch.Password != "") {
 		esConfig := lib.ESConfig{
-			Addresses: c.Data.Es.Hosts,
-			Username:  c.Data.Es.Username,
-			Password:  c.Data.Es.Password,
+			Addresses: c.Persistence.ElasticSearch.Hosts,
+			Username:  c.Persistence.ElasticSearch.Username,
+			Password:  c.Persistence.ElasticSearch.Password,
 		}
 		data.esClient, err = lib.NewESClient(esConfig)
 		if err != nil {

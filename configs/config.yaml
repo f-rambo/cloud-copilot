@@ -8,8 +8,9 @@ server:
   grpc:
     network: tcp
     addr: 0.0.0.0:9000
-data:
-  database: cloudcopilot
+Persistence:
+  database:
+    driver: postgres
 log:
   max_size: 500
   max_backups: 3

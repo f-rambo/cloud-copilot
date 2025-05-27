@@ -12,12 +12,7 @@ message Infrastructure {
   string cluster = 4;
 }
 
-message HTTPServer {
-  string network = 1;
-  string addr = 2;
-}
-
-message GRPCServer {
+message ServerConfig {
   string network = 1;
   string addr = 2;
 }
@@ -26,11 +21,21 @@ message Server {
   string name = 1;
   string version = 2;
   string env = 3;
-  HTTPServer http = 4;
-  GRPCServer grpc = 5;
+  ServerConfig http = 4;
+  ServerConfig grpc = 5;
+  ServerConfig mcp = 6;
 }
 
-message ES {
+message Database {
+  string driver = 1;
+  string host = 2;
+  int32 port = 3;
+  string username = 4;
+  string password = 5;
+  string database = 6;
+}
+
+message ElasticSearch {
   repeated string hosts = 1;
   string username = 2;
   string password = 3;
@@ -46,10 +51,10 @@ message Prometheus {
   string base_url = 1;
 }
 
-message Database {
-  string database = 1;
+message Persistence {
+  Database database = 1;
   Kafka kafka = 2;
-  ES es = 3;
+  ElasticSearch elasticSearch = 3;
   Prometheus prometheus = 4;
 }
 
@@ -68,7 +73,7 @@ message Auth {
 
 message Bootstrap {
   Server server = 1;
-  Database data = 2;
+  Persistence persistence = 2;
   Log log = 3;
   Auth auth = 4;
   Infrastructure infrastructure = 5;

@@ -9,6 +9,7 @@ import (
 
 	"github.com/f-rambo/cloud-copilot/internal/conf"
 	"github.com/f-rambo/cloud-copilot/internal/data"
+	"github.com/f-rambo/cloud-copilot/internal/server"
 	"github.com/f-rambo/cloud-copilot/utils"
 	kratoszap "github.com/go-kratos/kratos/contrib/log/zap/v2"
 	"github.com/go-kratos/kratos/v2"
@@ -40,7 +41,7 @@ func init() {
 	flag.StringVar(&flagconf, "conf", "configs", "config path, eg: -conf config.yaml")
 }
 
-func newApp(ctx context.Context, logger log.Logger, gs *grpc.Server, hs *http.Server, dr *data.Data) *kratos.App {
+func newApp(ctx context.Context, logger log.Logger, gs *grpc.Server, hs *http.Server, mcp *server.McpServer, dr *data.Data) *kratos.App {
 	return kratos.New(
 		kratos.ID(id),
 		kratos.Context(ctx),
@@ -56,7 +57,7 @@ func newApp(ctx context.Context, logger log.Logger, gs *grpc.Server, hs *http.Se
 			utils.ConfDirKey.String():        filepath.Dir(flagconf),
 		}),
 		kratos.Logger(logger),
-		kratos.Server(gs, hs, dr),
+		kratos.Server(gs, hs, mcp, dr),
 	)
 }
 
