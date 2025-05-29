@@ -78,30 +78,53 @@ message Region {
 }
 
 message ClusterSaveArgs {
+    // cluster name optional
     int64 id = 1 [json_name = "id"];
+    // cluster name required
     string name = 2 [json_name = "name"];
-    string provider = 3 [json_name = "provider"]; // 'baremetal' | 'aws' | 'ali_cloud'
+    // cluster status required
+    // 'baremetal' | 'aws' | 'ali_cloud'
+    string provider = 3 [json_name = "provider"]; 
+    // public key required
     string public_key = 4 [json_name = "public_key"];
+    // private key required
     string private_key = 5 [json_name = "private_key"];
+    // access id optional
     string access_id = 6 [json_name = "access_id"];
+    // access key optional
     string access_key = 7 [json_name = "access_key"];
+    // region optional
     string region = 8 [json_name = "region"];
+    // node username optional
     string node_username = 9 [json_name = "node_username"];
+    // node start ip optional
     string node_start_ip = 10 [json_name = "node_start_ip"];
+    // node end ip optional
     string node_end_ip = 11 [json_name = "node_end_ip"];
 }
 
 message ClusterRegionArgs {
+    // cluster provider required
     string access_id = 1 [json_name = "access_id"];
+    // cluster access key required
     string access_key = 2 [json_name = "access_key"];
-    string provider = 3 [json_name = "provider"]; // 'baremetal' | 'aws' | 'ali_cloud'
+    // cluster provider required
+    // 'baremetal' | 'aws' | 'ali_cloud'
+    string provider = 3 [json_name = "provider"];
 }
 
-message ClusterArgs {
+message ClusterIdArgs {
+    // cluster id required
     int64 id = 1 [json_name = "id"];
-    string name = 2 [json_name = "name"];
-    int32 page = 3 [json_name = "page"];
-    int32 page_size = 4 [json_name = "page_size"];
+}
+
+message ClusterListArgs {
+    // cluster name optional
+    string name = 1 [json_name = "name"];
+    // page number, default is 1
+    int32 page = 2 [json_name = "page"];
+    // page size, default is 10, max is 100
+    int32 page_size = 3 [json_name = "page_size"];
 }
 
 message ClusterList {

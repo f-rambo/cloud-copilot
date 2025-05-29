@@ -29,6 +29,8 @@ const (
 // UserInterfaceClient is the client API for UserInterface service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+//
+// @mcp: reject
 type UserInterfaceClient interface {
 	SignIn(ctx context.Context, in *SignIn, opts ...grpc.CallOption) (*User, error)
 	GetUsers(ctx context.Context, in *UsersRequest, opts ...grpc.CallOption) (*Users, error)
@@ -87,6 +89,8 @@ func (c *userInterfaceClient) DeleteUser(ctx context.Context, in *User, opts ...
 // UserInterfaceServer is the server API for UserInterface service.
 // All implementations must embed UnimplementedUserInterfaceServer
 // for forward compatibility.
+//
+// @mcp: reject
 type UserInterfaceServer interface {
 	SignIn(context.Context, *SignIn) (*User, error)
 	GetUsers(context.Context, *UsersRequest) (*Users, error)

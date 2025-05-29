@@ -2,69 +2,91 @@ package server
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
+	"github.com/f-rambo/cloud-copilot/internal/biz"
 	"github.com/f-rambo/cloud-copilot/internal/conf"
+	"github.com/f-rambo/cloud-copilot/internal/interfaces"
 	"github.com/mark3labs/mcp-go/server"
-	"golang.org/x/sync/errgroup"
 )
 
 type McpServer struct {
-	srv        *http.Server
-	mcpServers []*server.MCPServer
-	sseServers []*server.SSEServer
+	conf               *conf.Bootstrap
+	server             *http.Server
+	ClusterInterface   *interfaces.ClusterInterface
+	AppInterface       *interfaces.AppInterface
+	ServicesInterface  *interfaces.ServicesInterface
+	UserInterface      *interfaces.UserInterface
+	WorkspaceInterface *interfaces.WorkspaceInterface
+	ProjectInterface   *interfaces.ProjectInterface
+	mcpServers         map[string]*server.MCPServer
 }
 
-func NewMcpServer(conf *conf.Bootstrap) *McpServer {
-	return &McpServer{
-		srv: &http.Server{
-			Addr: conf.Server.Mcp.Addr,
-		},
-		mcpServers: make([]*server.MCPServer, 0),
-		sseServers: make([]*server.SSEServer, 0),
+func NewMcpServer(ctx context.Context, conf *conf.Bootstrap, cluster *interfaces.ClusterInterface, app *interfaces.AppInterface, services *interfaces.ServicesInterface, user *interfaces.UserInterface, workspace *interfaces.WorkspaceInterface, project *interfaces.ProjectInterface) (*McpServer, error) {
+	s := &McpServer{
+		conf:               conf,
+		ClusterInterface:   cluster,
+		AppInterface:       app,
+		ServicesInterface:  services,
+		UserInterface:      user,
+		WorkspaceInterface: workspace,
+		ProjectInterface:   project,
+		mcpServers:         make(map[string]*server.MCPServer),
 	}
+	clusterMcpService := interfaces.NewClusterInterfaceMcpService(s.ClusterInterface)
+	clusterMcpServer, err := clusterMcpService.ClusterMcp()
+	if err != nil {
+		return nil, err
+	}
+	s.RegisterServer(biz.ClusterKey.String(), clusterMcpServer)
+	return s, nil
 }
 
-// register mcp server
-func (s *McpServer) RegisterMcpServer(mcpServer *server.MCPServer) {
-	s.mcpServers = append(s.mcpServers, mcpServer)
+func (s *McpServer) RegisterServer(serverName string, mcpServer *server.MCPServer) {
+	s.mcpServers[serverName] = mcpServer
+
 }
 
-// register sse server
-func (s *McpServer) RegisterSseServer(sseServer *server.SSEServer) {
-	s.sseServers = append(s.sseServers, sseServer)
+func (s *McpServer) getMcpServerPath(serverName string) string {
+	return fmt.Sprintf("/mcp/%s/", serverName)
+}
+
+func (s *McpServer) getMcpSseServerPath(serverName string) string {
+	return fmt.Sprintf("/mcp/%s/sse", serverName)
+}
+
+func (s *McpServer) getMcpMessageServerPath(serverName string) string {
+	return fmt.Sprintf("/mcp/%s/message", serverName)
 }
 
 func (s *McpServer) Start(ctx context.Context) error {
-	if len(s.mcpServers) == 0 {
-		return nil
+	mux := http.NewServeMux()
+	for serverName, mcpServer := range s.mcpServers {
+		sseServer := server.NewSSEServer(
+			mcpServer,
+			server.WithDynamicBasePath(func(r *http.Request, sessionID string) string {
+				return s.getMcpServerPath(serverName)
+			}),
+		)
+		mux.Handle(s.getMcpSseServerPath(serverName), sseServer.SSEHandler())
+		mux.Handle(s.getMcpMessageServerPath(serverName), sseServer.MessageHandler())
 	}
-	eg, _ := errgroup.WithContext(ctx)
-	for _, sseServer := range s.sseServers {
-		eg.Go(func() error {
-			err := sseServer.Start(s.srv.Addr)
-			if err != nil {
-				return err
-			}
-			return nil
-		})
+	s.server = &http.Server{
+		Addr:    s.conf.Server.Mcp.Addr,
+		Handler: mux,
 	}
-	return eg.Wait()
+	if err := s.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		return fmt.Errorf("failed to start MCP server: %v", err)
+	}
+	return nil
 }
 
 func (s *McpServer) Stop(ctx context.Context) error {
-	if len(s.mcpServers) == 0 {
-		return nil
+	if s.server != nil {
+		if err := s.server.Shutdown(ctx); err != nil {
+			return fmt.Errorf("failed to stop MCP server: %v", err)
+		}
 	}
-	eg, ctx := errgroup.WithContext(ctx)
-	for _, sseServer := range s.sseServers {
-		eg.Go(func() error {
-			err := sseServer.Shutdown(ctx)
-			if err != nil {
-				return err
-			}
-			return nil
-		})
-	}
-	return eg.Wait()
+	return nil
 }

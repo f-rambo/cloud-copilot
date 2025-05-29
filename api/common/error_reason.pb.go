@@ -74,8 +74,14 @@ type Msg struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Reason  ErrorReason `protobuf:"varint,1,opt,name=Reason,proto3,enum=common.ErrorReason" json:"Reason,omitempty"`
-	Message string      `protobuf:"bytes,2,opt,name=Message,proto3" json:"Message,omitempty"`
+	// Error reason
+	// 0: SUCCEED
+	// 1: FAILED
+	// 2: ErrInvalidArgument
+	// 3: ErrNotFound
+	Reason ErrorReason `protobuf:"varint,1,opt,name=Reason,proto3,enum=common.ErrorReason" json:"Reason,omitempty"`
+	// Error message
+	Message string `protobuf:"bytes,2,opt,name=Message,proto3" json:"Message,omitempty"`
 }
 
 func (x *Msg) Reset() {

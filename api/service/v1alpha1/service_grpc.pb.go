@@ -41,6 +41,8 @@ const (
 // ServiceInterfaceClient is the client API for ServiceInterface service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+//
+// @mcp: reject
 type ServiceInterfaceClient interface {
 	List(ctx context.Context, in *ServiceRequest, opts ...grpc.CallOption) (*Services, error)
 	Save(ctx context.Context, in *Service, opts ...grpc.CallOption) (*common.Msg, error)
@@ -231,6 +233,8 @@ func (c *serviceInterfaceClient) ApplyService(ctx context.Context, in *ServiceRe
 // ServiceInterfaceServer is the server API for ServiceInterface service.
 // All implementations must embed UnimplementedServiceInterfaceServer
 // for forward compatibility.
+//
+// @mcp: reject
 type ServiceInterfaceServer interface {
 	List(context.Context, *ServiceRequest) (*Services, error)
 	Save(context.Context, *Service) (*common.Msg, error)

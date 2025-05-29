@@ -29,6 +29,8 @@ const (
 // ProjectServiceClient is the client API for ProjectService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+//
+// @mcp: reject
 type ProjectServiceClient interface {
 	Save(ctx context.Context, in *Project, opts ...grpc.CallOption) (*common.Msg, error)
 	Get(ctx context.Context, in *ProjectReq, opts ...grpc.CallOption) (*Project, error)
@@ -87,6 +89,8 @@ func (c *projectServiceClient) Delete(ctx context.Context, in *ProjectReq, opts 
 // ProjectServiceServer is the server API for ProjectService service.
 // All implementations must embed UnimplementedProjectServiceServer
 // for forward compatibility.
+//
+// @mcp: reject
 type ProjectServiceServer interface {
 	Save(context.Context, *Project) (*common.Msg, error)
 	Get(context.Context, *ProjectReq) (*Project, error)

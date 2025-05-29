@@ -30,6 +30,7 @@ api:
  	       --go_out=paths=source_relative:. \
  	       --go-http_out=paths=source_relative:. \
  	       --go-grpc_out=paths=source_relative:. \
+		 --mcpgo_out=paths=source_relative,go_package_name=interfaces,go_module_name=github.com/f-rambo/cloud-copilot:./internal/interfaces \
 	       --openapi_out=fq_schema_naming=true,default_response=false:. \
 	       $(API_PROTO_FILES)
 

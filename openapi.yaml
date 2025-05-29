@@ -634,26 +634,14 @@ paths:
         get:
             tags:
                 - ClusterInterface
+            description: Get cluster by id.
             operationId: ClusterInterface_Get
             parameters:
                 - name: id
                   in: query
+                  description: cluster id required
                   schema:
                     type: string
-                - name: name
-                  in: query
-                  schema:
-                    type: string
-                - name: page
-                  in: query
-                  schema:
-                    type: integer
-                    format: int32
-                - name: page_size
-                  in: query
-                  schema:
-                    type: integer
-                    format: int32
             responses:
                 "200":
                     description: OK
@@ -664,6 +652,7 @@ paths:
         post:
             tags:
                 - ClusterInterface
+            description: Save cluster.
             operationId: ClusterInterface_Save
             requestBody:
                 content:
@@ -681,26 +670,14 @@ paths:
         delete:
             tags:
                 - ClusterInterface
+            description: Delete cluster.
             operationId: ClusterInterface_Delete
             parameters:
                 - name: id
                   in: query
+                  description: cluster id required
                   schema:
                     type: string
-                - name: name
-                  in: query
-                  schema:
-                    type: string
-                - name: page
-                  in: query
-                  schema:
-                    type: integer
-                    format: int32
-                - name: page_size
-                  in: query
-                  schema:
-                    type: integer
-                    format: int32
             responses:
                 "200":
                     description: OK
@@ -712,6 +689,7 @@ paths:
         get:
             tags:
                 - ClusterInterface
+            description: '@mcp: reject'
             operationId: ClusterInterface_GetClusterLevels
             responses:
                 "200":
@@ -724,23 +702,23 @@ paths:
         get:
             tags:
                 - ClusterInterface
+            description: List returns a list of clusters based on the provided arguments.
             operationId: ClusterInterface_List
             parameters:
-                - name: id
-                  in: query
-                  schema:
-                    type: string
                 - name: name
                   in: query
+                  description: cluster name optional
                   schema:
                     type: string
                 - name: page
                   in: query
+                  description: page number, default is 1
                   schema:
                     type: integer
                     format: int32
                 - name: page_size
                   in: query
+                  description: page size, default is 10, max is 100
                   schema:
                     type: integer
                     format: int32
@@ -755,6 +733,7 @@ paths:
         get:
             tags:
                 - ClusterInterface
+            description: '@mcp: reject'
             operationId: ClusterInterface_GetNodeGroupTypes
             responses:
                 "200":
@@ -767,6 +746,7 @@ paths:
         get:
             tags:
                 - ClusterInterface
+            description: '@mcp: reject'
             operationId: ClusterInterface_GetNodeRoles
             responses:
                 "200":
@@ -779,6 +759,7 @@ paths:
         get:
             tags:
                 - ClusterInterface
+            description: '@mcp: reject'
             operationId: ClusterInterface_GetNodeStatuses
             responses:
                 "200":
@@ -791,6 +772,9 @@ paths:
         get:
             tags:
                 - ClusterInterface
+            description: |-
+                Ping the cluster service.
+                 @mcp: reject
             operationId: ClusterInterface_Ping
             responses:
                 "200":
@@ -803,6 +787,9 @@ paths:
         get:
             tags:
                 - ClusterInterface
+            description: |-
+                GetClusterProviders returns the available cluster providers.
+                 @mcp: reject
             operationId: ClusterInterface_GetClusterProviders
             responses:
                 "200":
@@ -815,18 +802,24 @@ paths:
         get:
             tags:
                 - ClusterInterface
+            description: Get cluster regions
             operationId: ClusterInterface_GetRegions
             parameters:
                 - name: access_id
                   in: query
+                  description: cluster provider required
                   schema:
                     type: string
                 - name: access_key
                   in: query
+                  description: cluster access key required
                   schema:
                     type: string
                 - name: provider
                   in: query
+                  description: |-
+                    cluster provider required
+                     'baremetal' | 'aws' | 'ali_cloud'
                   schema:
                     type: string
             responses:
@@ -840,6 +833,7 @@ paths:
         get:
             tags:
                 - ClusterInterface
+            description: '@mcp: reject'
             operationId: ClusterInterface_GetResourceTypes
             responses:
                 "200":
@@ -852,12 +846,13 @@ paths:
         post:
             tags:
                 - ClusterInterface
+            description: 'Start cluster: create cluster and start all nodes'
             operationId: ClusterInterface_Start
             requestBody:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/cluster.v1alpha1.ClusterArgs'
+                            $ref: '#/components/schemas/cluster.v1alpha1.ClusterIdArgs'
                 required: true
             responses:
                 "200":
@@ -870,6 +865,7 @@ paths:
         get:
             tags:
                 - ClusterInterface
+            description: '@mcp: reject'
             operationId: ClusterInterface_GetClusterStatuses
             responses:
                 "200":
@@ -882,12 +878,13 @@ paths:
         post:
             tags:
                 - ClusterInterface
+            description: 'Stop cluster: stop all nodes and delete cluster'
             operationId: ClusterInterface_Stop
             requestBody:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/cluster.v1alpha1.ClusterArgs'
+                            $ref: '#/components/schemas/cluster.v1alpha1.ClusterIdArgs'
                 required: true
             responses:
                 "200":
@@ -1990,12 +1987,9 @@ components:
                     type: string
                 deprecated:
                     type: boolean
-                annotations:
-                    type: object
-                    additionalProperties:
-                        type: string
                 kube_version:
                     type: string
+                    description: map<string, string> annotations = 14;
                 dependencies:
                     type: array
                     items:
@@ -2046,19 +2040,12 @@ components:
                         $ref: '#/components/schemas/cluster.v1alpha1.NodeGroup'
                 cluster_resource:
                     $ref: '#/components/schemas/cluster.v1alpha1.ClusterResource'
-        cluster.v1alpha1.ClusterArgs:
+        cluster.v1alpha1.ClusterIdArgs:
             type: object
             properties:
                 id:
                     type: string
-                name:
-                    type: string
-                page:
-                    type: integer
-                    format: int32
-                page_size:
-                    type: integer
-                    format: int32
+                    description: cluster id required
         cluster.v1alpha1.ClusterLevel:
             type: object
             properties:
@@ -2120,26 +2107,39 @@ components:
             properties:
                 id:
                     type: string
+                    description: cluster name optional
                 name:
                     type: string
+                    description: cluster name required
                 provider:
                     type: string
+                    description: |-
+                        cluster status required
+                         'baremetal' | 'aws' | 'ali_cloud'
                 public_key:
                     type: string
+                    description: public key required
                 private_key:
                     type: string
+                    description: private key required
                 access_id:
                     type: string
+                    description: access id optional
                 access_key:
                     type: string
+                    description: access key optional
                 region:
                     type: string
+                    description: region optional
                 node_username:
                     type: string
+                    description: node username optional
                 node_start_ip:
                     type: string
+                    description: node start ip optional
                 node_end_ip:
                     type: string
+                    description: node end ip optional
         cluster.v1alpha1.ClusterStatus:
             type: object
             properties:
@@ -2290,9 +2290,16 @@ components:
             properties:
                 Reason:
                     type: integer
+                    description: |-
+                        Error reason
+                         0: SUCCEED
+                         1: FAILED
+                         2: ErrInvalidArgument
+                         3: ErrNotFound
                     format: enum
                 Message:
                     type: string
+                    description: Error message
         project.v1alpha1.Project:
             type: object
             properties:
@@ -2651,8 +2658,14 @@ components:
                         $ref: '#/components/schemas/workspace.v1alpha1.Workspace'
 tags:
     - name: AppInterface
+      description: '@mcp: reject'
     - name: ClusterInterface
+      description: ClusterInterface defines the gRPC service for managing clusters.
     - name: ProjectService
+      description: '@mcp: reject'
     - name: ServiceInterface
+      description: '@mcp: reject'
     - name: UserInterface
+      description: '@mcp: reject'
     - name: WorkspaceInterface
+      description: '@mcp: reject'

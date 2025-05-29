@@ -120,7 +120,7 @@ func (c *ClusterInterface) GetResourceTypes(ctx context.Context, _ *emptypb.Empt
 	return resourceTypeResponse, nil
 }
 
-func (c *ClusterInterface) Get(ctx context.Context, clusterArgs *v1alpha1.ClusterArgs) (*v1alpha1.Cluster, error) {
+func (c *ClusterInterface) Get(ctx context.Context, clusterArgs *v1alpha1.ClusterIdArgs) (*v1alpha1.Cluster, error) {
 	if clusterArgs.Id == 0 {
 		return nil, errors.New("cluster id is required")
 	}
@@ -181,7 +181,7 @@ func (c *ClusterInterface) Save(ctx context.Context, clusterArgs *v1alpha1.Clust
 	return c.bizCLusterToCluster(cluster), nil
 }
 
-func (c *ClusterInterface) Start(ctx context.Context, clusterArgs *v1alpha1.ClusterArgs) (*common.Msg, error) {
+func (c *ClusterInterface) Start(ctx context.Context, clusterArgs *v1alpha1.ClusterIdArgs) (*common.Msg, error) {
 	if clusterArgs.Id == 0 {
 		return nil, errors.New("cluster id is required")
 	}
@@ -192,7 +192,7 @@ func (c *ClusterInterface) Start(ctx context.Context, clusterArgs *v1alpha1.Clus
 	return common.Response(), nil
 }
 
-func (c *ClusterInterface) Stop(ctx context.Context, clusterArgs *v1alpha1.ClusterArgs) (*common.Msg, error) {
+func (c *ClusterInterface) Stop(ctx context.Context, clusterArgs *v1alpha1.ClusterIdArgs) (*common.Msg, error) {
 	if clusterArgs.Id == 0 {
 		return nil, errors.New("cluster id is required")
 	}
@@ -203,7 +203,7 @@ func (c *ClusterInterface) Stop(ctx context.Context, clusterArgs *v1alpha1.Clust
 	return common.Response(), nil
 }
 
-func (c *ClusterInterface) List(ctx context.Context, clusterArgs *v1alpha1.ClusterArgs) (*v1alpha1.ClusterList, error) {
+func (c *ClusterInterface) List(ctx context.Context, clusterArgs *v1alpha1.ClusterListArgs) (*v1alpha1.ClusterList, error) {
 	data := &v1alpha1.ClusterList{}
 	clusters, total, err := c.clusterUc.List(ctx, clusterArgs.Name, clusterArgs.Page, clusterArgs.PageSize)
 	if err != nil {
@@ -216,7 +216,7 @@ func (c *ClusterInterface) List(ctx context.Context, clusterArgs *v1alpha1.Clust
 	return data, nil
 }
 
-func (c *ClusterInterface) Delete(ctx context.Context, clusterArgs *v1alpha1.ClusterArgs) (*common.Msg, error) {
+func (c *ClusterInterface) Delete(ctx context.Context, clusterArgs *v1alpha1.ClusterIdArgs) (*common.Msg, error) {
 	if clusterArgs.Id == 0 {
 		return nil, errors.New("cluster id is required")
 	}

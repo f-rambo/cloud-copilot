@@ -41,21 +41,40 @@ const (
 // ClusterInterfaceClient is the client API for ClusterInterface service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+//
+// ClusterInterface defines the gRPC service for managing clusters.
 type ClusterInterfaceClient interface {
+	// Ping the cluster service.
+	// @mcp: reject
 	Ping(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*common.Msg, error)
+	// GetClusterProviders returns the available cluster providers.
+	// @mcp: reject
 	GetClusterProviders(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*ClusterProviders, error)
+	// @mcp: reject
 	GetClusterStatuses(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*ClusterStatuses, error)
+	// @mcp: reject
 	GetClusterLevels(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*ClusterLevels, error)
+	// @mcp: reject
 	GetNodeRoles(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*NodeRoles, error)
+	// @mcp: reject
 	GetNodeStatuses(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*NodeStatuses, error)
+	// @mcp: reject
 	GetNodeGroupTypes(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*NodeGroupTypes, error)
+	// @mcp: reject
 	GetResourceTypes(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*ResourceTypes, error)
-	Get(ctx context.Context, in *ClusterArgs, opts ...grpc.CallOption) (*Cluster, error)
+	// Get cluster by id.
+	Get(ctx context.Context, in *ClusterIdArgs, opts ...grpc.CallOption) (*Cluster, error)
+	// Save cluster.
 	Save(ctx context.Context, in *ClusterSaveArgs, opts ...grpc.CallOption) (*Cluster, error)
-	List(ctx context.Context, in *ClusterArgs, opts ...grpc.CallOption) (*ClusterList, error)
-	Delete(ctx context.Context, in *ClusterArgs, opts ...grpc.CallOption) (*common.Msg, error)
-	Start(ctx context.Context, in *ClusterArgs, opts ...grpc.CallOption) (*common.Msg, error)
-	Stop(ctx context.Context, in *ClusterArgs, opts ...grpc.CallOption) (*common.Msg, error)
+	// List returns a list of clusters based on the provided arguments.
+	List(ctx context.Context, in *ClusterListArgs, opts ...grpc.CallOption) (*ClusterList, error)
+	// Delete cluster.
+	Delete(ctx context.Context, in *ClusterIdArgs, opts ...grpc.CallOption) (*common.Msg, error)
+	// Start cluster: create cluster and start all nodes
+	Start(ctx context.Context, in *ClusterIdArgs, opts ...grpc.CallOption) (*common.Msg, error)
+	// Stop cluster: stop all nodes and delete cluster
+	Stop(ctx context.Context, in *ClusterIdArgs, opts ...grpc.CallOption) (*common.Msg, error)
+	// Get cluster regions
 	GetRegions(ctx context.Context, in *ClusterRegionArgs, opts ...grpc.CallOption) (*Regions, error)
 }
 
@@ -147,7 +166,7 @@ func (c *clusterInterfaceClient) GetResourceTypes(ctx context.Context, in *empty
 	return out, nil
 }
 
-func (c *clusterInterfaceClient) Get(ctx context.Context, in *ClusterArgs, opts ...grpc.CallOption) (*Cluster, error) {
+func (c *clusterInterfaceClient) Get(ctx context.Context, in *ClusterIdArgs, opts ...grpc.CallOption) (*Cluster, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Cluster)
 	err := c.cc.Invoke(ctx, ClusterInterface_Get_FullMethodName, in, out, cOpts...)
@@ -167,7 +186,7 @@ func (c *clusterInterfaceClient) Save(ctx context.Context, in *ClusterSaveArgs, 
 	return out, nil
 }
 
-func (c *clusterInterfaceClient) List(ctx context.Context, in *ClusterArgs, opts ...grpc.CallOption) (*ClusterList, error) {
+func (c *clusterInterfaceClient) List(ctx context.Context, in *ClusterListArgs, opts ...grpc.CallOption) (*ClusterList, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ClusterList)
 	err := c.cc.Invoke(ctx, ClusterInterface_List_FullMethodName, in, out, cOpts...)
@@ -177,7 +196,7 @@ func (c *clusterInterfaceClient) List(ctx context.Context, in *ClusterArgs, opts
 	return out, nil
 }
 
-func (c *clusterInterfaceClient) Delete(ctx context.Context, in *ClusterArgs, opts ...grpc.CallOption) (*common.Msg, error) {
+func (c *clusterInterfaceClient) Delete(ctx context.Context, in *ClusterIdArgs, opts ...grpc.CallOption) (*common.Msg, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(common.Msg)
 	err := c.cc.Invoke(ctx, ClusterInterface_Delete_FullMethodName, in, out, cOpts...)
@@ -187,7 +206,7 @@ func (c *clusterInterfaceClient) Delete(ctx context.Context, in *ClusterArgs, op
 	return out, nil
 }
 
-func (c *clusterInterfaceClient) Start(ctx context.Context, in *ClusterArgs, opts ...grpc.CallOption) (*common.Msg, error) {
+func (c *clusterInterfaceClient) Start(ctx context.Context, in *ClusterIdArgs, opts ...grpc.CallOption) (*common.Msg, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(common.Msg)
 	err := c.cc.Invoke(ctx, ClusterInterface_Start_FullMethodName, in, out, cOpts...)
@@ -197,7 +216,7 @@ func (c *clusterInterfaceClient) Start(ctx context.Context, in *ClusterArgs, opt
 	return out, nil
 }
 
-func (c *clusterInterfaceClient) Stop(ctx context.Context, in *ClusterArgs, opts ...grpc.CallOption) (*common.Msg, error) {
+func (c *clusterInterfaceClient) Stop(ctx context.Context, in *ClusterIdArgs, opts ...grpc.CallOption) (*common.Msg, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(common.Msg)
 	err := c.cc.Invoke(ctx, ClusterInterface_Stop_FullMethodName, in, out, cOpts...)
@@ -220,21 +239,40 @@ func (c *clusterInterfaceClient) GetRegions(ctx context.Context, in *ClusterRegi
 // ClusterInterfaceServer is the server API for ClusterInterface service.
 // All implementations must embed UnimplementedClusterInterfaceServer
 // for forward compatibility.
+//
+// ClusterInterface defines the gRPC service for managing clusters.
 type ClusterInterfaceServer interface {
+	// Ping the cluster service.
+	// @mcp: reject
 	Ping(context.Context, *emptypb.Empty) (*common.Msg, error)
+	// GetClusterProviders returns the available cluster providers.
+	// @mcp: reject
 	GetClusterProviders(context.Context, *emptypb.Empty) (*ClusterProviders, error)
+	// @mcp: reject
 	GetClusterStatuses(context.Context, *emptypb.Empty) (*ClusterStatuses, error)
+	// @mcp: reject
 	GetClusterLevels(context.Context, *emptypb.Empty) (*ClusterLevels, error)
+	// @mcp: reject
 	GetNodeRoles(context.Context, *emptypb.Empty) (*NodeRoles, error)
+	// @mcp: reject
 	GetNodeStatuses(context.Context, *emptypb.Empty) (*NodeStatuses, error)
+	// @mcp: reject
 	GetNodeGroupTypes(context.Context, *emptypb.Empty) (*NodeGroupTypes, error)
+	// @mcp: reject
 	GetResourceTypes(context.Context, *emptypb.Empty) (*ResourceTypes, error)
-	Get(context.Context, *ClusterArgs) (*Cluster, error)
+	// Get cluster by id.
+	Get(context.Context, *ClusterIdArgs) (*Cluster, error)
+	// Save cluster.
 	Save(context.Context, *ClusterSaveArgs) (*Cluster, error)
-	List(context.Context, *ClusterArgs) (*ClusterList, error)
-	Delete(context.Context, *ClusterArgs) (*common.Msg, error)
-	Start(context.Context, *ClusterArgs) (*common.Msg, error)
-	Stop(context.Context, *ClusterArgs) (*common.Msg, error)
+	// List returns a list of clusters based on the provided arguments.
+	List(context.Context, *ClusterListArgs) (*ClusterList, error)
+	// Delete cluster.
+	Delete(context.Context, *ClusterIdArgs) (*common.Msg, error)
+	// Start cluster: create cluster and start all nodes
+	Start(context.Context, *ClusterIdArgs) (*common.Msg, error)
+	// Stop cluster: stop all nodes and delete cluster
+	Stop(context.Context, *ClusterIdArgs) (*common.Msg, error)
+	// Get cluster regions
 	GetRegions(context.Context, *ClusterRegionArgs) (*Regions, error)
 	mustEmbedUnimplementedClusterInterfaceServer()
 }
@@ -270,22 +308,22 @@ func (UnimplementedClusterInterfaceServer) GetNodeGroupTypes(context.Context, *e
 func (UnimplementedClusterInterfaceServer) GetResourceTypes(context.Context, *emptypb.Empty) (*ResourceTypes, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetResourceTypes not implemented")
 }
-func (UnimplementedClusterInterfaceServer) Get(context.Context, *ClusterArgs) (*Cluster, error) {
+func (UnimplementedClusterInterfaceServer) Get(context.Context, *ClusterIdArgs) (*Cluster, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Get not implemented")
 }
 func (UnimplementedClusterInterfaceServer) Save(context.Context, *ClusterSaveArgs) (*Cluster, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Save not implemented")
 }
-func (UnimplementedClusterInterfaceServer) List(context.Context, *ClusterArgs) (*ClusterList, error) {
+func (UnimplementedClusterInterfaceServer) List(context.Context, *ClusterListArgs) (*ClusterList, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method List not implemented")
 }
-func (UnimplementedClusterInterfaceServer) Delete(context.Context, *ClusterArgs) (*common.Msg, error) {
+func (UnimplementedClusterInterfaceServer) Delete(context.Context, *ClusterIdArgs) (*common.Msg, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Delete not implemented")
 }
-func (UnimplementedClusterInterfaceServer) Start(context.Context, *ClusterArgs) (*common.Msg, error) {
+func (UnimplementedClusterInterfaceServer) Start(context.Context, *ClusterIdArgs) (*common.Msg, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Start not implemented")
 }
-func (UnimplementedClusterInterfaceServer) Stop(context.Context, *ClusterArgs) (*common.Msg, error) {
+func (UnimplementedClusterInterfaceServer) Stop(context.Context, *ClusterIdArgs) (*common.Msg, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Stop not implemented")
 }
 func (UnimplementedClusterInterfaceServer) GetRegions(context.Context, *ClusterRegionArgs) (*Regions, error) {
@@ -457,7 +495,7 @@ func _ClusterInterface_GetResourceTypes_Handler(srv interface{}, ctx context.Con
 }
 
 func _ClusterInterface_Get_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ClusterArgs)
+	in := new(ClusterIdArgs)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -469,7 +507,7 @@ func _ClusterInterface_Get_Handler(srv interface{}, ctx context.Context, dec fun
 		FullMethod: ClusterInterface_Get_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ClusterInterfaceServer).Get(ctx, req.(*ClusterArgs))
+		return srv.(ClusterInterfaceServer).Get(ctx, req.(*ClusterIdArgs))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -493,7 +531,7 @@ func _ClusterInterface_Save_Handler(srv interface{}, ctx context.Context, dec fu
 }
 
 func _ClusterInterface_List_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ClusterArgs)
+	in := new(ClusterListArgs)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -505,13 +543,13 @@ func _ClusterInterface_List_Handler(srv interface{}, ctx context.Context, dec fu
 		FullMethod: ClusterInterface_List_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ClusterInterfaceServer).List(ctx, req.(*ClusterArgs))
+		return srv.(ClusterInterfaceServer).List(ctx, req.(*ClusterListArgs))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _ClusterInterface_Delete_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ClusterArgs)
+	in := new(ClusterIdArgs)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -523,13 +561,13 @@ func _ClusterInterface_Delete_Handler(srv interface{}, ctx context.Context, dec 
 		FullMethod: ClusterInterface_Delete_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ClusterInterfaceServer).Delete(ctx, req.(*ClusterArgs))
+		return srv.(ClusterInterfaceServer).Delete(ctx, req.(*ClusterIdArgs))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _ClusterInterface_Start_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ClusterArgs)
+	in := new(ClusterIdArgs)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -541,13 +579,13 @@ func _ClusterInterface_Start_Handler(srv interface{}, ctx context.Context, dec f
 		FullMethod: ClusterInterface_Start_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ClusterInterfaceServer).Start(ctx, req.(*ClusterArgs))
+		return srv.(ClusterInterfaceServer).Start(ctx, req.(*ClusterIdArgs))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _ClusterInterface_Stop_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ClusterArgs)
+	in := new(ClusterIdArgs)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -559,7 +597,7 @@ func _ClusterInterface_Stop_Handler(srv interface{}, ctx context.Context, dec fu
 		FullMethod: ClusterInterface_Stop_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ClusterInterfaceServer).Stop(ctx, req.(*ClusterArgs))
+		return srv.(ClusterInterfaceServer).Stop(ctx, req.(*ClusterIdArgs))
 	}
 	return interceptor(ctx, in, info, handler)
 }

@@ -88,8 +88,30 @@ func NewData(ctx context.Context, c *conf.Bootstrap, logger log.Logger) (*Data, 
 		}
 	}
 
+	defaultDSN := fmt.Sprintf("host=%s user=%s password=%s port=%d sslmode=disable TimeZone=Asia/Shanghai",
+		c.Persistence.Database.Host, c.Persistence.Database.Username, c.Persistence.Database.Password, c.Persistence.Database.Port)
+	tmpDB, err := gorm.Open(postgres.Open(defaultDSN+" dbname=postgres"), &gorm.Config{})
+	if err != nil {
+		return data, cleanup, errors.Wrap(err, "connect to postgres default db failed")
+	}
+	var exists bool
+	dbName := c.Persistence.Database.Database
+	checkSQL := fmt.Sprintf("SELECT 1 FROM pg_database WHERE datname = '%s'", dbName)
+	err = tmpDB.Raw(checkSQL).Scan(&exists).Error
+	if err != nil {
+		return data, cleanup, errors.Wrap(err, "check database exists failed")
+	}
+	if !exists {
+		createSQL := fmt.Sprintf("CREATE DATABASE \"%s\" ENCODING 'UTF8'", dbName)
+		if err = tmpDB.Exec(createSQL).Error; err != nil {
+			return data, cleanup, errors.Wrap(err, "create database failed")
+		}
+	}
+	sqlDB, _ := tmpDB.DB()
+	sqlDB.Close()
+
 	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%d sslmode=disable TimeZone=Asia/Shanghai",
-		c.Persistence.Database.Host, c.Persistence.Database.Username, c.Persistence.Database.Password, c.Persistence.Database.Database, c.Persistence.Database.Port)
+		c.Persistence.Database.Host, c.Persistence.Database.Username, c.Persistence.Database.Password, dbName, c.Persistence.Database.Port)
 	data.db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{
 		Logger:         data,
 		NamingStrategy: schema.NamingStrategy{SingularTable: true},

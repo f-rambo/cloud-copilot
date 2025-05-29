@@ -11,6 +11,12 @@ enum ErrorReason {
 }
 
 message Msg {
+  // Error reason
+  // 0: SUCCEED
+  // 1: FAILED
+  // 2: ErrInvalidArgument
+  // 3: ErrNotFound
   ErrorReason Reason = 1;
+  // Error message
   string Message = 2;
 }

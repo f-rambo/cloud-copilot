@@ -11,7 +11,6 @@ import (
 	workspacev1alpha1 "github.com/f-rambo/cloud-copilot/api/workspace/v1alpha1"
 	"github.com/f-rambo/cloud-copilot/internal/conf"
 	"github.com/f-rambo/cloud-copilot/internal/interfaces"
-	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-kratos/kratos/v2/middleware/metadata"
 	"github.com/go-kratos/kratos/v2/middleware/recovery"
 	"github.com/go-kratos/kratos/v2/middleware/selector"
@@ -21,7 +20,7 @@ import (
 )
 
 // NewHTTPServer new an HTTP server.
-func NewHTTPServer(c *conf.Bootstrap, cluster *interfaces.ClusterInterface, app *interfaces.AppInterface, services *interfaces.ServicesInterface, user *interfaces.UserInterface, workspace *interfaces.WorkspaceInterface, project *interfaces.ProjectInterface, logger log.Logger) *http.Server {
+func NewHTTPServer(c *conf.Bootstrap, cluster *interfaces.ClusterInterface, app *interfaces.AppInterface, services *interfaces.ServicesInterface, user *interfaces.UserInterface, workspace *interfaces.WorkspaceInterface, project *interfaces.ProjectInterface) *http.Server {
 	var opts = []http.ServerOption{
 		http.Middleware(
 			selector.Server(NewAuthServer(user, c), BizContext(cluster, project, workspace)).Match(NewWhiteListMatcher()).Build(),

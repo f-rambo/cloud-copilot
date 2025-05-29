@@ -45,6 +45,8 @@ const (
 // AppInterfaceClient is the client API for AppInterface service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+//
+// @mcp: reject
 type AppInterfaceClient interface {
 	Ping(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*common.Msg, error)
 	Save(ctx context.Context, in *App, opts ...grpc.CallOption) (*common.Msg, error)
@@ -268,6 +270,8 @@ func (c *appInterfaceClient) UploadApp(ctx context.Context, in *emptypb.Empty, o
 // AppInterfaceServer is the server API for AppInterface service.
 // All implementations must embed UnimplementedAppInterfaceServer
 // for forward compatibility.
+//
+// @mcp: reject
 type AppInterfaceServer interface {
 	Ping(context.Context, *emptypb.Empty) (*common.Msg, error)
 	Save(context.Context, *App) (*common.Msg, error)

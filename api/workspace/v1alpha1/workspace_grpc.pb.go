@@ -28,6 +28,8 @@ const (
 // WorkspaceInterfaceClient is the client API for WorkspaceInterface service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+//
+// @mcp: reject
 type WorkspaceInterfaceClient interface {
 	Save(ctx context.Context, in *Workspace, opts ...grpc.CallOption) (*common.Msg, error)
 	Get(ctx context.Context, in *WorkspaceParam, opts ...grpc.CallOption) (*Workspace, error)
@@ -75,6 +77,8 @@ func (c *workspaceInterfaceClient) List(ctx context.Context, in *WorkspaceParam,
 // WorkspaceInterfaceServer is the server API for WorkspaceInterface service.
 // All implementations must embed UnimplementedWorkspaceInterfaceServer
 // for forward compatibility.
+//
+// @mcp: reject
 type WorkspaceInterfaceServer interface {
 	Save(context.Context, *Workspace) (*common.Msg, error)
 	Get(context.Context, *WorkspaceParam) (*Workspace, error)

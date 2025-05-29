@@ -9,6 +9,7 @@ import "google/protobuf/empty.proto";
 
 option go_package = "api/app/v1alpha1;v1alpha1";
 
+// @mcp: reject
 service AppInterface {
       rpc Ping(google.protobuf.Empty) returns (common.Msg) {
             option (google.api.http) = {

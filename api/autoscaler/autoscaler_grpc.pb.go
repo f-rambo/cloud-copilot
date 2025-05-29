@@ -54,6 +54,8 @@ const (
 // CloudProviderClient is the client API for CloudProvider service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+//
+// @mcp: reject
 type CloudProviderClient interface {
 	// NodeGroups returns all node groups configured for this cloud provider.
 	NodeGroups(ctx context.Context, in *NodeGroupsRequest, opts ...grpc.CallOption) (*NodeGroupsResponse, error)
@@ -270,6 +272,8 @@ func (c *cloudProviderClient) NodeGroupGetOptions(ctx context.Context, in *NodeG
 // CloudProviderServer is the server API for CloudProvider service.
 // All implementations must embed UnimplementedCloudProviderServer
 // for forward compatibility.
+//
+// @mcp: reject
 type CloudProviderServer interface {
 	// NodeGroups returns all node groups configured for this cloud provider.
 	NodeGroups(context.Context, *NodeGroupsRequest) (*NodeGroupsResponse, error)

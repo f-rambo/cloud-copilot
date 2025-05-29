@@ -8,9 +8,17 @@ server:
   grpc:
     network: tcp
     addr: 0.0.0.0:9000
-Persistence:
+  mcp:
+    network: tcp
+    addr: 0.0.0.0:8001
+persistence:
   database:
     driver: postgres
+    host: localhost
+    port: 5432
+    username: postgres
+    password: "123456"
+    database: cloud_copilot
 log:
   max_size: 500
   max_backups: 3
