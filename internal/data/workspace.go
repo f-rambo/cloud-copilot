@@ -22,15 +22,13 @@ func NewWorkspaceRepo(data *Data, logger log.Logger) biz.WorkspaceData {
 
 func (w *workspaceRepo) Get(ctx context.Context, id int64) (*biz.Workspace, error) {
 	workspace := &biz.Workspace{}
-	if err := w.data.db.First(workspace, id).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return nil, nil
-		}
+	err := w.data.db.Model(&biz.Workspace{}).Where("id = ?", id).First(workspace).Error
+	if err != nil && err != gorm.ErrRecordNotFound {
 		return nil, err
 	}
 	workspaceClusterRelationships := make([]*biz.WorkspaceClusterRelationship, 0)
-	err := w.data.db.Model(&biz.WorkspaceClusterRelationship{}).Where("workspace_id =?", id).
-		Find(workspaceClusterRelationships).Error
+	err = w.data.db.Model(&biz.WorkspaceClusterRelationship{}).Where("workspace_id = ?", id).
+		Find(&workspaceClusterRelationships).Error
 	if err != nil {
 		return nil, err
 	}
@@ -89,15 +87,42 @@ func (w *workspaceRepo) List(ctx context.Context, workspaceName string, page, si
 		db = db.Where("name LIKE ?", "%"+workspaceName+"%")
 	}
 
-	var total int64
+	var total int64 = 0
 	if err := db.Model(&biz.Workspace{}).Count(&total).Error; err != nil {
 		return nil, 0, err
+	}
+	if total == 0 {
+		return workspaces, total, nil
 	}
 
 	offset := (page - 1) * size
 	err := db.Offset(int(offset)).Limit(int(size)).Find(&workspaces).Error
 	if err != nil {
 		return nil, 0, err
+	}
+
+	workspaceIds := make([]int64, 0)
+	for _, v := range workspaces {
+		workspaceIds = append(workspaceIds, v.Id)
+	}
+	workspaceClusterRelationships := make([]*biz.WorkspaceClusterRelationship, 0)
+	err = db.Model(&biz.WorkspaceClusterRelationship{}).Where("workspace_id in (?)", workspaceIds).
+		Find(&workspaceClusterRelationships).Error
+	if err != nil {
+		return workspaces, total, nil
+	}
+
+	// 创建一个map来按workspaceId分组关系数据
+	relationshipMap := make(map[int64][]*biz.WorkspaceClusterRelationship)
+	for _, relationship := range workspaceClusterRelationships {
+		relationshipMap[relationship.WorkspaceId] = append(relationshipMap[relationship.WorkspaceId], relationship)
+	}
+
+	// 将关系数据分配到对应的workspace上
+	for _, workspace := range workspaces {
+		if relationships, exists := relationshipMap[workspace.Id]; exists {
+			workspace.WorkspaceClusterRelationships = relationships
+		}
 	}
 
 	return workspaces, total, nil
