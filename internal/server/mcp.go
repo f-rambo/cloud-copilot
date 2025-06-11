@@ -11,6 +11,10 @@ import (
 	"github.com/mark3labs/mcp-go/server"
 )
 
+type McpServerInterface interface {
+	Mcp() (*server.MCPServer, error)
+}
+
 type McpServer struct {
 	conf               *conf.Bootstrap
 	server             *http.Server
@@ -34,30 +38,16 @@ func NewMcpServer(ctx context.Context, conf *conf.Bootstrap, cluster *interfaces
 		ProjectInterface:   project,
 		mcpServers:         make(map[string]*server.MCPServer),
 	}
-	clusterMcpService := interfaces.NewClusterInterfaceMcpService(s.ClusterInterface)
-	clusterMcpServer, err := clusterMcpService.ClusterMcp()
-	if err != nil {
-		return nil, err
-	}
-	s.RegisterServer(biz.ClusterKey.String(), clusterMcpServer)
+	s.RegisterServer(
+		biz.ClusterKey.String(),
+		interfaces.NewClusterInterfaceMcpService(s.ClusterInterface).ClusterMcp(),
+	)
 	return s, nil
 }
 
 func (s *McpServer) RegisterServer(serverName string, mcpServer *server.MCPServer) {
 	s.mcpServers[serverName] = mcpServer
 
-}
-
-func (s *McpServer) getMcpServerPath(serverName string) string {
-	return fmt.Sprintf("/mcp/%s/", serverName)
-}
-
-func (s *McpServer) getMcpSseServerPath(serverName string) string {
-	return fmt.Sprintf("/mcp/%s/sse", serverName)
-}
-
-func (s *McpServer) getMcpMessageServerPath(serverName string) string {
-	return fmt.Sprintf("/mcp/%s/message", serverName)
 }
 
 func (s *McpServer) Start(ctx context.Context) error {
@@ -89,4 +79,16 @@ func (s *McpServer) Stop(ctx context.Context) error {
 		}
 	}
 	return nil
+}
+
+func (s *McpServer) getMcpServerPath(serverName string) string {
+	return fmt.Sprintf("/mcp/%s/", serverName)
+}
+
+func (s *McpServer) getMcpSseServerPath(serverName string) string {
+	return fmt.Sprintf("/mcp/%s/sse", serverName)
+}
+
+func (s *McpServer) getMcpMessageServerPath(serverName string) string {
+	return fmt.Sprintf("/mcp/%s/message", serverName)
 }

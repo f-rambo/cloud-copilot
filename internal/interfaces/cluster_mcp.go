@@ -24,7 +24,7 @@ func NewClusterInterfaceMcpService(clusterInterface *ClusterInterface) *ClusterI
 	}
 }
 
-func (c *ClusterInterfaceMcpService) ClusterMcp() (*server.MCPServer, error) {
+func (c *ClusterInterfaceMcpService) ClusterMcp() *server.MCPServer {
 	ser := server.NewMCPServer("ClusterInterface", "0.0.1",
 		server.WithToolCapabilities(false), // Assuming default, make configurable if needed
 	)
@@ -37,6 +37,15 @@ func (c *ClusterInterfaceMcpService) ClusterMcp() (*server.MCPServer, error) {
 		), // Close WithNumber
 	) // Close NewTool
 	ser.AddTool(tool_Get, c.Get)
+
+	// Add tool for GetClustersByIds
+	tool_GetClustersByIds := mcp.NewTool("GetClustersByIds",
+		mcp.WithDescription("Get clusters by ids."),
+		mcp.WithNumber("ids",
+			mcp.Description("cluster ids required"),
+		), // Close WithNumber
+	) // Close NewTool
+	ser.AddTool(tool_GetClustersByIds, c.GetClustersByIds)
 
 	// Add tool for Save
 	tool_Save := mcp.NewTool("Save",
@@ -134,7 +143,7 @@ func (c *ClusterInterfaceMcpService) ClusterMcp() (*server.MCPServer, error) {
 	) // Close NewTool
 	ser.AddTool(tool_GetRegions, c.GetRegions)
 
-	return ser, nil
+	return ser
 }
 
 func (c *ClusterInterfaceMcpService) Get(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
@@ -151,6 +160,31 @@ func (c *ClusterInterfaceMcpService) Get(ctx context.Context, request mcp.CallTo
 	}
 
 	res, err := c.ClusterInterface.Get(ctx, &requestArgs)
+	if err != nil {
+		return nil, err
+	}
+
+	resJson, err := json.Marshal(&res)
+	if err != nil {
+		return nil, err
+	}
+	return mcp.NewToolResultText(string(resJson)), nil
+}
+
+func (c *ClusterInterfaceMcpService) GetClustersByIds(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	args := request.GetRawArguments()
+	jsonByte, err := json.Marshal(args)
+	if err != nil {
+		return nil, err
+	}
+
+	var requestArgs v1alpha1.ClusterIdsArgs
+	err = json.Unmarshal(jsonByte, &requestArgs)
+	if err != nil {
+		return nil, err
+	}
+
+	res, err := c.ClusterInterface.GetClustersByIds(ctx, &requestArgs)
 	if err != nil {
 		return nil, err
 	}

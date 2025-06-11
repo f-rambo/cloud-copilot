@@ -118,6 +118,11 @@ message ClusterIdArgs {
     int64 id = 1 [json_name = "id"];
 }
 
+message ClusterIdsArgs {
+    // cluster ids required
+    repeated int64 ids = 1 [json_name = "ids"];
+}
+
 message ClusterListArgs {
     // cluster name optional
     string name = 1 [json_name = "name"];
@@ -140,17 +145,14 @@ message Cluster {
     string domain = 5 [json_name = "domain"];
     int32 node_number = 6 [json_name = "node_number"];
     string provider = 7 [json_name = "provider"];
-    string public_key = 8 [json_name = "public_key"];
-    string private_key = 9 [json_name = "private_key"];
-    string region = 10 [json_name = "region"];
-    string access_id = 11 [json_name = "access_id"];
-    string access_key = 12 [json_name = "access_key"];
-    string node_username = 13 [json_name = "node_username"];
-    string node_start_ip = 14 [json_name = "node_start_ip"];
-    string node_end_ip = 15 [json_name = "node_end_ip"];
-    repeated Node nodes = 16 [json_name = "nodes"];
-    repeated NodeGroup node_groups = 17 [json_name = "node_groups"];
-    ClusterResource cluster_resource = 18 [json_name = "cluster_resource"];
+    string level = 8 [json_name = "level"];
+    string region = 9 [json_name = "region"];
+    string node_username = 11 [json_name = "node_username"];
+    string node_start_ip = 12 [json_name = "node_start_ip"];
+    string node_end_ip = 13 [json_name = "node_end_ip"];
+    repeated Node nodes = 14 [json_name = "nodes"];
+    repeated NodeGroup node_groups = 15 [json_name = "node_groups"];
+    ClusterResource cluster_resource = 16 [json_name = "cluster_resource"];
 }
 
 message NodeGroup {

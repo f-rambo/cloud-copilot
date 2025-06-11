@@ -485,6 +485,15 @@ func (c *ClusterRepo) GetByName(ctx context.Context, name string) (*biz.Cluster,
 	return cluster, nil
 }
 
+func (c *ClusterRepo) GetClustersByIds(ctx context.Context, ids []int64) ([]*biz.Cluster, error) {
+	clusters := make([]*biz.Cluster, 0)
+	err := c.data.db.Model(&biz.Cluster{}).Where("id IN ?", ids).Find(&clusters).Error
+	if err != nil {
+		return nil, err
+	}
+	return clusters, nil
+}
+
 func (c *ClusterRepo) List(ctx context.Context, name string, page, pageSize int32) ([]*biz.Cluster, int64, error) {
 	var clusters []*biz.Cluster
 	var total int64

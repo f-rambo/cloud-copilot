@@ -77,6 +77,13 @@ service ClusterInterface {
             };
       }
 
+      // Get clusters by ids.
+      rpc GetClustersByIds(ClusterIdsArgs) returns (ClusterList) {
+            option (google.api.http) = {
+              get: "/api/v1alpha1/cluster/ids"
+            };
+      }
+
       // Save cluster.
       rpc Save(ClusterSaveArgs) returns (Cluster) {
             option (google.api.http) = {

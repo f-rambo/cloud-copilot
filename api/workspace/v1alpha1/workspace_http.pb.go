@@ -20,21 +20,24 @@ var _ = binding.EncodeURL
 
 const _ = http.SupportPackageIsVersion1
 
+const OperationWorkspaceInterfaceDelete = "/workspace.v1alpha1.WorkspaceInterface/Delete"
 const OperationWorkspaceInterfaceGet = "/workspace.v1alpha1.WorkspaceInterface/Get"
 const OperationWorkspaceInterfaceList = "/workspace.v1alpha1.WorkspaceInterface/List"
 const OperationWorkspaceInterfaceSave = "/workspace.v1alpha1.WorkspaceInterface/Save"
 
 type WorkspaceInterfaceHTTPServer interface {
-	Get(context.Context, *WorkspaceParam) (*Workspace, error)
-	List(context.Context, *WorkspaceParam) (*Workspaces, error)
+	Delete(context.Context, *WorkspaceDetailParam) (*common.Msg, error)
+	Get(context.Context, *WorkspaceDetailParam) (*Workspace, error)
+	List(context.Context, *WorkspaceListParam) (*WorkspaceList, error)
 	Save(context.Context, *Workspace) (*common.Msg, error)
 }
 
 func RegisterWorkspaceInterfaceHTTPServer(s *http.Server, srv WorkspaceInterfaceHTTPServer) {
 	r := s.Route("/")
-	r.POST("/api/v1alpha1/workspace/save", _WorkspaceInterface_Save2_HTTP_Handler(srv))
-	r.GET("/api/v1alpha1/workspace/get", _WorkspaceInterface_Get2_HTTP_Handler(srv))
+	r.POST("/api/v1alpha1/workspace", _WorkspaceInterface_Save2_HTTP_Handler(srv))
+	r.GET("/api/v1alpha1/workspace", _WorkspaceInterface_Get2_HTTP_Handler(srv))
 	r.GET("/api/v1alpha1/workspace/list", _WorkspaceInterface_List2_HTTP_Handler(srv))
+	r.DELETE("/api/v1alpha1/workspace", _WorkspaceInterface_Delete2_HTTP_Handler(srv))
 }
 
 func _WorkspaceInterface_Save2_HTTP_Handler(srv WorkspaceInterfaceHTTPServer) func(ctx http.Context) error {
@@ -61,13 +64,13 @@ func _WorkspaceInterface_Save2_HTTP_Handler(srv WorkspaceInterfaceHTTPServer) fu
 
 func _WorkspaceInterface_Get2_HTTP_Handler(srv WorkspaceInterfaceHTTPServer) func(ctx http.Context) error {
 	return func(ctx http.Context) error {
-		var in WorkspaceParam
+		var in WorkspaceDetailParam
 		if err := ctx.BindQuery(&in); err != nil {
 			return err
 		}
 		http.SetOperation(ctx, OperationWorkspaceInterfaceGet)
 		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.Get(ctx, req.(*WorkspaceParam))
+			return srv.Get(ctx, req.(*WorkspaceDetailParam))
 		})
 		out, err := h(ctx, &in)
 		if err != nil {
@@ -80,26 +83,46 @@ func _WorkspaceInterface_Get2_HTTP_Handler(srv WorkspaceInterfaceHTTPServer) fun
 
 func _WorkspaceInterface_List2_HTTP_Handler(srv WorkspaceInterfaceHTTPServer) func(ctx http.Context) error {
 	return func(ctx http.Context) error {
-		var in WorkspaceParam
+		var in WorkspaceListParam
 		if err := ctx.BindQuery(&in); err != nil {
 			return err
 		}
 		http.SetOperation(ctx, OperationWorkspaceInterfaceList)
 		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.List(ctx, req.(*WorkspaceParam))
+			return srv.List(ctx, req.(*WorkspaceListParam))
 		})
 		out, err := h(ctx, &in)
 		if err != nil {
 			return err
 		}
-		reply := out.(*Workspaces)
+		reply := out.(*WorkspaceList)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _WorkspaceInterface_Delete2_HTTP_Handler(srv WorkspaceInterfaceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in WorkspaceDetailParam
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationWorkspaceInterfaceDelete)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.Delete(ctx, req.(*WorkspaceDetailParam))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*common.Msg)
 		return ctx.Result(200, reply)
 	}
 }
 
 type WorkspaceInterfaceHTTPClient interface {
-	Get(ctx context.Context, req *WorkspaceParam, opts ...http.CallOption) (rsp *Workspace, err error)
-	List(ctx context.Context, req *WorkspaceParam, opts ...http.CallOption) (rsp *Workspaces, err error)
+	Delete(ctx context.Context, req *WorkspaceDetailParam, opts ...http.CallOption) (rsp *common.Msg, err error)
+	Get(ctx context.Context, req *WorkspaceDetailParam, opts ...http.CallOption) (rsp *Workspace, err error)
+	List(ctx context.Context, req *WorkspaceListParam, opts ...http.CallOption) (rsp *WorkspaceList, err error)
 	Save(ctx context.Context, req *Workspace, opts ...http.CallOption) (rsp *common.Msg, err error)
 }
 
@@ -111,9 +134,22 @@ func NewWorkspaceInterfaceHTTPClient(client *http.Client) WorkspaceInterfaceHTTP
 	return &WorkspaceInterfaceHTTPClientImpl{client}
 }
 
-func (c *WorkspaceInterfaceHTTPClientImpl) Get(ctx context.Context, in *WorkspaceParam, opts ...http.CallOption) (*Workspace, error) {
+func (c *WorkspaceInterfaceHTTPClientImpl) Delete(ctx context.Context, in *WorkspaceDetailParam, opts ...http.CallOption) (*common.Msg, error) {
+	var out common.Msg
+	pattern := "/api/v1alpha1/workspace"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationWorkspaceInterfaceDelete))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "DELETE", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *WorkspaceInterfaceHTTPClientImpl) Get(ctx context.Context, in *WorkspaceDetailParam, opts ...http.CallOption) (*Workspace, error) {
 	var out Workspace
-	pattern := "/api/v1alpha1/workspace/get"
+	pattern := "/api/v1alpha1/workspace"
 	path := binding.EncodeURL(pattern, in, true)
 	opts = append(opts, http.Operation(OperationWorkspaceInterfaceGet))
 	opts = append(opts, http.PathTemplate(pattern))
@@ -124,8 +160,8 @@ func (c *WorkspaceInterfaceHTTPClientImpl) Get(ctx context.Context, in *Workspac
 	return &out, nil
 }
 
-func (c *WorkspaceInterfaceHTTPClientImpl) List(ctx context.Context, in *WorkspaceParam, opts ...http.CallOption) (*Workspaces, error) {
-	var out Workspaces
+func (c *WorkspaceInterfaceHTTPClientImpl) List(ctx context.Context, in *WorkspaceListParam, opts ...http.CallOption) (*WorkspaceList, error) {
+	var out WorkspaceList
 	pattern := "/api/v1alpha1/workspace/list"
 	path := binding.EncodeURL(pattern, in, true)
 	opts = append(opts, http.Operation(OperationWorkspaceInterfaceList))
@@ -139,7 +175,7 @@ func (c *WorkspaceInterfaceHTTPClientImpl) List(ctx context.Context, in *Workspa
 
 func (c *WorkspaceInterfaceHTTPClientImpl) Save(ctx context.Context, in *Workspace, opts ...http.CallOption) (*common.Msg, error) {
 	var out common.Msg
-	pattern := "/api/v1alpha1/workspace/save"
+	pattern := "/api/v1alpha1/workspace"
 	path := binding.EncodeURL(pattern, in, false)
 	opts = append(opts, http.Operation(OperationWorkspaceInterfaceSave))
 	opts = append(opts, http.PathTemplate(pattern))

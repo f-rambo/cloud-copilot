@@ -4,29 +4,49 @@ package workspace.v1alpha1;
 
 option go_package = "api/workspace/v1alpha1;v1alpha1";
 
-message WorkspaceParam {
-      int64 id = 1;
-      int64 cluster_id = 2;
-      string workspace_name = 3;
+message WorkspaceDetailParam {
+    int64 id = 1 [json_name = "id"];
+}
+
+message WorkspaceListParam {
+      string workspaceName = 1 [json_name = "workspace_name"];
+      int32 page = 2 [json_name = "page"];
+      int32 size = 3 [json_name = "size"];
 }
 
 message Workspace {
-      int64 id = 1;
-      string name = 2;
-      string description = 3;
-      int64 cluster_id = 4;
-      string user_name = 5;
-      int32 cpu_rate = 6;
-      int32 gpu_rate = 7;
-      int32 memory_rate = 8;
-      int32 disk_rate = 9;
-      int32 limit_cpu = 10;
-      int32 limit_gpu = 11;
-      int32 limit_memory = 12;
-      int32 limit_disk = 13;
-      string updated_at = 14;
+    int64 id = 1 [json_name = "id"];
+    string name = 2 [json_name = "name"];
+    string description = 3 [json_name = "description"];
+    int64 user_id = 4 [json_name = "user_id"];
+    ResourceQuota resource_quota = 5 [json_name = "resource_quota"];
+    string git_repository = 6 [json_name = "git_repository"];
+    string image_repository = 7 [json_name = "image_repository"];
+    string status = 8 [json_name = "status"];
+    repeated WorkspaceClusterRelationship cluster_relationships = 9 [json_name = "cluster_relationships"];
 }
 
-message Workspaces {
-      repeated Workspace workspaces = 1;
+message WorkspaceList {
+    int64 total = 1 [json_name = "total"];
+    repeated Workspace items = 2 [json_name = "items"];
+}
+
+message ResourceLimit {
+    int32 request = 1 [json_name = "request"];
+    int32 limit = 2 [json_name = "limit"];
+}
+
+message ResourceQuota {
+    ResourceLimit cpu = 1 [json_name = "cpu"];
+    ResourceLimit memory = 2 [json_name = "memory"]; 
+    ResourceLimit gpu = 3 [json_name = "gpu"];
+    ResourceLimit storage = 4 [json_name = "storage"];
+    ResourceLimit pods = 5 [json_name = "pods"];
+}
+
+message WorkspaceClusterRelationship {
+    int64 id = 1 [json_name = "id"];
+    int64 workspace_id = 2 [json_name = "workspace_id"];
+    int64 cluster_id = 3 [json_name = "cluster_id"];
+    string permissions = 4 [json_name = "permissions"];
 }

@@ -156,33 +156,6 @@ type MetricPoint struct {
 	Value     float64   `json:"value"`
 }
 
-func (m MetricPoints) GetFirstValue() float64 {
-	if len(m) == 0 {
-		return 0
-	}
-	return m[0].Value
-}
-
-func (tr TimeRange) CalculateMetricPointsStep() time.Duration {
-	switch tr {
-	case TimeRangeHalfHour:
-		return time.Minute
-	case TimeRangeOneHour:
-		return 2 * time.Minute
-	case TimeRangeOneDay:
-		return 30 * time.Minute
-	case TimeRangeThreeDays:
-		return time.Hour
-	default:
-		return 5 * time.Minute
-	}
-}
-
-func (tr TimeRange) MustParseDuration() time.Duration {
-	d, _ := time.ParseDuration(string(tr))
-	return d
-}
-
 type ContinuousIntegration struct {
 	Id              int64                       `json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
 	Version         string                      `json:"version,omitempty" gorm:"column:version;default:'';NOT NULL"`
@@ -325,6 +298,33 @@ type ServicesUseCase struct {
 
 func NewServicesUseCase(serviceData ServicesData, serviceRuntime ServiceRuntime, wfRuntime WorkflowRuntime, logger log.Logger) *ServicesUseCase {
 	return &ServicesUseCase{serviceData: serviceData, serviceRuntime: serviceRuntime, workflowRuntime: wfRuntime, log: log.NewHelper(logger)}
+}
+
+func (m MetricPoints) GetFirstValue() float64 {
+	if len(m) == 0 {
+		return 0
+	}
+	return m[0].Value
+}
+
+func (tr TimeRange) CalculateMetricPointsStep() time.Duration {
+	switch tr {
+	case TimeRangeHalfHour:
+		return time.Minute
+	case TimeRangeOneHour:
+		return 2 * time.Minute
+	case TimeRangeOneDay:
+		return 30 * time.Minute
+	case TimeRangeThreeDays:
+		return time.Hour
+	default:
+		return 5 * time.Minute
+	}
+}
+
+func (tr TimeRange) MustParseDuration() time.Duration {
+	d, _ := time.ParseDuration(string(tr))
+	return d
 }
 
 func (l LogResponse) GetPageCount(pageSize int) int {

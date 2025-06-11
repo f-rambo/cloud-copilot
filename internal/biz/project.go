@@ -12,17 +12,14 @@ const (
 )
 
 type Project struct {
-	Id          int64  `json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
-	Name        string `json:"name,omitempty" gorm:"column:name;default:'';NOT NULL"`
-	Namespace   string `json:"namespace,omitempty" gorm:"column:namespace;default:'';NOT NULL"`
-	Description string `json:"description,omitempty" gorm:"column:namespace;default:'';NOT NULL"`
-	ClusterId   int64  `json:"cluster_id,omitempty" gorm:"column:cluster_id;default:0;NOT NULL"`
-	UserId      int64  `json:"user_id,omitempty" gorm:"column:user_id;default:0;NOT NULL"`
-	WorkspaceId int64  `json:"workspace_id,omitempty" gorm:"column:workspace_id;default:0;NOT NULL"`
-	LimitCpu    int32  `json:"limit_cpu,omitempty" gorm:"column:limit_cpu;default:0;NOT NULL"`
-	LimitGpu    int32  `json:"limit_gpu,omitempty" gorm:"column:limit_gpu;default:0;NOT NULL"`
-	LimitMemory int32  `json:"limit_memory,omitempty" gorm:"column:limit_memory;default:0;NOT NULL"`
-	LimitDisk   int32  `json:"limit_disk,omitempty" gorm:"column:limit_disk;default:0;NOT NULL"`
+	Id            int64               `json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
+	Name          string              `json:"name,omitempty" gorm:"column:name;default:'';NOT NULL"`
+	Namespace     string              `json:"namespace,omitempty" gorm:"column:namespace;default:'';NOT NULL"`
+	Description   string              `json:"description,omitempty" gorm:"column:namespace;default:'';NOT NULL"`
+	ClusterId     int64               `json:"cluster_id,omitempty" gorm:"column:cluster_id;default:0;NOT NULL"`
+	UserId        int64               `json:"user_id,omitempty" gorm:"column:user_id;default:0;NOT NULL"`
+	WorkspaceId   int64               `json:"workspace_id,omitempty" gorm:"column:workspace_id;default:0;NOT NULL"`
+	ResourceQuota ResourceQuotaString `json:"resource_quota,omitempty" gorm:"column:resource_quota;default:'';NOT NULL"`
 }
 
 type ProjectData interface {
@@ -69,19 +66,6 @@ func (p *Project) GetLabels() map[string]string {
 }
 
 func (uc *ProjectUsecase) Save(ctx context.Context, project *Project) error {
-	workspace := GetWorkspace(ctx)
-	if project.LimitCpu > workspace.LimitCpu {
-		project.LimitCpu = workspace.LimitCpu
-	}
-	if project.LimitGpu > workspace.LimitGpu {
-		project.LimitGpu = workspace.LimitGpu
-	}
-	if project.LimitMemory > workspace.LimitMemory {
-		project.LimitMemory = workspace.LimitMemory
-	}
-	if project.LimitDisk > workspace.LimitDisk {
-		project.LimitDisk = workspace.LimitDisk
-	}
 	project.UserId = GetUserInfo(ctx).Id
 	return uc.projectData.Save(ctx, project)
 }

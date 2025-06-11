@@ -22,7 +22,7 @@ const (
 
 func NewAuthServer(user *interfaces.UserInterface, conf *conf.Bootstrap) func(handler middleware.Handler) middleware.Handler {
 	return func(handler middleware.Handler) middleware.Handler {
-		return func(ctx context.Context, req interface{}) (reply interface{}, err error) {
+		return func(ctx context.Context, req any) (reply any, err error) {
 			var authorization string
 			if md, ok := metadata.FromIncomingContext(ctx); ok {
 				authorizations := md.Get(AuthorizationKey.String())
@@ -58,7 +58,7 @@ func NewAuthServer(user *interfaces.UserInterface, conf *conf.Bootstrap) func(ha
 
 func BizContext(clusterApi *interfaces.ClusterInterface, projectApi *interfaces.ProjectInterface, workspaceApi *interfaces.WorkspaceInterface) func(handler middleware.Handler) middleware.Handler {
 	return func(handler middleware.Handler) middleware.Handler {
-		return func(ctx context.Context, req interface{}) (reply interface{}, err error) {
+		return func(ctx context.Context, req any) (reply any, err error) {
 			param, ok := req.(proto.Message)
 			if !ok {
 				return handler(ctx, req)
@@ -69,7 +69,7 @@ func BizContext(clusterApi *interfaces.ClusterInterface, projectApi *interfaces.
 			msgReflection := param.ProtoReflect()
 			descriptor := msgReflection.Descriptor()
 			fields := descriptor.Fields()
-			for i := 0; i < fields.Len(); i++ {
+			for i := range make([]struct{}, fields.Len()) {
 				field := fields.Get(i)
 				fieldName := field.TextName()
 				value := msgReflection.Get(field)
@@ -91,13 +91,6 @@ func BizContext(clusterApi *interfaces.ClusterInterface, projectApi *interfaces.
 							return nil, err
 						}
 						ctx = biz.WithWorkspace(ctx, workspace)
-						if cluster == nil && workspace.ClusterId > 0 {
-							cluster, err = clusterApi.GetCluster(ctx, workspace.ClusterId)
-							if err != nil {
-								return nil, err
-							}
-							ctx = biz.WithCluster(ctx, cluster)
-						}
 					}
 				case "project_id", "projectId":
 					projectId := cast.ToInt64(value.Interface())
@@ -107,20 +100,6 @@ func BizContext(clusterApi *interfaces.ClusterInterface, projectApi *interfaces.
 							return nil, err
 						}
 						ctx = biz.WithProject(ctx, project)
-						if workspace == nil && project.WorkspaceId > 0 {
-							workspace, err = workspaceApi.GetWorkspace(ctx, project.WorkspaceId)
-							if err != nil {
-								return nil, err
-							}
-							ctx = biz.WithWorkspace(ctx, workspace)
-							if cluster == nil && workspace.ClusterId > 0 {
-								cluster, err = clusterApi.GetCluster(ctx, workspace.ClusterId)
-								if err != nil {
-									return nil, err
-								}
-								ctx = biz.WithCluster(ctx, cluster)
-							}
-						}
 					}
 				default:
 				}

@@ -121,10 +121,6 @@ func (p *ProjectInterface) projectTobizProject(project *v1alpha1.Project) *biz.P
 		ClusterId:   project.ClusterId,
 		UserId:      project.UserId,
 		WorkspaceId: project.WorkspaceId,
-		LimitCpu:    project.LimitCpu,
-		LimitGpu:    project.LimitGpu,
-		LimitMemory: project.LimitMemory,
-		LimitDisk:   project.LimitDisk,
 	}
 }
 
@@ -136,9 +132,5 @@ func (p *ProjectInterface) bizProjectToProject(bizProject *biz.Project) *v1alpha
 		ClusterId:   bizProject.ClusterId,
 		UserId:      bizProject.UserId,
 		WorkspaceId: bizProject.WorkspaceId,
-		LimitCpu:    bizProject.LimitCpu,
-		LimitGpu:    bizProject.LimitGpu,
-		LimitMemory: bizProject.LimitMemory,
-		LimitDisk:   bizProject.LimitDisk,
 	}
 }

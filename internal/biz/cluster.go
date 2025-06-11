@@ -580,6 +580,7 @@ type ClusterData interface {
 	Save(context.Context, *Cluster) error
 	Get(context.Context, int64) (*Cluster, error)
 	GetByName(context.Context, string) (*Cluster, error)
+	GetClustersByIds(context.Context, []int64) ([]*Cluster, error)
 	List(ctx context.Context, name string, page, pageSize int32) ([]*Cluster, int64, error)
 	Delete(context.Context, int64) error
 	RegisterHandlerClusterEvent(handler func(ctx context.Context, cluster *Cluster) error)
@@ -1506,6 +1507,10 @@ func (uc *ClusterUsecase) GetByName(ctx context.Context, name string) (*Cluster,
 		return nil, err
 	}
 	return cluster, nil
+}
+
+func (uc *ClusterUsecase) GetClustersByIds(ctx context.Context, ids []int64) ([]*Cluster, error) {
+	return uc.clusterData.GetClustersByIds(ctx, ids)
 }
 
 func (uc *ClusterUsecase) List(ctx context.Context, clusterName string, page, pageSize int32) ([]*Cluster, int64, error) {

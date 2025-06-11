@@ -2,6 +2,7 @@ package interfaces
 
 import (
 	"context"
+	"strconv"
 	"strings"
 
 	"github.com/f-rambo/cloud-copilot/api/common"
@@ -31,7 +32,7 @@ func (u *UserInterface) SignIn(ctx context.Context, request *v1alpha1.SignIn) (*
 		Username: user.Name,
 		Token:    user.AccessToken,
 		Status:   user.Status.String(),
-		Expires:  expires.Format("2006-01-02T15:04:05.000Z"), // "2024-03-20T10:30:00.000Z" ISO 8601
+		Expires:  strconv.FormatInt(expires.Unix(), 10),
 	}, nil
 }
 

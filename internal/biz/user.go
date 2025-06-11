@@ -52,6 +52,16 @@ func (s UserStatus) String() string {
 	return "UNKNOWN"
 }
 
+type RoleType int32
+
+const (
+	RoleType_WORKSPACE_ADMIN RoleType = 0 // 工作空间管理员
+	RoleType_PROJECT_ADMIN   RoleType = 1 // 项目管理员
+	RoleType_DEVELOPER       RoleType = 2 // 开发者
+	RoleType_VIEWER          RoleType = 3 // 只读用户
+	RoleType_CUSTOM          RoleType = 4 // 自定义角色
+)
+
 type User struct {
 	Id                   int64      `json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
 	Name                 string     `json:"name,omitempty" gorm:"column:name;default:'';NOT NULL"`
@@ -62,23 +72,33 @@ type User struct {
 	Password             string     `json:"password,omitempty" gorm:"column:password;default:'';NOT NULL"`
 	Status               UserStatus `json:"status,omitempty" gorm:"column:status;default:0;NOT NULL"`
 	AccessToken          string     `json:"access_token,omitempty" gorm:"-"`
-	WorkspaceId          int64      `json:"workspace_id,omitempty" gorm:"column:workspace_id;default:0;NOT NULL"`
 	GitRepositoryToken   string     `json:"git_repository_token,omitempty" gorm:"column:gitrepository_token;default:'';NOT NULL"`
 	ImageRepositoryToken string     `json:"image_repository_token,omitempty" gorm:"column:imagerepository_token;default:'';NOT NULL"`
+	Avatar               string     `json:"avatar,omitempty" gorm:"column:avatar;default:'';NOT NULL"`         // 头像
+	Phone                string     `json:"phone,omitempty" gorm:"column:phone;default:'';NOT NULL"`           // 电话
+	Department           string     `json:"department,omitempty" gorm:"column:department;default:'';NOT NULL"` // 部门
+	LastLoginAt          *time.Time `json:"last_login_at,omitempty" gorm:"column:last_login_at"`               // 最后登录时间
 }
 
 type Role struct {
-	Id          int64  `json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
-	Name        string `json:"name,omitempty" gorm:"column:name;default:'';NOT NULL"`
-	Verbs       string `json:"verbs,omitempty" gorm:"column:verbs;default:'';NOT NULL"`         // GET,POST,PUT,DELETE
-	Resources   string `json:"resources,omitempty" gorm:"column:resources;default:'';NOT NULL"` // project1:servicename1,servicename2|project2:servicename1  in the workspace
-	Description string `json:"description,omitempty" gorm:"column:description;default:'';NOT NULL"`
+	Id          int64     `json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
+	Name        string    `json:"name,omitempty" gorm:"column:name;default:'';NOT NULL"`
+	Verbs       string    `json:"verbs,omitempty" gorm:"column:verbs;default:'';NOT NULL"`
+	Resources   string    `json:"resources,omitempty" gorm:"column:resources;default:'';NOT NULL"`
+	Description string    `json:"description,omitempty" gorm:"column:description;default:'';NOT NULL"`
+	External    string    `json:"external,omitempty" gorm:"column:external;default:'';NOT NULL"`
+	WorkspaceId int64     `json:"workspace_id,omitempty" gorm:"column:workspace_id;default:0;NOT NULL"` // 角色所属工作空间
+	RoleType    RoleType  `json:"role_type,omitempty" gorm:"column:role_type;default:0;NOT NULL"`       // 角色类型
+	IsSystem    bool      `json:"is_system,omitempty" gorm:"column:is_system;default:false;NOT NULL"`   // 是否系统角色
+	CreatedAt   time.Time `json:"created_at,omitempty" gorm:"column:created_at;autoCreateTime"`
+	UpdatedAt   time.Time `json:"updated_at,omitempty" gorm:"column:updated_at;autoUpdateTime"`
 }
 
-type UserRole struct {
-	Id     int64 `json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
-	UserId int64 `json:"user_id,omitempty" gorm:"column:user_id;default:0;NOT NULL"`
-	RoleId int64 `json:"role_id,omitempty" gorm:"column:role_id;default:0;NOT NULL"`
+type WorkspaceRole struct {
+	Id          int64 `json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
+	WorkspaceId int64 `json:"workspace_id,omitempty" gorm:"column:workspace_id;default:0;NOT NULL"`
+	UserId      int64 `json:"user_id,omitempty" gorm:"column:user_id;default:0;NOT NULL"`
+	RoleId      int64 `json:"role_id,omitempty" gorm:"column:role_id;default:0;NOT NULL"`
 }
 
 type UserData interface {
@@ -139,7 +159,7 @@ func (u *UserUseCase) SignIn(ctx context.Context, email, passwd string) (*User, 
 			return nil, nil, errors.New(ErrUserPasswordError)
 		}
 		user := &User{
-			Name:   email,
+			Name:   "Admin",
 			Email:  email,
 			Status: UserStatus_USER_ENABLE,
 		}
@@ -196,7 +216,6 @@ func GenerateJWT(user *User, exp int32, authKey string) (string, *time.Time, err
 		"gitrepo_name":   user.GitrepoName,
 		"imagerepo_name": user.ImagerepoName,
 		"status":         user.Status,
-		"workspace_id":   user.WorkspaceId,
 	}
 
 	expires := time.Now().Add(time.Hour * time.Duration(exp))

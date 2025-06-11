@@ -47,7 +47,7 @@ func (b *Baremetal) initNode(cluster *biz.Cluster, node *biz.Node) error {
 		return err
 	}
 	err = remoteBash.ExecShellLogging(
-		ComponentShell,
+		KubernetesComponentShell,
 		filepath.Join(userHomePath, b.c.Infrastructure.Resource),
 		cluster.ImageRepository,
 		getKubernetesVersion(b.c.Infrastructure.Resource),
@@ -189,7 +189,7 @@ func (b *Baremetal) Install(ctx context.Context, cluster *biz.Cluster) error {
 		return err
 	}
 	err = b.getClusterNodeRemoteBash(cluster, masterNode).ExecShellLogging(
-		ClusterInitShell,
+		KubernetesInitShell,
 		getKubernetesVersion(b.c.Infrastructure.Resource),
 	)
 	if err != nil {
@@ -268,22 +268,22 @@ func (b *Baremetal) joinCluster(cluster *biz.Cluster, node *biz.Node) error {
 	var token, caHash string
 	masterNode := cluster.GetSingleMasterNode()
 	masterNodeRemoteBash := b.getClusterNodeRemoteBash(cluster, masterNode)
-	caHash, err = masterNodeRemoteBash.ExecShell(CluasterCaTokenShell, GetCaHash)
+	caHash, err = masterNodeRemoteBash.ExecShell(KubeadmCaTokenShell, GetCaHash)
 	if err != nil {
 		return err
 	}
-	token, err = masterNodeRemoteBash.ExecShell(CluasterCaTokenShell, GetToken)
+	token, err = masterNodeRemoteBash.ExecShell(KubeadmCaTokenShell, GetToken)
 	if err != nil {
 		return err
 	}
 	if node.Role == biz.NodeRole_MASTER {
 		return b.getClusterNodeRemoteBash(cluster, node).ExecShellLogging(
-			ClusterJoinShell,
+			KubernetesJoinShell,
 			cluster.ApiServerAddress,
 			caHash, token)
 	}
 	return b.getClusterNodeRemoteBash(cluster, node).ExecShellLogging(
-		ClusterJoinShell,
+		KubernetesJoinShell,
 		cluster.ApiServerAddress,
 		caHash, token,
 		ClusterController)
@@ -296,5 +296,5 @@ func (b *Baremetal) uninstallNode(cluster *biz.Cluster, node *biz.Node) error {
 		User:       node.Username,
 		Port:       defaultSHHPort,
 		PrivateKey: cluster.PrivateKey,
-	}, b.c.Infrastructure.Shell, b.log).ExecShellLogging(ClusterResetShell)
+	}, b.c.Infrastructure.Shell, b.log).ExecShellLogging(KubernetesResetShell)
 }

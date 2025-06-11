@@ -24,15 +24,17 @@ var (
 	TimeOutSecond      time.Duration = 5  // 5s
 
 	CloudCopilotInstallShell string = "cloud-copilot-install.sh"
-	CluasterCaTokenShell     string = "cluster-ca-token.sh"
-	ClusterInitShell         string = "cluster-init.sh"
-	ClusterJoinShell         string = "cluster-join.sh"
-	ClusterResetShell        string = "cluster-reset.sh"
-	NodeInitShell            string = "nodeinit.sh"
-	ComponentShell           string = "component.sh"
-	SystemInfoShell          string = "systeminfo.sh"
 
-	ClusterConfiguration string = "cluster-config.yaml"
+	KubeadmCaTokenShell      string = "kubeadm-catoken.sh"
+	KubernetesInitShell      string = "kubernetes-init.sh"
+	KubernetesJoinShell      string = "kubernetes-join.sh"
+	KubernetesResetShell     string = "kubernetes-reset.sh"
+	KubernetesComponentShell string = "kubernetes-component.sh"
+
+	NodeInitShell   string = "nodeinit.sh"
+	SystemInfoShell string = "systeminfo.sh"
+
+	ClusterConfiguration string = "kubernetes-config.yaml"
 
 	ClusterController string = "controller"
 	GetCaHash         string = "get-ca-hash"

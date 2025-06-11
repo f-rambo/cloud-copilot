@@ -685,6 +685,27 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/common.Msg'
+    /api/v1alpha1/cluster/ids:
+        get:
+            tags:
+                - ClusterInterface
+            description: Get clusters by ids.
+            operationId: ClusterInterface_GetClustersByIds
+            parameters:
+                - name: ids
+                  in: query
+                  description: cluster ids required
+                  schema:
+                    type: array
+                    items:
+                        type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/cluster.v1alpha1.ClusterList'
     /api/v1alpha1/cluster/levels:
         get:
             tags:
@@ -1651,21 +1672,13 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/user.v1alpha1.Users'
-    /api/v1alpha1/workspace/get:
+    /api/v1alpha1/workspace:
         get:
             tags:
                 - WorkspaceInterface
             operationId: WorkspaceInterface_Get
             parameters:
                 - name: id
-                  in: query
-                  schema:
-                    type: string
-                - name: clusterId
-                  in: query
-                  schema:
-                    type: string
-                - name: workspaceName
                   in: query
                   schema:
                     type: string
@@ -1676,32 +1689,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/workspace.v1alpha1.Workspace'
-    /api/v1alpha1/workspace/list:
-        get:
-            tags:
-                - WorkspaceInterface
-            operationId: WorkspaceInterface_List
-            parameters:
-                - name: id
-                  in: query
-                  schema:
-                    type: string
-                - name: clusterId
-                  in: query
-                  schema:
-                    type: string
-                - name: workspaceName
-                  in: query
-                  schema:
-                    type: string
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/workspace.v1alpha1.Workspaces'
-    /api/v1alpha1/workspace/save:
         post:
             tags:
                 - WorkspaceInterface
@@ -1719,6 +1706,49 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/common.Msg'
+        delete:
+            tags:
+                - WorkspaceInterface
+            operationId: WorkspaceInterface_Delete
+            parameters:
+                - name: id
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/common.Msg'
+    /api/v1alpha1/workspace/list:
+        get:
+            tags:
+                - WorkspaceInterface
+            operationId: WorkspaceInterface_List
+            parameters:
+                - name: workspace_name
+                  in: query
+                  schema:
+                    type: string
+                - name: page
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: size
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/workspace.v1alpha1.WorkspaceList'
 components:
     schemas:
         app.v1alpha1.App:
@@ -2014,15 +2044,9 @@ components:
                     format: int32
                 provider:
                     type: string
-                public_key:
-                    type: string
-                private_key:
+                level:
                     type: string
                 region:
-                    type: string
-                access_id:
-                    type: string
-                access_key:
                     type: string
                 node_username:
                     type: string
@@ -2610,6 +2634,28 @@ components:
                 total_count:
                     type: integer
                     format: int32
+        workspace.v1alpha1.ResourceLimit:
+            type: object
+            properties:
+                request:
+                    type: integer
+                    format: int32
+                limit:
+                    type: integer
+                    format: int32
+        workspace.v1alpha1.ResourceQuota:
+            type: object
+            properties:
+                cpu:
+                    $ref: '#/components/schemas/workspace.v1alpha1.ResourceLimit'
+                memory:
+                    $ref: '#/components/schemas/workspace.v1alpha1.ResourceLimit'
+                gpu:
+                    $ref: '#/components/schemas/workspace.v1alpha1.ResourceLimit'
+                storage:
+                    $ref: '#/components/schemas/workspace.v1alpha1.ResourceLimit'
+                pods:
+                    $ref: '#/components/schemas/workspace.v1alpha1.ResourceLimit'
         workspace.v1alpha1.Workspace:
             type: object
             properties:
@@ -2619,40 +2665,37 @@ components:
                     type: string
                 description:
                     type: string
-                clusterId:
+                user_id:
                     type: string
-                userName:
+                resource_quota:
+                    $ref: '#/components/schemas/workspace.v1alpha1.ResourceQuota'
+                git_repository:
                     type: string
-                cpuRate:
-                    type: integer
-                    format: int32
-                gpuRate:
-                    type: integer
-                    format: int32
-                memoryRate:
-                    type: integer
-                    format: int32
-                diskRate:
-                    type: integer
-                    format: int32
-                limitCpu:
-                    type: integer
-                    format: int32
-                limitGpu:
-                    type: integer
-                    format: int32
-                limitMemory:
-                    type: integer
-                    format: int32
-                limitDisk:
-                    type: integer
-                    format: int32
-                updatedAt:
+                image_repository:
                     type: string
-        workspace.v1alpha1.Workspaces:
+                status:
+                    type: string
+                cluster_relationships:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/workspace.v1alpha1.WorkspaceClusterRelationship'
+        workspace.v1alpha1.WorkspaceClusterRelationship:
             type: object
             properties:
-                workspaces:
+                id:
+                    type: string
+                workspace_id:
+                    type: string
+                cluster_id:
+                    type: string
+                permissions:
+                    type: string
+        workspace.v1alpha1.WorkspaceList:
+            type: object
+            properties:
+                total:
+                    type: string
+                items:
                     type: array
                     items:
                         $ref: '#/components/schemas/workspace.v1alpha1.Workspace'

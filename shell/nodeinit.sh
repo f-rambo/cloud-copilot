@@ -87,6 +87,70 @@ else
     log "No uncommented swap entries found in /etc/fstab"
 fi
 
+log "Checking and disabling firewall"
+# 检查并关闭 ufw (Ubuntu/Debian)
+if command -v ufw &>/dev/null; then
+    if ufw status | grep -q "Status: active"; then
+        log "Disabling ufw firewall"
+        if ! ufw --force disable; then
+            log "Error: Failed to disable ufw firewall."
+            exit 1
+        fi
+        log "ufw firewall has been disabled"
+    else
+        log "ufw firewall is already disabled"
+    fi
+fi
+
+# 检查并关闭 firewalld (CentOS/RHEL/Fedora)
+if command -v firewall-cmd &>/dev/null; then
+    if firewall-cmd --state &>/dev/null; then
+        log "Stopping firewalld service"
+        if ! systemctl stop firewalld; then
+            log "Warning: Failed to stop firewalld service."
+        else
+            log "firewalld service has been stopped"
+        fi
+
+        log "Disabling firewalld service"
+        if ! systemctl disable firewalld; then
+            log "Warning: Failed to disable firewalld service."
+        else
+            log "firewalld service has been disabled"
+        fi
+    else
+        log "firewalld is already stopped"
+    fi
+fi
+
+# 检查并关闭 iptables (通用)
+if command -v iptables &>/dev/null; then
+    log "Flushing iptables rules"
+    if ! iptables -F; then
+        log "Warning: Failed to flush iptables rules."
+    else
+        log "iptables rules have been flushed"
+    fi
+
+    if ! iptables -X; then
+        log "Warning: Failed to delete iptables chains."
+    else
+        log "iptables chains have been deleted"
+    fi
+
+    if ! iptables -t nat -F; then
+        log "Warning: Failed to flush iptables nat table."
+    else
+        log "iptables nat table has been flushed"
+    fi
+
+    if ! iptables -t nat -X; then
+        log "Warning: Failed to delete iptables nat chains."
+    else
+        log "iptables nat chains have been deleted"
+    fi
+fi
+
 log "Checking and installing required packages"
 if command -v apt-get &>/dev/null; then
     # 更新包列表

@@ -43,7 +43,7 @@ fi
 
 log "Exec cluster init..."
 
-cluster_config_path=$ORIGINAL_HOME/resource/cluster-config.yaml
+cluster_config_path=$ORIGINAL_HOME/resource/kubernetes-config.yaml
 if [ ! -f $cluster_config_path ]; then
       log "Error: Cluster config file not found."
       exit 1

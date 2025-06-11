@@ -13,35 +13,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-/*
-	// Create client
-	config := utils.ESConfig{
-	Addresses: []string{"http://localhost:9200"},
-	}
-	client, err := utils.NewESClient(config)
-
-	// Create index
-	mapping := `{
-	"mappings": {
-		"properties": {
-			"title": { "type": "text" },
-			"tags": { "type": "keyword" }
-		}
-	}
-	}`
-	err = client.CreateIndex("my-index", mapping)
-
-	// Index document
-	doc := map[string]any{
-	"title": "Test Document",
-	"tags":  []string{"test", "demo"},
-	}
-	err = client.IndexDocument("my-index", "doc1", doc)
-
-	// Search documents
-	results, err := client.SearchByTags("my-index", []string{"test"})
-*/
-
 const (
 	SevenDayILMPolicyName = "seven-days-ilm-policy"
 )

@@ -1,0 +1,16 @@
+# /etc/rancher/k3s/config.yaml
+cluster-init: true
+tls-san:
+  - "{{.ApiServerAddress}}"
+cluster-domain: "{{.Domain}}"
+cluster-cidr: "{{.PodCidr}}"
+service-cidr: "{{.ServiceCidr}}"
+disable:
+  - traefik
+  - servicelb
+  - metrics-server
+  - local-storage
+  - helm-controller
+  - kube-proxy
+  - network-policy
+flannel-backend: none

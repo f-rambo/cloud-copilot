@@ -30,6 +30,7 @@ const (
 	ClusterInterface_GetNodeGroupTypes_FullMethodName   = "/cluster.v1alpha1.ClusterInterface/GetNodeGroupTypes"
 	ClusterInterface_GetResourceTypes_FullMethodName    = "/cluster.v1alpha1.ClusterInterface/GetResourceTypes"
 	ClusterInterface_Get_FullMethodName                 = "/cluster.v1alpha1.ClusterInterface/Get"
+	ClusterInterface_GetClustersByIds_FullMethodName    = "/cluster.v1alpha1.ClusterInterface/GetClustersByIds"
 	ClusterInterface_Save_FullMethodName                = "/cluster.v1alpha1.ClusterInterface/Save"
 	ClusterInterface_List_FullMethodName                = "/cluster.v1alpha1.ClusterInterface/List"
 	ClusterInterface_Delete_FullMethodName              = "/cluster.v1alpha1.ClusterInterface/Delete"
@@ -64,6 +65,8 @@ type ClusterInterfaceClient interface {
 	GetResourceTypes(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*ResourceTypes, error)
 	// Get cluster by id.
 	Get(ctx context.Context, in *ClusterIdArgs, opts ...grpc.CallOption) (*Cluster, error)
+	// Get clusters by ids.
+	GetClustersByIds(ctx context.Context, in *ClusterIdsArgs, opts ...grpc.CallOption) (*ClusterList, error)
 	// Save cluster.
 	Save(ctx context.Context, in *ClusterSaveArgs, opts ...grpc.CallOption) (*Cluster, error)
 	// List returns a list of clusters based on the provided arguments.
@@ -176,6 +179,16 @@ func (c *clusterInterfaceClient) Get(ctx context.Context, in *ClusterIdArgs, opt
 	return out, nil
 }
 
+func (c *clusterInterfaceClient) GetClustersByIds(ctx context.Context, in *ClusterIdsArgs, opts ...grpc.CallOption) (*ClusterList, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ClusterList)
+	err := c.cc.Invoke(ctx, ClusterInterface_GetClustersByIds_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *clusterInterfaceClient) Save(ctx context.Context, in *ClusterSaveArgs, opts ...grpc.CallOption) (*Cluster, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Cluster)
@@ -262,6 +275,8 @@ type ClusterInterfaceServer interface {
 	GetResourceTypes(context.Context, *emptypb.Empty) (*ResourceTypes, error)
 	// Get cluster by id.
 	Get(context.Context, *ClusterIdArgs) (*Cluster, error)
+	// Get clusters by ids.
+	GetClustersByIds(context.Context, *ClusterIdsArgs) (*ClusterList, error)
 	// Save cluster.
 	Save(context.Context, *ClusterSaveArgs) (*Cluster, error)
 	// List returns a list of clusters based on the provided arguments.
@@ -310,6 +325,9 @@ func (UnimplementedClusterInterfaceServer) GetResourceTypes(context.Context, *em
 }
 func (UnimplementedClusterInterfaceServer) Get(context.Context, *ClusterIdArgs) (*Cluster, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Get not implemented")
+}
+func (UnimplementedClusterInterfaceServer) GetClustersByIds(context.Context, *ClusterIdsArgs) (*ClusterList, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetClustersByIds not implemented")
 }
 func (UnimplementedClusterInterfaceServer) Save(context.Context, *ClusterSaveArgs) (*Cluster, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Save not implemented")
@@ -512,6 +530,24 @@ func _ClusterInterface_Get_Handler(srv interface{}, ctx context.Context, dec fun
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ClusterInterface_GetClustersByIds_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ClusterIdsArgs)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ClusterInterfaceServer).GetClustersByIds(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ClusterInterface_GetClustersByIds_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ClusterInterfaceServer).GetClustersByIds(ctx, req.(*ClusterIdsArgs))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _ClusterInterface_Save_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ClusterSaveArgs)
 	if err := dec(in); err != nil {
@@ -662,6 +698,10 @@ var ClusterInterface_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Get",
 			Handler:    _ClusterInterface_Get_Handler,
+		},
+		{
+			MethodName: "GetClustersByIds",
+			Handler:    _ClusterInterface_GetClustersByIds_Handler,
 		},
 		{
 			MethodName: "Save",

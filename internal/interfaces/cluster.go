@@ -35,6 +35,21 @@ func (c *ClusterInterface) GetCluster(ctx context.Context, clusterId int64) (*bi
 	return c.clusterUc.Get(ctx, clusterId)
 }
 
+func (c *ClusterInterface) GetClustersByIds(ctx context.Context, clusterIds *v1alpha1.ClusterIdsArgs) (*v1alpha1.ClusterList, error) {
+	if len(clusterIds.Ids) == 0 {
+		return nil, errors.New("cluster ids is empty")
+	}
+	clusters, err := c.clusterUc.GetClustersByIds(ctx, clusterIds.Ids)
+	if err != nil {
+		return nil, err
+	}
+	clusterResponse := &v1alpha1.ClusterList{Clusters: make([]*v1alpha1.Cluster, 0), Total: int64(len(clusters))}
+	for _, cluster := range clusters {
+		clusterResponse.Clusters = append(clusterResponse.Clusters, c.bizCLusterToCluster(cluster))
+	}
+	return clusterResponse, nil
+}
+
 func (c *ClusterInterface) GetClusterProviders(ctx context.Context, _ *emptypb.Empty) (*v1alpha1.ClusterProviders, error) {
 	clusterTypes := c.clusterUc.GetClusterProviders()
 	clusterTypeResponse := &v1alpha1.ClusterProviders{ClusterProviders: make([]*v1alpha1.ClusterProvider, 0)}
@@ -265,14 +280,11 @@ func (c *ClusterInterface) bizCLusterToCluster(bizCluster *biz.Cluster) *v1alpha
 		Name:             bizCluster.Name,
 		ApiServerAddress: bizCluster.ApiServerAddress,
 		Status:           bizCluster.Status.String(),
+		Level:            bizCluster.Level.String(),
 		Domain:           bizCluster.Domain,
 		NodeNumber:       int32(len(bizCluster.Nodes)),
 		Provider:         bizCluster.Provider.String(),
-		PublicKey:        bizCluster.PublicKey,
-		PrivateKey:       bizCluster.PrivateKey,
 		Region:           bizCluster.Region,
-		AccessId:         bizCluster.AccessId,
-		AccessKey:        bizCluster.AccessKey,
 		NodeUsername:     bizCluster.NodeUsername,
 		NodeStartIp:      bizCluster.NodeStartIp,
 		NodeEndIp:        bizCluster.NodeEndIp,

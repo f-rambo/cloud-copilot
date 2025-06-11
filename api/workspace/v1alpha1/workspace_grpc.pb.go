@@ -20,9 +20,10 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	WorkspaceInterface_Save_FullMethodName = "/workspace.v1alpha1.WorkspaceInterface/Save"
-	WorkspaceInterface_Get_FullMethodName  = "/workspace.v1alpha1.WorkspaceInterface/Get"
-	WorkspaceInterface_List_FullMethodName = "/workspace.v1alpha1.WorkspaceInterface/List"
+	WorkspaceInterface_Save_FullMethodName   = "/workspace.v1alpha1.WorkspaceInterface/Save"
+	WorkspaceInterface_Get_FullMethodName    = "/workspace.v1alpha1.WorkspaceInterface/Get"
+	WorkspaceInterface_List_FullMethodName   = "/workspace.v1alpha1.WorkspaceInterface/List"
+	WorkspaceInterface_Delete_FullMethodName = "/workspace.v1alpha1.WorkspaceInterface/Delete"
 )
 
 // WorkspaceInterfaceClient is the client API for WorkspaceInterface service.
@@ -32,8 +33,9 @@ const (
 // @mcp: reject
 type WorkspaceInterfaceClient interface {
 	Save(ctx context.Context, in *Workspace, opts ...grpc.CallOption) (*common.Msg, error)
-	Get(ctx context.Context, in *WorkspaceParam, opts ...grpc.CallOption) (*Workspace, error)
-	List(ctx context.Context, in *WorkspaceParam, opts ...grpc.CallOption) (*Workspaces, error)
+	Get(ctx context.Context, in *WorkspaceDetailParam, opts ...grpc.CallOption) (*Workspace, error)
+	List(ctx context.Context, in *WorkspaceListParam, opts ...grpc.CallOption) (*WorkspaceList, error)
+	Delete(ctx context.Context, in *WorkspaceDetailParam, opts ...grpc.CallOption) (*common.Msg, error)
 }
 
 type workspaceInterfaceClient struct {
@@ -54,7 +56,7 @@ func (c *workspaceInterfaceClient) Save(ctx context.Context, in *Workspace, opts
 	return out, nil
 }
 
-func (c *workspaceInterfaceClient) Get(ctx context.Context, in *WorkspaceParam, opts ...grpc.CallOption) (*Workspace, error) {
+func (c *workspaceInterfaceClient) Get(ctx context.Context, in *WorkspaceDetailParam, opts ...grpc.CallOption) (*Workspace, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Workspace)
 	err := c.cc.Invoke(ctx, WorkspaceInterface_Get_FullMethodName, in, out, cOpts...)
@@ -64,10 +66,20 @@ func (c *workspaceInterfaceClient) Get(ctx context.Context, in *WorkspaceParam, 
 	return out, nil
 }
 
-func (c *workspaceInterfaceClient) List(ctx context.Context, in *WorkspaceParam, opts ...grpc.CallOption) (*Workspaces, error) {
+func (c *workspaceInterfaceClient) List(ctx context.Context, in *WorkspaceListParam, opts ...grpc.CallOption) (*WorkspaceList, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Workspaces)
+	out := new(WorkspaceList)
 	err := c.cc.Invoke(ctx, WorkspaceInterface_List_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *workspaceInterfaceClient) Delete(ctx context.Context, in *WorkspaceDetailParam, opts ...grpc.CallOption) (*common.Msg, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(common.Msg)
+	err := c.cc.Invoke(ctx, WorkspaceInterface_Delete_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -81,8 +93,9 @@ func (c *workspaceInterfaceClient) List(ctx context.Context, in *WorkspaceParam,
 // @mcp: reject
 type WorkspaceInterfaceServer interface {
 	Save(context.Context, *Workspace) (*common.Msg, error)
-	Get(context.Context, *WorkspaceParam) (*Workspace, error)
-	List(context.Context, *WorkspaceParam) (*Workspaces, error)
+	Get(context.Context, *WorkspaceDetailParam) (*Workspace, error)
+	List(context.Context, *WorkspaceListParam) (*WorkspaceList, error)
+	Delete(context.Context, *WorkspaceDetailParam) (*common.Msg, error)
 	mustEmbedUnimplementedWorkspaceInterfaceServer()
 }
 
@@ -96,11 +109,14 @@ type UnimplementedWorkspaceInterfaceServer struct{}
 func (UnimplementedWorkspaceInterfaceServer) Save(context.Context, *Workspace) (*common.Msg, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Save not implemented")
 }
-func (UnimplementedWorkspaceInterfaceServer) Get(context.Context, *WorkspaceParam) (*Workspace, error) {
+func (UnimplementedWorkspaceInterfaceServer) Get(context.Context, *WorkspaceDetailParam) (*Workspace, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Get not implemented")
 }
-func (UnimplementedWorkspaceInterfaceServer) List(context.Context, *WorkspaceParam) (*Workspaces, error) {
+func (UnimplementedWorkspaceInterfaceServer) List(context.Context, *WorkspaceListParam) (*WorkspaceList, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method List not implemented")
+}
+func (UnimplementedWorkspaceInterfaceServer) Delete(context.Context, *WorkspaceDetailParam) (*common.Msg, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Delete not implemented")
 }
 func (UnimplementedWorkspaceInterfaceServer) mustEmbedUnimplementedWorkspaceInterfaceServer() {}
 func (UnimplementedWorkspaceInterfaceServer) testEmbeddedByValue()                            {}
@@ -142,7 +158,7 @@ func _WorkspaceInterface_Save_Handler(srv interface{}, ctx context.Context, dec 
 }
 
 func _WorkspaceInterface_Get_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(WorkspaceParam)
+	in := new(WorkspaceDetailParam)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -154,13 +170,13 @@ func _WorkspaceInterface_Get_Handler(srv interface{}, ctx context.Context, dec f
 		FullMethod: WorkspaceInterface_Get_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(WorkspaceInterfaceServer).Get(ctx, req.(*WorkspaceParam))
+		return srv.(WorkspaceInterfaceServer).Get(ctx, req.(*WorkspaceDetailParam))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _WorkspaceInterface_List_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(WorkspaceParam)
+	in := new(WorkspaceListParam)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -172,7 +188,25 @@ func _WorkspaceInterface_List_Handler(srv interface{}, ctx context.Context, dec 
 		FullMethod: WorkspaceInterface_List_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(WorkspaceInterfaceServer).List(ctx, req.(*WorkspaceParam))
+		return srv.(WorkspaceInterfaceServer).List(ctx, req.(*WorkspaceListParam))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _WorkspaceInterface_Delete_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(WorkspaceDetailParam)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(WorkspaceInterfaceServer).Delete(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: WorkspaceInterface_Delete_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(WorkspaceInterfaceServer).Delete(ctx, req.(*WorkspaceDetailParam))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -195,6 +229,10 @@ var WorkspaceInterface_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "List",
 			Handler:    _WorkspaceInterface_List_Handler,
+		},
+		{
+			MethodName: "Delete",
+			Handler:    _WorkspaceInterface_Delete_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -37,7 +37,7 @@ func RegisterProjectServiceHTTPServer(s *http.Server, srv ProjectServiceHTTPServ
 	r.POST("/api/v1alpha1/project", _ProjectService_Save3_HTTP_Handler(srv))
 	r.GET("/api/v1alpha1/project", _ProjectService_Get3_HTTP_Handler(srv))
 	r.GET("/api/v1alpha1/project/list", _ProjectService_List3_HTTP_Handler(srv))
-	r.DELETE("/api/v1alpha1/project", _ProjectService_Delete2_HTTP_Handler(srv))
+	r.DELETE("/api/v1alpha1/project", _ProjectService_Delete3_HTTP_Handler(srv))
 }
 
 func _ProjectService_Save3_HTTP_Handler(srv ProjectServiceHTTPServer) func(ctx http.Context) error {
@@ -100,7 +100,7 @@ func _ProjectService_List3_HTTP_Handler(srv ProjectServiceHTTPServer) func(ctx h
 	}
 }
 
-func _ProjectService_Delete2_HTTP_Handler(srv ProjectServiceHTTPServer) func(ctx http.Context) error {
+func _ProjectService_Delete3_HTTP_Handler(srv ProjectServiceHTTPServer) func(ctx http.Context) error {
 	return func(ctx http.Context) error {
 		var in ProjectReq
 		if err := ctx.BindQuery(&in); err != nil {

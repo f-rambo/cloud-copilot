@@ -2,6 +2,7 @@ package interfaces
 
 import (
 	"context"
+	"strings"
 
 	"github.com/f-rambo/cloud-copilot/api/common"
 	"github.com/f-rambo/cloud-copilot/api/workspace/v1alpha1"
@@ -52,7 +53,7 @@ func (w *WorkspaceInterface) Save(ctx context.Context, workspaceParam *v1alpha1.
 	return common.Response(), nil
 }
 
-func (w *WorkspaceInterface) Get(ctx context.Context, workspaceId *v1alpha1.WorkspaceParam) (*v1alpha1.Workspace, error) {
+func (w *WorkspaceInterface) Get(ctx context.Context, workspaceId *v1alpha1.WorkspaceDetailParam) (*v1alpha1.Workspace, error) {
 	if workspaceId.Id == 0 {
 		return nil, errors.New("workspaceId is empty")
 	}
@@ -63,48 +64,118 @@ func (w *WorkspaceInterface) Get(ctx context.Context, workspaceId *v1alpha1.Work
 	return w.bizToWorkspace(workspace), nil
 }
 
-func (w *WorkspaceInterface) List(ctx context.Context, workspaceParam *v1alpha1.WorkspaceParam) (*v1alpha1.Workspaces, error) {
-	workspaceList, err := w.workspaceUc.List(ctx, workspaceParam.ClusterId, workspaceParam.WorkspaceName)
+func (w *WorkspaceInterface) List(ctx context.Context, workspaceParam *v1alpha1.WorkspaceListParam) (*v1alpha1.WorkspaceList, error) {
+	workspaceName := strings.TrimSpace(workspaceParam.WorkspaceName)
+	workspaceList, total, err := w.workspaceUc.List(ctx, workspaceName, workspaceParam.Page, workspaceParam.Size)
 	if err != nil {
 		return nil, err
 	}
-	workspaceListRes := &v1alpha1.Workspaces{}
+	workspaceListRes := &v1alpha1.WorkspaceList{Total: total, Items: make([]*v1alpha1.Workspace, 0)}
 	for _, workspace := range workspaceList {
-		workspaceListRes.Workspaces = append(workspaceListRes.Workspaces, w.bizToWorkspace(workspace))
+		workspaceListRes.Items = append(workspaceListRes.Items, w.bizToWorkspace(workspace))
 	}
 	return workspaceListRes, nil
 }
 
-func (w *WorkspaceInterface) bizToWorkspace(workspace *biz.Workspace) *v1alpha1.Workspace {
-	return &v1alpha1.Workspace{
-		Id:          workspace.Id,
-		Name:        workspace.Name,
-		Description: workspace.Description,
-		ClusterId:   workspace.ClusterId,
-		CpuRate:     workspace.CpuRate,
-		GpuRate:     workspace.GpuRate,
-		MemoryRate:  workspace.MemoryRate,
-		DiskRate:    workspace.DiskRate,
-		LimitDisk:   workspace.LimitDisk,
-		LimitCpu:    workspace.LimitCpu,
-		LimitGpu:    workspace.LimitGpu,
-		LimitMemory: workspace.LimitMemory,
+func (w *WorkspaceInterface) Delete(ctx context.Context, workspaceId *v1alpha1.WorkspaceDetailParam) (*common.Msg, error) {
+	if workspaceId.Id == 0 {
+		return nil, errors.New("workspaceId is empty")
 	}
+	err := w.workspaceUc.Delete(ctx, workspaceId.Id)
+	if err != nil {
+		return nil, err
+	}
+	return common.Response(), nil
+}
+
+func (w *WorkspaceInterface) bizToWorkspace(workspace *biz.Workspace) *v1alpha1.Workspace {
+	if workspace == nil {
+		return nil
+	}
+	resourceQuota := workspace.ResourceQuota.ToResourceQuota()
+	res := &v1alpha1.Workspace{
+		Id:              workspace.Id,
+		Name:            workspace.Name,
+		Description:     workspace.Description,
+		UserId:          workspace.UserId,
+		Status:          workspace.Status.String(),
+		GitRepository:   workspace.GitRepository,
+		ImageRepository: workspace.ImageRepository,
+		ResourceQuota: &v1alpha1.ResourceQuota{
+			Cpu: &v1alpha1.ResourceLimit{
+				Limit:   resourceQuota.CPU.Limit,
+				Request: resourceQuota.CPU.Request,
+			},
+			Memory: &v1alpha1.ResourceLimit{
+				Limit:   resourceQuota.Memory.Limit,
+				Request: resourceQuota.Memory.Request,
+			},
+			Gpu: &v1alpha1.ResourceLimit{
+				Limit:   resourceQuota.GPU.Limit,
+				Request: resourceQuota.GPU.Request,
+			},
+			Storage: &v1alpha1.ResourceLimit{
+				Limit:   resourceQuota.Storage.Limit,
+				Request: resourceQuota.Storage.Request,
+			},
+			Pods: &v1alpha1.ResourceLimit{
+				Limit:   resourceQuota.Pods.Limit,
+				Request: resourceQuota.Pods.Request,
+			},
+		},
+		ClusterRelationships: make([]*v1alpha1.WorkspaceClusterRelationship, 0),
+	}
+	for _, clusterRelationship := range workspace.WorkspaceClusterRelationships {
+		res.ClusterRelationships = append(res.ClusterRelationships, &v1alpha1.WorkspaceClusterRelationship{
+			Id:          clusterRelationship.Id,
+			WorkspaceId: clusterRelationship.WorkspaceId,
+			ClusterId:   clusterRelationship.ClusterId,
+			Permissions: clusterRelationship.Permissions.String(),
+		})
+	}
+	return res
 }
 
 func (w *WorkspaceInterface) workspaceToBiz(workspace *v1alpha1.Workspace) *biz.Workspace {
+	resourceQuota := biz.ResourceQuota{
+		CPU: biz.ResourceLimit{
+			Limit:   workspace.ResourceQuota.Cpu.Limit,
+			Request: workspace.ResourceQuota.Cpu.Request,
+		},
+		Memory: biz.ResourceLimit{
+			Limit:   workspace.ResourceQuota.Memory.Limit,
+			Request: workspace.ResourceQuota.Memory.Request,
+		},
+		GPU: biz.ResourceLimit{
+			Limit:   workspace.ResourceQuota.Gpu.Limit,
+			Request: workspace.ResourceQuota.Gpu.Request,
+		},
+		Storage: biz.ResourceLimit{
+			Limit:   workspace.ResourceQuota.Storage.Limit,
+			Request: workspace.ResourceQuota.Storage.Request,
+		},
+		Pods: biz.ResourceLimit{
+			Limit:   workspace.ResourceQuota.Pods.Limit,
+			Request: workspace.ResourceQuota.Pods.Request,
+		},
+	}
+	clusterRelationship := make([]*biz.WorkspaceClusterRelationship, 0)
+	for _, cluster := range workspace.ClusterRelationships {
+		clusterRelationship = append(clusterRelationship, &biz.WorkspaceClusterRelationship{
+			Id:          cluster.Id,
+			WorkspaceId: cluster.WorkspaceId,
+			ClusterId:   cluster.ClusterId,
+			Permissions: biz.WorkspaceClusterPermissionsFromString(cluster.Permissions),
+		})
+	}
 	return &biz.Workspace{
-		Id:          workspace.Id,
-		Name:        workspace.Name,
-		Description: workspace.Description,
-		ClusterId:   workspace.ClusterId,
-		CpuRate:     workspace.CpuRate,
-		GpuRate:     workspace.GpuRate,
-		MemoryRate:  workspace.MemoryRate,
-		DiskRate:    workspace.DiskRate,
-		LimitDisk:   workspace.LimitDisk,
-		LimitCpu:    workspace.LimitCpu,
-		LimitGpu:    workspace.LimitGpu,
-		LimitMemory: workspace.LimitMemory,
+		Id:                            workspace.Id,
+		Name:                          workspace.Name,
+		Description:                   workspace.Description,
+		UserId:                        workspace.UserId,
+		GitRepository:                 workspace.GitRepository,
+		ImageRepository:               workspace.ImageRepository,
+		ResourceQuota:                 resourceQuota.ToString(),
+		WorkspaceClusterRelationships: clusterRelationship,
 	}
 }

@@ -26,6 +26,7 @@ const OperationClusterInterfaceGet = "/cluster.v1alpha1.ClusterInterface/Get"
 const OperationClusterInterfaceGetClusterLevels = "/cluster.v1alpha1.ClusterInterface/GetClusterLevels"
 const OperationClusterInterfaceGetClusterProviders = "/cluster.v1alpha1.ClusterInterface/GetClusterProviders"
 const OperationClusterInterfaceGetClusterStatuses = "/cluster.v1alpha1.ClusterInterface/GetClusterStatuses"
+const OperationClusterInterfaceGetClustersByIds = "/cluster.v1alpha1.ClusterInterface/GetClustersByIds"
 const OperationClusterInterfaceGetNodeGroupTypes = "/cluster.v1alpha1.ClusterInterface/GetNodeGroupTypes"
 const OperationClusterInterfaceGetNodeRoles = "/cluster.v1alpha1.ClusterInterface/GetNodeRoles"
 const OperationClusterInterfaceGetNodeStatuses = "/cluster.v1alpha1.ClusterInterface/GetNodeStatuses"
@@ -49,6 +50,8 @@ type ClusterInterfaceHTTPServer interface {
 	GetClusterProviders(context.Context, *emptypb.Empty) (*ClusterProviders, error)
 	// GetClusterStatuses @mcp: reject
 	GetClusterStatuses(context.Context, *emptypb.Empty) (*ClusterStatuses, error)
+	// GetClustersByIds Get clusters by ids.
+	GetClustersByIds(context.Context, *ClusterIdsArgs) (*ClusterList, error)
 	// GetNodeGroupTypes @mcp: reject
 	GetNodeGroupTypes(context.Context, *emptypb.Empty) (*NodeGroupTypes, error)
 	// GetNodeRoles @mcp: reject
@@ -83,6 +86,7 @@ func RegisterClusterInterfaceHTTPServer(s *http.Server, srv ClusterInterfaceHTTP
 	r.GET("/api/v1alpha1/cluster/node/group/types", _ClusterInterface_GetNodeGroupTypes0_HTTP_Handler(srv))
 	r.GET("/api/v1alpha1/cluster/resource/types", _ClusterInterface_GetResourceTypes0_HTTP_Handler(srv))
 	r.GET("/api/v1alpha1/cluster", _ClusterInterface_Get0_HTTP_Handler(srv))
+	r.GET("/api/v1alpha1/cluster/ids", _ClusterInterface_GetClustersByIds0_HTTP_Handler(srv))
 	r.POST("/api/v1alpha1/cluster", _ClusterInterface_Save0_HTTP_Handler(srv))
 	r.GET("/api/v1alpha1/cluster/list", _ClusterInterface_List0_HTTP_Handler(srv))
 	r.DELETE("/api/v1alpha1/cluster", _ClusterInterface_Delete0_HTTP_Handler(srv))
@@ -262,6 +266,25 @@ func _ClusterInterface_Get0_HTTP_Handler(srv ClusterInterfaceHTTPServer) func(ct
 	}
 }
 
+func _ClusterInterface_GetClustersByIds0_HTTP_Handler(srv ClusterInterfaceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in ClusterIdsArgs
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationClusterInterfaceGetClustersByIds)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.GetClustersByIds(ctx, req.(*ClusterIdsArgs))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*ClusterList)
+		return ctx.Result(200, reply)
+	}
+}
+
 func _ClusterInterface_Save0_HTTP_Handler(srv ClusterInterfaceHTTPServer) func(ctx http.Context) error {
 	return func(ctx http.Context) error {
 		var in ClusterSaveArgs
@@ -391,6 +414,7 @@ type ClusterInterfaceHTTPClient interface {
 	GetClusterLevels(ctx context.Context, req *emptypb.Empty, opts ...http.CallOption) (rsp *ClusterLevels, err error)
 	GetClusterProviders(ctx context.Context, req *emptypb.Empty, opts ...http.CallOption) (rsp *ClusterProviders, err error)
 	GetClusterStatuses(ctx context.Context, req *emptypb.Empty, opts ...http.CallOption) (rsp *ClusterStatuses, err error)
+	GetClustersByIds(ctx context.Context, req *ClusterIdsArgs, opts ...http.CallOption) (rsp *ClusterList, err error)
 	GetNodeGroupTypes(ctx context.Context, req *emptypb.Empty, opts ...http.CallOption) (rsp *NodeGroupTypes, err error)
 	GetNodeRoles(ctx context.Context, req *emptypb.Empty, opts ...http.CallOption) (rsp *NodeRoles, err error)
 	GetNodeStatuses(ctx context.Context, req *emptypb.Empty, opts ...http.CallOption) (rsp *NodeStatuses, err error)
@@ -468,6 +492,19 @@ func (c *ClusterInterfaceHTTPClientImpl) GetClusterStatuses(ctx context.Context,
 	pattern := "/api/v1alpha1/cluster/statuses"
 	path := binding.EncodeURL(pattern, in, true)
 	opts = append(opts, http.Operation(OperationClusterInterfaceGetClusterStatuses))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *ClusterInterfaceHTTPClientImpl) GetClustersByIds(ctx context.Context, in *ClusterIdsArgs, opts ...http.CallOption) (*ClusterList, error) {
+	var out ClusterList
+	pattern := "/api/v1alpha1/cluster/ids"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationClusterInterfaceGetClustersByIds))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
 	if err != nil {

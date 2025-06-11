@@ -8,28 +8,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-/*
-	consumer, err := NewKafkaConsumer(
-		[]string{"localhost:9092"},
-		[]string{"test-topic"},
-		"test-group",
-	)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer consumer.Close()
-
-	handler := NewDefaultMessageHandler(func(key, val []byte) error {
-		fmt.Printf("message: %s\n", string(val))
-		return nil
-	})
-
-	ctx := context.Background()
-	if err := consumer.ConsumeMessages(ctx, handler); err != nil {
-		log.Fatal(err)
-	}
-*/
-
 type KafkaConsumer struct {
 	consumer sarama.Consumer
 	group    sarama.ConsumerGroup
