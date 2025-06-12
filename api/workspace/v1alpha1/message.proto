@@ -5,7 +5,7 @@ package workspace.v1alpha1;
 option go_package = "api/workspace/v1alpha1;v1alpha1";
 
 message WorkspaceDetailParam {
-    int64 id = 1 [json_name = "id"];
+    int32 id = 1 [json_name = "id"];
 }
 
 message WorkspaceListParam {
@@ -15,10 +15,10 @@ message WorkspaceListParam {
 }
 
 message Workspace {
-    int64 id = 1 [json_name = "id"];
+    int32 id = 1 [json_name = "id"];
     string name = 2 [json_name = "name"];
     string description = 3 [json_name = "description"];
-    int64 user_id = 4 [json_name = "user_id"];
+    int32 user_id = 4 [json_name = "user_id"];
     ResourceQuota resource_quota = 5 [json_name = "resource_quota"];
     string git_repository = 6 [json_name = "git_repository"];
     string image_repository = 7 [json_name = "image_repository"];
@@ -27,7 +27,7 @@ message Workspace {
 }
 
 message WorkspaceList {
-    int64 total = 1 [json_name = "total"];
+    int32 total = 1 [json_name = "total"];
     repeated Workspace items = 2 [json_name = "items"];
 }
 
@@ -45,8 +45,8 @@ message ResourceQuota {
 }
 
 message WorkspaceClusterRelationship {
-    int64 id = 1 [json_name = "id"];
-    int64 workspace_id = 2 [json_name = "workspace_id"];
-    int64 cluster_id = 3 [json_name = "cluster_id"];
+    int32 id = 1 [json_name = "id"];
+    int32 workspace_id = 2 [json_name = "workspace_id"];
+    int32 cluster_id = 3 [json_name = "cluster_id"];
     string permissions = 4 [json_name = "permissions"];
 }

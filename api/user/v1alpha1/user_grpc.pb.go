@@ -20,10 +20,16 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	UserInterface_SignIn_FullMethodName     = "/user.v1alpha1.UserInterface/SignIn"
-	UserInterface_GetUsers_FullMethodName   = "/user.v1alpha1.UserInterface/GetUsers"
-	UserInterface_SaveUser_FullMethodName   = "/user.v1alpha1.UserInterface/SaveUser"
-	UserInterface_DeleteUser_FullMethodName = "/user.v1alpha1.UserInterface/DeleteUser"
+	UserInterface_SignIn_FullMethodName      = "/user.v1alpha1.UserInterface/SignIn"
+	UserInterface_GetUsers_FullMethodName    = "/user.v1alpha1.UserInterface/GetUsers"
+	UserInterface_SaveUser_FullMethodName    = "/user.v1alpha1.UserInterface/SaveUser"
+	UserInterface_DeleteUser_FullMethodName  = "/user.v1alpha1.UserInterface/DeleteUser"
+	UserInterface_EnableUser_FullMethodName  = "/user.v1alpha1.UserInterface/EnableUser"
+	UserInterface_DisableUser_FullMethodName = "/user.v1alpha1.UserInterface/DisableUser"
+	UserInterface_SaveRole_FullMethodName    = "/user.v1alpha1.UserInterface/SaveRole"
+	UserInterface_GetRoles_FullMethodName    = "/user.v1alpha1.UserInterface/GetRoles"
+	UserInterface_GetRole_FullMethodName     = "/user.v1alpha1.UserInterface/GetRole"
+	UserInterface_DeleteRole_FullMethodName  = "/user.v1alpha1.UserInterface/DeleteRole"
 )
 
 // UserInterfaceClient is the client API for UserInterface service.
@@ -32,10 +38,22 @@ const (
 //
 // @mcp: reject
 type UserInterfaceClient interface {
-	SignIn(ctx context.Context, in *SignIn, opts ...grpc.CallOption) (*User, error)
+	SignIn(ctx context.Context, in *SignInRequest, opts ...grpc.CallOption) (*User, error)
 	GetUsers(ctx context.Context, in *UsersRequest, opts ...grpc.CallOption) (*Users, error)
-	SaveUser(ctx context.Context, in *User, opts ...grpc.CallOption) (*User, error)
+	SaveUser(ctx context.Context, in *User, opts ...grpc.CallOption) (*common.Msg, error)
 	DeleteUser(ctx context.Context, in *User, opts ...grpc.CallOption) (*common.Msg, error)
+	// Enable user
+	EnableUser(ctx context.Context, in *UserIdRequest, opts ...grpc.CallOption) (*common.Msg, error)
+	// Disable user
+	DisableUser(ctx context.Context, in *UserIdRequest, opts ...grpc.CallOption) (*common.Msg, error)
+	// save role
+	SaveRole(ctx context.Context, in *Role, opts ...grpc.CallOption) (*common.Msg, error)
+	// get role
+	GetRoles(ctx context.Context, in *RolesRequest, opts ...grpc.CallOption) (*Roles, error)
+	// get one role
+	GetRole(ctx context.Context, in *RoleIdRequest, opts ...grpc.CallOption) (*Role, error)
+	// delete role
+	DeleteRole(ctx context.Context, in *RoleIdRequest, opts ...grpc.CallOption) (*common.Msg, error)
 }
 
 type userInterfaceClient struct {
@@ -46,7 +64,7 @@ func NewUserInterfaceClient(cc grpc.ClientConnInterface) UserInterfaceClient {
 	return &userInterfaceClient{cc}
 }
 
-func (c *userInterfaceClient) SignIn(ctx context.Context, in *SignIn, opts ...grpc.CallOption) (*User, error) {
+func (c *userInterfaceClient) SignIn(ctx context.Context, in *SignInRequest, opts ...grpc.CallOption) (*User, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(User)
 	err := c.cc.Invoke(ctx, UserInterface_SignIn_FullMethodName, in, out, cOpts...)
@@ -66,9 +84,9 @@ func (c *userInterfaceClient) GetUsers(ctx context.Context, in *UsersRequest, op
 	return out, nil
 }
 
-func (c *userInterfaceClient) SaveUser(ctx context.Context, in *User, opts ...grpc.CallOption) (*User, error) {
+func (c *userInterfaceClient) SaveUser(ctx context.Context, in *User, opts ...grpc.CallOption) (*common.Msg, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(User)
+	out := new(common.Msg)
 	err := c.cc.Invoke(ctx, UserInterface_SaveUser_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -86,16 +104,88 @@ func (c *userInterfaceClient) DeleteUser(ctx context.Context, in *User, opts ...
 	return out, nil
 }
 
+func (c *userInterfaceClient) EnableUser(ctx context.Context, in *UserIdRequest, opts ...grpc.CallOption) (*common.Msg, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(common.Msg)
+	err := c.cc.Invoke(ctx, UserInterface_EnableUser_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userInterfaceClient) DisableUser(ctx context.Context, in *UserIdRequest, opts ...grpc.CallOption) (*common.Msg, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(common.Msg)
+	err := c.cc.Invoke(ctx, UserInterface_DisableUser_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userInterfaceClient) SaveRole(ctx context.Context, in *Role, opts ...grpc.CallOption) (*common.Msg, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(common.Msg)
+	err := c.cc.Invoke(ctx, UserInterface_SaveRole_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userInterfaceClient) GetRoles(ctx context.Context, in *RolesRequest, opts ...grpc.CallOption) (*Roles, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Roles)
+	err := c.cc.Invoke(ctx, UserInterface_GetRoles_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userInterfaceClient) GetRole(ctx context.Context, in *RoleIdRequest, opts ...grpc.CallOption) (*Role, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Role)
+	err := c.cc.Invoke(ctx, UserInterface_GetRole_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userInterfaceClient) DeleteRole(ctx context.Context, in *RoleIdRequest, opts ...grpc.CallOption) (*common.Msg, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(common.Msg)
+	err := c.cc.Invoke(ctx, UserInterface_DeleteRole_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // UserInterfaceServer is the server API for UserInterface service.
 // All implementations must embed UnimplementedUserInterfaceServer
 // for forward compatibility.
 //
 // @mcp: reject
 type UserInterfaceServer interface {
-	SignIn(context.Context, *SignIn) (*User, error)
+	SignIn(context.Context, *SignInRequest) (*User, error)
 	GetUsers(context.Context, *UsersRequest) (*Users, error)
-	SaveUser(context.Context, *User) (*User, error)
+	SaveUser(context.Context, *User) (*common.Msg, error)
 	DeleteUser(context.Context, *User) (*common.Msg, error)
+	// Enable user
+	EnableUser(context.Context, *UserIdRequest) (*common.Msg, error)
+	// Disable user
+	DisableUser(context.Context, *UserIdRequest) (*common.Msg, error)
+	// save role
+	SaveRole(context.Context, *Role) (*common.Msg, error)
+	// get role
+	GetRoles(context.Context, *RolesRequest) (*Roles, error)
+	// get one role
+	GetRole(context.Context, *RoleIdRequest) (*Role, error)
+	// delete role
+	DeleteRole(context.Context, *RoleIdRequest) (*common.Msg, error)
 	mustEmbedUnimplementedUserInterfaceServer()
 }
 
@@ -106,17 +196,35 @@ type UserInterfaceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedUserInterfaceServer struct{}
 
-func (UnimplementedUserInterfaceServer) SignIn(context.Context, *SignIn) (*User, error) {
+func (UnimplementedUserInterfaceServer) SignIn(context.Context, *SignInRequest) (*User, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SignIn not implemented")
 }
 func (UnimplementedUserInterfaceServer) GetUsers(context.Context, *UsersRequest) (*Users, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetUsers not implemented")
 }
-func (UnimplementedUserInterfaceServer) SaveUser(context.Context, *User) (*User, error) {
+func (UnimplementedUserInterfaceServer) SaveUser(context.Context, *User) (*common.Msg, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SaveUser not implemented")
 }
 func (UnimplementedUserInterfaceServer) DeleteUser(context.Context, *User) (*common.Msg, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteUser not implemented")
+}
+func (UnimplementedUserInterfaceServer) EnableUser(context.Context, *UserIdRequest) (*common.Msg, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method EnableUser not implemented")
+}
+func (UnimplementedUserInterfaceServer) DisableUser(context.Context, *UserIdRequest) (*common.Msg, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DisableUser not implemented")
+}
+func (UnimplementedUserInterfaceServer) SaveRole(context.Context, *Role) (*common.Msg, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SaveRole not implemented")
+}
+func (UnimplementedUserInterfaceServer) GetRoles(context.Context, *RolesRequest) (*Roles, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetRoles not implemented")
+}
+func (UnimplementedUserInterfaceServer) GetRole(context.Context, *RoleIdRequest) (*Role, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetRole not implemented")
+}
+func (UnimplementedUserInterfaceServer) DeleteRole(context.Context, *RoleIdRequest) (*common.Msg, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteRole not implemented")
 }
 func (UnimplementedUserInterfaceServer) mustEmbedUnimplementedUserInterfaceServer() {}
 func (UnimplementedUserInterfaceServer) testEmbeddedByValue()                       {}
@@ -140,7 +248,7 @@ func RegisterUserInterfaceServer(s grpc.ServiceRegistrar, srv UserInterfaceServe
 }
 
 func _UserInterface_SignIn_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SignIn)
+	in := new(SignInRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -152,7 +260,7 @@ func _UserInterface_SignIn_Handler(srv interface{}, ctx context.Context, dec fun
 		FullMethod: UserInterface_SignIn_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(UserInterfaceServer).SignIn(ctx, req.(*SignIn))
+		return srv.(UserInterfaceServer).SignIn(ctx, req.(*SignInRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -211,6 +319,114 @@ func _UserInterface_DeleteUser_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
+func _UserInterface_EnableUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UserIdRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserInterfaceServer).EnableUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserInterface_EnableUser_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserInterfaceServer).EnableUser(ctx, req.(*UserIdRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserInterface_DisableUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UserIdRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserInterfaceServer).DisableUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserInterface_DisableUser_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserInterfaceServer).DisableUser(ctx, req.(*UserIdRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserInterface_SaveRole_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Role)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserInterfaceServer).SaveRole(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserInterface_SaveRole_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserInterfaceServer).SaveRole(ctx, req.(*Role))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserInterface_GetRoles_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RolesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserInterfaceServer).GetRoles(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserInterface_GetRoles_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserInterfaceServer).GetRoles(ctx, req.(*RolesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserInterface_GetRole_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RoleIdRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserInterfaceServer).GetRole(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserInterface_GetRole_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserInterfaceServer).GetRole(ctx, req.(*RoleIdRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserInterface_DeleteRole_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RoleIdRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserInterfaceServer).DeleteRole(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserInterface_DeleteRole_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserInterfaceServer).DeleteRole(ctx, req.(*RoleIdRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // UserInterface_ServiceDesc is the grpc.ServiceDesc for UserInterface service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -233,6 +449,30 @@ var UserInterface_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeleteUser",
 			Handler:    _UserInterface_DeleteUser_Handler,
+		},
+		{
+			MethodName: "EnableUser",
+			Handler:    _UserInterface_EnableUser_Handler,
+		},
+		{
+			MethodName: "DisableUser",
+			Handler:    _UserInterface_DisableUser_Handler,
+		},
+		{
+			MethodName: "SaveRole",
+			Handler:    _UserInterface_SaveRole_Handler,
+		},
+		{
+			MethodName: "GetRoles",
+			Handler:    _UserInterface_GetRoles_Handler,
+		},
+		{
+			MethodName: "GetRole",
+			Handler:    _UserInterface_GetRole_Handler,
+		},
+		{
+			MethodName: "DeleteRole",
+			Handler:    _UserInterface_DeleteRole_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

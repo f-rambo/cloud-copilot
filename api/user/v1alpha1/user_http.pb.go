@@ -20,16 +20,34 @@ var _ = binding.EncodeURL
 
 const _ = http.SupportPackageIsVersion1
 
+const OperationUserInterfaceDeleteRole = "/user.v1alpha1.UserInterface/DeleteRole"
 const OperationUserInterfaceDeleteUser = "/user.v1alpha1.UserInterface/DeleteUser"
+const OperationUserInterfaceDisableUser = "/user.v1alpha1.UserInterface/DisableUser"
+const OperationUserInterfaceEnableUser = "/user.v1alpha1.UserInterface/EnableUser"
+const OperationUserInterfaceGetRole = "/user.v1alpha1.UserInterface/GetRole"
+const OperationUserInterfaceGetRoles = "/user.v1alpha1.UserInterface/GetRoles"
 const OperationUserInterfaceGetUsers = "/user.v1alpha1.UserInterface/GetUsers"
+const OperationUserInterfaceSaveRole = "/user.v1alpha1.UserInterface/SaveRole"
 const OperationUserInterfaceSaveUser = "/user.v1alpha1.UserInterface/SaveUser"
 const OperationUserInterfaceSignIn = "/user.v1alpha1.UserInterface/SignIn"
 
 type UserInterfaceHTTPServer interface {
+	// DeleteRole delete role
+	DeleteRole(context.Context, *RoleIdRequest) (*common.Msg, error)
 	DeleteUser(context.Context, *User) (*common.Msg, error)
+	// DisableUser Disable user
+	DisableUser(context.Context, *UserIdRequest) (*common.Msg, error)
+	// EnableUser Enable user
+	EnableUser(context.Context, *UserIdRequest) (*common.Msg, error)
+	// GetRole get one role
+	GetRole(context.Context, *RoleIdRequest) (*Role, error)
+	// GetRoles get role
+	GetRoles(context.Context, *RolesRequest) (*Roles, error)
 	GetUsers(context.Context, *UsersRequest) (*Users, error)
-	SaveUser(context.Context, *User) (*User, error)
-	SignIn(context.Context, *SignIn) (*User, error)
+	// SaveRole save role
+	SaveRole(context.Context, *Role) (*common.Msg, error)
+	SaveUser(context.Context, *User) (*common.Msg, error)
+	SignIn(context.Context, *SignInRequest) (*User, error)
 }
 
 func RegisterUserInterfaceHTTPServer(s *http.Server, srv UserInterfaceHTTPServer) {
@@ -38,11 +56,17 @@ func RegisterUserInterfaceHTTPServer(s *http.Server, srv UserInterfaceHTTPServer
 	r.GET("/api/v1alpha1/users", _UserInterface_GetUsers0_HTTP_Handler(srv))
 	r.POST("/api/v1alpha1/user", _UserInterface_SaveUser0_HTTP_Handler(srv))
 	r.DELETE("/api/v1alpha1/user", _UserInterface_DeleteUser0_HTTP_Handler(srv))
+	r.POST("/api/v1alpha1/user/enable", _UserInterface_EnableUser0_HTTP_Handler(srv))
+	r.POST("/api/v1alpha1/user/disable", _UserInterface_DisableUser0_HTTP_Handler(srv))
+	r.POST("/api/v1alpha1/role", _UserInterface_SaveRole0_HTTP_Handler(srv))
+	r.GET("/api/v1alpha1/roles", _UserInterface_GetRoles0_HTTP_Handler(srv))
+	r.GET("/api/v1alpha1/role", _UserInterface_GetRole0_HTTP_Handler(srv))
+	r.DELETE("/api/v1alpha1/role", _UserInterface_DeleteRole0_HTTP_Handler(srv))
 }
 
 func _UserInterface_SignIn0_HTTP_Handler(srv UserInterfaceHTTPServer) func(ctx http.Context) error {
 	return func(ctx http.Context) error {
-		var in SignIn
+		var in SignInRequest
 		if err := ctx.Bind(&in); err != nil {
 			return err
 		}
@@ -51,7 +75,7 @@ func _UserInterface_SignIn0_HTTP_Handler(srv UserInterfaceHTTPServer) func(ctx h
 		}
 		http.SetOperation(ctx, OperationUserInterfaceSignIn)
 		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.SignIn(ctx, req.(*SignIn))
+			return srv.SignIn(ctx, req.(*SignInRequest))
 		})
 		out, err := h(ctx, &in)
 		if err != nil {
@@ -98,7 +122,7 @@ func _UserInterface_SaveUser0_HTTP_Handler(srv UserInterfaceHTTPServer) func(ctx
 		if err != nil {
 			return err
 		}
-		reply := out.(*User)
+		reply := out.(*common.Msg)
 		return ctx.Result(200, reply)
 	}
 }
@@ -122,11 +146,140 @@ func _UserInterface_DeleteUser0_HTTP_Handler(srv UserInterfaceHTTPServer) func(c
 	}
 }
 
+func _UserInterface_EnableUser0_HTTP_Handler(srv UserInterfaceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in UserIdRequest
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationUserInterfaceEnableUser)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.EnableUser(ctx, req.(*UserIdRequest))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*common.Msg)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _UserInterface_DisableUser0_HTTP_Handler(srv UserInterfaceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in UserIdRequest
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationUserInterfaceDisableUser)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.DisableUser(ctx, req.(*UserIdRequest))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*common.Msg)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _UserInterface_SaveRole0_HTTP_Handler(srv UserInterfaceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in Role
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationUserInterfaceSaveRole)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.SaveRole(ctx, req.(*Role))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*common.Msg)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _UserInterface_GetRoles0_HTTP_Handler(srv UserInterfaceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in RolesRequest
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationUserInterfaceGetRoles)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.GetRoles(ctx, req.(*RolesRequest))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*Roles)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _UserInterface_GetRole0_HTTP_Handler(srv UserInterfaceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in RoleIdRequest
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationUserInterfaceGetRole)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.GetRole(ctx, req.(*RoleIdRequest))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*Role)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _UserInterface_DeleteRole0_HTTP_Handler(srv UserInterfaceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in RoleIdRequest
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationUserInterfaceDeleteRole)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.DeleteRole(ctx, req.(*RoleIdRequest))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*common.Msg)
+		return ctx.Result(200, reply)
+	}
+}
+
 type UserInterfaceHTTPClient interface {
+	DeleteRole(ctx context.Context, req *RoleIdRequest, opts ...http.CallOption) (rsp *common.Msg, err error)
 	DeleteUser(ctx context.Context, req *User, opts ...http.CallOption) (rsp *common.Msg, err error)
+	DisableUser(ctx context.Context, req *UserIdRequest, opts ...http.CallOption) (rsp *common.Msg, err error)
+	EnableUser(ctx context.Context, req *UserIdRequest, opts ...http.CallOption) (rsp *common.Msg, err error)
+	GetRole(ctx context.Context, req *RoleIdRequest, opts ...http.CallOption) (rsp *Role, err error)
+	GetRoles(ctx context.Context, req *RolesRequest, opts ...http.CallOption) (rsp *Roles, err error)
 	GetUsers(ctx context.Context, req *UsersRequest, opts ...http.CallOption) (rsp *Users, err error)
-	SaveUser(ctx context.Context, req *User, opts ...http.CallOption) (rsp *User, err error)
-	SignIn(ctx context.Context, req *SignIn, opts ...http.CallOption) (rsp *User, err error)
+	SaveRole(ctx context.Context, req *Role, opts ...http.CallOption) (rsp *common.Msg, err error)
+	SaveUser(ctx context.Context, req *User, opts ...http.CallOption) (rsp *common.Msg, err error)
+	SignIn(ctx context.Context, req *SignInRequest, opts ...http.CallOption) (rsp *User, err error)
 }
 
 type UserInterfaceHTTPClientImpl struct {
@@ -137,6 +290,19 @@ func NewUserInterfaceHTTPClient(client *http.Client) UserInterfaceHTTPClient {
 	return &UserInterfaceHTTPClientImpl{client}
 }
 
+func (c *UserInterfaceHTTPClientImpl) DeleteRole(ctx context.Context, in *RoleIdRequest, opts ...http.CallOption) (*common.Msg, error) {
+	var out common.Msg
+	pattern := "/api/v1alpha1/role"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationUserInterfaceDeleteRole))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "DELETE", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
 func (c *UserInterfaceHTTPClientImpl) DeleteUser(ctx context.Context, in *User, opts ...http.CallOption) (*common.Msg, error) {
 	var out common.Msg
 	pattern := "/api/v1alpha1/user"
@@ -144,6 +310,58 @@ func (c *UserInterfaceHTTPClientImpl) DeleteUser(ctx context.Context, in *User, 
 	opts = append(opts, http.Operation(OperationUserInterfaceDeleteUser))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "DELETE", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *UserInterfaceHTTPClientImpl) DisableUser(ctx context.Context, in *UserIdRequest, opts ...http.CallOption) (*common.Msg, error) {
+	var out common.Msg
+	pattern := "/api/v1alpha1/user/disable"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationUserInterfaceDisableUser))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *UserInterfaceHTTPClientImpl) EnableUser(ctx context.Context, in *UserIdRequest, opts ...http.CallOption) (*common.Msg, error) {
+	var out common.Msg
+	pattern := "/api/v1alpha1/user/enable"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationUserInterfaceEnableUser))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *UserInterfaceHTTPClientImpl) GetRole(ctx context.Context, in *RoleIdRequest, opts ...http.CallOption) (*Role, error) {
+	var out Role
+	pattern := "/api/v1alpha1/role"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationUserInterfaceGetRole))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *UserInterfaceHTTPClientImpl) GetRoles(ctx context.Context, in *RolesRequest, opts ...http.CallOption) (*Roles, error) {
+	var out Roles
+	pattern := "/api/v1alpha1/roles"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationUserInterfaceGetRoles))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -163,8 +381,21 @@ func (c *UserInterfaceHTTPClientImpl) GetUsers(ctx context.Context, in *UsersReq
 	return &out, nil
 }
 
-func (c *UserInterfaceHTTPClientImpl) SaveUser(ctx context.Context, in *User, opts ...http.CallOption) (*User, error) {
-	var out User
+func (c *UserInterfaceHTTPClientImpl) SaveRole(ctx context.Context, in *Role, opts ...http.CallOption) (*common.Msg, error) {
+	var out common.Msg
+	pattern := "/api/v1alpha1/role"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationUserInterfaceSaveRole))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *UserInterfaceHTTPClientImpl) SaveUser(ctx context.Context, in *User, opts ...http.CallOption) (*common.Msg, error) {
+	var out common.Msg
 	pattern := "/api/v1alpha1/user"
 	path := binding.EncodeURL(pattern, in, false)
 	opts = append(opts, http.Operation(OperationUserInterfaceSaveUser))
@@ -176,7 +407,7 @@ func (c *UserInterfaceHTTPClientImpl) SaveUser(ctx context.Context, in *User, op
 	return &out, nil
 }
 
-func (c *UserInterfaceHTTPClientImpl) SignIn(ctx context.Context, in *SignIn, opts ...http.CallOption) (*User, error) {
+func (c *UserInterfaceHTTPClientImpl) SignIn(ctx context.Context, in *SignInRequest, opts ...http.CallOption) (*User, error) {
 	var out User
 	pattern := "/api/v1alpha1/user/signin"
 	path := binding.EncodeURL(pattern, in, false)

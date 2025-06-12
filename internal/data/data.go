@@ -172,6 +172,7 @@ func (d *Data) newDatabase() error {
 		&biz.Trace{},
 		&biz.User{},
 		&biz.Role{},
+		&biz.Permission{},
 		&biz.Workspace{},
 		&biz.WorkspaceRole{},
 		&biz.WorkspaceClusterRelationship{},

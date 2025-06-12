@@ -81,23 +81,8 @@ func (p *ProjectInterface) List(ctx context.Context, projectReq *v1alpha1.Projec
 		return nil, err
 	}
 	projects := make([]*v1alpha1.Project, 0)
-	userIds := make([]int64, 0)
 	for _, bizProject := range bizProjects {
-		project := p.bizProjectToProject(bizProject)
-		projects = append(projects, project)
-		userIds = append(userIds, bizProject.UserId)
-	}
-	userIds = utils.RemoveDuplicatesInt64(userIds)
-	users, err := p.userUc.GetUserByBatchID(ctx, userIds)
-	if err != nil {
-		return nil, err
-	}
-	for _, v := range users {
-		for _, project := range projects {
-			if project.UserId == v.Id {
-				project.UserName = v.Name
-			}
-		}
+		projects = append(projects, p.bizProjectToProject(bizProject))
 	}
 	return &v1alpha1.ProjectList{Projects: projects}, nil
 }

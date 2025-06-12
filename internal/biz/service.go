@@ -516,7 +516,7 @@ func (uc *ServicesUseCase) DeleteContinuousIntegration(ctx context.Context, ciId
 }
 
 func (uc *ServicesUseCase) CreateContinuousDeployment(ctx context.Context, cd *ContinuousDeployment) error {
-	user := GetUserInfo(ctx)
+	workspace := GetWorkspace(ctx)
 	service, err := uc.Get(ctx, cd.ServiceId)
 	if err != nil {
 		return err
@@ -525,7 +525,7 @@ func (uc *ServicesUseCase) CreateContinuousDeployment(ctx context.Context, cd *C
 	if err != nil {
 		return err
 	}
-	cd.Image = ci.GetImage(user, service)
+	cd.Image = ci.GetImage(workspace, service)
 	var workflows Workflows
 	workflows, err = uc.serviceData.GetWorkflowByServiceId(ctx, service.Id)
 	if err != nil {

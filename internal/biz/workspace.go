@@ -78,9 +78,19 @@ type Workspace struct {
 	UserId                        int64                           `json:"user_id,omitempty" gorm:"column:user_id;default:0;NOT NULL"`
 	ResourceQuota                 ResourceQuotaString             `json:"resource_quota,omitempty" gorm:"column:resource_quota;default:'';NOT NULL"`
 	GitRepository                 string                          `json:"git_repository,omitempty" gorm:"column:git_repository;default:'';NOT NULL"`
+	GitRepositoryToken            string                          `json:"git_repository_token,omitempty" gorm:"column:gitrepository_token;default:'';NOT NULL"`
 	ImageRepository               string                          `json:"image_repository,omitempty" gorm:"column:image_repository;default:'';NOT NULL"`
+	ImageRepositoryToken          string                          `json:"image_repository_token,omitempty" gorm:"column:imagerepository_token;default:'';NOT NULL"`
 	Status                        WorkspaceStatus                 `json:"status,omitempty" gorm:"column:status;default:0;NOT NULL"`
 	WorkspaceClusterRelationships []*WorkspaceClusterRelationship `json:"workspace_cluster_relationships,omitempty" gorm:"-"`
+}
+
+func (w *Workspace) GetGitRepoName() string {
+	return w.GitRepository[strings.LastIndex(w.GitRepository, "/")+1:]
+}
+
+func (w *Workspace) GetImageRepoName() string {
+	return w.ImageRepository[strings.LastIndex(w.ImageRepository, "/")+1:]
 }
 
 type WorkspaceClusterPermissions int32

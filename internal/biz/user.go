@@ -13,7 +13,6 @@ import (
 	"github.com/spf13/cast"
 )
 
-// user error info
 const (
 	ErrUserNotFound      = "user not found"
 	ErrUserAlreadyExists = "user already exists"
@@ -52,46 +51,199 @@ func (s UserStatus) String() string {
 	return "UNKNOWN"
 }
 
+func UserstatusFromString(statusStr string) UserStatus {
+	switch statusStr {
+	case "USER_INIT":
+		return UserStatus_USER_INIT
+	case "USER_ENABLE":
+		return UserStatus_USER_ENABLE
+	case "USER_DISABLE":
+		return UserStatus_USER_DISABLE
+	case "USER_DELETED":
+		return UserStatus_USER_DELETED
+	default:
+		return UserStatus_USER_INIT
+	}
+}
+
 type RoleType int32
 
 const (
-	RoleType_WORKSPACE_ADMIN RoleType = 0 // 工作空间管理员
-	RoleType_PROJECT_ADMIN   RoleType = 1 // 项目管理员
-	RoleType_DEVELOPER       RoleType = 2 // 开发者
-	RoleType_VIEWER          RoleType = 3 // 只读用户
-	RoleType_CUSTOM          RoleType = 4 // 自定义角色
+	RoleType_SYSTEM_ADMIN    RoleType = 1
+	RoleType_WORKSPACE_ADMIN RoleType = 2
+	RoleType_PROJECT_ADMIN   RoleType = 3
+	RoleType_DEVELOPER       RoleType = 4
+	RoleType_VIEWER          RoleType = 5
+	RoleType_CUSTOM          RoleType = 6
 )
 
+func (rt RoleType) String() string {
+	switch rt {
+	case RoleType_SYSTEM_ADMIN:
+		return "SYSTEM_ADMIN"
+	case RoleType_WORKSPACE_ADMIN:
+		return "WORKSPACE_ADMIN"
+	case RoleType_PROJECT_ADMIN:
+		return "PROJECT_ADMIN"
+	case RoleType_DEVELOPER:
+		return "DEVELOPER"
+	case RoleType_VIEWER:
+		return "VIEWER"
+	case RoleType_CUSTOM:
+		return "CUSTOM"
+	default:
+		return "UNKNOWN"
+	}
+}
+
+func RoleTypeFromString(roleTypeStr string) RoleType {
+	switch roleTypeStr {
+	case "SYSTEM_ADMIN":
+		return RoleType_SYSTEM_ADMIN
+	case "WORKSPACE_ADMIN":
+		return RoleType_WORKSPACE_ADMIN
+	case "PROJECT_ADMIN":
+		return RoleType_PROJECT_ADMIN
+	case "DEVELOPER":
+		return RoleType_DEVELOPER
+	case "VIEWER":
+		return RoleType_VIEWER
+	case "CUSTOM":
+		return RoleType_CUSTOM
+	default:
+		return RoleType_SYSTEM_ADMIN
+	}
+}
+
+type RoleResourceType int32
+
+const (
+	RoleResourceType_CLUSTER   RoleResourceType = 1 // 集群资源
+	RoleResourceType_WORKSPACE RoleResourceType = 2 // 工作空间资源
+	RoleResourceType_PROJECT   RoleResourceType = 3 // 项目资源
+	RoleResourceType_SERVICE   RoleResourceType = 4 // 服务资源
+	RoleResourceType_SYSTEM    RoleResourceType = 5 // 系统资源
+	RoleResourceType_APP       RoleResourceType = 6 // 应用资源
+)
+
+func (rt RoleResourceType) String() string {
+	switch rt {
+	case RoleResourceType_CLUSTER:
+		return "CLUSTER"
+	case RoleResourceType_WORKSPACE:
+		return "WORKSPACE"
+	case RoleResourceType_PROJECT:
+		return "PROJECT"
+	case RoleResourceType_SERVICE:
+		return "SERVICE"
+	case RoleResourceType_SYSTEM:
+		return "SYSTEM"
+	case RoleResourceType_APP:
+		return "APP"
+	default:
+		return "UNKNOWN"
+	}
+}
+
+func RoleResourceTypeFromString(resourceTypeStr string) RoleResourceType {
+	switch resourceTypeStr {
+	case "CLUSTER":
+		return RoleResourceType_CLUSTER
+	case "WORKSPACE":
+		return RoleResourceType_WORKSPACE
+	case "PROJECT":
+		return RoleResourceType_PROJECT
+	case "SERVICE":
+		return RoleResourceType_SERVICE
+	case "SYSTEM":
+		return RoleResourceType_SYSTEM
+	case "APP":
+		return RoleResourceType_APP
+	default:
+		return RoleResourceType_CLUSTER
+	}
+}
+
+type ActionType int32
+
+const (
+	ActionType_VIEW    ActionType = 1 // 查看
+	ActionType_CREATE  ActionType = 2 // 创建
+	ActionType_UPDATE  ActionType = 3 // 更新
+	ActionType_DELETE  ActionType = 4 // 删除
+	ActionType_EXECUTE ActionType = 5 // 执行
+	ActionType_MANAGE  ActionType = 6 // 管理(包含所有权限)
+)
+
+func (at ActionType) String() string {
+	switch at {
+	case ActionType_VIEW:
+		return "VIEW"
+	case ActionType_CREATE:
+		return "CREATE"
+	case ActionType_UPDATE:
+		return "UPDATE"
+	case ActionType_DELETE:
+		return "DELETE"
+	case ActionType_EXECUTE:
+		return "EXECUTE"
+	case ActionType_MANAGE:
+		return "MANAGE"
+	default:
+		return "UNKNOWN"
+	}
+}
+
+func ActionTypeFromString(actionTypeStr string) ActionType {
+	switch actionTypeStr {
+	case "VIEW":
+		return ActionType_VIEW
+	case "CREATE":
+		return ActionType_CREATE
+	case "UPDATE":
+		return ActionType_UPDATE
+	case "DELETE":
+		return ActionType_DELETE
+	case "EXECUTE":
+		return ActionType_EXECUTE
+	case "MANAGE":
+		return ActionType_MANAGE
+	default:
+		return ActionType_VIEW
+	}
+}
+
 type User struct {
-	Id                   int64      `json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
-	Name                 string     `json:"name,omitempty" gorm:"column:name;default:'';NOT NULL"`
-	Namespace            string     `json:"namespace,omitempty" gorm:"column:namespace;default:'';NOT NULL"`
-	Email                string     `json:"email,omitempty" gorm:"column:email;default:'';NOT NULL"`
-	GitrepoName          string     `json:"gitrepo_name,omitempty" gorm:"column:gitrepo_name;default:'';NOT NULL"`
-	ImagerepoName        string     `json:"imagerepo_name,omitempty" gorm:"column:imagerepo_name;default:'';NOT NULL"`
-	Password             string     `json:"password,omitempty" gorm:"column:password;default:'';NOT NULL"`
-	Status               UserStatus `json:"status,omitempty" gorm:"column:status;default:0;NOT NULL"`
-	AccessToken          string     `json:"access_token,omitempty" gorm:"-"`
-	GitRepositoryToken   string     `json:"git_repository_token,omitempty" gorm:"column:gitrepository_token;default:'';NOT NULL"`
-	ImageRepositoryToken string     `json:"image_repository_token,omitempty" gorm:"column:imagerepository_token;default:'';NOT NULL"`
-	Avatar               string     `json:"avatar,omitempty" gorm:"column:avatar;default:'';NOT NULL"`         // 头像
-	Phone                string     `json:"phone,omitempty" gorm:"column:phone;default:'';NOT NULL"`           // 电话
-	Department           string     `json:"department,omitempty" gorm:"column:department;default:'';NOT NULL"` // 部门
-	LastLoginAt          *time.Time `json:"last_login_at,omitempty" gorm:"column:last_login_at"`               // 最后登录时间
+	Id             int64           `json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
+	Name           string          `json:"name,omitempty" gorm:"column:name;default:'';NOT NULL"`
+	Email          string          `json:"email,omitempty" gorm:"column:email;default:'';NOT NULL"`
+	Password       string          `json:"password,omitempty" gorm:"column:password;default:'';NOT NULL"`
+	Status         UserStatus      `json:"status,omitempty" gorm:"column:status;default:0;NOT NULL"`
+	AccessToken    string          `json:"access_token,omitempty" gorm:"-"`
+	Avatar         []byte          `json:"avatar,omitempty" gorm:"type:bytea;column:avatar"`
+	Phone          string          `json:"phone,omitempty" gorm:"column:phone;default:'';NOT NULL"`
+	Department     string          `json:"department,omitempty" gorm:"column:department;default:'';NOT NULL"`
+	WorkspaceRoles []WorkspaceRole `json:"workspace_roles,omitempty" gorm:"-"`
 }
 
 type Role struct {
-	Id          int64     `json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
-	Name        string    `json:"name,omitempty" gorm:"column:name;default:'';NOT NULL"`
-	Verbs       string    `json:"verbs,omitempty" gorm:"column:verbs;default:'';NOT NULL"`
-	Resources   string    `json:"resources,omitempty" gorm:"column:resources;default:'';NOT NULL"`
-	Description string    `json:"description,omitempty" gorm:"column:description;default:'';NOT NULL"`
-	External    string    `json:"external,omitempty" gorm:"column:external;default:'';NOT NULL"`
-	WorkspaceId int64     `json:"workspace_id,omitempty" gorm:"column:workspace_id;default:0;NOT NULL"` // 角色所属工作空间
-	RoleType    RoleType  `json:"role_type,omitempty" gorm:"column:role_type;default:0;NOT NULL"`       // 角色类型
-	IsSystem    bool      `json:"is_system,omitempty" gorm:"column:is_system;default:false;NOT NULL"`   // 是否系统角色
-	CreatedAt   time.Time `json:"created_at,omitempty" gorm:"column:created_at;autoCreateTime"`
-	UpdatedAt   time.Time `json:"updated_at,omitempty" gorm:"column:updated_at;autoUpdateTime"`
+	Id          int64        `json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
+	Name        string       `json:"name,omitempty" gorm:"column:name;default:'';NOT NULL"`
+	Verbs       string       `json:"verbs,omitempty" gorm:"column:verbs;default:'';NOT NULL"`
+	Resources   string       `json:"resources,omitempty" gorm:"column:resources;default:'';NOT NULL"`
+	Description string       `json:"description,omitempty" gorm:"column:description;default:'';NOT NULL"`
+	WorkspaceId int64        `json:"workspace_id,omitempty" gorm:"column:workspace_id;default:0;NOT NULL"`
+	RoleType    RoleType     `json:"role_type,omitempty" gorm:"column:role_type;default:0;NOT NULL"`
+	Permissions []Permission `json:"permissions,omitempty" gorm:"-"`
+}
+
+// 权限表
+type Permission struct {
+	Id               int64            `json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
+	RoleResourceType RoleResourceType `json:"role_resource_type,omitempty" gorm:"column:role_resource_type;default:0;NOT NULL"`
+	ResourceId       int64            `json:"resource_id,omitempty" gorm:"column:resource_id;default:0;NOT NULL"` // 资源ID，0表示所有资源
+	ActionType       ActionType       `json:"action_type,omitempty" gorm:"column:action_type;default:0;NOT NULL"`
+	RoleId           int64            `json:"role_id,omitempty" gorm:"column:role_id;default:0;NOT NULL"`
 }
 
 type WorkspaceRole struct {
@@ -105,9 +257,12 @@ type UserData interface {
 	GetUserInfoByEmail(ctx context.Context, email string) (*User, error)
 	GetUser(ctx context.Context, id int64) (*User, error)
 	Save(ctx context.Context, user *User) error
-	GetUserByBatchID(ctx context.Context, ids []int64) ([]*User, error)
 	GetUsers(ctx context.Context, username, email string, pageNum, pageSize int) (users []*User, total int64, err error)
 	DeleteUser(ctx context.Context, id int64) error
+	SaveRole(ctx context.Context, role *Role) error
+	GetRoles(ctx context.Context, name string, page, size int) (roles []*Role, total int64, err error)
+	GetRole(ctx context.Context, id int64) (*Role, error)
+	DeleteRole(ctx context.Context, id int64) error
 }
 
 type UserUseCase struct {
@@ -136,20 +291,29 @@ func (u *UserUseCase) GetUsers(ctx context.Context, name, email string, pageNum,
 	return u.userData.GetUsers(ctx, name, email, pageNum, pageSize)
 }
 
-func (u *UserUseCase) Register(ctx context.Context, user *User) error {
+func (u *UserUseCase) Enable(ctx context.Context, user *User) error {
+	user.Status = UserStatus_USER_ENABLE
+	return u.Save(ctx, user)
+}
+
+func (u *UserUseCase) Disable(ctx context.Context, user *User) error {
+	user.Status = UserStatus_USER_DISABLE
+	return u.Save(ctx, user)
+}
+
+func (u *UserUseCase) Save(ctx context.Context, user *User) error {
 	if user.Email == "" || user.Password == "" {
 		return errors.New("email and password are required")
 	}
-	user.Status = UserStatus_USER_ENABLE
-	return u.userData.Save(ctx, user)
-}
-
-func (u *UserUseCase) Disable(ctx context.Context, id int64) error {
-	user, err := u.userData.GetUser(ctx, id)
-	if err != nil {
-		return err
+	if user.Id == 0 {
+		userRes, err := u.userData.GetUserInfoByEmail(ctx, user.Email)
+		if err != nil {
+			return err
+		}
+		if userRes != nil && userRes.Id != 0 {
+			return errors.New("user already exists")
+		}
 	}
-	user.Status = UserStatus_USER_DISABLE
 	return u.userData.Save(ctx, user)
 }
 
@@ -192,30 +356,33 @@ func (u *UserUseCase) GetUser(ctx context.Context, id int64) (*User, error) {
 	return u.userData.GetUser(ctx, id)
 }
 
-func (u *UserUseCase) GetUserByBatchID(ctx context.Context, ids []int64) ([]*User, error) {
-	if len(ids) == 0 {
-		return nil, nil
-	}
-	users, err := u.userData.GetUserByBatchID(ctx, ids)
-	if err != nil {
-		return nil, err
-	}
-	return users, nil
-}
-
 func (u *UserUseCase) DeleteUser(ctx context.Context, id int64) error {
 	return u.userData.DeleteUser(ctx, id)
 }
 
+func (u *UserUseCase) GetRole(ctx context.Context, id int64) (*Role, error) {
+	return u.userData.GetRole(ctx, id)
+}
+
+func (u *UserUseCase) SaveRole(ctx context.Context, role *Role) error {
+	return u.userData.SaveRole(ctx, role)
+}
+
+func (u *UserUseCase) GetRoles(ctx context.Context, name string, page, size int) (roles []*Role, total int64, err error) {
+	return u.userData.GetRoles(ctx, name, page, size)
+}
+
+func (u *UserUseCase) DeleteRole(ctx context.Context, id int64) error {
+	return u.userData.DeleteRole(ctx, id)
+}
+
 func GenerateJWT(user *User, exp int32, authKey string) (string, *time.Time, error) {
 	claims := jwtv5.MapClaims{
-		"id":             user.Id,
-		"name":           user.Name,
-		"namespace":      user.Namespace,
-		"email":          user.Email,
-		"gitrepo_name":   user.GitrepoName,
-		"imagerepo_name": user.ImagerepoName,
-		"status":         user.Status,
+		"id":     user.Id,
+		"name":   user.Name,
+		"email":  user.Email,
+		"phone":  user.Phone,
+		"status": user.Status,
 	}
 
 	expires := time.Now().Add(time.Hour * time.Duration(exp))

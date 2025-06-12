@@ -330,13 +330,12 @@ func (s *Service) GetDefaultWorkflow(wfType WorkflowType) *Workflow {
 	return workflow
 }
 
-func (w *Workflow) SettingServiceEnv(ctx context.Context, workspace *Workspace, s *Service, ci *ContinuousIntegration) map[string]string {
-	user := GetUserInfo(ctx)
+func (w *Workflow) SettingServiceEnv(ctx context.Context, workspace *Workspace, service *Service, ci *ContinuousIntegration) map[string]string {
 	serviceEnv := make(map[string]string)
 	for _, val := range ServiceEnvItems() {
 		switch ServiceEnv(val) {
 		case ServiceEnv_SERVICE_NAME:
-			serviceEnv[ServiceEnv_SERVICE_NAME.String()] = s.Name
+			serviceEnv[ServiceEnv_SERVICE_NAME.String()] = service.Name
 		case ServiceEnv_VERSION:
 			serviceEnv[ServiceEnv_VERSION.String()] = cast.ToString(ci.Version)
 		case ServiceEnv_BRANCH:
@@ -346,21 +345,21 @@ func (w *Workflow) SettingServiceEnv(ctx context.Context, workspace *Workspace, 
 		case ServiceEnv_COMMIT_ID:
 			serviceEnv[ServiceEnv_COMMIT_ID.String()] = ci.CommitId
 		case ServiceEnv_SERVICE_ID:
-			serviceEnv[ServiceEnv_SERVICE_ID.String()] = cast.ToString(s.Id)
+			serviceEnv[ServiceEnv_SERVICE_ID.String()] = cast.ToString(service.Id)
 		case ServiceEnv_IMAGE:
-			serviceEnv[ServiceEnv_IMAGE.String()] = ci.GetImage(user, s)
+			serviceEnv[ServiceEnv_IMAGE.String()] = ci.GetImage(workspace, service)
 		case ServiceEnv_GIT_REPO:
 			serviceEnv[ServiceEnv_GIT_REPO.String()] = workspace.GitRepository
 		case ServiceEnv_IMAGE_REPO:
 			serviceEnv[ServiceEnv_IMAGE_REPO.String()] = workspace.ImageRepository
 		case ServiceEnv_GIT_REPO_NAME:
-			serviceEnv[ServiceEnv_GIT_REPO_NAME.String()] = user.GitrepoName
+			serviceEnv[ServiceEnv_GIT_REPO_NAME.String()] = workspace.GetGitRepoName()
 		case ServiceEnv_IMAGE_REPO_NAME:
-			serviceEnv[ServiceEnv_IMAGE_REPO_NAME.String()] = user.ImagerepoName
+			serviceEnv[ServiceEnv_IMAGE_REPO_NAME.String()] = workspace.GetImageRepoName()
 		case ServiceEnv_GIT_REPO_TOKEN:
-			serviceEnv[ServiceEnv_GIT_REPO_TOKEN.String()] = user.GitRepositoryToken
+			serviceEnv[ServiceEnv_GIT_REPO_TOKEN.String()] = workspace.GitRepositoryToken
 		case ServiceEnv_IMAGE_REPO_TOKEN:
-			serviceEnv[ServiceEnv_IMAGE_REPO_TOKEN.String()] = user.ImageRepositoryToken
+			serviceEnv[ServiceEnv_IMAGE_REPO_TOKEN.String()] = workspace.ImageRepositoryToken
 		}
 	}
 	w.Env = utils.MapToString(serviceEnv)
@@ -369,7 +368,6 @@ func (w *Workflow) SettingServiceEnv(ctx context.Context, workspace *Workspace, 
 
 func (w *Workflow) SettingContinuousIntegration(ctx context.Context, service *Service, ci *ContinuousIntegration) {
 	workspace := GetWorkspace(ctx)
-	user := GetUserInfo(ctx)
 	serviceEnv := w.SettingServiceEnv(ctx, workspace, service, ci)
 	for _, step := range w.WorkflowSteps {
 		for _, task := range step.WorkflowTasks {
@@ -381,7 +379,7 @@ func (w *Workflow) SettingContinuousIntegration(ctx context.Context, service *Se
 			switch WorkflowStepType(wfType) {
 			case WorkflowStepType_CodePull:
 				workspace.GitRepository = strings.ReplaceAll(workspace.GitRepository, "https://", "")
-				gitRepoUrl := fmt.Sprintf("https://%s:%s@%s/%s.git", user.GitrepoName, user.GitRepositoryToken, workspace.GitRepository, service.Name)
+				gitRepoUrl := fmt.Sprintf("https://%s:%s@%s/%s.git", workspace.GetGitRepoName(), workspace.GitRepositoryToken, workspace.GitRepository, service.Name)
 				if ci.Branch != "" && ci.CommitId != "" {
 					task.TaskCommand = fmt.Sprintf("git clone %s --depth 1 --branch %s /app && cd /app && git checkout %s && ls -la /app",
 						gitRepoUrl, ci.Branch, ci.CommitId)
@@ -392,10 +390,10 @@ func (w *Workflow) SettingContinuousIntegration(ctx context.Context, service *Se
 				}
 			case WorkflowStepType_ImageRepoAuth:
 				task.TaskCommand = fmt.Sprintf("ls -la /app && echo '%s' | docker login -u '%s' --password-stdin %s && cp /root/.docker/config.json /app/config.json",
-					user.ImageRepositoryToken, user.ImagerepoName, workspace.ImageRepository)
+					workspace.ImageRepositoryToken, workspace.GetImageRepoName(), workspace.ImageRepository)
 			case WorkflowStepType_Build:
 				task.TaskCommand = fmt.Sprintf("ls -la /app && mkdir /root/.docker && cp /app/config.json /root/.docker && buildkitd --rootless --addr unix:///run/buildkit/buildkitd.sock & sleep 3 && buildctl build --frontend dockerfile.v0 --local context=/app --local dockerfile=/app --output type=image,name=%s,push=true",
-					ci.GetImage(user, service))
+					ci.GetImage(workspace, service))
 			}
 		}
 	}
@@ -421,8 +419,8 @@ func (w *Workflow) SettingContinuousDeployment(ctx context.Context, service *Ser
 	return nil
 }
 
-func (ci *ContinuousIntegration) GetImage(u *User, s *Service) string {
-	return fmt.Sprintf("%s/%s:%s", u.ImagerepoName, s.Name, ci.Version)
+func (ci *ContinuousIntegration) GetImage(w *Workspace, s *Service) string {
+	return fmt.Sprintf("%s/%s:%s", w.GetImageRepoName(), s.Name, ci.Version)
 }
 
 func (ci *ContinuousIntegration) SetWorkflow(wf *Workflow) error {

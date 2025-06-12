@@ -151,7 +151,7 @@ func GetServerStoragePathByNames(packageNames ...string) string {
 	return filepath.Join(packageNames...)
 }
 
-func AcceptingFile(ctx context.Context, uploadDir string) (string, error) {
+func AcceptingFile(ctx context.Context, fileName, uploadDir string) (string, error) {
 	httpReq, ok := kratosHttp.RequestFromServerContext(ctx)
 	if !ok {
 		return "", errors.New("failed to get http request")
@@ -163,7 +163,7 @@ func AcceptingFile(ctx context.Context, uploadDir string) (string, error) {
 	}
 
 	// Get uploaded file
-	file, header, err := httpReq.FormFile("file")
+	file, header, err := httpReq.FormFile(fileName)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to get uploaded file")
 	}
@@ -190,21 +190,31 @@ func AcceptingFile(ctx context.Context, uploadDir string) (string, error) {
 	return header.Filename, nil
 }
 
-// async function uploadFile(file) {
-// 	const formData = new FormData();
-// 	formData.append('file', file);
+func AcceptingFileByte(ctx context.Context, fileName string) ([]byte, string, error) {
+	httpReq, ok := kratosHttp.RequestFromServerContext(ctx)
+	if !ok {
+		return nil, "", errors.New("failed to get http request")
+	}
 
-// 	const response = await fetch('/api/v1alpha1/cluster/upload', {
-// 		method: 'POST',
-// 		body: formData
-// 	});
+	// Parse multipart form
+	if err := httpReq.ParseMultipartForm(64 << 20); err != nil {
+		return nil, "", errors.Wrap(err, "failed to parse multipart form")
+	}
 
-// 	const result = await response.json();
-// 	return result;
-// }
-//
-// curl -v -X POST http://localhost:8080/api/v1alpha1/cluster/upload \
-//   -F "file=@/path/to/your/file.txt" \
+	// Get uploaded file
+	file, header, err := httpReq.FormFile(fileName)
+	if err != nil {
+		return nil, "", errors.Wrap(err, "failed to get uploaded file")
+	}
+	defer file.Close()
+
+	// Copy file content
+	buf, err := io.ReadAll(file)
+	if err != nil {
+		return nil, "", errors.Wrap(err, "failed to read file content")
+	}
+	return buf, header.Filename, nil
+}
 
 func UploadFile(serverUrl, localFilepath string) error {
 

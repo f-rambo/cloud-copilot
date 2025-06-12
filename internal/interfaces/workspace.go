@@ -57,7 +57,7 @@ func (w *WorkspaceInterface) Get(ctx context.Context, workspaceId *v1alpha1.Work
 	if workspaceId.Id == 0 {
 		return nil, errors.New("workspaceId is empty")
 	}
-	workspace, err := w.workspaceUc.Get(ctx, workspaceId.Id)
+	workspace, err := w.workspaceUc.Get(ctx, int64(workspaceId.Id))
 	if err != nil {
 		return nil, err
 	}
@@ -70,7 +70,7 @@ func (w *WorkspaceInterface) List(ctx context.Context, workspaceParam *v1alpha1.
 	if err != nil {
 		return nil, err
 	}
-	workspaceListRes := &v1alpha1.WorkspaceList{Total: total, Items: make([]*v1alpha1.Workspace, 0)}
+	workspaceListRes := &v1alpha1.WorkspaceList{Total: int32(total), Items: make([]*v1alpha1.Workspace, 0)}
 	for _, workspace := range workspaceList {
 		workspaceListRes.Items = append(workspaceListRes.Items, w.bizToWorkspace(workspace))
 	}
@@ -81,7 +81,7 @@ func (w *WorkspaceInterface) Delete(ctx context.Context, workspaceId *v1alpha1.W
 	if workspaceId.Id == 0 {
 		return nil, errors.New("workspaceId is empty")
 	}
-	err := w.workspaceUc.Delete(ctx, workspaceId.Id)
+	err := w.workspaceUc.Delete(ctx, int64(workspaceId.Id))
 	if err != nil {
 		return nil, err
 	}
@@ -94,10 +94,10 @@ func (w *WorkspaceInterface) bizToWorkspace(workspace *biz.Workspace) *v1alpha1.
 	}
 	resourceQuota := workspace.ResourceQuota.ToResourceQuota()
 	res := &v1alpha1.Workspace{
-		Id:              workspace.Id,
+		Id:              int32(workspace.Id),
 		Name:            workspace.Name,
 		Description:     workspace.Description,
-		UserId:          workspace.UserId,
+		UserId:          int32(workspace.UserId),
 		Status:          workspace.Status.String(),
 		GitRepository:   workspace.GitRepository,
 		ImageRepository: workspace.ImageRepository,
@@ -127,9 +127,9 @@ func (w *WorkspaceInterface) bizToWorkspace(workspace *biz.Workspace) *v1alpha1.
 	}
 	for _, clusterRelationship := range workspace.WorkspaceClusterRelationships {
 		res.ClusterRelationships = append(res.ClusterRelationships, &v1alpha1.WorkspaceClusterRelationship{
-			Id:          clusterRelationship.Id,
-			WorkspaceId: clusterRelationship.WorkspaceId,
-			ClusterId:   clusterRelationship.ClusterId,
+			Id:          int32(clusterRelationship.Id),
+			WorkspaceId: int32(clusterRelationship.WorkspaceId),
+			ClusterId:   int32(clusterRelationship.ClusterId),
 			Permissions: clusterRelationship.Permissions.String(),
 		})
 	}
@@ -162,17 +162,17 @@ func (w *WorkspaceInterface) workspaceToBiz(workspace *v1alpha1.Workspace) *biz.
 	clusterRelationship := make([]*biz.WorkspaceClusterRelationship, 0)
 	for _, cluster := range workspace.ClusterRelationships {
 		clusterRelationship = append(clusterRelationship, &biz.WorkspaceClusterRelationship{
-			Id:          cluster.Id,
-			WorkspaceId: cluster.WorkspaceId,
-			ClusterId:   cluster.ClusterId,
+			Id:          int64(cluster.Id),
+			WorkspaceId: int64(cluster.WorkspaceId),
+			ClusterId:   int64(cluster.ClusterId),
 			Permissions: biz.WorkspaceClusterPermissionsFromString(cluster.Permissions),
 		})
 	}
 	return &biz.Workspace{
-		Id:                            workspace.Id,
+		Id:                            int64(workspace.Id),
 		Name:                          workspace.Name,
 		Description:                   workspace.Description,
-		UserId:                        workspace.UserId,
+		UserId:                        int64(workspace.UserId),
 		GitRepository:                 workspace.GitRepository,
 		ImageRepository:               workspace.ImageRepository,
 		ResourceQuota:                 resourceQuota.ToString(),

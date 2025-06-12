@@ -4,7 +4,7 @@ package user.v1alpha1;
 
 option go_package = "api/user/v1alpha1;v1alpha1";
 
-message SignIn {
+message SignInRequest {
       string email = 1 [json_name = "email"];
       string password = 2 [json_name = "password"];
 }
@@ -21,12 +21,61 @@ message Users {
       int32 total_count = 2 [json_name = "total_count"];
 }
 
+message UserIdRequest {
+      int32 user_id = 1 [json_name = "user_id"];
+}
+
 message User {
-      int64 id = 1 [json_name = "id"];
-      string username = 2 [json_name = "username"];
+      int32 id = 1 [json_name = "id"];
+      string name = 2 [json_name = "name"];
       string email = 3 [json_name = "email"];
-      string image = 4 [json_name = "image"];
-      string token = 5 [json_name = "token"];
-      string status = 6 [json_name = "status"];
-      string expires = 7 [json_name = "expires"];
+      string password = 4 [json_name = "password"];
+      bytes avatar = 5 [json_name = "avatar"];
+      string token = 6 [json_name = "token"];
+      string status = 7 [json_name = "status"];
+      string expires = 8 [json_name = "expires"];
+      string phone = 9 [json_name = "phone"];
+      string department = 10 [json_name = "department"];
+      repeated WorkspaceRole workspace_roles = 11 [json_name = "workspace_roles"];
+}
+
+message WorkspaceRole {
+      int32 id = 1 [json_name = "id"];
+      int32 workspace_id = 2 [json_name = "workspace_id"];
+      int32 user_id = 3 [json_name = "user_id"];
+      int32 role_id = 4 [json_name = "role_id"];
+}
+
+message RolesRequest {
+      string name = 1 [json_name = "name"];
+      int32 page_size = 2 [json_name = "page_size"];
+      int32 page_number = 3 [json_name = "page_number"];
+}
+
+message Roles {
+      int32 total_count = 1 [json_name = "total_count"];
+      repeated Role roles = 2 [json_name = "roles"];
+}
+
+message RoleIdRequest {
+      int32 role_id = 1 [json_name = "role_id"];
+}
+
+message Role {
+    int32 id = 1 [json_name = "id"];
+    string name = 2 [json_name = "name"];
+    string verbs = 3 [json_name = "verbs"];
+    string resources = 4 [json_name = "resources"];
+    string description = 5 [json_name = "description"];
+    int32 workspace_id = 6 [json_name = "workspace_id"];
+    string role_type = 7 [json_name = "role_type"];
+    repeated Permission permissions = 8 [json_name = "permissions"];
+}
+
+message Permission {
+    int32 id = 1 [json_name = "id"];
+    string role_resource_type = 2 [json_name = "role_resource_type"];
+    int32 resource_id = 3 [json_name = "resource_id"]; // Resource ID, 0 means all resources
+    string action_type = 4 [json_name = "action_type"];
+    int32 role_id = 5 [json_name = "role_id"];
 }

@@ -10,7 +10,7 @@ option go_package = "api/user/v1alpha1;v1alpha1";
 
 // @mcp: reject
 service UserInterface {
-      rpc SignIn(user.v1alpha1.SignIn) returns (User) {
+      rpc SignIn(SignInRequest) returns (User) {
             option (google.api.http) = {
               post: "/api/v1alpha1/user/signin"
               body: "*"
@@ -23,7 +23,7 @@ service UserInterface {
             };
       }
 
-      rpc SaveUser(User) returns (User) {
+      rpc SaveUser(User) returns (common.Msg) {
             option (google.api.http) = {
               post: "/api/v1alpha1/user"
               body: "*"
@@ -33,6 +33,51 @@ service UserInterface {
       rpc DeleteUser(User) returns (common.Msg) {
             option (google.api.http) = {
               delete: "/api/v1alpha1/user"
+            };
+      }
+
+      // Enable user
+      rpc EnableUser(UserIdRequest) returns (common.Msg) {
+            option (google.api.http) = {
+              post: "/api/v1alpha1/user/enable"
+              body: "*"
+            };
+      }
+
+      // Disable user
+      rpc DisableUser(UserIdRequest) returns (common.Msg) {
+            option (google.api.http) = {
+              post: "/api/v1alpha1/user/disable"
+              body: "*"
+            };
+      }
+
+      // save role
+      rpc SaveRole(Role) returns (common.Msg) {
+            option (google.api.http) = {
+              post: "/api/v1alpha1/role"
+              body: "*"
+            };
+      }
+
+      // get role
+      rpc GetRoles(RolesRequest) returns (Roles) {
+            option (google.api.http) = {
+              get: "/api/v1alpha1/roles"
+            };
+      }
+
+      // get one role
+      rpc GetRole(RoleIdRequest) returns (Role) {
+            option (google.api.http) = {
+              get: "/api/v1alpha1/role"
+            };
+      }
+
+      // delete role
+      rpc DeleteRole(RoleIdRequest) returns (common.Msg) {
+            option (google.api.http) = {
+              delete: "/api/v1alpha1/role"
             };
       }
 
