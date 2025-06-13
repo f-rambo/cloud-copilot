@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package common;
+
+option go_package = "github.com/f-rambo/cloud-copilot/api/common;";
+
+message ResourceLimit {
+      int32 request = 1 [json_name = "request"];
+      int32 limit = 2 [json_name = "limit"];
+      int32 used = 3 [json_name = "used"];
+}
+
+message ResourceQuota {
+      ResourceLimit cpu = 1 [json_name = "cpu"];
+      ResourceLimit memory = 2 [json_name = "memory"]; 
+      ResourceLimit gpu = 3 [json_name = "gpu"];
+      ResourceLimit storage = 4 [json_name = "storage"];
+      ResourceLimit pods = 5 [json_name = "pods"];
+      int32 replicas = 6 [json_name = "replicas"];
+}
+  

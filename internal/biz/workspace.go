@@ -13,26 +13,21 @@ const (
 	WorkspaceKey ContextKey = "workspace"
 )
 
-type AlreadyResource struct {
-	Cpu     int32 `json:"cpu,omitempty"`
-	Memory  int32 `json:"memory,omitempty"`
-	Gpu     int32 `json:"gpu,omitempty"`
-	Storage int32 `json:"storage,omitempty"`
-}
-
 type ResourceQuotaString string
 
 type ResourceQuota struct {
-	CPU     ResourceLimit `json:"cpu"`
-	Memory  ResourceLimit `json:"memory"`
-	GPU     ResourceLimit `json:"gpu"`
-	Storage ResourceLimit `json:"storage"`
-	Pods    ResourceLimit `json:"pods"`
+	Replicas int32         `json:"replicas,omitempty"`
+	CPU      ResourceLimit `json:"cpu"`
+	Memory   ResourceLimit `json:"memory"`
+	GPU      ResourceLimit `json:"gpu"`
+	Storage  ResourceLimit `json:"storage"`
+	Pods     ResourceLimit `json:"pods"`
 }
 
 type ResourceLimit struct {
-	Request int32 `json:"request"`
-	Limit   int32 `json:"limit"`
+	Request int32 `json:"request,omitempty"`
+	Limit   int32 `json:"limit,omitempty"`
+	Used    int32 `json:"used,omitempty"`
 }
 
 func (r ResourceQuota) ToString() ResourceQuotaString {

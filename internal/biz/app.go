@@ -129,7 +129,6 @@ type AppData interface {
 	GetRepo(context.Context, int64) (*AppRepo, error)
 	GetRepoByName(context.Context, string) (*AppRepo, error)
 	DeleteRepo(context.Context, int64) error
-	GetAppReleaseResourceByProject(ctx context.Context, projectId int64, alreadyResource *AlreadyResource) error
 }
 
 type AppRuntime interface {
@@ -403,8 +402,4 @@ func (uc *AppUsecase) DeleteAppRelease(ctx context.Context, id int64) error {
 		return err
 	}
 	return nil
-}
-
-func (uc *AppUsecase) GetAppReleaseResourceByProject(ctx context.Context, projectId int64) (*AlreadyResource, error) {
-	return nil, nil
 }

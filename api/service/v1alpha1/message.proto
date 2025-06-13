@@ -2,149 +2,156 @@ syntax = "proto3";
 
 package service.v1alpha1;
 
+import "api/common/message.proto";
+
 option go_package = "api/service/v1alpha1;v1alpha1";
 
-message ServiceRequest {
-      int64 id = 1;
-      string name = 2;
-      int32 page = 3;
-      int32 page_size = 4;
-      int64 project_id = 5;
-      int64 workspace_id = 6;
-      int64 cluster_id = 7;
-      int64 user_id = 8;
-      string workflow_type = 9;
-      int64 ci_id = 10;
-      int64 cd_id = 11;
+message ServicesRequest {
+      string name = 1 [json_name = "name"];
+      int32 page = 2 [json_name = "page"];
+      int32 size = 3 [json_name = "size"];
+      int32 project_id = 4 [json_name = "project_id"];
+}
+
+message ServiceDetailIdRequest {
+      int32 id = 1 [json_name = "id"];
 }
 
 message Services {
-      repeated Service services = 1;
-      int64 total = 2;
-}
-
-message Port {
-      int64 id = 1;
-      string ingress_path = 2;
-      string protocol = 3;
-      int32 container_port = 4;
+      repeated Service services = 1 [json_name = "services"];
+      int32 total = 2 [json_name = "total"];
 }
 
 message Service {
-      int64 id = 1;
-      string name = 2;
-      string code_repo = 3;
-      int32 replicas = 4;
-      int32 cpu = 5;
-      int32 limit_cpu = 6;
-      int32 gpu = 7;
-      int32 limit_gpu = 8;
-      int32 memory = 9;
-      int32 limit_memory = 10;
-      int32 disk = 11;
-      int32 limit_disk = 12;
-      string description = 13;
-      repeated Port ports = 14;
-      int64 project_id = 15;
-      int64 workspace_id = 16;
-      int64 cluster_id = 17;
-      int64 user_id = 18;
-      string username = 19;
+      int32 id = 1 [json_name = "id"];
+      string name = 2 [json_name = "name"];
+      string labels = 3 [json_name = "labels"];
+      common.ResourceQuota resource_quota = 4 [json_name = "resource_quota"];
+      repeated Port ports = 5 [json_name = "ports"];
+      repeated Volume volumes = 6 [json_name = "volumes"];
+      repeated Pod pods = 7 [json_name = "pods"];
+      string description = 8 [json_name = "description"];
+      int32 user_id = 9 [json_name = "user_id"];
+      int32 project_id = 10 [json_name = "project_id"];
+      int32 workspace_id = 11 [json_name = "workspace_id"];
+      int32 cluster_id = 12 [json_name = "cluster_id"];
 }
 
-message AlreadyResource {
-      int32 cpu = 1;
-      int32 memory = 2;
-      int32 gpu = 3;
-      int32 disk = 4;
+message Port {
+      int32 id = 1 [json_name = "id"];
+      string name = 2 [json_name = "name"];
+      string path = 3 [json_name = "path"];
+      string protocol = 4 [json_name = "protocol"];
+      int32 container_port = 5 [json_name = "container_port"];
 }
 
+message Volume {
+      int32 id = 1 [json_name = "id"];
+      string name = 2 [json_name = "name"];
+      string mount_path = 3 [json_name = "mount_path"];
+      int32 storage = 4 [json_name = "storage"];
+      string storage_class = 5 [json_name = "storage_class"];
+}
 
-message WorkflowRequest {
-      int64 id = 1;
-      string name = 2;
-      int64 service_id = 3;
-      string workflow_type = 4;
+message Pod {
+      int32 id = 1 [json_name = "id"];
+      string name = 2 [json_name = "name"];
+      string node_name = 3 [json_name = "node_name"];
+      string status = 4 [json_name = "status"];
+}
+
+message GetServiceWorkflowRequest {
+      int32 service_id = 1;
+      string workflow_type = 2;
 }
 
 message Workflow {
-      int64 id = 1;
-      string name = 2;
-      string namespace = 3;
-      string workflow_type = 4;
-      string description = 5;
-      int64 service_id = 6;
-      repeated WorkflowStep workflow_steps = 7;
+      int32 id = 1 [json_name = "id"];
+      string name = 2 [json_name = "name"];
+      string namespace = 3 [json_name = "namespace"];
+      string workflow_type = 4 [json_name = "workflow_type"];
+      string description = 5 [json_name = "description"];
+      int32 service_id = 6 [json_name = "service_id"];
+      repeated WorkflowStep workflow_steps = 7 [json_name = "workflow_steps"];
 }
 
 message WorkflowStep {
-      int64 id = 1;
-      int64 workflow_id = 2;
-      int32 order = 3;
-      string name = 4;
-      string description = 5;
-      repeated WorkflowTask workflow_tasks = 6;
+      int32 id = 1 [json_name = "id"];
+      int32 workflow_id = 2 [json_name = "workflow_id"];
+      int32 order = 3 [json_name = "order"];
+      string name = 4 [json_name = "name"];
+      string description = 5 [json_name = "description"];
+      repeated WorkflowTask workflow_tasks = 6 [json_name = "workflow_tasks"];
 }
 
 message WorkflowTask {
-      int64 id = 1;
-      int64 workflow_id = 2;
-      int64 step_id = 3;
-      string name = 4;
-      int32 order = 5;
-      string task = 6;
-      string description = 7;
-      string status = 8;
+      int32 id = 1 [json_name = "id"];
+      int32 workflow_id = 2 [json_name = "workflow_id"];
+      int32 step_id = 3 [json_name = "step_id"];
+      string name = 4 [json_name = "name"];
+      int32 order = 5 [json_name = "order"];
+      string task = 6 [json_name = "task"];
+      string description = 7 [json_name = "description"];
+      string status = 8 [json_name = "status"];
 }
 
-message ContinuousIntegrationRequest {
-      int64 id = 1;
-      int64 service_id = 2;
-      int32 page = 3;
-      int32 page_size = 4;
+message ContinuousIntegrationsRequest {
+      int32 service_id = 1 [json_name = "service_id"];
+      int32 page = 2 [json_name = "page"];
+      int32 page_size = 3 [json_name = "page_size"];
 }
 
 message ContinuousIntegrations {
-      repeated ContinuousIntegration continuous_integrations = 1;
-      int64 total = 2;
+      repeated ContinuousIntegration continuous_integrations = 1 [json_name = "continuous_integrations"];
+      int32 total = 2 [json_name = "total"];
+}
+
+message ContinuousIntegrationDetailRequest {
+      int32 id = 1 [json_name = "id"];
 }
 
 message ContinuousIntegration {
-      int64 id = 1;
-      string version = 2;
-      string branch = 3;
-      string tag = 4;
-      string status = 5;
-      string description = 6;
-      int64 service_id = 7;
-      int64 user_id = 8;
-      string workflow_runtime = 9;
-      Workflow workflow = 10;
-      string logs = 11;
+      int32 id = 1 [json_name = "id"];
+      string version = 2 [json_name = "version"];
+      string branch = 3 [json_name = "branch"];
+      string tag = 4 [json_name = "tag"];
+      string status = 5 [json_name = "status"];
+      string description = 6 [json_name = "description"];
+      int32 service_id = 7 [json_name = "service_id"];
+      int32 user_id = 8 [json_name = "user_id"];
+      Workflow workflow = 9 [json_name = "workflow"];
+      string logs = 10 [json_name = "logs"];
 }
 
-message ContinuousDeploymentRequest {
-      int64 id = 1;
-      int64 service_id = 2;
-      int64 ci_id = 3;
-      int32 page = 4;
-      int32 page_size = 5;
+message ContinuousDeploymentsRequest {
+      int32 service_id = 1 [json_name = "service_id"];
+      int32 page = 2 [json_name = "page"];
+      int32 page_size = 3 [json_name = "page_size"];
 }
 
 message ContinuousDeployments {
-      repeated ContinuousDeployment continuous_deployments = 1;
-      int64 total = 2;
+      repeated ContinuousDeployment continuous_deployments = 1 [json_name = "continuous_deployments"];
+      int32 total = 2 [json_name = "total"];
+}
+
+message ContinuousDeploymentDetailRequest {
+      int32 id = 1 [json_name = "id"];
 }
 
 message ContinuousDeployment {
-      int64 id = 1;
-      int64 ci_id = 2;
-      int64 service_id = 3;
-      int64 user_id = 4;
-      string status = 5;
-      string workflow_runtime = 6;
-      Workflow workflow = 7;
-      string config_path = 8;
-      string config = 9;
-      string logs = 10;
+      int32 id = 1 [json_name = "id"];
+      int32 ci_id = 2 [json_name = "ci_id"];
+      int32 service_id = 3 [json_name = "service_id"];
+      int32 user_id = 4 [json_name = "user_id"];
+      string status = 5 [json_name = "status"];
+      Workflow workflow = 6 [json_name = "workflow"];
+      string config_path = 7 [json_name = "config_path"];
+      string config = 8 [json_name = "config"];
+      string logs = 9 [json_name = "logs"];
+}
+
+message ApplyServiceRequest {
+      int32 service_id = 1 [json_name = "service_id"];
+      int32 ci_id = 2 [json_name = "ci_id"];
+      int32 cd_id = 3 [json_name = "cd_id"];
 }

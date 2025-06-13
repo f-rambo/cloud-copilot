@@ -31,29 +31,27 @@ const OperationServiceInterfaceGetContinuousDeployment = "/service.v1alpha1.Serv
 const OperationServiceInterfaceGetContinuousDeployments = "/service.v1alpha1.ServiceInterface/GetContinuousDeployments"
 const OperationServiceInterfaceGetContinuousIntegration = "/service.v1alpha1.ServiceInterface/GetContinuousIntegration"
 const OperationServiceInterfaceGetContinuousIntegrations = "/service.v1alpha1.ServiceInterface/GetContinuousIntegrations"
-const OperationServiceInterfaceGetServiceResource = "/service.v1alpha1.ServiceInterface/GetServiceResource"
-const OperationServiceInterfaceGetWorkflow = "/service.v1alpha1.ServiceInterface/GetWorkflow"
+const OperationServiceInterfaceGetServiceWorkflow = "/service.v1alpha1.ServiceInterface/GetServiceWorkflow"
 const OperationServiceInterfaceList = "/service.v1alpha1.ServiceInterface/List"
 const OperationServiceInterfaceSave = "/service.v1alpha1.ServiceInterface/Save"
-const OperationServiceInterfaceSaveWorkflow = "/service.v1alpha1.ServiceInterface/SaveWorkflow"
+const OperationServiceInterfaceSaveServiceWorkflow = "/service.v1alpha1.ServiceInterface/SaveServiceWorkflow"
 
 type ServiceInterfaceHTTPServer interface {
-	ApplyService(context.Context, *ServiceRequest) (*common.Msg, error)
+	ApplyService(context.Context, *ApplyServiceRequest) (*common.Msg, error)
 	CreateContinuousDeployment(context.Context, *ContinuousDeployment) (*common.Msg, error)
 	CreateContinuousIntegration(context.Context, *ContinuousIntegration) (*common.Msg, error)
-	Delete(context.Context, *ServiceRequest) (*common.Msg, error)
-	DeleteContinuousDeployment(context.Context, *ContinuousDeploymentRequest) (*common.Msg, error)
-	DeleteContinuousIntegration(context.Context, *ContinuousIntegrationRequest) (*common.Msg, error)
-	Get(context.Context, *ServiceRequest) (*Service, error)
-	GetContinuousDeployment(context.Context, *ContinuousDeploymentRequest) (*ContinuousDeployment, error)
-	GetContinuousDeployments(context.Context, *ContinuousDeploymentRequest) (*ContinuousDeployments, error)
-	GetContinuousIntegration(context.Context, *ContinuousIntegrationRequest) (*ContinuousIntegration, error)
-	GetContinuousIntegrations(context.Context, *ContinuousIntegrationRequest) (*ContinuousIntegrations, error)
-	GetServiceResource(context.Context, *ServiceRequest) (*AlreadyResource, error)
-	GetWorkflow(context.Context, *WorkflowRequest) (*Workflow, error)
-	List(context.Context, *ServiceRequest) (*Services, error)
+	Delete(context.Context, *ServiceDetailIdRequest) (*common.Msg, error)
+	DeleteContinuousDeployment(context.Context, *ContinuousDeploymentDetailRequest) (*common.Msg, error)
+	DeleteContinuousIntegration(context.Context, *ContinuousIntegrationDetailRequest) (*common.Msg, error)
+	Get(context.Context, *ServiceDetailIdRequest) (*Service, error)
+	GetContinuousDeployment(context.Context, *ContinuousDeploymentDetailRequest) (*ContinuousDeployment, error)
+	GetContinuousDeployments(context.Context, *ContinuousDeploymentsRequest) (*ContinuousDeployments, error)
+	GetContinuousIntegration(context.Context, *ContinuousIntegrationDetailRequest) (*ContinuousIntegration, error)
+	GetContinuousIntegrations(context.Context, *ContinuousIntegrationsRequest) (*ContinuousIntegrations, error)
+	GetServiceWorkflow(context.Context, *GetServiceWorkflowRequest) (*Workflow, error)
+	List(context.Context, *ServicesRequest) (*Services, error)
 	Save(context.Context, *Service) (*common.Msg, error)
-	SaveWorkflow(context.Context, *Workflow) (*common.Msg, error)
+	SaveServiceWorkflow(context.Context, *Workflow) (*common.Msg, error)
 }
 
 func RegisterServiceInterfaceHTTPServer(s *http.Server, srv ServiceInterfaceHTTPServer) {
@@ -62,9 +60,8 @@ func RegisterServiceInterfaceHTTPServer(s *http.Server, srv ServiceInterfaceHTTP
 	r.POST("/api/v1alpha1/service/save", _ServiceInterface_Save4_HTTP_Handler(srv))
 	r.GET("/api/v1alpha1/service/get", _ServiceInterface_Get4_HTTP_Handler(srv))
 	r.DELETE("/api/v1alpha1/service/delete", _ServiceInterface_Delete4_HTTP_Handler(srv))
-	r.GET("/api/v1alpha1/service/resource", _ServiceInterface_GetServiceResource0_HTTP_Handler(srv))
-	r.POST("/api/v1alpha1/service/workflow", _ServiceInterface_SaveWorkflow0_HTTP_Handler(srv))
-	r.GET("/api/v1alpha1/service/workflow", _ServiceInterface_GetWorkflow0_HTTP_Handler(srv))
+	r.POST("/api/v1alpha1/service/workflow", _ServiceInterface_SaveServiceWorkflow0_HTTP_Handler(srv))
+	r.GET("/api/v1alpha1/service/workflow", _ServiceInterface_GetServiceWorkflow0_HTTP_Handler(srv))
 	r.POST("/api/v1alpha1/service/continuousintegration", _ServiceInterface_CreateContinuousIntegration0_HTTP_Handler(srv))
 	r.GET("/api/v1alpha1/service/continuousintegration", _ServiceInterface_GetContinuousIntegration0_HTTP_Handler(srv))
 	r.GET("/api/v1alpha1/service/continuousintegrations", _ServiceInterface_GetContinuousIntegrations0_HTTP_Handler(srv))
@@ -78,13 +75,13 @@ func RegisterServiceInterfaceHTTPServer(s *http.Server, srv ServiceInterfaceHTTP
 
 func _ServiceInterface_List4_HTTP_Handler(srv ServiceInterfaceHTTPServer) func(ctx http.Context) error {
 	return func(ctx http.Context) error {
-		var in ServiceRequest
+		var in ServicesRequest
 		if err := ctx.BindQuery(&in); err != nil {
 			return err
 		}
 		http.SetOperation(ctx, OperationServiceInterfaceList)
 		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.List(ctx, req.(*ServiceRequest))
+			return srv.List(ctx, req.(*ServicesRequest))
 		})
 		out, err := h(ctx, &in)
 		if err != nil {
@@ -119,13 +116,13 @@ func _ServiceInterface_Save4_HTTP_Handler(srv ServiceInterfaceHTTPServer) func(c
 
 func _ServiceInterface_Get4_HTTP_Handler(srv ServiceInterfaceHTTPServer) func(ctx http.Context) error {
 	return func(ctx http.Context) error {
-		var in ServiceRequest
+		var in ServiceDetailIdRequest
 		if err := ctx.BindQuery(&in); err != nil {
 			return err
 		}
 		http.SetOperation(ctx, OperationServiceInterfaceGet)
 		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.Get(ctx, req.(*ServiceRequest))
+			return srv.Get(ctx, req.(*ServiceDetailIdRequest))
 		})
 		out, err := h(ctx, &in)
 		if err != nil {
@@ -138,13 +135,13 @@ func _ServiceInterface_Get4_HTTP_Handler(srv ServiceInterfaceHTTPServer) func(ct
 
 func _ServiceInterface_Delete4_HTTP_Handler(srv ServiceInterfaceHTTPServer) func(ctx http.Context) error {
 	return func(ctx http.Context) error {
-		var in ServiceRequest
+		var in ServiceDetailIdRequest
 		if err := ctx.BindQuery(&in); err != nil {
 			return err
 		}
 		http.SetOperation(ctx, OperationServiceInterfaceDelete)
 		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.Delete(ctx, req.(*ServiceRequest))
+			return srv.Delete(ctx, req.(*ServiceDetailIdRequest))
 		})
 		out, err := h(ctx, &in)
 		if err != nil {
@@ -155,26 +152,7 @@ func _ServiceInterface_Delete4_HTTP_Handler(srv ServiceInterfaceHTTPServer) func
 	}
 }
 
-func _ServiceInterface_GetServiceResource0_HTTP_Handler(srv ServiceInterfaceHTTPServer) func(ctx http.Context) error {
-	return func(ctx http.Context) error {
-		var in ServiceRequest
-		if err := ctx.BindQuery(&in); err != nil {
-			return err
-		}
-		http.SetOperation(ctx, OperationServiceInterfaceGetServiceResource)
-		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.GetServiceResource(ctx, req.(*ServiceRequest))
-		})
-		out, err := h(ctx, &in)
-		if err != nil {
-			return err
-		}
-		reply := out.(*AlreadyResource)
-		return ctx.Result(200, reply)
-	}
-}
-
-func _ServiceInterface_SaveWorkflow0_HTTP_Handler(srv ServiceInterfaceHTTPServer) func(ctx http.Context) error {
+func _ServiceInterface_SaveServiceWorkflow0_HTTP_Handler(srv ServiceInterfaceHTTPServer) func(ctx http.Context) error {
 	return func(ctx http.Context) error {
 		var in Workflow
 		if err := ctx.Bind(&in); err != nil {
@@ -183,9 +161,9 @@ func _ServiceInterface_SaveWorkflow0_HTTP_Handler(srv ServiceInterfaceHTTPServer
 		if err := ctx.BindQuery(&in); err != nil {
 			return err
 		}
-		http.SetOperation(ctx, OperationServiceInterfaceSaveWorkflow)
+		http.SetOperation(ctx, OperationServiceInterfaceSaveServiceWorkflow)
 		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.SaveWorkflow(ctx, req.(*Workflow))
+			return srv.SaveServiceWorkflow(ctx, req.(*Workflow))
 		})
 		out, err := h(ctx, &in)
 		if err != nil {
@@ -196,15 +174,15 @@ func _ServiceInterface_SaveWorkflow0_HTTP_Handler(srv ServiceInterfaceHTTPServer
 	}
 }
 
-func _ServiceInterface_GetWorkflow0_HTTP_Handler(srv ServiceInterfaceHTTPServer) func(ctx http.Context) error {
+func _ServiceInterface_GetServiceWorkflow0_HTTP_Handler(srv ServiceInterfaceHTTPServer) func(ctx http.Context) error {
 	return func(ctx http.Context) error {
-		var in WorkflowRequest
+		var in GetServiceWorkflowRequest
 		if err := ctx.BindQuery(&in); err != nil {
 			return err
 		}
-		http.SetOperation(ctx, OperationServiceInterfaceGetWorkflow)
+		http.SetOperation(ctx, OperationServiceInterfaceGetServiceWorkflow)
 		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.GetWorkflow(ctx, req.(*WorkflowRequest))
+			return srv.GetServiceWorkflow(ctx, req.(*GetServiceWorkflowRequest))
 		})
 		out, err := h(ctx, &in)
 		if err != nil {
@@ -239,13 +217,13 @@ func _ServiceInterface_CreateContinuousIntegration0_HTTP_Handler(srv ServiceInte
 
 func _ServiceInterface_GetContinuousIntegration0_HTTP_Handler(srv ServiceInterfaceHTTPServer) func(ctx http.Context) error {
 	return func(ctx http.Context) error {
-		var in ContinuousIntegrationRequest
+		var in ContinuousIntegrationDetailRequest
 		if err := ctx.BindQuery(&in); err != nil {
 			return err
 		}
 		http.SetOperation(ctx, OperationServiceInterfaceGetContinuousIntegration)
 		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.GetContinuousIntegration(ctx, req.(*ContinuousIntegrationRequest))
+			return srv.GetContinuousIntegration(ctx, req.(*ContinuousIntegrationDetailRequest))
 		})
 		out, err := h(ctx, &in)
 		if err != nil {
@@ -258,13 +236,13 @@ func _ServiceInterface_GetContinuousIntegration0_HTTP_Handler(srv ServiceInterfa
 
 func _ServiceInterface_GetContinuousIntegrations0_HTTP_Handler(srv ServiceInterfaceHTTPServer) func(ctx http.Context) error {
 	return func(ctx http.Context) error {
-		var in ContinuousIntegrationRequest
+		var in ContinuousIntegrationsRequest
 		if err := ctx.BindQuery(&in); err != nil {
 			return err
 		}
 		http.SetOperation(ctx, OperationServiceInterfaceGetContinuousIntegrations)
 		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.GetContinuousIntegrations(ctx, req.(*ContinuousIntegrationRequest))
+			return srv.GetContinuousIntegrations(ctx, req.(*ContinuousIntegrationsRequest))
 		})
 		out, err := h(ctx, &in)
 		if err != nil {
@@ -277,13 +255,13 @@ func _ServiceInterface_GetContinuousIntegrations0_HTTP_Handler(srv ServiceInterf
 
 func _ServiceInterface_DeleteContinuousIntegration0_HTTP_Handler(srv ServiceInterfaceHTTPServer) func(ctx http.Context) error {
 	return func(ctx http.Context) error {
-		var in ContinuousIntegrationRequest
+		var in ContinuousIntegrationDetailRequest
 		if err := ctx.BindQuery(&in); err != nil {
 			return err
 		}
 		http.SetOperation(ctx, OperationServiceInterfaceDeleteContinuousIntegration)
 		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.DeleteContinuousIntegration(ctx, req.(*ContinuousIntegrationRequest))
+			return srv.DeleteContinuousIntegration(ctx, req.(*ContinuousIntegrationDetailRequest))
 		})
 		out, err := h(ctx, &in)
 		if err != nil {
@@ -318,13 +296,13 @@ func _ServiceInterface_CreateContinuousDeployment0_HTTP_Handler(srv ServiceInter
 
 func _ServiceInterface_GetContinuousDeployment0_HTTP_Handler(srv ServiceInterfaceHTTPServer) func(ctx http.Context) error {
 	return func(ctx http.Context) error {
-		var in ContinuousDeploymentRequest
+		var in ContinuousDeploymentDetailRequest
 		if err := ctx.BindQuery(&in); err != nil {
 			return err
 		}
 		http.SetOperation(ctx, OperationServiceInterfaceGetContinuousDeployment)
 		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.GetContinuousDeployment(ctx, req.(*ContinuousDeploymentRequest))
+			return srv.GetContinuousDeployment(ctx, req.(*ContinuousDeploymentDetailRequest))
 		})
 		out, err := h(ctx, &in)
 		if err != nil {
@@ -337,13 +315,13 @@ func _ServiceInterface_GetContinuousDeployment0_HTTP_Handler(srv ServiceInterfac
 
 func _ServiceInterface_GetContinuousDeployments0_HTTP_Handler(srv ServiceInterfaceHTTPServer) func(ctx http.Context) error {
 	return func(ctx http.Context) error {
-		var in ContinuousDeploymentRequest
+		var in ContinuousDeploymentsRequest
 		if err := ctx.BindQuery(&in); err != nil {
 			return err
 		}
 		http.SetOperation(ctx, OperationServiceInterfaceGetContinuousDeployments)
 		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.GetContinuousDeployments(ctx, req.(*ContinuousDeploymentRequest))
+			return srv.GetContinuousDeployments(ctx, req.(*ContinuousDeploymentsRequest))
 		})
 		out, err := h(ctx, &in)
 		if err != nil {
@@ -356,13 +334,13 @@ func _ServiceInterface_GetContinuousDeployments0_HTTP_Handler(srv ServiceInterfa
 
 func _ServiceInterface_DeleteContinuousDeployment0_HTTP_Handler(srv ServiceInterfaceHTTPServer) func(ctx http.Context) error {
 	return func(ctx http.Context) error {
-		var in ContinuousDeploymentRequest
+		var in ContinuousDeploymentDetailRequest
 		if err := ctx.BindQuery(&in); err != nil {
 			return err
 		}
 		http.SetOperation(ctx, OperationServiceInterfaceDeleteContinuousDeployment)
 		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.DeleteContinuousDeployment(ctx, req.(*ContinuousDeploymentRequest))
+			return srv.DeleteContinuousDeployment(ctx, req.(*ContinuousDeploymentDetailRequest))
 		})
 		out, err := h(ctx, &in)
 		if err != nil {
@@ -375,7 +353,7 @@ func _ServiceInterface_DeleteContinuousDeployment0_HTTP_Handler(srv ServiceInter
 
 func _ServiceInterface_ApplyService0_HTTP_Handler(srv ServiceInterfaceHTTPServer) func(ctx http.Context) error {
 	return func(ctx http.Context) error {
-		var in ServiceRequest
+		var in ApplyServiceRequest
 		if err := ctx.Bind(&in); err != nil {
 			return err
 		}
@@ -384,7 +362,7 @@ func _ServiceInterface_ApplyService0_HTTP_Handler(srv ServiceInterfaceHTTPServer
 		}
 		http.SetOperation(ctx, OperationServiceInterfaceApplyService)
 		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.ApplyService(ctx, req.(*ServiceRequest))
+			return srv.ApplyService(ctx, req.(*ApplyServiceRequest))
 		})
 		out, err := h(ctx, &in)
 		if err != nil {
@@ -396,22 +374,21 @@ func _ServiceInterface_ApplyService0_HTTP_Handler(srv ServiceInterfaceHTTPServer
 }
 
 type ServiceInterfaceHTTPClient interface {
-	ApplyService(ctx context.Context, req *ServiceRequest, opts ...http.CallOption) (rsp *common.Msg, err error)
+	ApplyService(ctx context.Context, req *ApplyServiceRequest, opts ...http.CallOption) (rsp *common.Msg, err error)
 	CreateContinuousDeployment(ctx context.Context, req *ContinuousDeployment, opts ...http.CallOption) (rsp *common.Msg, err error)
 	CreateContinuousIntegration(ctx context.Context, req *ContinuousIntegration, opts ...http.CallOption) (rsp *common.Msg, err error)
-	Delete(ctx context.Context, req *ServiceRequest, opts ...http.CallOption) (rsp *common.Msg, err error)
-	DeleteContinuousDeployment(ctx context.Context, req *ContinuousDeploymentRequest, opts ...http.CallOption) (rsp *common.Msg, err error)
-	DeleteContinuousIntegration(ctx context.Context, req *ContinuousIntegrationRequest, opts ...http.CallOption) (rsp *common.Msg, err error)
-	Get(ctx context.Context, req *ServiceRequest, opts ...http.CallOption) (rsp *Service, err error)
-	GetContinuousDeployment(ctx context.Context, req *ContinuousDeploymentRequest, opts ...http.CallOption) (rsp *ContinuousDeployment, err error)
-	GetContinuousDeployments(ctx context.Context, req *ContinuousDeploymentRequest, opts ...http.CallOption) (rsp *ContinuousDeployments, err error)
-	GetContinuousIntegration(ctx context.Context, req *ContinuousIntegrationRequest, opts ...http.CallOption) (rsp *ContinuousIntegration, err error)
-	GetContinuousIntegrations(ctx context.Context, req *ContinuousIntegrationRequest, opts ...http.CallOption) (rsp *ContinuousIntegrations, err error)
-	GetServiceResource(ctx context.Context, req *ServiceRequest, opts ...http.CallOption) (rsp *AlreadyResource, err error)
-	GetWorkflow(ctx context.Context, req *WorkflowRequest, opts ...http.CallOption) (rsp *Workflow, err error)
-	List(ctx context.Context, req *ServiceRequest, opts ...http.CallOption) (rsp *Services, err error)
+	Delete(ctx context.Context, req *ServiceDetailIdRequest, opts ...http.CallOption) (rsp *common.Msg, err error)
+	DeleteContinuousDeployment(ctx context.Context, req *ContinuousDeploymentDetailRequest, opts ...http.CallOption) (rsp *common.Msg, err error)
+	DeleteContinuousIntegration(ctx context.Context, req *ContinuousIntegrationDetailRequest, opts ...http.CallOption) (rsp *common.Msg, err error)
+	Get(ctx context.Context, req *ServiceDetailIdRequest, opts ...http.CallOption) (rsp *Service, err error)
+	GetContinuousDeployment(ctx context.Context, req *ContinuousDeploymentDetailRequest, opts ...http.CallOption) (rsp *ContinuousDeployment, err error)
+	GetContinuousDeployments(ctx context.Context, req *ContinuousDeploymentsRequest, opts ...http.CallOption) (rsp *ContinuousDeployments, err error)
+	GetContinuousIntegration(ctx context.Context, req *ContinuousIntegrationDetailRequest, opts ...http.CallOption) (rsp *ContinuousIntegration, err error)
+	GetContinuousIntegrations(ctx context.Context, req *ContinuousIntegrationsRequest, opts ...http.CallOption) (rsp *ContinuousIntegrations, err error)
+	GetServiceWorkflow(ctx context.Context, req *GetServiceWorkflowRequest, opts ...http.CallOption) (rsp *Workflow, err error)
+	List(ctx context.Context, req *ServicesRequest, opts ...http.CallOption) (rsp *Services, err error)
 	Save(ctx context.Context, req *Service, opts ...http.CallOption) (rsp *common.Msg, err error)
-	SaveWorkflow(ctx context.Context, req *Workflow, opts ...http.CallOption) (rsp *common.Msg, err error)
+	SaveServiceWorkflow(ctx context.Context, req *Workflow, opts ...http.CallOption) (rsp *common.Msg, err error)
 }
 
 type ServiceInterfaceHTTPClientImpl struct {
@@ -422,7 +399,7 @@ func NewServiceInterfaceHTTPClient(client *http.Client) ServiceInterfaceHTTPClie
 	return &ServiceInterfaceHTTPClientImpl{client}
 }
 
-func (c *ServiceInterfaceHTTPClientImpl) ApplyService(ctx context.Context, in *ServiceRequest, opts ...http.CallOption) (*common.Msg, error) {
+func (c *ServiceInterfaceHTTPClientImpl) ApplyService(ctx context.Context, in *ApplyServiceRequest, opts ...http.CallOption) (*common.Msg, error) {
 	var out common.Msg
 	pattern := "/api/v1alpha1/service/apply"
 	path := binding.EncodeURL(pattern, in, false)
@@ -461,7 +438,7 @@ func (c *ServiceInterfaceHTTPClientImpl) CreateContinuousIntegration(ctx context
 	return &out, nil
 }
 
-func (c *ServiceInterfaceHTTPClientImpl) Delete(ctx context.Context, in *ServiceRequest, opts ...http.CallOption) (*common.Msg, error) {
+func (c *ServiceInterfaceHTTPClientImpl) Delete(ctx context.Context, in *ServiceDetailIdRequest, opts ...http.CallOption) (*common.Msg, error) {
 	var out common.Msg
 	pattern := "/api/v1alpha1/service/delete"
 	path := binding.EncodeURL(pattern, in, true)
@@ -474,7 +451,7 @@ func (c *ServiceInterfaceHTTPClientImpl) Delete(ctx context.Context, in *Service
 	return &out, nil
 }
 
-func (c *ServiceInterfaceHTTPClientImpl) DeleteContinuousDeployment(ctx context.Context, in *ContinuousDeploymentRequest, opts ...http.CallOption) (*common.Msg, error) {
+func (c *ServiceInterfaceHTTPClientImpl) DeleteContinuousDeployment(ctx context.Context, in *ContinuousDeploymentDetailRequest, opts ...http.CallOption) (*common.Msg, error) {
 	var out common.Msg
 	pattern := "/api/v1alpha1/service/continuousdeployment"
 	path := binding.EncodeURL(pattern, in, true)
@@ -487,7 +464,7 @@ func (c *ServiceInterfaceHTTPClientImpl) DeleteContinuousDeployment(ctx context.
 	return &out, nil
 }
 
-func (c *ServiceInterfaceHTTPClientImpl) DeleteContinuousIntegration(ctx context.Context, in *ContinuousIntegrationRequest, opts ...http.CallOption) (*common.Msg, error) {
+func (c *ServiceInterfaceHTTPClientImpl) DeleteContinuousIntegration(ctx context.Context, in *ContinuousIntegrationDetailRequest, opts ...http.CallOption) (*common.Msg, error) {
 	var out common.Msg
 	pattern := "/api/v1alpha1/service/continuousintegration"
 	path := binding.EncodeURL(pattern, in, true)
@@ -500,7 +477,7 @@ func (c *ServiceInterfaceHTTPClientImpl) DeleteContinuousIntegration(ctx context
 	return &out, nil
 }
 
-func (c *ServiceInterfaceHTTPClientImpl) Get(ctx context.Context, in *ServiceRequest, opts ...http.CallOption) (*Service, error) {
+func (c *ServiceInterfaceHTTPClientImpl) Get(ctx context.Context, in *ServiceDetailIdRequest, opts ...http.CallOption) (*Service, error) {
 	var out Service
 	pattern := "/api/v1alpha1/service/get"
 	path := binding.EncodeURL(pattern, in, true)
@@ -513,7 +490,7 @@ func (c *ServiceInterfaceHTTPClientImpl) Get(ctx context.Context, in *ServiceReq
 	return &out, nil
 }
 
-func (c *ServiceInterfaceHTTPClientImpl) GetContinuousDeployment(ctx context.Context, in *ContinuousDeploymentRequest, opts ...http.CallOption) (*ContinuousDeployment, error) {
+func (c *ServiceInterfaceHTTPClientImpl) GetContinuousDeployment(ctx context.Context, in *ContinuousDeploymentDetailRequest, opts ...http.CallOption) (*ContinuousDeployment, error) {
 	var out ContinuousDeployment
 	pattern := "/api/v1alpha1/service/continuousdeployment"
 	path := binding.EncodeURL(pattern, in, true)
@@ -526,7 +503,7 @@ func (c *ServiceInterfaceHTTPClientImpl) GetContinuousDeployment(ctx context.Con
 	return &out, nil
 }
 
-func (c *ServiceInterfaceHTTPClientImpl) GetContinuousDeployments(ctx context.Context, in *ContinuousDeploymentRequest, opts ...http.CallOption) (*ContinuousDeployments, error) {
+func (c *ServiceInterfaceHTTPClientImpl) GetContinuousDeployments(ctx context.Context, in *ContinuousDeploymentsRequest, opts ...http.CallOption) (*ContinuousDeployments, error) {
 	var out ContinuousDeployments
 	pattern := "/api/v1alpha1/service/continuousdeployments"
 	path := binding.EncodeURL(pattern, in, true)
@@ -539,7 +516,7 @@ func (c *ServiceInterfaceHTTPClientImpl) GetContinuousDeployments(ctx context.Co
 	return &out, nil
 }
 
-func (c *ServiceInterfaceHTTPClientImpl) GetContinuousIntegration(ctx context.Context, in *ContinuousIntegrationRequest, opts ...http.CallOption) (*ContinuousIntegration, error) {
+func (c *ServiceInterfaceHTTPClientImpl) GetContinuousIntegration(ctx context.Context, in *ContinuousIntegrationDetailRequest, opts ...http.CallOption) (*ContinuousIntegration, error) {
 	var out ContinuousIntegration
 	pattern := "/api/v1alpha1/service/continuousintegration"
 	path := binding.EncodeURL(pattern, in, true)
@@ -552,7 +529,7 @@ func (c *ServiceInterfaceHTTPClientImpl) GetContinuousIntegration(ctx context.Co
 	return &out, nil
 }
 
-func (c *ServiceInterfaceHTTPClientImpl) GetContinuousIntegrations(ctx context.Context, in *ContinuousIntegrationRequest, opts ...http.CallOption) (*ContinuousIntegrations, error) {
+func (c *ServiceInterfaceHTTPClientImpl) GetContinuousIntegrations(ctx context.Context, in *ContinuousIntegrationsRequest, opts ...http.CallOption) (*ContinuousIntegrations, error) {
 	var out ContinuousIntegrations
 	pattern := "/api/v1alpha1/service/continuousintegrations"
 	path := binding.EncodeURL(pattern, in, true)
@@ -565,24 +542,11 @@ func (c *ServiceInterfaceHTTPClientImpl) GetContinuousIntegrations(ctx context.C
 	return &out, nil
 }
 
-func (c *ServiceInterfaceHTTPClientImpl) GetServiceResource(ctx context.Context, in *ServiceRequest, opts ...http.CallOption) (*AlreadyResource, error) {
-	var out AlreadyResource
-	pattern := "/api/v1alpha1/service/resource"
-	path := binding.EncodeURL(pattern, in, true)
-	opts = append(opts, http.Operation(OperationServiceInterfaceGetServiceResource))
-	opts = append(opts, http.PathTemplate(pattern))
-	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return &out, nil
-}
-
-func (c *ServiceInterfaceHTTPClientImpl) GetWorkflow(ctx context.Context, in *WorkflowRequest, opts ...http.CallOption) (*Workflow, error) {
+func (c *ServiceInterfaceHTTPClientImpl) GetServiceWorkflow(ctx context.Context, in *GetServiceWorkflowRequest, opts ...http.CallOption) (*Workflow, error) {
 	var out Workflow
 	pattern := "/api/v1alpha1/service/workflow"
 	path := binding.EncodeURL(pattern, in, true)
-	opts = append(opts, http.Operation(OperationServiceInterfaceGetWorkflow))
+	opts = append(opts, http.Operation(OperationServiceInterfaceGetServiceWorkflow))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
 	if err != nil {
@@ -591,7 +555,7 @@ func (c *ServiceInterfaceHTTPClientImpl) GetWorkflow(ctx context.Context, in *Wo
 	return &out, nil
 }
 
-func (c *ServiceInterfaceHTTPClientImpl) List(ctx context.Context, in *ServiceRequest, opts ...http.CallOption) (*Services, error) {
+func (c *ServiceInterfaceHTTPClientImpl) List(ctx context.Context, in *ServicesRequest, opts ...http.CallOption) (*Services, error) {
 	var out Services
 	pattern := "/api/v1alpha1/service/list"
 	path := binding.EncodeURL(pattern, in, true)
@@ -617,11 +581,11 @@ func (c *ServiceInterfaceHTTPClientImpl) Save(ctx context.Context, in *Service, 
 	return &out, nil
 }
 
-func (c *ServiceInterfaceHTTPClientImpl) SaveWorkflow(ctx context.Context, in *Workflow, opts ...http.CallOption) (*common.Msg, error) {
+func (c *ServiceInterfaceHTTPClientImpl) SaveServiceWorkflow(ctx context.Context, in *Workflow, opts ...http.CallOption) (*common.Msg, error) {
 	var out common.Msg
 	pattern := "/api/v1alpha1/service/workflow"
 	path := binding.EncodeURL(pattern, in, false)
-	opts = append(opts, http.Operation(OperationServiceInterfaceSaveWorkflow))
+	opts = append(opts, http.Operation(OperationServiceInterfaceSaveServiceWorkflow))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
 	if err != nil {

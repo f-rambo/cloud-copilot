@@ -92,37 +92,15 @@ func (w *WorkspaceInterface) bizToWorkspace(workspace *biz.Workspace) *v1alpha1.
 	if workspace == nil {
 		return nil
 	}
-	resourceQuota := workspace.ResourceQuota.ToResourceQuota()
 	res := &v1alpha1.Workspace{
-		Id:              int32(workspace.Id),
-		Name:            workspace.Name,
-		Description:     workspace.Description,
-		UserId:          int32(workspace.UserId),
-		Status:          workspace.Status.String(),
-		GitRepository:   workspace.GitRepository,
-		ImageRepository: workspace.ImageRepository,
-		ResourceQuota: &v1alpha1.ResourceQuota{
-			Cpu: &v1alpha1.ResourceLimit{
-				Limit:   resourceQuota.CPU.Limit,
-				Request: resourceQuota.CPU.Request,
-			},
-			Memory: &v1alpha1.ResourceLimit{
-				Limit:   resourceQuota.Memory.Limit,
-				Request: resourceQuota.Memory.Request,
-			},
-			Gpu: &v1alpha1.ResourceLimit{
-				Limit:   resourceQuota.GPU.Limit,
-				Request: resourceQuota.GPU.Request,
-			},
-			Storage: &v1alpha1.ResourceLimit{
-				Limit:   resourceQuota.Storage.Limit,
-				Request: resourceQuota.Storage.Request,
-			},
-			Pods: &v1alpha1.ResourceLimit{
-				Limit:   resourceQuota.Pods.Limit,
-				Request: resourceQuota.Pods.Request,
-			},
-		},
+		Id:                   int32(workspace.Id),
+		Name:                 workspace.Name,
+		Description:          workspace.Description,
+		UserId:               int32(workspace.UserId),
+		Status:               workspace.Status.String(),
+		GitRepository:        workspace.GitRepository,
+		ImageRepository:      workspace.ImageRepository,
+		ResourceQuota:        resourceQuotaBizToInterface(workspace.ResourceQuota),
 		ClusterRelationships: make([]*v1alpha1.WorkspaceClusterRelationship, 0),
 	}
 	for _, clusterRelationship := range workspace.WorkspaceClusterRelationships {
@@ -137,28 +115,6 @@ func (w *WorkspaceInterface) bizToWorkspace(workspace *biz.Workspace) *v1alpha1.
 }
 
 func (w *WorkspaceInterface) workspaceToBiz(workspace *v1alpha1.Workspace) *biz.Workspace {
-	resourceQuota := biz.ResourceQuota{
-		CPU: biz.ResourceLimit{
-			Limit:   workspace.ResourceQuota.Cpu.Limit,
-			Request: workspace.ResourceQuota.Cpu.Request,
-		},
-		Memory: biz.ResourceLimit{
-			Limit:   workspace.ResourceQuota.Memory.Limit,
-			Request: workspace.ResourceQuota.Memory.Request,
-		},
-		GPU: biz.ResourceLimit{
-			Limit:   workspace.ResourceQuota.Gpu.Limit,
-			Request: workspace.ResourceQuota.Gpu.Request,
-		},
-		Storage: biz.ResourceLimit{
-			Limit:   workspace.ResourceQuota.Storage.Limit,
-			Request: workspace.ResourceQuota.Storage.Request,
-		},
-		Pods: biz.ResourceLimit{
-			Limit:   workspace.ResourceQuota.Pods.Limit,
-			Request: workspace.ResourceQuota.Pods.Request,
-		},
-	}
 	clusterRelationship := make([]*biz.WorkspaceClusterRelationship, 0)
 	for _, cluster := range workspace.ClusterRelationships {
 		clusterRelationship = append(clusterRelationship, &biz.WorkspaceClusterRelationship{
@@ -175,7 +131,70 @@ func (w *WorkspaceInterface) workspaceToBiz(workspace *v1alpha1.Workspace) *biz.
 		UserId:                        int64(workspace.UserId),
 		GitRepository:                 workspace.GitRepository,
 		ImageRepository:               workspace.ImageRepository,
-		ResourceQuota:                 resourceQuota.ToString(),
+		ResourceQuota:                 resourceQuotaInterfaceToBiz(workspace.ResourceQuota),
 		WorkspaceClusterRelationships: clusterRelationship,
 	}
+}
+
+func resourceQuotaBizToInterface(bizQuotaString biz.ResourceQuotaString) *common.ResourceQuota {
+	resourceQuota := bizQuotaString.ToResourceQuota()
+	return &common.ResourceQuota{
+		Cpu: &common.ResourceLimit{
+			Limit:   resourceQuota.CPU.Limit,
+			Request: resourceQuota.CPU.Request,
+			Used:    resourceQuota.CPU.Used,
+		},
+		Memory: &common.ResourceLimit{
+			Limit:   resourceQuota.Memory.Limit,
+			Request: resourceQuota.Memory.Request,
+			Used:    resourceQuota.Memory.Used,
+		},
+		Gpu: &common.ResourceLimit{
+			Limit:   resourceQuota.GPU.Limit,
+			Request: resourceQuota.GPU.Request,
+			Used:    resourceQuota.GPU.Used,
+		},
+		Storage: &common.ResourceLimit{
+			Limit:   resourceQuota.Storage.Limit,
+			Request: resourceQuota.Storage.Request,
+			Used:    resourceQuota.Storage.Used,
+		},
+		Pods: &common.ResourceLimit{
+			Limit:   resourceQuota.Pods.Limit,
+			Request: resourceQuota.Pods.Request,
+			Used:    resourceQuota.Pods.Used,
+		},
+	}
+}
+
+func resourceQuotaInterfaceToBiz(interQuota *common.ResourceQuota) biz.ResourceQuotaString {
+	resourceQuota := biz.ResourceQuota{
+		Replicas: interQuota.Replicas,
+		CPU: biz.ResourceLimit{
+			Limit:   interQuota.Cpu.Limit,
+			Request: interQuota.Cpu.Request,
+			Used:    interQuota.Cpu.Used,
+		},
+		Memory: biz.ResourceLimit{
+			Limit:   interQuota.Memory.Limit,
+			Request: interQuota.Memory.Request,
+			Used:    interQuota.Memory.Used,
+		},
+		GPU: biz.ResourceLimit{
+			Limit:   interQuota.Gpu.Limit,
+			Request: interQuota.Gpu.Request,
+			Used:    interQuota.Gpu.Used,
+		},
+		Storage: biz.ResourceLimit{
+			Limit:   interQuota.Storage.Limit,
+			Request: interQuota.Storage.Request,
+			Used:    interQuota.Storage.Used,
+		},
+		Pods: biz.ResourceLimit{
+			Limit:   interQuota.Pods.Limit,
+			Request: interQuota.Pods.Request,
+			Used:    interQuota.Pods.Used,
+		},
+	}
+	return resourceQuota.ToString()
 }

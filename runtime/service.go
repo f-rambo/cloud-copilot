@@ -83,16 +83,17 @@ func (s *ServiceRuntime) ApplyService(ctx context.Context, service *biz.Service,
 	cluster := biz.GetCluster(ctx)
 	workspace := biz.GetWorkspace(ctx)
 	project := biz.GetProject(ctx)
+	resourceQuota := service.ResourceQuota.ToResourceQuota()
 	cloudServiceSpec := &CloudServiceSpec{
 		CloudServiceType: CloudServiceTypeHttpServer,
-		Gateway:          service.Gateway,
 		Image:            continuousDeployment.Image,
-		Replicas:         service.Replicas,
-		RequestCPU:       service.RequestCpu,
-		LimitCPU:         service.LimitCpu,
-		RequestGPU:       service.RequestGpu,
-		LimitGPU:         service.LimitGpu,
-		RequestMemory:    service.RequestMemory,
+		Replicas:         resourceQuota.Replicas,
+		RequestCPU:       resourceQuota.CPU.Request,
+		LimitCPU:         resourceQuota.CPU.Limit,
+		RequestGPU:       resourceQuota.GPU.Request,
+		LimitGPU:         resourceQuota.GPU.Limit,
+		RequestMemory:    resourceQuota.Memory.Request,
+		LimitMemory:      resourceQuota.Memory.Limit,
 		Config:           continuousDeployment.Config,
 	}
 	for _, v := range service.Volumes {
@@ -108,19 +109,19 @@ func (s *ServiceRuntime) ApplyService(ctx context.Context, service *biz.Service,
 			Name:          v.Name,
 			ContainerPort: v.ContainerPort,
 			Protocol:      v.Protocol,
-			IngressPath:   v.IngressPath,
+			IngressPath:   v.Path,
 		})
 	}
 	cloudServiceSpec.IngressNetworkPolicy = []NetworkPolicy{
 		{
-			Namespace:   service.Namespace,
+			Namespace:   workspace.Name,
 			MatchLabels: utils.MergeMaps(cluster.GetLabels(), workspace.GetLabels(), project.GetLabels()),
 		},
 	}
 	if continuousDeployment.IsAccessExternal == biz.AccessExternal_False {
 		cloudServiceSpec.EgressNetworkPolicy = []NetworkPolicy{
 			{
-				Namespace:   service.Namespace,
+				Namespace:   workspace.Name,
 				MatchLabels: utils.MergeMaps(cluster.GetLabels(), workspace.GetLabels(), project.GetLabels()),
 			},
 		}
@@ -136,7 +137,7 @@ func (s *ServiceRuntime) ApplyService(ctx context.Context, service *biz.Service,
 	obj := NewUnstructured(CloudServiceKind)
 	obj.SetLabels(utils.MergeMaps(cluster.GetLabels(), workspace.GetLabels(), project.GetLabels(), service.GetLabels()))
 	obj.SetName(service.Name)
-	obj.SetNamespace(service.Namespace)
+	obj.SetNamespace(workspace.Name)
 	SetSpec(obj, cloudServiceSpec)
 	dynamicClient, err := GetKubeDynamicClient()
 	if err != nil {
@@ -162,9 +163,10 @@ func (s *ServiceRuntime) ApplyService(ctx context.Context, service *biz.Service,
 }
 
 func (s *ServiceRuntime) GetServiceStatus(ctx context.Context, service *biz.Service) error {
+	workspace := biz.GetWorkspace(ctx)
 	obj := NewUnstructured(CloudServiceKind)
 	obj.SetName(service.Name)
-	obj.SetNamespace(service.Namespace)
+	obj.SetNamespace(workspace.Name) // as namespace
 	dynamicClient, err := GetKubeDynamicClient()
 	if err != nil {
 		return err

@@ -1109,7 +1109,7 @@ paths:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/service.v1alpha1.ServiceRequest'
+                            $ref: '#/components/schemas/service.v1alpha1.ApplyServiceRequest'
                 required: true
             responses:
                 "200":
@@ -1125,23 +1125,6 @@ paths:
             operationId: ServiceInterface_GetContinuousDeployment
             parameters:
                 - name: id
-                  in: query
-                  schema:
-                    type: string
-                - name: serviceId
-                  in: query
-                  schema:
-                    type: string
-                - name: ciId
-                  in: query
-                  schema:
-                    type: string
-                - name: page
-                  in: query
-                  schema:
-                    type: integer
-                    format: int32
-                - name: pageSize
                   in: query
                   schema:
                     type: integer
@@ -1178,23 +1161,6 @@ paths:
                 - name: id
                   in: query
                   schema:
-                    type: string
-                - name: serviceId
-                  in: query
-                  schema:
-                    type: string
-                - name: ciId
-                  in: query
-                  schema:
-                    type: string
-                - name: page
-                  in: query
-                  schema:
-                    type: integer
-                    format: int32
-                - name: pageSize
-                  in: query
-                  schema:
                     type: integer
                     format: int32
             responses:
@@ -1210,24 +1176,17 @@ paths:
                 - ServiceInterface
             operationId: ServiceInterface_GetContinuousDeployments
             parameters:
-                - name: id
+                - name: service_id
                   in: query
                   schema:
-                    type: string
-                - name: serviceId
-                  in: query
-                  schema:
-                    type: string
-                - name: ciId
-                  in: query
-                  schema:
-                    type: string
+                    type: integer
+                    format: int32
                 - name: page
                   in: query
                   schema:
                     type: integer
                     format: int32
-                - name: pageSize
+                - name: page_size
                   in: query
                   schema:
                     type: integer
@@ -1246,19 +1205,6 @@ paths:
             operationId: ServiceInterface_GetContinuousIntegration
             parameters:
                 - name: id
-                  in: query
-                  schema:
-                    type: string
-                - name: serviceId
-                  in: query
-                  schema:
-                    type: string
-                - name: page
-                  in: query
-                  schema:
-                    type: integer
-                    format: int32
-                - name: pageSize
                   in: query
                   schema:
                     type: integer
@@ -1295,19 +1241,6 @@ paths:
                 - name: id
                   in: query
                   schema:
-                    type: string
-                - name: serviceId
-                  in: query
-                  schema:
-                    type: string
-                - name: page
-                  in: query
-                  schema:
-                    type: integer
-                    format: int32
-                - name: pageSize
-                  in: query
-                  schema:
                     type: integer
                     format: int32
             responses:
@@ -1323,20 +1256,17 @@ paths:
                 - ServiceInterface
             operationId: ServiceInterface_GetContinuousIntegrations
             parameters:
-                - name: id
+                - name: service_id
                   in: query
                   schema:
-                    type: string
-                - name: serviceId
-                  in: query
-                  schema:
-                    type: string
+                    type: integer
+                    format: int32
                 - name: page
                   in: query
                   schema:
                     type: integer
                     format: int32
-                - name: pageSize
+                - name: page_size
                   in: query
                   schema:
                     type: integer
@@ -1357,49 +1287,8 @@ paths:
                 - name: id
                   in: query
                   schema:
-                    type: string
-                - name: name
-                  in: query
-                  schema:
-                    type: string
-                - name: page
-                  in: query
-                  schema:
                     type: integer
                     format: int32
-                - name: pageSize
-                  in: query
-                  schema:
-                    type: integer
-                    format: int32
-                - name: projectId
-                  in: query
-                  schema:
-                    type: string
-                - name: workspaceId
-                  in: query
-                  schema:
-                    type: string
-                - name: clusterId
-                  in: query
-                  schema:
-                    type: string
-                - name: userId
-                  in: query
-                  schema:
-                    type: string
-                - name: workflowType
-                  in: query
-                  schema:
-                    type: string
-                - name: ciId
-                  in: query
-                  schema:
-                    type: string
-                - name: cdId
-                  in: query
-                  schema:
-                    type: string
             responses:
                 "200":
                     description: OK
@@ -1416,49 +1305,8 @@ paths:
                 - name: id
                   in: query
                   schema:
-                    type: string
-                - name: name
-                  in: query
-                  schema:
-                    type: string
-                - name: page
-                  in: query
-                  schema:
                     type: integer
                     format: int32
-                - name: pageSize
-                  in: query
-                  schema:
-                    type: integer
-                    format: int32
-                - name: projectId
-                  in: query
-                  schema:
-                    type: string
-                - name: workspaceId
-                  in: query
-                  schema:
-                    type: string
-                - name: clusterId
-                  in: query
-                  schema:
-                    type: string
-                - name: userId
-                  in: query
-                  schema:
-                    type: string
-                - name: workflowType
-                  in: query
-                  schema:
-                    type: string
-                - name: ciId
-                  in: query
-                  schema:
-                    type: string
-                - name: cdId
-                  in: query
-                  schema:
-                    type: string
             responses:
                 "200":
                     description: OK
@@ -1472,10 +1320,6 @@ paths:
                 - ServiceInterface
             operationId: ServiceInterface_List
             parameters:
-                - name: id
-                  in: query
-                  schema:
-                    type: string
                 - name: name
                   in: query
                   schema:
@@ -1485,39 +1329,16 @@ paths:
                   schema:
                     type: integer
                     format: int32
-                - name: pageSize
+                - name: size
                   in: query
                   schema:
                     type: integer
                     format: int32
-                - name: projectId
+                - name: project_id
                   in: query
                   schema:
-                    type: string
-                - name: workspaceId
-                  in: query
-                  schema:
-                    type: string
-                - name: clusterId
-                  in: query
-                  schema:
-                    type: string
-                - name: userId
-                  in: query
-                  schema:
-                    type: string
-                - name: workflowType
-                  in: query
-                  schema:
-                    type: string
-                - name: ciId
-                  in: query
-                  schema:
-                    type: string
-                - name: cdId
-                  in: query
-                  schema:
-                    type: string
+                    type: integer
+                    format: int32
             responses:
                 "200":
                     description: OK
@@ -1525,65 +1346,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/service.v1alpha1.Services'
-    /api/v1alpha1/service/resource:
-        get:
-            tags:
-                - ServiceInterface
-            operationId: ServiceInterface_GetServiceResource
-            parameters:
-                - name: id
-                  in: query
-                  schema:
-                    type: string
-                - name: name
-                  in: query
-                  schema:
-                    type: string
-                - name: page
-                  in: query
-                  schema:
-                    type: integer
-                    format: int32
-                - name: pageSize
-                  in: query
-                  schema:
-                    type: integer
-                    format: int32
-                - name: projectId
-                  in: query
-                  schema:
-                    type: string
-                - name: workspaceId
-                  in: query
-                  schema:
-                    type: string
-                - name: clusterId
-                  in: query
-                  schema:
-                    type: string
-                - name: userId
-                  in: query
-                  schema:
-                    type: string
-                - name: workflowType
-                  in: query
-                  schema:
-                    type: string
-                - name: ciId
-                  in: query
-                  schema:
-                    type: string
-                - name: cdId
-                  in: query
-                  schema:
-                    type: string
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/service.v1alpha1.AlreadyResource'
     /api/v1alpha1/service/save:
         post:
             tags:
@@ -1606,20 +1368,13 @@ paths:
         get:
             tags:
                 - ServiceInterface
-            operationId: ServiceInterface_GetWorkflow
+            operationId: ServiceInterface_GetServiceWorkflow
             parameters:
-                - name: id
-                  in: query
-                  schema:
-                    type: string
-                - name: name
-                  in: query
-                  schema:
-                    type: string
                 - name: serviceId
                   in: query
                   schema:
-                    type: string
+                    type: integer
+                    format: int32
                 - name: workflowType
                   in: query
                   schema:
@@ -1634,7 +1389,7 @@ paths:
         post:
             tags:
                 - ServiceInterface
-            operationId: ServiceInterface_SaveWorkflow
+            operationId: ServiceInterface_SaveServiceWorkflow
             requestBody:
                 content:
                     application/json:
@@ -2461,6 +2216,34 @@ components:
                 Message:
                     type: string
                     description: Error message
+        common.ResourceLimit:
+            type: object
+            properties:
+                request:
+                    type: integer
+                    format: int32
+                limit:
+                    type: integer
+                    format: int32
+                used:
+                    type: integer
+                    format: int32
+        common.ResourceQuota:
+            type: object
+            properties:
+                cpu:
+                    $ref: '#/components/schemas/common.ResourceLimit'
+                memory:
+                    $ref: '#/components/schemas/common.ResourceLimit'
+                gpu:
+                    $ref: '#/components/schemas/common.ResourceLimit'
+                storage:
+                    $ref: '#/components/schemas/common.ResourceLimit'
+                pods:
+                    $ref: '#/components/schemas/common.ResourceLimit'
+                replicas:
+                    type: integer
+                    format: int32
         project.v1alpha1.Project:
             type: object
             properties:
@@ -2499,39 +2282,38 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/project.v1alpha1.Project'
-        service.v1alpha1.AlreadyResource:
+        service.v1alpha1.ApplyServiceRequest:
             type: object
             properties:
-                cpu:
+                service_id:
                     type: integer
                     format: int32
-                memory:
+                ci_id:
                     type: integer
                     format: int32
-                gpu:
-                    type: integer
-                    format: int32
-                disk:
+                cd_id:
                     type: integer
                     format: int32
         service.v1alpha1.ContinuousDeployment:
             type: object
             properties:
                 id:
-                    type: string
-                ciId:
-                    type: string
-                serviceId:
-                    type: string
-                userId:
-                    type: string
+                    type: integer
+                    format: int32
+                ci_id:
+                    type: integer
+                    format: int32
+                service_id:
+                    type: integer
+                    format: int32
+                user_id:
+                    type: integer
+                    format: int32
                 status:
-                    type: string
-                workflowRuntime:
                     type: string
                 workflow:
                     $ref: '#/components/schemas/service.v1alpha1.Workflow'
-                configPath:
+                config_path:
                     type: string
                 config:
                     type: string
@@ -2540,17 +2322,19 @@ components:
         service.v1alpha1.ContinuousDeployments:
             type: object
             properties:
-                continuousDeployments:
+                continuous_deployments:
                     type: array
                     items:
                         $ref: '#/components/schemas/service.v1alpha1.ContinuousDeployment'
                 total:
-                    type: string
+                    type: integer
+                    format: int32
         service.v1alpha1.ContinuousIntegration:
             type: object
             properties:
                 id:
-                    type: string
+                    type: integer
+                    format: int32
                 version:
                     type: string
                 branch:
@@ -2561,12 +2345,12 @@ components:
                     type: string
                 description:
                     type: string
-                serviceId:
-                    type: string
-                userId:
-                    type: string
-                workflowRuntime:
-                    type: string
+                service_id:
+                    type: integer
+                    format: int32
+                user_id:
+                    type: integer
+                    format: int32
                 workflow:
                     $ref: '#/components/schemas/service.v1alpha1.Workflow'
                 logs:
@@ -2574,103 +2358,78 @@ components:
         service.v1alpha1.ContinuousIntegrations:
             type: object
             properties:
-                continuousIntegrations:
+                continuous_integrations:
                     type: array
                     items:
                         $ref: '#/components/schemas/service.v1alpha1.ContinuousIntegration'
                 total:
+                    type: integer
+                    format: int32
+        service.v1alpha1.Pod:
+            type: object
+            properties:
+                id:
+                    type: integer
+                    format: int32
+                name:
+                    type: string
+                node_name:
+                    type: string
+                status:
                     type: string
         service.v1alpha1.Port:
             type: object
             properties:
                 id:
+                    type: integer
+                    format: int32
+                name:
                     type: string
-                ingressPath:
+                path:
                     type: string
                 protocol:
                     type: string
-                containerPort:
+                container_port:
                     type: integer
                     format: int32
         service.v1alpha1.Service:
             type: object
             properties:
                 id:
-                    type: string
+                    type: integer
+                    format: int32
                 name:
                     type: string
-                codeRepo:
+                labels:
                     type: string
-                replicas:
-                    type: integer
-                    format: int32
-                cpu:
-                    type: integer
-                    format: int32
-                limitCpu:
-                    type: integer
-                    format: int32
-                gpu:
-                    type: integer
-                    format: int32
-                limitGpu:
-                    type: integer
-                    format: int32
-                memory:
-                    type: integer
-                    format: int32
-                limitMemory:
-                    type: integer
-                    format: int32
-                disk:
-                    type: integer
-                    format: int32
-                limitDisk:
-                    type: integer
-                    format: int32
-                description:
-                    type: string
+                resource_quota:
+                    $ref: '#/components/schemas/common.ResourceQuota'
                 ports:
                     type: array
                     items:
                         $ref: '#/components/schemas/service.v1alpha1.Port'
-                projectId:
+                volumes:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/service.v1alpha1.Volume'
+                pods:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/service.v1alpha1.Pod'
+                description:
                     type: string
-                workspaceId:
-                    type: string
-                clusterId:
-                    type: string
-                userId:
-                    type: string
-                username:
-                    type: string
-        service.v1alpha1.ServiceRequest:
-            type: object
-            properties:
-                id:
-                    type: string
-                name:
-                    type: string
-                page:
+                user_id:
                     type: integer
                     format: int32
-                pageSize:
+                project_id:
                     type: integer
                     format: int32
-                projectId:
-                    type: string
-                workspaceId:
-                    type: string
-                clusterId:
-                    type: string
-                userId:
-                    type: string
-                workflowType:
-                    type: string
-                ciId:
-                    type: string
-                cdId:
-                    type: string
+                workspace_id:
+                    type: integer
+                    format: int32
+                cluster_id:
+                    type: integer
+                    format: int32
         service.v1alpha1.Services:
             type: object
             properties:
@@ -2679,23 +2438,41 @@ components:
                     items:
                         $ref: '#/components/schemas/service.v1alpha1.Service'
                 total:
+                    type: integer
+                    format: int32
+        service.v1alpha1.Volume:
+            type: object
+            properties:
+                id:
+                    type: integer
+                    format: int32
+                name:
+                    type: string
+                mount_path:
+                    type: string
+                storage:
+                    type: integer
+                    format: int32
+                storage_class:
                     type: string
         service.v1alpha1.Workflow:
             type: object
             properties:
                 id:
-                    type: string
+                    type: integer
+                    format: int32
                 name:
                     type: string
                 namespace:
                     type: string
-                workflowType:
+                workflow_type:
                     type: string
                 description:
                     type: string
-                serviceId:
-                    type: string
-                workflowSteps:
+                service_id:
+                    type: integer
+                    format: int32
+                workflow_steps:
                     type: array
                     items:
                         $ref: '#/components/schemas/service.v1alpha1.WorkflowStep'
@@ -2703,9 +2480,11 @@ components:
             type: object
             properties:
                 id:
-                    type: string
-                workflowId:
-                    type: string
+                    type: integer
+                    format: int32
+                workflow_id:
+                    type: integer
+                    format: int32
                 order:
                     type: integer
                     format: int32
@@ -2713,7 +2492,7 @@ components:
                     type: string
                 description:
                     type: string
-                workflowTasks:
+                workflow_tasks:
                     type: array
                     items:
                         $ref: '#/components/schemas/service.v1alpha1.WorkflowTask'
@@ -2721,11 +2500,14 @@ components:
             type: object
             properties:
                 id:
-                    type: string
-                workflowId:
-                    type: string
-                stepId:
-                    type: string
+                    type: integer
+                    format: int32
+                workflow_id:
+                    type: integer
+                    format: int32
+                step_id:
+                    type: integer
+                    format: int32
                 name:
                     type: string
                 order:
@@ -2853,28 +2635,6 @@ components:
                 role_id:
                     type: integer
                     format: int32
-        workspace.v1alpha1.ResourceLimit:
-            type: object
-            properties:
-                request:
-                    type: integer
-                    format: int32
-                limit:
-                    type: integer
-                    format: int32
-        workspace.v1alpha1.ResourceQuota:
-            type: object
-            properties:
-                cpu:
-                    $ref: '#/components/schemas/workspace.v1alpha1.ResourceLimit'
-                memory:
-                    $ref: '#/components/schemas/workspace.v1alpha1.ResourceLimit'
-                gpu:
-                    $ref: '#/components/schemas/workspace.v1alpha1.ResourceLimit'
-                storage:
-                    $ref: '#/components/schemas/workspace.v1alpha1.ResourceLimit'
-                pods:
-                    $ref: '#/components/schemas/workspace.v1alpha1.ResourceLimit'
         workspace.v1alpha1.Workspace:
             type: object
             properties:
@@ -2889,7 +2649,7 @@ components:
                     type: integer
                     format: int32
                 resource_quota:
-                    $ref: '#/components/schemas/workspace.v1alpha1.ResourceQuota'
+                    $ref: '#/components/schemas/common.ResourceQuota'
                 git_repository:
                     type: string
                 image_repository:

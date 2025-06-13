@@ -13,16 +13,17 @@ import (
 
 type Workflows []*Workflow
 
-type WorkflowTask struct {
-	Id          int64          `json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
-	WorkflowId  int64          `json:"workflow_id,omitempty" gorm:"column:workflow_id;default:0;NOT NULL;index:idx_task_workflow_id"`
-	StepId      int64          `json:"step_id,omitempty" gorm:"column:step_id;default:0;NOT NULL"`
-	Name        string         `json:"name,omitempty" gorm:"column:name;default:'';NOT NULL"`
-	Order       int32          `json:"order,omitempty" gorm:"column:order;default:0;NOT NULL"`
-	TaskCommand string         `json:"task_command,omitempty" gorm:"column:task_command;default:'';NOT NULL"`
-	Description string         `json:"description,omitempty" gorm:"column:description;default:'';NOT NULL"`
-	Status      WorkflowStatus `json:"status,omitempty" gorm:"column:status;default:0;NOT NULL"`
-	Log         string         `json:"log,omitempty" gorm:"-"`
+type Workflow struct {
+	Id            int64           `json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
+	Name          string          `json:"name,omitempty" gorm:"column:name;default:'';NOT NULL"`
+	Namespace     string          `json:"namespace,omitempty" gorm:"column:namespace;default:'';NOT NULL"`
+	Lables        string          `json:"lables,omitempty" gorm:"column:lables;default:'';NOT NULL"`
+	Env           string          `json:"env,omitempty" gorm:"column:env;default:'';NOT NULL"`
+	StorageClass  string          `json:"storage_class,omitempty" gorm:"column:storage_class;default:'';NOT NULL"`
+	Type          WorkflowType    `json:"type,omitempty" gorm:"column:type;default:0;NOT NULL"`
+	Description   string          `json:"description,omitempty" gorm:"column:description;default:'';NOT NULL"`
+	ServiceId     int64           `json:"service_id,omitempty" gorm:"column:service_id;default:0;NOT NULL;index:idx_wf_service_id"`
+	WorkflowSteps []*WorkflowStep `json:"workflow_steps,omitempty" gorm:"-"`
 }
 
 type WorkflowStep struct {
@@ -36,17 +37,16 @@ type WorkflowStep struct {
 	WorkflowTasks    []*WorkflowTask  `json:"workflow_tasks,omitempty" gorm:"-"`
 }
 
-type Workflow struct {
-	Id            int64           `json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
-	Name          string          `json:"name,omitempty" gorm:"column:name;default:'';NOT NULL"`
-	Namespace     string          `json:"namespace,omitempty" gorm:"column:namespace;default:'';NOT NULL"`
-	Lables        string          `json:"lables,omitempty" gorm:"column:lables;default:'';NOT NULL"`
-	Env           string          `json:"env,omitempty" gorm:"column:env;default:'';NOT NULL"`
-	StorageClass  string          `json:"storage_class,omitempty" gorm:"column:storage_class;default:'';NOT NULL"`
-	Type          WorkflowType    `json:"type,omitempty" gorm:"column:type;default:0;NOT NULL"`
-	Description   string          `json:"description,omitempty" gorm:"column:description;default:'';NOT NULL"`
-	ServiceId     int64           `json:"service_id,omitempty" gorm:"column:service_id;default:0;NOT NULL;index:idx_wf_service_id"`
-	WorkflowSteps []*WorkflowStep `json:"workflow_steps,omitempty" gorm:"-"`
+type WorkflowTask struct {
+	Id          int64          `json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
+	WorkflowId  int64          `json:"workflow_id,omitempty" gorm:"column:workflow_id;default:0;NOT NULL;index:idx_task_workflow_id"`
+	StepId      int64          `json:"step_id,omitempty" gorm:"column:step_id;default:0;NOT NULL"`
+	Name        string         `json:"name,omitempty" gorm:"column:name;default:'';NOT NULL"`
+	Order       int32          `json:"order,omitempty" gorm:"column:order;default:0;NOT NULL"`
+	TaskCommand string         `json:"task_command,omitempty" gorm:"column:task_command;default:'';NOT NULL"`
+	Description string         `json:"description,omitempty" gorm:"column:description;default:'';NOT NULL"`
+	Status      WorkflowStatus `json:"status,omitempty" gorm:"column:status;default:0;NOT NULL"`
+	Log         string         `json:"log,omitempty" gorm:"-"`
 }
 
 type WorkflowRuntime interface {
@@ -102,6 +102,32 @@ const (
 	WorkflowStatus_Failure     WorkflowStatus = 3
 )
 
+func (ws WorkflowStatus) String() string {
+	switch ws {
+	case WorkflowStatus_Pending:
+		return "PENDING"
+	case WorkflowStatus_Success:
+		return "SUCCESS"
+	case WorkflowStatus_Failure:
+		return "FAILURE"
+	default:
+		return "UNSPECIFIED"
+	}
+}
+
+func WorkflowStatusFromString(s string) WorkflowStatus {
+	switch s {
+	case "PENDING":
+		return WorkflowStatus_Pending
+	case "SUCCESS":
+		return WorkflowStatus_Success
+	case "FAILURE":
+		return WorkflowStatus_Failure
+	default:
+		return WorkflowStatus_UNSPECIFIED
+	}
+}
+
 type WorkflowStepType int32
 
 const (
@@ -127,6 +153,23 @@ func (w WorkflowStepType) String() string {
 		return "Deploy"
 	default:
 		return ""
+	}
+}
+
+func WorkflowStepTypeFromString(s string) WorkflowStepType {
+	switch s {
+	case "Customizable":
+		return WorkflowStepType_Customizable
+	case "CodePull":
+		return WorkflowStepType_CodePull
+	case "ImageRepoAuth":
+		return WorkflowStepType_ImageRepoAuth
+	case "Build":
+		return WorkflowStepType_Build
+	case "Deploy":
+		return WorkflowStepType_Deploy
+	default:
+		return WorkflowStepType_Customizable
 	}
 }
 
@@ -277,10 +320,9 @@ func (w *Workflow) GetTask(taskName string) *WorkflowTask {
 
 func (s *Service) GetDefaultWorkflow(wfType WorkflowType) *Workflow {
 	workflow := &Workflow{
-		Name:         fmt.Sprintf("%s-%s", s.Name, strings.ToLower(wfType.String())),
-		Type:         wfType,
-		ServiceId:    s.Id,
-		StorageClass: s.StorageClass,
+		Name:      fmt.Sprintf("%s-%s", s.Name, strings.ToLower(wfType.String())),
+		Type:      wfType,
+		ServiceId: s.Id,
 	}
 	workflow.Description = "These are the environment variables that can be used\n"
 	for _, v := range ServiceEnvItems() {

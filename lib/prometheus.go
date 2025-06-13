@@ -381,8 +381,9 @@ type MetricPoint struct {
 */
 // CalculateQPS calculates the queries per second for a service
 func (c *PrometheusClient) CalculateQPS(ctx context.Context, tr biz.TimeRange, service *biz.Service) (biz.MetricPoints, error) {
+	workspace := biz.GetWorkspace(ctx)
 	query := fmt.Sprintf(`sum(rate(hubble_http_requests_total{destination="%s",destination_namespace="%s",destination_workload="%s"}[1m])) by (destination)`,
-		service.Name, service.Namespace, service.Name)
+		service.Name, workspace.Name, service.Name)
 
 	end := time.Now()
 	r := v1.Range{
@@ -418,11 +419,12 @@ func (c *PrometheusClient) CalculateQPS(ctx context.Context, tr biz.TimeRange, s
 }
 
 func (c *PrometheusClient) CalculateSuccessRate(ctx context.Context, tr biz.TimeRange, service *biz.Service) (float64, error) {
+	workspace := biz.GetWorkspace(ctx)
 	// 构建查询语句，分别统计总请求数和成功请求数（状态码小于500的请求）
 	totalQuery := fmt.Sprintf(`sum(rate(hubble_http_requests_total{destination="%s",destination_namespace="%s",destination_workload="%s"}[1m])) by (destination)`,
-		service.Name, service.Namespace, service.Name)
+		service.Name, workspace.Name, service.Name)
 	successQuery := fmt.Sprintf(`sum(rate(hubble_http_requests_total{destination="%s",destination_namespace="%s",destination_workload="%s",status=~"[1-4].*"}[1m])) by (destination)`,
-		service.Name, service.Namespace, service.Name)
+		service.Name, workspace.Name, service.Name)
 
 	end := time.Now()
 	r := v1.Range{

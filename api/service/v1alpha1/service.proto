@@ -10,7 +10,7 @@ option go_package = "api/service/v1alpha1;v1alpha1";
 
 // @mcp: reject
 service ServiceInterface {
-      rpc List(ServiceRequest) returns (Services) {
+      rpc List(ServicesRequest) returns (Services) {
             option (google.api.http) = {
               get: "/api/v1alpha1/service/list"
             };
@@ -23,32 +23,26 @@ service ServiceInterface {
             };
       }
 
-      rpc Get(ServiceRequest) returns (Service) {
+      rpc Get(ServiceDetailIdRequest) returns (Service) {
             option (google.api.http) = {
               get: "/api/v1alpha1/service/get"
             };
       }
 
-      rpc Delete(ServiceRequest) returns (common.Msg) {
+      rpc Delete(ServiceDetailIdRequest) returns (common.Msg) {
             option (google.api.http) = {
               delete: "/api/v1alpha1/service/delete"
             };
       }
 
-      rpc GetServiceResource(ServiceRequest) returns (AlreadyResource) {
-            option (google.api.http) = {
-              get: "/api/v1alpha1/service/resource"
-            };
-      }
-
-      rpc SaveWorkflow(Workflow) returns(common.Msg) {
+      rpc SaveServiceWorkflow(Workflow) returns(common.Msg) {
             option (google.api.http) = {
               post: "/api/v1alpha1/service/workflow"
               body: "*"
             };
       }
 
-      rpc GetWorkflow(WorkflowRequest) returns(Workflow) {
+      rpc GetServiceWorkflow(GetServiceWorkflowRequest) returns(Workflow) {
             option (google.api.http) = {
               get: "/api/v1alpha1/service/workflow"
             };
@@ -61,19 +55,19 @@ service ServiceInterface {
             };
       }
 
-      rpc GetContinuousIntegration(ContinuousIntegrationRequest) returns(ContinuousIntegration) {
+      rpc GetContinuousIntegration(ContinuousIntegrationDetailRequest) returns(ContinuousIntegration) {
             option (google.api.http) = {
               get: "/api/v1alpha1/service/continuousintegration"
             };
       }
 
-      rpc GetContinuousIntegrations(ContinuousIntegrationRequest) returns(ContinuousIntegrations) {
+      rpc GetContinuousIntegrations(ContinuousIntegrationsRequest) returns(ContinuousIntegrations) {
             option (google.api.http) = {
               get: "/api/v1alpha1/service/continuousintegrations"
             };
       }
 
-      rpc DeleteContinuousIntegration(ContinuousIntegrationRequest) returns(common.Msg) {
+      rpc DeleteContinuousIntegration(ContinuousIntegrationDetailRequest) returns(common.Msg) {
             option (google.api.http) = {
               delete: "/api/v1alpha1/service/continuousintegration"
             };
@@ -86,25 +80,25 @@ service ServiceInterface {
             };
       }
 
-      rpc GetContinuousDeployment(ContinuousDeploymentRequest) returns(ContinuousDeployment) {
+      rpc GetContinuousDeployment(ContinuousDeploymentDetailRequest) returns(ContinuousDeployment) {
             option (google.api.http) = {
               get: "/api/v1alpha1/service/continuousdeployment"
             };
       }
 
-      rpc GetContinuousDeployments(ContinuousDeploymentRequest) returns(ContinuousDeployments) {
+      rpc GetContinuousDeployments(ContinuousDeploymentsRequest) returns(ContinuousDeployments) {
             option (google.api.http) = {
               get: "/api/v1alpha1/service/continuousdeployments"
             };
       }
 
-      rpc DeleteContinuousDeployment(ContinuousDeploymentRequest) returns(common.Msg) {
+      rpc DeleteContinuousDeployment(ContinuousDeploymentDetailRequest) returns(common.Msg) {
             option (google.api.http) = {
               delete: "/api/v1alpha1/service/continuousdeployment"
             };
       }
 
-      rpc ApplyService(ServiceRequest) returns(common.Msg) {
+      rpc ApplyService(ApplyServiceRequest) returns(common.Msg) {
             option (google.api.http) = {
               post: "/api/v1alpha1/service/apply"
               body: "*"
