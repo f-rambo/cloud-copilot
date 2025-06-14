@@ -46,13 +46,28 @@ func (p *projectRepo) GetByName(ctx context.Context, name string) (*biz.Project,
 	return project, nil
 }
 
-func (p *projectRepo) List(ctx context.Context, clusterID int64) ([]*biz.Project, error) {
+func (p *projectRepo) List(ctx context.Context, name string, page, size int32) ([]*biz.Project, int32, error) {
 	projects := make([]*biz.Project, 0)
-	err := p.data.db.Where("cluster_id = ?", clusterID).Find(&projects).Error
-	if err != nil {
-		return nil, err
+	var total int64
+	db := p.data.db
+
+	if name != "" {
+		db = db.Where("name LIKE ?", "%"+name+"%")
 	}
-	return projects, nil
+
+	if err := db.Model(&biz.Project{}).Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+	if total == 0 {
+		return projects, 0, nil
+	}
+
+	offset := (page - 1) * size
+	if err := db.Offset(int(offset)).Limit(int(size)).Find(&projects).Error; err != nil {
+		return nil, 0, err
+	}
+
+	return projects, int32(total), nil
 }
 
 func (p *projectRepo) ListByIds(ctx context.Context, ids []int64) ([]*biz.Project, error) {

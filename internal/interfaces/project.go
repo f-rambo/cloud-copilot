@@ -52,11 +52,11 @@ func (p *ProjectInterface) Save(ctx context.Context, project *v1alpha1.Project) 
 	return common.Response(), nil
 }
 
-func (p *ProjectInterface) Get(ctx context.Context, projectReq *v1alpha1.ProjectReq) (*v1alpha1.Project, error) {
+func (p *ProjectInterface) Get(ctx context.Context, projectReq *v1alpha1.ProjectDetailRequest) (*v1alpha1.Project, error) {
 	if projectReq.Id == 0 {
 		return nil, errors.New("project id is required")
 	}
-	bizProject, err := p.projectUc.Get(ctx, projectReq.Id)
+	bizProject, err := p.projectUc.Get(ctx, int64(projectReq.Id))
 	if err != nil {
 		return nil, err
 	}
@@ -64,19 +64,11 @@ func (p *ProjectInterface) Get(ctx context.Context, projectReq *v1alpha1.Project
 		return nil, errors.New("project not found")
 	}
 	project := p.bizProjectToProject(bizProject)
-	user, err := p.userUc.GetUser(ctx, bizProject.UserId)
-	if err != nil {
-		return nil, err
-	}
-	project.UserName = user.Name
 	return project, nil
 }
 
-func (p *ProjectInterface) List(ctx context.Context, projectReq *v1alpha1.ProjectReq) (*v1alpha1.ProjectList, error) {
-	if projectReq.ClusterId == 0 {
-		return nil, errors.New("cluster id is required")
-	}
-	bizProjects, err := p.projectUc.List(ctx, projectReq.ClusterId)
+func (p *ProjectInterface) List(ctx context.Context, projectsReq *v1alpha1.ProjectsReqquest) (*v1alpha1.Projects, error) {
+	bizProjects, total, err := p.projectUc.List(ctx, projectsReq.Name, projectsReq.Page, projectsReq.Size)
 	if err != nil {
 		return nil, err
 	}
@@ -84,14 +76,14 @@ func (p *ProjectInterface) List(ctx context.Context, projectReq *v1alpha1.Projec
 	for _, bizProject := range bizProjects {
 		projects = append(projects, p.bizProjectToProject(bizProject))
 	}
-	return &v1alpha1.ProjectList{Projects: projects}, nil
+	return &v1alpha1.Projects{Projects: projects, Total: total}, nil
 }
 
-func (p *ProjectInterface) Delete(ctx context.Context, projectReq *v1alpha1.ProjectReq) (*common.Msg, error) {
+func (p *ProjectInterface) Delete(ctx context.Context, projectReq *v1alpha1.ProjectDetailRequest) (*common.Msg, error) {
 	if projectReq.Id == 0 {
 		return nil, errors.New("project id is required")
 	}
-	err := p.projectUc.Delete(ctx, projectReq.Id)
+	err := p.projectUc.Delete(ctx, int64(projectReq.Id))
 	if err != nil {
 		return nil, err
 	}
@@ -100,22 +92,22 @@ func (p *ProjectInterface) Delete(ctx context.Context, projectReq *v1alpha1.Proj
 
 func (p *ProjectInterface) projectTobizProject(project *v1alpha1.Project) *biz.Project {
 	return &biz.Project{
-		Id:          project.Id,
-		Name:        project.Name,
-		Description: project.Description,
-		ClusterId:   project.ClusterId,
-		UserId:      project.UserId,
-		WorkspaceId: project.WorkspaceId,
+		Id:            int64(project.Id),
+		Name:          project.Name,
+		Description:   project.Description,
+		WorkspaceId:   int64(project.WorkspaceId),
+		UserId:        int64(project.UserId),
+		ResourceQuota: resourceQuotaInterfaceToBiz(project.ResourceQuota),
 	}
 }
 
 func (p *ProjectInterface) bizProjectToProject(bizProject *biz.Project) *v1alpha1.Project {
 	return &v1alpha1.Project{
-		Id:          bizProject.Id,
-		Name:        bizProject.Name,
-		Description: bizProject.Description,
-		ClusterId:   bizProject.ClusterId,
-		UserId:      bizProject.UserId,
-		WorkspaceId: bizProject.WorkspaceId,
+		Id:            int32(bizProject.Id),
+		Name:          bizProject.Name,
+		Description:   bizProject.Description,
+		WorkspaceId:   int32(bizProject.WorkspaceId),
+		UserId:        int32(bizProject.UserId),
+		ResourceQuota: resourceQuotaBizToInterface(bizProject.ResourceQuota),
 	}
 }

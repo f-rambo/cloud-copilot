@@ -2,6 +2,7 @@ package biz
 
 import (
 	"context"
+	"strings"
 
 	"github.com/f-rambo/cloud-copilot/internal/conf"
 	"github.com/go-kratos/kratos/v2/log"
@@ -14,9 +15,7 @@ const (
 type Project struct {
 	Id            int64               `json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
 	Name          string              `json:"name,omitempty" gorm:"column:name;default:'';NOT NULL"`
-	Namespace     string              `json:"namespace,omitempty" gorm:"column:namespace;default:'';NOT NULL"`
 	Description   string              `json:"description,omitempty" gorm:"column:namespace;default:'';NOT NULL"`
-	ClusterId     int64               `json:"cluster_id,omitempty" gorm:"column:cluster_id;default:0;NOT NULL"`
 	UserId        int64               `json:"user_id,omitempty" gorm:"column:user_id;default:0;NOT NULL"`
 	WorkspaceId   int64               `json:"workspace_id,omitempty" gorm:"column:workspace_id;default:0;NOT NULL"`
 	ResourceQuota ResourceQuotaString `json:"resource_quota,omitempty" gorm:"column:resource_quota;default:'';NOT NULL"`
@@ -25,9 +24,9 @@ type Project struct {
 type ProjectData interface {
 	Save(context.Context, *Project) error
 	Get(context.Context, int64) (*Project, error)
-	GetByName(context.Context, string) (*Project, error)
-	List(context.Context, int64) ([]*Project, error)
+	List(ctx context.Context, name string, page, size int32) ([]*Project, int32, error)
 	Delete(context.Context, int64) error
+	GetByName(context.Context, string) (*Project, error)
 }
 
 type ProjectRuntime interface {
@@ -65,7 +64,6 @@ func (p *Project) GetLabels() map[string]string {
 }
 
 func (uc *ProjectUsecase) Save(ctx context.Context, project *Project) error {
-	project.UserId = GetUserInfo(ctx).Id
 	return uc.projectData.Save(ctx, project)
 }
 
@@ -73,8 +71,8 @@ func (uc *ProjectUsecase) Get(ctx context.Context, id int64) (*Project, error) {
 	return uc.projectData.Get(ctx, id)
 }
 
-func (uc *ProjectUsecase) List(ctx context.Context, clusterID int64) ([]*Project, error) {
-	return uc.projectData.List(ctx, clusterID)
+func (uc *ProjectUsecase) List(ctx context.Context, name string, page, size int32) ([]*Project, int32, error) {
+	return uc.projectData.List(ctx, strings.TrimSpace(name), page, size)
 }
 
 func (uc *ProjectUsecase) Delete(ctx context.Context, id int64) error {

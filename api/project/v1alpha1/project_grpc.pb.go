@@ -33,9 +33,9 @@ const (
 // @mcp: reject
 type ProjectServiceClient interface {
 	Save(ctx context.Context, in *Project, opts ...grpc.CallOption) (*common.Msg, error)
-	Get(ctx context.Context, in *ProjectReq, opts ...grpc.CallOption) (*Project, error)
-	List(ctx context.Context, in *ProjectReq, opts ...grpc.CallOption) (*ProjectList, error)
-	Delete(ctx context.Context, in *ProjectReq, opts ...grpc.CallOption) (*common.Msg, error)
+	Get(ctx context.Context, in *ProjectDetailRequest, opts ...grpc.CallOption) (*Project, error)
+	List(ctx context.Context, in *ProjectsReqquest, opts ...grpc.CallOption) (*Projects, error)
+	Delete(ctx context.Context, in *ProjectDetailRequest, opts ...grpc.CallOption) (*common.Msg, error)
 }
 
 type projectServiceClient struct {
@@ -56,7 +56,7 @@ func (c *projectServiceClient) Save(ctx context.Context, in *Project, opts ...gr
 	return out, nil
 }
 
-func (c *projectServiceClient) Get(ctx context.Context, in *ProjectReq, opts ...grpc.CallOption) (*Project, error) {
+func (c *projectServiceClient) Get(ctx context.Context, in *ProjectDetailRequest, opts ...grpc.CallOption) (*Project, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Project)
 	err := c.cc.Invoke(ctx, ProjectService_Get_FullMethodName, in, out, cOpts...)
@@ -66,9 +66,9 @@ func (c *projectServiceClient) Get(ctx context.Context, in *ProjectReq, opts ...
 	return out, nil
 }
 
-func (c *projectServiceClient) List(ctx context.Context, in *ProjectReq, opts ...grpc.CallOption) (*ProjectList, error) {
+func (c *projectServiceClient) List(ctx context.Context, in *ProjectsReqquest, opts ...grpc.CallOption) (*Projects, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ProjectList)
+	out := new(Projects)
 	err := c.cc.Invoke(ctx, ProjectService_List_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -76,7 +76,7 @@ func (c *projectServiceClient) List(ctx context.Context, in *ProjectReq, opts ..
 	return out, nil
 }
 
-func (c *projectServiceClient) Delete(ctx context.Context, in *ProjectReq, opts ...grpc.CallOption) (*common.Msg, error) {
+func (c *projectServiceClient) Delete(ctx context.Context, in *ProjectDetailRequest, opts ...grpc.CallOption) (*common.Msg, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(common.Msg)
 	err := c.cc.Invoke(ctx, ProjectService_Delete_FullMethodName, in, out, cOpts...)
@@ -93,9 +93,9 @@ func (c *projectServiceClient) Delete(ctx context.Context, in *ProjectReq, opts 
 // @mcp: reject
 type ProjectServiceServer interface {
 	Save(context.Context, *Project) (*common.Msg, error)
-	Get(context.Context, *ProjectReq) (*Project, error)
-	List(context.Context, *ProjectReq) (*ProjectList, error)
-	Delete(context.Context, *ProjectReq) (*common.Msg, error)
+	Get(context.Context, *ProjectDetailRequest) (*Project, error)
+	List(context.Context, *ProjectsReqquest) (*Projects, error)
+	Delete(context.Context, *ProjectDetailRequest) (*common.Msg, error)
 	mustEmbedUnimplementedProjectServiceServer()
 }
 
@@ -109,13 +109,13 @@ type UnimplementedProjectServiceServer struct{}
 func (UnimplementedProjectServiceServer) Save(context.Context, *Project) (*common.Msg, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Save not implemented")
 }
-func (UnimplementedProjectServiceServer) Get(context.Context, *ProjectReq) (*Project, error) {
+func (UnimplementedProjectServiceServer) Get(context.Context, *ProjectDetailRequest) (*Project, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Get not implemented")
 }
-func (UnimplementedProjectServiceServer) List(context.Context, *ProjectReq) (*ProjectList, error) {
+func (UnimplementedProjectServiceServer) List(context.Context, *ProjectsReqquest) (*Projects, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method List not implemented")
 }
-func (UnimplementedProjectServiceServer) Delete(context.Context, *ProjectReq) (*common.Msg, error) {
+func (UnimplementedProjectServiceServer) Delete(context.Context, *ProjectDetailRequest) (*common.Msg, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Delete not implemented")
 }
 func (UnimplementedProjectServiceServer) mustEmbedUnimplementedProjectServiceServer() {}
@@ -158,7 +158,7 @@ func _ProjectService_Save_Handler(srv interface{}, ctx context.Context, dec func
 }
 
 func _ProjectService_Get_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ProjectReq)
+	in := new(ProjectDetailRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -170,13 +170,13 @@ func _ProjectService_Get_Handler(srv interface{}, ctx context.Context, dec func(
 		FullMethod: ProjectService_Get_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProjectServiceServer).Get(ctx, req.(*ProjectReq))
+		return srv.(ProjectServiceServer).Get(ctx, req.(*ProjectDetailRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _ProjectService_List_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ProjectReq)
+	in := new(ProjectsReqquest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -188,13 +188,13 @@ func _ProjectService_List_Handler(srv interface{}, ctx context.Context, dec func
 		FullMethod: ProjectService_List_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProjectServiceServer).List(ctx, req.(*ProjectReq))
+		return srv.(ProjectServiceServer).List(ctx, req.(*ProjectsReqquest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _ProjectService_Delete_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ProjectReq)
+	in := new(ProjectDetailRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -206,7 +206,7 @@ func _ProjectService_Delete_Handler(srv interface{}, ctx context.Context, dec fu
 		FullMethod: ProjectService_Delete_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProjectServiceServer).Delete(ctx, req.(*ProjectReq))
+		return srv.(ProjectServiceServer).Delete(ctx, req.(*ProjectDetailRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }

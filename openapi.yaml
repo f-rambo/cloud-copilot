@@ -926,19 +926,8 @@ paths:
                 - name: id
                   in: query
                   schema:
-                    type: string
-                - name: name
-                  in: query
-                  schema:
-                    type: string
-                - name: clusterId
-                  in: query
-                  schema:
-                    type: string
-                - name: workspaceId
-                  in: query
-                  schema:
-                    type: string
+                    type: integer
+                    format: int32
             responses:
                 "200":
                     description: OK
@@ -971,19 +960,8 @@ paths:
                 - name: id
                   in: query
                   schema:
-                    type: string
-                - name: name
-                  in: query
-                  schema:
-                    type: string
-                - name: clusterId
-                  in: query
-                  schema:
-                    type: string
-                - name: workspaceId
-                  in: query
-                  schema:
-                    type: string
+                    type: integer
+                    format: int32
             responses:
                 "200":
                     description: OK
@@ -997,29 +975,27 @@ paths:
                 - ProjectService
             operationId: ProjectService_List
             parameters:
-                - name: id
-                  in: query
-                  schema:
-                    type: string
                 - name: name
                   in: query
                   schema:
                     type: string
-                - name: clusterId
+                - name: page
                   in: query
                   schema:
-                    type: string
-                - name: workspaceId
+                    type: integer
+                    format: int32
+                - name: size
                   in: query
                   schema:
-                    type: string
+                    type: integer
+                    format: int32
             responses:
                 "200":
                     description: OK
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/project.v1alpha1.ProjectList'
+                                $ref: '#/components/schemas/project.v1alpha1.Projects'
     /api/v1alpha1/role:
         get:
             tags:
@@ -2260,36 +2236,26 @@ components:
             type: object
             properties:
                 id:
-                    type: string
+                    type: integer
+                    format: int32
                 name:
                     type: string
                 description:
                     type: string
-                clusterId:
-                    type: string
-                userId:
-                    type: string
-                userName:
-                    type: string
-                workspaceId:
-                    type: string
-                limitCpu:
+                user_id:
                     type: integer
                     format: int32
-                limitGpu:
+                workspace_id:
                     type: integer
                     format: int32
-                limitMemory:
-                    type: integer
-                    format: int32
-                limitDisk:
-                    type: integer
-                    format: int32
-                updatedAt:
-                    type: string
-        project.v1alpha1.ProjectList:
+                resource_quota:
+                    $ref: '#/components/schemas/common.ResourceQuota'
+        project.v1alpha1.Projects:
             type: object
             properties:
+                total:
+                    type: integer
+                    format: int32
                 projects:
                     type: array
                     items:

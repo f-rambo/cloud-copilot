@@ -17,19 +17,19 @@ service ProjectService {
             };
       }
 
-      rpc Get(ProjectReq) returns (Project) {
+      rpc Get(ProjectDetailRequest) returns (Project) {
             option (google.api.http) = {
                   get: "/api/v1alpha1/project"
             };
       }
 
-      rpc List(ProjectReq) returns (ProjectList) {
+      rpc List(ProjectsReqquest) returns (Projects) {
             option (google.api.http) = {
                   get: "/api/v1alpha1/project/list"
             };
       }
 
-      rpc Delete(ProjectReq) returns (common.Msg) {
+      rpc Delete(ProjectDetailRequest) returns (common.Msg) {
             option (google.api.http) = {
                   delete: "/api/v1alpha1/project"
             };

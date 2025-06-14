@@ -26,9 +26,9 @@ const OperationProjectServiceList = "/project.v1alpha1.ProjectService/List"
 const OperationProjectServiceSave = "/project.v1alpha1.ProjectService/Save"
 
 type ProjectServiceHTTPServer interface {
-	Delete(context.Context, *ProjectReq) (*common.Msg, error)
-	Get(context.Context, *ProjectReq) (*Project, error)
-	List(context.Context, *ProjectReq) (*ProjectList, error)
+	Delete(context.Context, *ProjectDetailRequest) (*common.Msg, error)
+	Get(context.Context, *ProjectDetailRequest) (*Project, error)
+	List(context.Context, *ProjectsReqquest) (*Projects, error)
 	Save(context.Context, *Project) (*common.Msg, error)
 }
 
@@ -64,13 +64,13 @@ func _ProjectService_Save3_HTTP_Handler(srv ProjectServiceHTTPServer) func(ctx h
 
 func _ProjectService_Get3_HTTP_Handler(srv ProjectServiceHTTPServer) func(ctx http.Context) error {
 	return func(ctx http.Context) error {
-		var in ProjectReq
+		var in ProjectDetailRequest
 		if err := ctx.BindQuery(&in); err != nil {
 			return err
 		}
 		http.SetOperation(ctx, OperationProjectServiceGet)
 		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.Get(ctx, req.(*ProjectReq))
+			return srv.Get(ctx, req.(*ProjectDetailRequest))
 		})
 		out, err := h(ctx, &in)
 		if err != nil {
@@ -83,32 +83,32 @@ func _ProjectService_Get3_HTTP_Handler(srv ProjectServiceHTTPServer) func(ctx ht
 
 func _ProjectService_List3_HTTP_Handler(srv ProjectServiceHTTPServer) func(ctx http.Context) error {
 	return func(ctx http.Context) error {
-		var in ProjectReq
+		var in ProjectsReqquest
 		if err := ctx.BindQuery(&in); err != nil {
 			return err
 		}
 		http.SetOperation(ctx, OperationProjectServiceList)
 		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.List(ctx, req.(*ProjectReq))
+			return srv.List(ctx, req.(*ProjectsReqquest))
 		})
 		out, err := h(ctx, &in)
 		if err != nil {
 			return err
 		}
-		reply := out.(*ProjectList)
+		reply := out.(*Projects)
 		return ctx.Result(200, reply)
 	}
 }
 
 func _ProjectService_Delete3_HTTP_Handler(srv ProjectServiceHTTPServer) func(ctx http.Context) error {
 	return func(ctx http.Context) error {
-		var in ProjectReq
+		var in ProjectDetailRequest
 		if err := ctx.BindQuery(&in); err != nil {
 			return err
 		}
 		http.SetOperation(ctx, OperationProjectServiceDelete)
 		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.Delete(ctx, req.(*ProjectReq))
+			return srv.Delete(ctx, req.(*ProjectDetailRequest))
 		})
 		out, err := h(ctx, &in)
 		if err != nil {
@@ -120,9 +120,9 @@ func _ProjectService_Delete3_HTTP_Handler(srv ProjectServiceHTTPServer) func(ctx
 }
 
 type ProjectServiceHTTPClient interface {
-	Delete(ctx context.Context, req *ProjectReq, opts ...http.CallOption) (rsp *common.Msg, err error)
-	Get(ctx context.Context, req *ProjectReq, opts ...http.CallOption) (rsp *Project, err error)
-	List(ctx context.Context, req *ProjectReq, opts ...http.CallOption) (rsp *ProjectList, err error)
+	Delete(ctx context.Context, req *ProjectDetailRequest, opts ...http.CallOption) (rsp *common.Msg, err error)
+	Get(ctx context.Context, req *ProjectDetailRequest, opts ...http.CallOption) (rsp *Project, err error)
+	List(ctx context.Context, req *ProjectsReqquest, opts ...http.CallOption) (rsp *Projects, err error)
 	Save(ctx context.Context, req *Project, opts ...http.CallOption) (rsp *common.Msg, err error)
 }
 
@@ -134,7 +134,7 @@ func NewProjectServiceHTTPClient(client *http.Client) ProjectServiceHTTPClient {
 	return &ProjectServiceHTTPClientImpl{client}
 }
 
-func (c *ProjectServiceHTTPClientImpl) Delete(ctx context.Context, in *ProjectReq, opts ...http.CallOption) (*common.Msg, error) {
+func (c *ProjectServiceHTTPClientImpl) Delete(ctx context.Context, in *ProjectDetailRequest, opts ...http.CallOption) (*common.Msg, error) {
 	var out common.Msg
 	pattern := "/api/v1alpha1/project"
 	path := binding.EncodeURL(pattern, in, true)
@@ -147,7 +147,7 @@ func (c *ProjectServiceHTTPClientImpl) Delete(ctx context.Context, in *ProjectRe
 	return &out, nil
 }
 
-func (c *ProjectServiceHTTPClientImpl) Get(ctx context.Context, in *ProjectReq, opts ...http.CallOption) (*Project, error) {
+func (c *ProjectServiceHTTPClientImpl) Get(ctx context.Context, in *ProjectDetailRequest, opts ...http.CallOption) (*Project, error) {
 	var out Project
 	pattern := "/api/v1alpha1/project"
 	path := binding.EncodeURL(pattern, in, true)
@@ -160,8 +160,8 @@ func (c *ProjectServiceHTTPClientImpl) Get(ctx context.Context, in *ProjectReq, 
 	return &out, nil
 }
 
-func (c *ProjectServiceHTTPClientImpl) List(ctx context.Context, in *ProjectReq, opts ...http.CallOption) (*ProjectList, error) {
-	var out ProjectList
+func (c *ProjectServiceHTTPClientImpl) List(ctx context.Context, in *ProjectsReqquest, opts ...http.CallOption) (*Projects, error) {
+	var out Projects
 	pattern := "/api/v1alpha1/project/list"
 	path := binding.EncodeURL(pattern, in, true)
 	opts = append(opts, http.Operation(OperationProjectServiceList))

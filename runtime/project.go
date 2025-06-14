@@ -23,9 +23,10 @@ func NewProjectRuntime(logger log.Logger) biz.ProjectRuntime {
 }
 
 func (uc *ProjectRuntime) Reload(ctx context.Context, project *biz.Project) error {
+	workspace := biz.GetWorkspace(ctx)
 	obj := NewUnstructured(CloudProjectKind)
 	obj.SetName(project.Name)
-	obj.SetNamespace(project.Namespace)
+	obj.SetNamespace(workspace.Name)
 	SetSpec(obj, project)
 	dynamicClient, err := GetKubeDynamicClient()
 	if err != nil {
@@ -51,9 +52,10 @@ func (uc *ProjectRuntime) Reload(ctx context.Context, project *biz.Project) erro
 }
 
 func (uc *ProjectRuntime) Delete(ctx context.Context, project *biz.Project) error {
+	workspace := biz.GetWorkspace(ctx)
 	obj := NewUnstructured(CloudProjectKind)
 	obj.SetName(project.Name)
-	obj.SetNamespace(project.Namespace)
+	obj.SetNamespace(workspace.Name)
 	SetSpec(obj, project)
 	dynamicClient, err := GetKubeDynamicClient()
 	if err != nil {
