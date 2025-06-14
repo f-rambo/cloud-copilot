@@ -108,7 +108,6 @@ func (w *WorkspaceInterface) bizToWorkspace(workspace *biz.Workspace) *v1alpha1.
 			Id:          int32(clusterRelationship.Id),
 			WorkspaceId: int32(clusterRelationship.WorkspaceId),
 			ClusterId:   int32(clusterRelationship.ClusterId),
-			Permissions: clusterRelationship.Permissions.String(),
 		})
 	}
 	return res
@@ -121,7 +120,6 @@ func (w *WorkspaceInterface) workspaceToBiz(workspace *v1alpha1.Workspace) *biz.
 			Id:          int64(cluster.Id),
 			WorkspaceId: int64(cluster.WorkspaceId),
 			ClusterId:   int64(cluster.ClusterId),
-			Permissions: biz.WorkspaceClusterPermissionsFromString(cluster.Permissions),
 		})
 	}
 	return &biz.Workspace{

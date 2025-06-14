@@ -32,6 +32,9 @@ func (c *ClusterInterface) Ping(ctx context.Context, _ *emptypb.Empty) (*common.
 }
 
 func (c *ClusterInterface) GetCluster(ctx context.Context, clusterId int64) (*biz.Cluster, error) {
+	if clusterId == 0 {
+		return nil, errors.New("cluster id is empty")
+	}
 	return c.clusterUc.Get(ctx, clusterId)
 }
 
@@ -290,6 +293,8 @@ func (c *ClusterInterface) bizCLusterToCluster(bizCluster *biz.Cluster) *v1alpha
 		NodeEndIp:        bizCluster.NodeEndIp,
 		Nodes:            nodes,
 		NodeGroups:       nodeGroups,
+		PublicKey:        bizCluster.PublicKey,
+		PrivateKey:       bizCluster.PrivateKey,
 		ClusterResource: &v1alpha1.ClusterResource{
 			Cpu:    bizCluster.GetCpuCount(),
 			Gpu:    bizCluster.GetGpuCount(),

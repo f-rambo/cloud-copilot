@@ -144,15 +144,17 @@ message Cluster {
     string status = 4 [json_name = "status"];
     string domain = 5 [json_name = "domain"];
     int32 node_number = 6 [json_name = "node_number"];
-    string provider = 7 [json_name = "provider"];
-    string level = 8 [json_name = "level"];
-    string region = 9 [json_name = "region"];
-    string node_username = 11 [json_name = "node_username"];
-    string node_start_ip = 12 [json_name = "node_start_ip"];
-    string node_end_ip = 13 [json_name = "node_end_ip"];
-    repeated Node nodes = 14 [json_name = "nodes"];
-    repeated NodeGroup node_groups = 15 [json_name = "node_groups"];
-    ClusterResource cluster_resource = 16 [json_name = "cluster_resource"];
+    string public_key = 7 [json_name = "public_key"];
+    string private_key = 8 [json_name = "private_key"];
+    string provider = 9 [json_name = "provider"];
+    string level = 10 [json_name = "level"];
+    string region = 11 [json_name = "region"];
+    string node_username = 12 [json_name = "node_username"];
+    string node_start_ip = 13 [json_name = "node_start_ip"];
+    string node_end_ip = 14 [json_name = "node_end_ip"];
+    repeated Node nodes = 15 [json_name = "nodes"];
+    repeated NodeGroup node_groups = 16 [json_name = "node_groups"];
+    ClusterResource cluster_resource = 17 [json_name = "cluster_resource"];
 }
 
 message NodeGroup {

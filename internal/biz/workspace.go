@@ -88,45 +88,10 @@ func (w *Workspace) GetImageRepoName() string {
 	return w.ImageRepository[strings.LastIndex(w.ImageRepository, "/")+1:]
 }
 
-type WorkspaceClusterPermissions int32
-
-const (
-	WorkspaceClusterPermissions_READ  WorkspaceClusterPermissions = 0
-	WorkspaceClusterPermissions_WRITE WorkspaceClusterPermissions = 1
-	WorkspaceClusterPermissions_ADMIN WorkspaceClusterPermissions = 2
-)
-
-func (wcp WorkspaceClusterPermissions) String() string {
-	switch wcp {
-	case WorkspaceClusterPermissions_READ:
-		return "read"
-	case WorkspaceClusterPermissions_WRITE:
-		return "write"
-	case WorkspaceClusterPermissions_ADMIN:
-		return "admin"
-	default:
-		return "unknown"
-	}
-}
-
-func WorkspaceClusterPermissionsFromString(s string) WorkspaceClusterPermissions {
-	switch s {
-	case "read":
-		return WorkspaceClusterPermissions_READ
-	case "write":
-		return WorkspaceClusterPermissions_WRITE
-	case "admin":
-		return WorkspaceClusterPermissions_ADMIN
-	default:
-		return WorkspaceClusterPermissions_READ
-	}
-}
-
 type WorkspaceClusterRelationship struct {
-	Id          int64                       `json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
-	WorkspaceId int64                       `json:"workspace_id,omitempty" gorm:"column:workspace_id;default:0;NOT NULL"`
-	ClusterId   int64                       `json:"cluster_id,omitempty" gorm:"column:cluster_id;default:0;NOT NULL"`
-	Permissions WorkspaceClusterPermissions `json:"permissions,omitempty" gorm:"column:permissions;default:0;NOT NULL"`
+	Id          int64 `json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
+	WorkspaceId int64 `json:"workspace_id,omitempty" gorm:"column:workspace_id;default:0;NOT NULL"`
+	ClusterId   int64 `json:"cluster_id,omitempty" gorm:"column:cluster_id;default:0;NOT NULL"`
 }
 
 type WorkspaceData interface {

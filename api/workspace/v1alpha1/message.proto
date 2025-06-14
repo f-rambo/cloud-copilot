@@ -36,5 +36,4 @@ message WorkspaceClusterRelationship {
     int32 id = 1 [json_name = "id"];
     int32 workspace_id = 2 [json_name = "workspace_id"];
     int32 cluster_id = 3 [json_name = "cluster_id"];
-    string permissions = 4 [json_name = "permissions"];
 }

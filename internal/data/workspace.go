@@ -54,7 +54,7 @@ func (w *workspaceRepo) Save(ctx context.Context, workspace *biz.Workspace) erro
 
 		currentMap := make(map[int64]*biz.WorkspaceClusterRelationship)
 		for _, rel := range workspace.WorkspaceClusterRelationships {
-			rel.WorkspaceId = workspace.Id // 确保workspace_id正确
+			rel.WorkspaceId = workspace.Id
 			currentMap[rel.ClusterId] = rel
 		}
 
@@ -67,11 +67,10 @@ func (w *workspaceRepo) Save(ctx context.Context, workspace *biz.Workspace) erro
 		}
 
 		for _, currentRel := range workspace.WorkspaceClusterRelationships {
-			if existingRel, exists := existingMap[currentRel.ClusterId]; exists {
-
-				currentRel.Id = existingRel.Id
+			if _, exists := existingMap[currentRel.ClusterId]; exists {
+				continue
 			}
-			if err := tx.Save(currentRel).Error; err != nil {
+			if err := tx.Create(currentRel).Error; err != nil {
 				return err
 			}
 		}

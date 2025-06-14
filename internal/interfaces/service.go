@@ -21,9 +21,6 @@ func NewServicesInterface(serviceUc *biz.ServicesUseCase) *ServicesInterface {
 }
 
 func (s *ServicesInterface) List(ctx context.Context, serviceReq *v1alpha1.ServicesRequest) (*v1alpha1.Services, error) {
-	if serviceReq.ProjectId == 0 {
-		return nil, common.ResponseError(common.ErrorReason_ErrInvalidArgument)
-	}
 	serviceData, total, err := s.serviceUc.List(ctx, int64(serviceReq.ProjectId), serviceReq.Name, serviceReq.Page, serviceReq.Size)
 	if err != nil {
 		return nil, err

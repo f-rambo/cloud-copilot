@@ -1934,6 +1934,10 @@ components:
                 node_number:
                     type: integer
                     format: int32
+                public_key:
+                    type: string
+                private_key:
+                    type: string
                 provider:
                     type: string
                 level:
@@ -2672,8 +2676,6 @@ components:
                 cluster_id:
                     type: integer
                     format: int32
-                permissions:
-                    type: string
         workspace.v1alpha1.WorkspaceList:
             type: object
             properties:

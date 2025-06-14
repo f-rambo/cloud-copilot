@@ -156,17 +156,20 @@ type ClusterStatus int32
 
 const (
 	ClusterStatus_UNSPECIFIED ClusterStatus = 0
-	ClusterStatus_STARTING    ClusterStatus = 1 // Cluster init
-	ClusterStatus_RUNNING     ClusterStatus = 2 // Network ready & storage ready & monitoring ready & toolkit ready
-	ClusterStatus_STOPPING    ClusterStatus = 3
-	ClusterStatus_STOPPED     ClusterStatus = 4
-	ClusterStatus_DELETED     ClusterStatus = 5
-	ClusterStatus_ERROR       ClusterStatus = 6
+	ClusterStatus_CREATING    ClusterStatus = 1
+	ClusterStatus_STARTING    ClusterStatus = 2 // Cluster init
+	ClusterStatus_RUNNING     ClusterStatus = 3 // Network ready & storage ready & monitoring ready & toolkit ready
+	ClusterStatus_STOPPING    ClusterStatus = 4
+	ClusterStatus_STOPPED     ClusterStatus = 5
+	ClusterStatus_DELETED     ClusterStatus = 6
+	ClusterStatus_ERROR       ClusterStatus = 7
 )
 
 // ClusterStatus to string
 func (cs ClusterStatus) String() string {
 	switch cs {
+	case ClusterStatus_CREATING:
+		return "creating"
 	case ClusterStatus_STARTING:
 		return "starting"
 	case ClusterStatus_RUNNING:
@@ -205,6 +208,10 @@ func (cl ClusterLevel) String() string {
 	default:
 		return "unspecified"
 	}
+}
+
+func (c *Cluster) SetLevel(level ClusterLevel) {
+	c.Level = level
 }
 
 type NodeRole int32
@@ -1532,6 +1539,12 @@ func (uc *ClusterUsecase) Delete(ctx context.Context, clusterID int64) error {
 }
 
 func (uc *ClusterUsecase) Save(ctx context.Context, cluster *Cluster) error {
+	if cluster.Status == ClusterStatus_UNSPECIFIED {
+		cluster.SetStatus(ClusterStatus_CREATING)
+	}
+	if cluster.Status == ClusterStatus_CREATING {
+		cluster.SetLevel(ClusterLevel_BASIC)
+	}
 	return uc.clusterData.Save(ctx, cluster)
 }
 
