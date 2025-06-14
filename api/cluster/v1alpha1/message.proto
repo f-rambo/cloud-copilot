@@ -79,7 +79,7 @@ message Region {
 
 message ClusterSaveArgs {
     // cluster name optional
-    int64 id = 1 [json_name = "id"];
+    int32 id = 1 [json_name = "id"];
     // cluster name required
     string name = 2 [json_name = "name"];
     // cluster status required
@@ -115,12 +115,12 @@ message ClusterRegionArgs {
 
 message ClusterIdArgs {
     // cluster id required
-    int64 id = 1 [json_name = "id"];
+    int32 id = 1 [json_name = "id"];
 }
 
 message ClusterIdsArgs {
     // cluster ids required
-    repeated int64 ids = 1 [json_name = "ids"];
+    repeated int32 ids = 1 [json_name = "ids"];
 }
 
 message ClusterListArgs {
@@ -134,11 +134,11 @@ message ClusterListArgs {
 
 message ClusterList {
     repeated Cluster clusters = 1 [json_name = "clusters"];
-    int64 total = 2 [json_name = "total"];
+    int32 total = 2 [json_name = "total"];
 }
 
 message Cluster {
-    int64 id = 1 [json_name = "id"];
+    int32 id = 1 [json_name = "id"];
     string name = 2 [json_name = "name"];
     string api_server_address = 3 [json_name = "api_server_address"];
     string status = 4 [json_name = "status"];
@@ -175,7 +175,7 @@ message NodeGroup {
 }
 
 message Node {
-    int64 id = 1 [json_name = "id"];
+    int32 id = 1 [json_name = "id"];
     string ip = 2 [json_name = "ip"];
     string name = 3 [json_name = "name"];
     string user = 4 [json_name = "user"];

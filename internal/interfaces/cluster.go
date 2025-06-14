@@ -42,11 +42,15 @@ func (c *ClusterInterface) GetClustersByIds(ctx context.Context, clusterIds *v1a
 	if len(clusterIds.Ids) == 0 {
 		return nil, errors.New("cluster ids is empty")
 	}
-	clusters, err := c.clusterUc.GetClustersByIds(ctx, clusterIds.Ids)
+	clusterIdsParam := make([]int64, 0)
+	for _, id := range clusterIds.Ids {
+		clusterIdsParam = append(clusterIdsParam, int64(id))
+	}
+	clusters, err := c.clusterUc.GetClustersByIds(ctx, clusterIdsParam)
 	if err != nil {
 		return nil, err
 	}
-	clusterResponse := &v1alpha1.ClusterList{Clusters: make([]*v1alpha1.Cluster, 0), Total: int64(len(clusters))}
+	clusterResponse := &v1alpha1.ClusterList{Clusters: make([]*v1alpha1.Cluster, 0), Total: int32(len(clusters))}
 	for _, cluster := range clusters {
 		clusterResponse.Clusters = append(clusterResponse.Clusters, c.bizCLusterToCluster(cluster))
 	}
@@ -142,7 +146,7 @@ func (c *ClusterInterface) Get(ctx context.Context, clusterArgs *v1alpha1.Cluste
 	if clusterArgs.Id == 0 {
 		return nil, errors.New("cluster id is required")
 	}
-	cluster, err := c.clusterUc.Get(ctx, clusterArgs.Id)
+	cluster, err := c.clusterUc.Get(ctx, int64(clusterArgs.Id))
 	if err != nil {
 		return nil, err
 	}
@@ -162,7 +166,7 @@ func (c *ClusterInterface) Save(ctx context.Context, clusterArgs *v1alpha1.Clust
 		return nil, errors.New("node username, start ip and end ip are required")
 	}
 	if clusterArgs.Id != 0 {
-		clusterRes, err := c.clusterUc.Get(ctx, clusterArgs.Id)
+		clusterRes, err := c.clusterUc.Get(ctx, int64(clusterArgs.Id))
 		if err != nil {
 			return nil, err
 		}
@@ -179,7 +183,7 @@ func (c *ClusterInterface) Save(ctx context.Context, clusterArgs *v1alpha1.Clust
 		}
 	}
 	cluster := &biz.Cluster{
-		Id:           clusterArgs.Id,
+		Id:           int64(clusterArgs.Id),
 		Name:         clusterArgs.Name,
 		Provider:     biz.ClusterProviderFromString(clusterArgs.Provider),
 		PublicKey:    clusterArgs.PublicKey,
@@ -203,7 +207,7 @@ func (c *ClusterInterface) Start(ctx context.Context, clusterArgs *v1alpha1.Clus
 	if clusterArgs.Id == 0 {
 		return nil, errors.New("cluster id is required")
 	}
-	err := c.clusterUc.StartCluster(ctx, clusterArgs.Id)
+	err := c.clusterUc.StartCluster(ctx, int64(clusterArgs.Id))
 	if err != nil {
 		return nil, err
 	}
@@ -214,7 +218,7 @@ func (c *ClusterInterface) Stop(ctx context.Context, clusterArgs *v1alpha1.Clust
 	if clusterArgs.Id == 0 {
 		return nil, errors.New("cluster id is required")
 	}
-	err := c.clusterUc.StopCluster(ctx, clusterArgs.Id)
+	err := c.clusterUc.StopCluster(ctx, int64(clusterArgs.Id))
 	if err != nil {
 		return nil, err
 	}
@@ -230,7 +234,7 @@ func (c *ClusterInterface) List(ctx context.Context, clusterArgs *v1alpha1.Clust
 	for _, v := range clusters {
 		data.Clusters = append(data.Clusters, c.bizCLusterToCluster(v))
 	}
-	data.Total = total
+	data.Total = int32(total)
 	return data, nil
 }
 
@@ -238,7 +242,7 @@ func (c *ClusterInterface) Delete(ctx context.Context, clusterArgs *v1alpha1.Clu
 	if clusterArgs.Id == 0 {
 		return nil, errors.New("cluster id is required")
 	}
-	err := c.clusterUc.Delete(ctx, clusterArgs.Id)
+	err := c.clusterUc.Delete(ctx, int64(clusterArgs.Id))
 	if err != nil {
 		return nil, err
 	}
@@ -279,7 +283,7 @@ func (c *ClusterInterface) bizCLusterToCluster(bizCluster *biz.Cluster) *v1alpha
 		nodeGroups = append(nodeGroups, c.bizNodeGroupToNodeGroup(v))
 	}
 	return &v1alpha1.Cluster{
-		Id:               bizCluster.Id,
+		Id:               int32(bizCluster.Id),
 		Name:             bizCluster.Name,
 		ApiServerAddress: bizCluster.ApiServerAddress,
 		Status:           bizCluster.Status.String(),
@@ -306,7 +310,7 @@ func (c *ClusterInterface) bizCLusterToCluster(bizCluster *biz.Cluster) *v1alpha
 
 func (c *ClusterInterface) bizNodeToNode(node *biz.Node) *v1alpha1.Node {
 	return &v1alpha1.Node{
-		Id:         node.Id,
+		Id:         int32(node.Id),
 		Ip:         node.Ip,
 		Name:       node.Name,
 		Role:       node.Role.String(),

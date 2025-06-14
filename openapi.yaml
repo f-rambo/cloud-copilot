@@ -641,7 +641,8 @@ paths:
                   in: query
                   description: cluster id required
                   schema:
-                    type: string
+                    type: integer
+                    format: int32
             responses:
                 "200":
                     description: OK
@@ -677,7 +678,8 @@ paths:
                   in: query
                   description: cluster id required
                   schema:
-                    type: string
+                    type: integer
+                    format: int32
             responses:
                 "200":
                     description: OK
@@ -698,7 +700,8 @@ paths:
                   schema:
                     type: array
                     items:
-                        type: string
+                        type: integer
+                        format: int32
             responses:
                 "200":
                     description: OK
@@ -1922,7 +1925,8 @@ components:
             type: object
             properties:
                 id:
-                    type: string
+                    type: integer
+                    format: int32
                 name:
                     type: string
                 api_server_address:
@@ -1964,8 +1968,9 @@ components:
             type: object
             properties:
                 id:
-                    type: string
+                    type: integer
                     description: cluster id required
+                    format: int32
         cluster.v1alpha1.ClusterLevel:
             type: object
             properties:
@@ -1989,7 +1994,8 @@ components:
                     items:
                         $ref: '#/components/schemas/cluster.v1alpha1.Cluster'
                 total:
-                    type: string
+                    type: integer
+                    format: int32
         cluster.v1alpha1.ClusterProvider:
             type: object
             properties:
@@ -2026,8 +2032,9 @@ components:
             type: object
             properties:
                 id:
-                    type: string
+                    type: integer
                     description: cluster name optional
+                    format: int32
                 name:
                     type: string
                     description: cluster name required
@@ -2079,7 +2086,8 @@ components:
             type: object
             properties:
                 id:
-                    type: string
+                    type: integer
+                    format: int32
                 ip:
                     type: string
                 name:
