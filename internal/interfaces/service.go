@@ -40,6 +40,15 @@ func (s *ServicesInterface) Save(ctx context.Context, service *v1alpha1.Service)
 	if !utils.IsValidKubernetesName(service.Name) {
 		return nil, errors.New("service name is invalid")
 	}
+	if service.Id == 0 {
+		serviceData, err := s.serviceUc.GetServiceByName(ctx, int64(service.ProjectId), service.Name)
+		if err != nil {
+			return nil, err
+		}
+		if serviceData.Id > 0 {
+			return nil, errors.New("service name already exists")
+		}
+	}
 	err := s.serviceUc.Save(ctx, s.serviceInterfaceToBiz(service))
 	if err != nil {
 		return nil, err
@@ -237,7 +246,7 @@ func (s *ServicesInterface) serviceBizTointerface(bizService *biz.Service) *v1al
 				Id:            int32(port.Id),
 				Name:          port.Name,
 				Path:          port.Path,
-				Protocol:      port.Protocol,
+				Protocol:      port.Protocol.String(),
 				ContainerPort: port.ContainerPort,
 			})
 		}
@@ -280,16 +289,13 @@ func (s *ServicesInterface) serviceInterfaceToBiz(interfaceServer *v1alpha1.Serv
 	result := &biz.Service{
 		Id:            int64(interfaceServer.Id),
 		Name:          interfaceServer.Name,
-		Lables:        interfaceServer.Labels,
 		Description:   interfaceServer.Description,
 		UserId:        int64(interfaceServer.UserId),
 		ProjectId:     int64(interfaceServer.ProjectId),
-		WorkspaceId:   int64(interfaceServer.WorkspaceId),
-		ClusterId:     int64(interfaceServer.ClusterId),
 		ResourceQuota: resourceQuotaInterfaceToBiz(interfaceServer.ResourceQuota),
+		Lables:        interfaceServer.Labels,
 	}
 
-	// 转换Ports
 	if interfaceServer.Ports != nil {
 		result.Ports = make([]*biz.Port, 0, len(interfaceServer.Ports))
 		for _, port := range interfaceServer.Ports {
@@ -297,14 +303,12 @@ func (s *ServicesInterface) serviceInterfaceToBiz(interfaceServer *v1alpha1.Serv
 				Id:            int64(port.Id),
 				Name:          port.Name,
 				Path:          port.Path,
-				Protocol:      port.Protocol,
+				Protocol:      biz.Protocol(port.Protocol),
 				ContainerPort: port.ContainerPort,
-				ServiceId:     int64(interfaceServer.Id),
 			})
 		}
 	}
 
-	// 转换Volumes
 	if interfaceServer.Volumes != nil {
 		result.Volumes = make([]*biz.Volume, 0, len(interfaceServer.Volumes))
 		for _, volume := range interfaceServer.Volumes {
@@ -314,24 +318,9 @@ func (s *ServicesInterface) serviceInterfaceToBiz(interfaceServer *v1alpha1.Serv
 				MountPath:    volume.MountPath,
 				Storage:      volume.Storage,
 				StorageClass: volume.StorageClass,
-				ServiceId:    int64(interfaceServer.Id),
 			})
 		}
 	}
-
-	// 转换Pods
-	if interfaceServer.Pods != nil {
-		result.Pods = make([]*biz.Pod, 0, len(interfaceServer.Pods))
-		for _, pod := range interfaceServer.Pods {
-			result.Pods = append(result.Pods, &biz.Pod{
-				Id:        int64(pod.Id),
-				Name:      pod.Name,
-				NodeName:  pod.NodeName,
-				ServiceId: int64(interfaceServer.Id),
-			})
-		}
-	}
-
 	return result
 }
 

@@ -1079,6 +1079,58 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/user.v1alpha1.Roles'
+    /api/v1alpha1/service:
+        get:
+            tags:
+                - ServiceInterface
+            operationId: ServiceInterface_Get
+            parameters:
+                - name: id
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/service.v1alpha1.Service'
+        post:
+            tags:
+                - ServiceInterface
+            operationId: ServiceInterface_Save
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/service.v1alpha1.Service'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/common.Msg'
+        delete:
+            tags:
+                - ServiceInterface
+            operationId: ServiceInterface_Delete
+            parameters:
+                - name: id
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/common.Msg'
     /api/v1alpha1/service/apply:
         post:
             tags:
@@ -1257,42 +1309,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/service.v1alpha1.ContinuousIntegrations'
-    /api/v1alpha1/service/delete:
-        delete:
-            tags:
-                - ServiceInterface
-            operationId: ServiceInterface_Delete
-            parameters:
-                - name: id
-                  in: query
-                  schema:
-                    type: integer
-                    format: int32
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/common.Msg'
-    /api/v1alpha1/service/get:
-        get:
-            tags:
-                - ServiceInterface
-            operationId: ServiceInterface_Get
-            parameters:
-                - name: id
-                  in: query
-                  schema:
-                    type: integer
-                    format: int32
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/service.v1alpha1.Service'
     /api/v1alpha1/service/list:
         get:
             tags:
@@ -1325,24 +1341,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/service.v1alpha1.Services'
-    /api/v1alpha1/service/save:
-        post:
-            tags:
-                - ServiceInterface
-            operationId: ServiceInterface_Save
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/service.v1alpha1.Service'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/common.Msg'
     /api/v1alpha1/service/workflow:
         get:
             tags:

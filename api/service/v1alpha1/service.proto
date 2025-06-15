@@ -18,20 +18,20 @@ service ServiceInterface {
 
       rpc Save(Service) returns (common.Msg) {
             option (google.api.http) = {
-              post: "/api/v1alpha1/service/save"
+              post: "/api/v1alpha1/service"
               body: "*"
             };
       }
 
       rpc Get(ServiceDetailIdRequest) returns (Service) {
             option (google.api.http) = {
-              get: "/api/v1alpha1/service/get"
+              get: "/api/v1alpha1/service"
             };
       }
 
       rpc Delete(ServiceDetailIdRequest) returns (common.Msg) {
             option (google.api.http) = {
-              delete: "/api/v1alpha1/service/delete"
+              delete: "/api/v1alpha1/service"
             };
       }
 

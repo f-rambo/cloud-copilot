@@ -3,67 +3,36 @@ package biz
 import (
 	"context"
 	"math"
+	"slices"
+	"strconv"
 	"time"
 
-	"github.com/f-rambo/cloud-copilot/utils"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/pkg/errors"
 )
 
-type ServiceEnv int32
+type ServiceEnv string
 
 const (
-	ServiceEnv_UNSPECIFIED      ServiceEnv = 0
-	ServiceEnv_SERVICE_NAME     ServiceEnv = 1
-	ServiceEnv_VERSION          ServiceEnv = 2
-	ServiceEnv_BRANCH           ServiceEnv = 3
-	ServiceEnv_TAG              ServiceEnv = 4
-	ServiceEnv_COMMIT_ID        ServiceEnv = 5
-	ServiceEnv_SERVICE_ID       ServiceEnv = 6
-	ServiceEnv_IMAGE            ServiceEnv = 7
-	ServiceEnv_GIT_REPO         ServiceEnv = 8
-	ServiceEnv_IMAGE_REPO       ServiceEnv = 9
-	ServiceEnv_GIT_REPO_NAME    ServiceEnv = 10
-	ServiceEnv_IMAGE_REPO_NAME  ServiceEnv = 11
-	ServiceEnv_GIT_REPO_TOKEN   ServiceEnv = 12
-	ServiceEnv_IMAGE_REPO_TOKEN ServiceEnv = 13
+	ServiceEnv_SERVICE_NAME     ServiceEnv = "SERVICE_NAME"
+	ServiceEnv_VERSION          ServiceEnv = "VERSION"
+	ServiceEnv_BRANCH           ServiceEnv = "BRANCH"
+	ServiceEnv_TAG              ServiceEnv = "TAG"
+	ServiceEnv_COMMIT_ID        ServiceEnv = "COMMIT_ID"
+	ServiceEnv_SERVICE_ID       ServiceEnv = "SERVICE_ID"
+	ServiceEnv_IMAGE            ServiceEnv = "IMAGE"
+	ServiceEnv_GIT_REPO         ServiceEnv = "GIT_REPO"
+	ServiceEnv_IMAGE_REPO       ServiceEnv = "IMAGE_REPO"
+	ServiceEnv_GIT_REPO_NAME    ServiceEnv = "GIT_REPO_NAME"
+	ServiceEnv_IMAGE_REPO_NAME  ServiceEnv = "IMAGE_REPO_NAME"
+	ServiceEnv_GIT_REPO_TOKEN   ServiceEnv = "GIT_REPO_TOKEN"
+	ServiceEnv_IMAGE_REPO_TOKEN ServiceEnv = "IMAGE_REPO_TOKEN"
 )
 
-// ServiceEnv to string
 func (s ServiceEnv) String() string {
-	switch s {
-	case ServiceEnv_SERVICE_NAME:
-		return "SERVICE_NAME"
-	case ServiceEnv_VERSION:
-		return "VERSION"
-	case ServiceEnv_BRANCH:
-		return "BRANCH"
-	case ServiceEnv_TAG:
-		return "TAG"
-	case ServiceEnv_COMMIT_ID:
-		return "COMMIT_ID"
-	case ServiceEnv_SERVICE_ID:
-		return "SERVICE_ID"
-	case ServiceEnv_IMAGE:
-		return "IMAGE"
-	case ServiceEnv_GIT_REPO:
-		return "GIT_REPO"
-	case ServiceEnv_IMAGE_REPO:
-		return "IMAGE_REPO"
-	case ServiceEnv_GIT_REPO_NAME:
-		return "GIT_REPO_NAME"
-	case ServiceEnv_IMAGE_REPO_NAME:
-		return "IMAGE_REPO_NAME"
-	case ServiceEnv_GIT_REPO_TOKEN:
-		return "GIT_REPO_TOKEN"
-	case ServiceEnv_IMAGE_REPO_TOKEN:
-		return "IMAGE_REPO_TOKEN"
-	default:
-		return ""
-	}
+	return string(s)
 }
 
-// ServiceEnv items
 func ServiceEnvItems() []ServiceEnv {
 	return []ServiceEnv{
 		ServiceEnv_SERVICE_NAME,
@@ -271,6 +240,16 @@ type MetricPoint struct {
 	Timestamp time.Time `json:"timestamp"`
 	Value     float64   `json:"value"`
 }
+type Protocol string
+
+const (
+	ProtocolTCP Protocol = "TCP"
+	ProtocolUDP Protocol = "UDP"
+)
+
+func (p Protocol) String() string {
+	return string(p)
+}
 
 type Service struct {
 	Id            int64               `json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
@@ -325,12 +304,12 @@ type CanaryDeployment struct {
 }
 
 type Port struct {
-	Id            int64  `json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
-	Name          string `json:"name,omitempty" gorm:"column:name;default:'';NOT NULL"`
-	Path          string `json:"path,omitempty" gorm:"column:path;default:'';NOT NULL"`
-	Protocol      string `json:"protocol,omitempty" gorm:"column:protocol;default:'';NOT NULL"`
-	ContainerPort int32  `json:"container_port,omitempty" gorm:"column:container_port;default:0;NOT NULL"`
-	ServiceId     int64  `json:"service_id,omitempty" gorm:"column:service_id;default:0;NOT NULL;index:idx_port_service_id"`
+	Id            int64    `json:"id,omitempty" gorm:"column:id;primaryKey;AUTO_INCREMENT"`
+	Name          string   `json:"name,omitempty" gorm:"column:name;default:'';NOT NULL"`
+	Path          string   `json:"path,omitempty" gorm:"column:path;default:'';NOT NULL"`
+	Protocol      Protocol `json:"protocol,omitempty" gorm:"column:protocol;default:'';NOT NULL"`
+	ContainerPort int32    `json:"container_port,omitempty" gorm:"column:container_port;default:0;NOT NULL"`
+	ServiceId     int64    `json:"service_id,omitempty" gorm:"column:service_id;default:0;NOT NULL;index:idx_port_service_id"`
 }
 
 type Volume struct {
@@ -393,6 +372,7 @@ type ServicesData interface {
 type ServiceRuntime interface {
 	ApplyService(context.Context, *Service, *ContinuousDeployment) error
 	GetServiceStatus(context.Context, *Service) error
+	DeleteService(context.Context, *Service) error
 }
 
 type ServicesUseCase struct {
@@ -441,21 +421,49 @@ func (l LogResponse) GetPageCount(pageSize int) int {
 }
 
 func (s *Service) GetLabels() map[string]string {
-	serviceLables := utils.LabelsToMap(s.Lables)
-	serviceLables["service"] = s.Name
-	return serviceLables
+	return LablesToMap(s.Lables)
+}
+
+func (s *Service) GetWorkspaceNameByLable() string {
+	lables := s.GetLabels()
+	if workspaceName, ok := lables[WorkspaceName]; ok {
+		return workspaceName
+	}
+	return ""
+}
+
+func (s *Service) AddLeble(ls string) {
+	serviceLables := s.GetLabels()
+	lableMap := LablesToMap(ls)
+	for k, v := range lableMap {
+		if !slices.Contains(getBaseLableKeys(), k) {
+			serviceLables[k] = v
+		}
+	}
+}
+
+func (s *Service) SetBaseLables(ctx context.Context) {
+	serviceLables := LablesToMap(s.Lables)
+	serviceLables[ServiceName] = s.Name
+	workspace := GetWorkspace(ctx)
+	if workspace != nil {
+		serviceLables[WorkspaceId] = strconv.FormatInt(workspace.Id, 10)
+		serviceLables[WorkspaceName] = workspace.Name
+		s.WorkspaceId = workspace.Id
+	}
+	project := GetProject(ctx)
+	if project != nil {
+		serviceLables[ProjectId] = strconv.FormatInt(project.Id, 10)
+		serviceLables[ProjectName] = project.Name
+		s.ProjectId = project.Id
+	}
+	s.Lables = mapToLables(serviceLables)
 }
 
 func (uc *ServicesUseCase) Save(ctx context.Context, service *Service) error {
-	if service.Id == 0 {
-		serviceData, err := uc.serviceData.GetByName(ctx, service.ProjectId, service.Name)
-		if err != nil {
-			return err
-		}
-		if serviceData.Id > 0 {
-			return errors.New("service name already exists")
-		}
-	}
+	customLables := service.Lables
+	service.SetBaseLables(ctx)
+	service.AddLeble(customLables)
 	return uc.serviceData.Save(ctx, service)
 }
 
@@ -471,11 +479,26 @@ func (uc *ServicesUseCase) Get(ctx context.Context, id int64) (*Service, error) 
 	return service, nil
 }
 
+func (uc *ServicesUseCase) GetServiceByName(ctx context.Context, projectId int64, serviceName string) (*Service, error) {
+	return uc.serviceData.GetByName(ctx, projectId, serviceName)
+}
+
 func (uc *ServicesUseCase) List(ctx context.Context, projectId int64, serviceName string, page, pageSize int32) ([]*Service, int64, error) {
 	return uc.serviceData.List(ctx, projectId, serviceName, page, pageSize)
 }
 
 func (uc *ServicesUseCase) Delete(ctx context.Context, id int64) error {
+	service, err := uc.serviceData.Get(ctx, id)
+	if err != nil {
+		return err
+	}
+	if service == nil || service.Id == 0 {
+		return nil
+	}
+	err = uc.serviceRuntime.DeleteService(ctx, service)
+	if err != nil {
+		return err
+	}
 	return uc.serviceData.Delete(ctx, id)
 }
 

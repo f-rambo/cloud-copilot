@@ -5,10 +5,8 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
-	"math"
 	"os"
 	"path/filepath"
-	"slices"
 	"strconv"
 	"strings"
 	"text/template"
@@ -16,15 +14,6 @@ import (
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
 )
-
-func ArrContains(a, b []string) bool {
-	for _, v := range a {
-		if slices.Contains(b, v) {
-			return true
-		}
-	}
-	return false
-}
 
 func Md5(str string) string {
 	h := md5.New()
@@ -38,38 +27,6 @@ func StructTransform(a, b any) error {
 		return err
 	}
 	return yaml.Unmarshal(yamlByte, b)
-}
-
-func CalculatePercentageInt32(part, total int32) int32 {
-	if total == 0 {
-		return 0
-	}
-	partRate := float64(part) / 100
-	return int32(math.Ceil(float64(total) * partRate))
-}
-
-func RemoveDuplicatesInt64(slice []int64) []int64 {
-	seen := make(map[int64]struct{}, len(slice))
-	j := 0
-	for _, v := range slice {
-		if _, ok := seen[v]; !ok {
-			seen[v] = struct{}{}
-			slice[j] = v
-			j++
-		}
-	}
-	return slice[:j]
-}
-
-func DecodeString(content string, keyVal map[string]string) string {
-	if content == "" {
-		return ""
-	}
-	for key, val := range keyVal {
-		placeholder := "{" + key + "}"
-		content = strings.ReplaceAll(content, placeholder, val)
-	}
-	return content
 }
 
 // check string '[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*'
@@ -102,36 +59,6 @@ func IsValidKubernetesName(name string) bool {
 
 func isAlphaNumeric(c rune) bool {
 	return (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9')
-}
-
-// MapToString converts a map[string]string to a comma-separated string
-func MapToString(m map[string]string) string {
-	if len(m) == 0 {
-		return ""
-	}
-
-	pairs := make([]string, 0, len(m))
-	for k, v := range m {
-		pairs = append(pairs, fmt.Sprintf("%s=%s", k, v))
-	}
-	return strings.Join(pairs, ",")
-}
-
-// StringToMap converts a comma-separated string back to map[string]string
-func StringToMap(s string) map[string]string {
-	if s == "" {
-		return make(map[string]string)
-	}
-
-	result := make(map[string]string)
-	pairs := strings.Split(s, ",")
-	for _, pair := range pairs {
-		kv := strings.Split(pair, "=")
-		if len(kv) == 2 {
-			result[kv[0]] = kv[1]
-		}
-	}
-	return result
 }
 
 func TransferredMeaning(data any, fileDetailPath string) (tmpFile string, err error) {
@@ -243,17 +170,6 @@ func IsFileExist(path string) bool {
 	return err == nil || os.IsExist(err)
 }
 
-// CreateFile
-// Create a file at the specified path. If the file already exists, it will be truncated.
-func CreateFile(path string) error {
-	file, err := os.Create(path)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-	return nil
-}
-
 func StringPtr(s string) *string {
 	return &s
 }
@@ -265,60 +181,8 @@ func StringValue(s *string) string {
 	return *s
 }
 
-// MergeMaps combines multiple string maps into a single map.
-// If there are duplicate keys, the value from the later map takes precedence.
-func MergeMaps(maps ...map[string]string) map[string]string {
-	if len(maps) == 0 {
-		return make(map[string]string)
-	}
-
-	// Estimate the capacity by summing the sizes of all input maps
-	totalSize := 0
-	for _, m := range maps {
-		totalSize += len(m)
-	}
-
-	result := make(map[string]string, totalSize)
-	for _, m := range maps {
-		if m == nil {
-			continue
-		}
-		for k, v := range m {
-			result[k] = v
-		}
-	}
-	return result
-}
-
 func Int64Ptr(i int64) *int64 {
 	return &i
-}
-
-// labels (string) to map[string]string
-func LabelsToMap(labels string) map[string]string {
-	if labels == "" {
-		return make(map[string]string)
-	}
-	m := make(map[string]string)
-	for _, label := range strings.Split(labels, ",") {
-		kv := strings.Split(label, "=")
-		if len(kv) == 2 {
-			m[kv[0]] = kv[1]
-		}
-	}
-	return m
-}
-
-// map[string]string to labels (string)
-func MapToLabels(m map[string]string) string {
-	if len(m) == 0 {
-		return ""
-	}
-	var labels []string
-	for k, v := range m {
-		labels = append(labels, k+"="+v)
-	}
-	return strings.Join(labels, ",")
 }
 
 // ListDirectories
@@ -335,4 +199,23 @@ func ListDirectories(path string) ([]string, error) {
 		}
 	}
 	return dirs, nil
+}
+
+func DecodeString(templateStr string, envVars map[string]string) string {
+	if templateStr == "" {
+		return templateStr
+	}
+
+	tmpl, err := template.New("env").Parse(templateStr)
+	if err != nil {
+		return templateStr
+	}
+
+	var buf bytes.Buffer
+	err = tmpl.Execute(&buf, envVars)
+	if err != nil {
+		return templateStr
+	}
+
+	return buf.String()
 }

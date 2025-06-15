@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/f-rambo/cloud-copilot/internal/biz"
-	"github.com/f-rambo/cloud-copilot/utils"
 	"github.com/go-kratos/kratos/v2/log"
 	k8sErr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -80,9 +79,10 @@ type NetworkPolicy struct {
 }
 
 func (s *ServiceRuntime) ApplyService(ctx context.Context, service *biz.Service, continuousDeployment *biz.ContinuousDeployment) error {
-	cluster := biz.GetCluster(ctx)
-	workspace := biz.GetWorkspace(ctx)
-	project := biz.GetProject(ctx)
+	err := CheckKubernetesConnection(ctx)
+	if err != nil {
+		return nil
+	}
 	resourceQuota := service.ResourceQuota.ToResourceQuota()
 	cloudServiceSpec := &CloudServiceSpec{
 		CloudServiceType: CloudServiceTypeHttpServer,
@@ -108,21 +108,21 @@ func (s *ServiceRuntime) ApplyService(ctx context.Context, service *biz.Service,
 		cloudServiceSpec.Ports = append(cloudServiceSpec.Ports, Port{
 			Name:          v.Name,
 			ContainerPort: v.ContainerPort,
-			Protocol:      v.Protocol,
+			Protocol:      v.Protocol.String(),
 			IngressPath:   v.Path,
 		})
 	}
 	cloudServiceSpec.IngressNetworkPolicy = []NetworkPolicy{
 		{
-			Namespace:   workspace.Name,
-			MatchLabels: utils.MergeMaps(cluster.GetLabels(), workspace.GetLabels(), project.GetLabels()),
+			Namespace:   service.GetWorkspaceNameByLable(),
+			MatchLabels: service.GetLabels(),
 		},
 	}
 	if continuousDeployment.IsAccessExternal == biz.AccessExternal_False {
 		cloudServiceSpec.EgressNetworkPolicy = []NetworkPolicy{
 			{
-				Namespace:   workspace.Name,
-				MatchLabels: utils.MergeMaps(cluster.GetLabels(), workspace.GetLabels(), project.GetLabels()),
+				Namespace:   service.GetWorkspaceNameByLable(),
+				MatchLabels: service.GetLabels(),
 			},
 		}
 	}
@@ -135,9 +135,9 @@ func (s *ServiceRuntime) ApplyService(ctx context.Context, service *biz.Service,
 		}
 	}
 	obj := NewUnstructured(CloudServiceKind)
-	obj.SetLabels(utils.MergeMaps(cluster.GetLabels(), workspace.GetLabels(), project.GetLabels(), service.GetLabels()))
+	obj.SetLabels(service.GetLabels())
 	obj.SetName(service.Name)
-	obj.SetNamespace(workspace.Name)
+	obj.SetNamespace(service.GetWorkspaceNameByLable())
 	SetSpec(obj, cloudServiceSpec)
 	dynamicClient, err := GetKubeDynamicClient()
 	if err != nil {
@@ -163,10 +163,13 @@ func (s *ServiceRuntime) ApplyService(ctx context.Context, service *biz.Service,
 }
 
 func (s *ServiceRuntime) GetServiceStatus(ctx context.Context, service *biz.Service) error {
-	workspace := biz.GetWorkspace(ctx)
+	err := CheckKubernetesConnection(ctx)
+	if err != nil {
+		return nil
+	}
 	obj := NewUnstructured(CloudServiceKind)
 	obj.SetName(service.Name)
-	obj.SetNamespace(workspace.Name) // as namespace
+	obj.SetNamespace(service.GetWorkspaceNameByLable())
 	dynamicClient, err := GetKubeDynamicClient()
 	if err != nil {
 		return err
@@ -183,5 +186,25 @@ func (s *ServiceRuntime) GetServiceStatus(ctx context.Context, service *biz.Serv
 		return nil
 	}
 	service.Status = biz.ServiceStatus(cloudServiceStatus)
+	return nil
+}
+
+// DeleteService(ctx context.Context, service *Service) error
+func (s *ServiceRuntime) DeleteService(ctx context.Context, service *biz.Service) error {
+	err := CheckKubernetesConnection(ctx)
+	if err != nil {
+		return nil
+	}
+	obj := NewUnstructured(CloudServiceKind)
+	obj.SetName(service.Name)
+	obj.SetNamespace(service.GetWorkspaceNameByLable())
+	dynamicClient, err := GetKubeDynamicClient()
+	if err != nil {
+		return err
+	}
+	err = DeleteResource(ctx, dynamicClient, obj)
+	if err != nil {
+		return err
+	}
 	return nil
 }

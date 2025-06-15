@@ -404,7 +404,7 @@ func (w *Workflow) SettingServiceEnv(ctx context.Context, workspace *Workspace, 
 			serviceEnv[ServiceEnv_IMAGE_REPO_TOKEN.String()] = workspace.ImageRepositoryToken
 		}
 	}
-	w.Env = utils.MapToString(serviceEnv)
+	w.Env = mapToLables(serviceEnv)
 	return serviceEnv
 }
 

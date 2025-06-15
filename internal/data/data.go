@@ -164,6 +164,8 @@ func (d *Data) newDatabase() error {
 		&biz.Project{},
 		&biz.Service{},
 		&biz.Port{},
+		&biz.Volume{},
+		&biz.Pod{},
 		&biz.Workflow{},
 		&biz.WorkflowStep{},
 		&biz.WorkflowTask{},

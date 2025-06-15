@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/f-rambo/cloud-copilot/internal/biz"
-	"github.com/f-rambo/cloud-copilot/utils"
 	"github.com/go-kratos/kratos/v2/log"
 	k8sErr "k8s.io/apimachinery/pkg/api/errors"
 )
@@ -26,7 +25,7 @@ func NewWorkflowRuntime(logger log.Logger) biz.WorkflowRuntime {
 func (w *WorkflowRuntime) CommitWorkflow(ctx context.Context, workflow *biz.Workflow) error {
 	obj := NewUnstructuredWithGenerateName(CloudWorkflowKind, workflow.Name)
 	obj.SetNamespace(workflow.Namespace)
-	obj.SetLabels(utils.LabelsToMap(workflow.Lables))
+	obj.SetLabels(biz.LablesToMap(workflow.Lables))
 	SetSpec(obj, workflow)
 	dynamicClient, err := GetKubeDynamicClient()
 	if err != nil {

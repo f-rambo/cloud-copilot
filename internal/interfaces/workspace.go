@@ -137,6 +137,7 @@ func (w *WorkspaceInterface) workspaceToBiz(workspace *v1alpha1.Workspace) *biz.
 func resourceQuotaBizToInterface(bizQuotaString biz.ResourceQuotaString) *common.ResourceQuota {
 	resourceQuota := bizQuotaString.ToResourceQuota()
 	return &common.ResourceQuota{
+		Replicas: resourceQuota.Replicas,
 		Cpu: &common.ResourceLimit{
 			Limit:   resourceQuota.CPU.Limit,
 			Request: resourceQuota.CPU.Request,

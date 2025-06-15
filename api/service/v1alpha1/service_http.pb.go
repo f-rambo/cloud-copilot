@@ -57,9 +57,9 @@ type ServiceInterfaceHTTPServer interface {
 func RegisterServiceInterfaceHTTPServer(s *http.Server, srv ServiceInterfaceHTTPServer) {
 	r := s.Route("/")
 	r.GET("/api/v1alpha1/service/list", _ServiceInterface_List4_HTTP_Handler(srv))
-	r.POST("/api/v1alpha1/service/save", _ServiceInterface_Save4_HTTP_Handler(srv))
-	r.GET("/api/v1alpha1/service/get", _ServiceInterface_Get4_HTTP_Handler(srv))
-	r.DELETE("/api/v1alpha1/service/delete", _ServiceInterface_Delete4_HTTP_Handler(srv))
+	r.POST("/api/v1alpha1/service", _ServiceInterface_Save4_HTTP_Handler(srv))
+	r.GET("/api/v1alpha1/service", _ServiceInterface_Get4_HTTP_Handler(srv))
+	r.DELETE("/api/v1alpha1/service", _ServiceInterface_Delete4_HTTP_Handler(srv))
 	r.POST("/api/v1alpha1/service/workflow", _ServiceInterface_SaveServiceWorkflow0_HTTP_Handler(srv))
 	r.GET("/api/v1alpha1/service/workflow", _ServiceInterface_GetServiceWorkflow0_HTTP_Handler(srv))
 	r.POST("/api/v1alpha1/service/continuousintegration", _ServiceInterface_CreateContinuousIntegration0_HTTP_Handler(srv))
@@ -440,7 +440,7 @@ func (c *ServiceInterfaceHTTPClientImpl) CreateContinuousIntegration(ctx context
 
 func (c *ServiceInterfaceHTTPClientImpl) Delete(ctx context.Context, in *ServiceDetailIdRequest, opts ...http.CallOption) (*common.Msg, error) {
 	var out common.Msg
-	pattern := "/api/v1alpha1/service/delete"
+	pattern := "/api/v1alpha1/service"
 	path := binding.EncodeURL(pattern, in, true)
 	opts = append(opts, http.Operation(OperationServiceInterfaceDelete))
 	opts = append(opts, http.PathTemplate(pattern))
@@ -479,7 +479,7 @@ func (c *ServiceInterfaceHTTPClientImpl) DeleteContinuousIntegration(ctx context
 
 func (c *ServiceInterfaceHTTPClientImpl) Get(ctx context.Context, in *ServiceDetailIdRequest, opts ...http.CallOption) (*Service, error) {
 	var out Service
-	pattern := "/api/v1alpha1/service/get"
+	pattern := "/api/v1alpha1/service"
 	path := binding.EncodeURL(pattern, in, true)
 	opts = append(opts, http.Operation(OperationServiceInterfaceGet))
 	opts = append(opts, http.PathTemplate(pattern))
@@ -570,7 +570,7 @@ func (c *ServiceInterfaceHTTPClientImpl) List(ctx context.Context, in *ServicesR
 
 func (c *ServiceInterfaceHTTPClientImpl) Save(ctx context.Context, in *Service, opts ...http.CallOption) (*common.Msg, error) {
 	var out common.Msg
-	pattern := "/api/v1alpha1/service/save"
+	pattern := "/api/v1alpha1/service"
 	path := binding.EncodeURL(pattern, in, false)
 	opts = append(opts, http.Operation(OperationServiceInterfaceSave))
 	opts = append(opts, http.PathTemplate(pattern))
